@@ -1,0 +1,158 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
+
+/* Tambahan: Pastikan HTML dan BODY mengambil 100% dari lebar/tinggi viewport */
+html, body {
+  height: 100%;
+  width: 100%;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Struktur dasar halaman */
+.login-page {
+  /* Menggunakan 100vh dan 100vw untuk memastikan mengisi seluruh viewport */
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  /* Mengatur agar konten (login-container) berada di tengah secara vertikal */
+  justify-content: center; 
+  align-items: center;
+  background: #f0f2f5; /* Ganti warna latar belakang agar tidak terlalu polos */
+  overflow: hidden;
+  position: relative;
+}
+
+/* Wave atas dan bawah */
+.wave-top,
+.wave-bottom {
+  /* Menggunakan 100vw untuk memastikan wave membentang penuh di seluruh lebar layar */
+  width: 100vw;
+  height: 180px;
+  background: linear-gradient(90deg, #ff9a3d, #ec4899);
+  border-radius: 50%;
+  position: absolute;
+  left: 50%;
+  /* Geser setengah lebar (50%) ke kiri agar wave terpusat */
+  transform: translateX(-50%); 
+}
+
+.wave-top {
+  top: -100px;
+  transform: translateX(-50%) rotate(180deg); /* Kombinasi transform */
+}
+
+.wave-bottom {
+  bottom: -100px;
+  transform: translateX(-50%); /* Geser ke tengah */
+}
+
+/* Kontainer utama (berisi box login) */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* Menggunakan tinggi penuh yang tersedia (kecuali space untuk wave) */
+  flex: 1; 
+  width: 100%;
+  z-index: 10; /* Pastikan konten login berada di atas wave */
+}
+
+.login-box {
+  background: #f0f2f5;
+  padding: 15px 60px;
+  border-radius: 16px;
+  /* Sedikit perbarui bayangan agar lebih menonjol di latar belakang */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0); 
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Logo */
+.login-logo {
+  width: 200px;
+  margin-bottom: 30px;
+}
+
+/* Grup dua logo berdampingan */
+.logo-group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px; /* jarak antar logo */
+  margin-bottom: 1%;
+}
+
+/* Sesuaikan ukuran dua logo */
+.logo-group .login-logo {
+  width: 120px;  /* ubah sesuai kebutuhan, misalnya 150px */
+  height: auto;
+}
+
+/* Input field */
+.input-field {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.input-field input {
+  width: 100%;
+  padding: 10px 40px 10px 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: 0.2s;
+}
+
+.input-field input:focus {
+  border-color: #ec4899;
+  box-shadow: 0 0 5px rgba(236, 72, 153, 0.4);
+}
+
+.input-field .icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+/* Forgot password */
+.forgot {
+  text-align: right;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.forgot a {
+  text-decoration: none;
+  color: #6c6767;
+}
+
+.forgot a:hover {
+  text-decoration: underline;
+}
+
+/* Tombol login */
+.login-btn {
+  width: 50%;
+  padding: 10px;
+  background: linear-gradient(90deg, #ff9a3d, #ec4899);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.login-btn:hover {
+  opacity: 0.9;
+}
