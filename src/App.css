@@ -1,5 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
 
+
+
 /* Tambahan: Pastikan HTML dan BODY mengambil 100% dari lebar/tinggi viewport */
 html, body {
   height: 100%;
@@ -133,7 +135,7 @@ html, body {
 
 .forgot a {
   text-decoration: none;
-  color: #6c6767;
+  /* color: #6c6767; */
 }
 
 .forgot a:hover {

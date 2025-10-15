@@ -29,7 +29,7 @@ function App() {
           </div>
 
           <div className="forgot">
-            <a href="#">Forgot Password?</a>
+            <a href="#" className="text-blue-500">Forgot Password?</a>
           </div>
 
           <button className="login-btn">Login</button>
