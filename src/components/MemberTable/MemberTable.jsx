@@ -1,21 +1,31 @@
 import React from "react"
-import { Table, TableHead, TableHeader, TableRow } from "../ui/table";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "../ui/table";
+import MemberTableRow from "./MemberTableRow";
 
-const MemberTable = () => {
+const MemberTable = ({ members, onSelectMember }) => {
     return (
         <div className="rounded-md border">
             <Table>
-                <TableHeader>
+                <TableHeader className='bg-gray-200'>
                     <TableRow>
-                        <TableHead></TableHead>
-                        <TableHead>FullName</TableHead>
+                        <TableHead>No</TableHead>
+                        <TableHead>Full Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>No Whatsapp</TableHead>
                         <TableHead>Gender</TableHead>
                         <TableHead>Date of birth</TableHead>
-                        <TableHead>Action</TableHead>
+                        <TableHead className='w-20'>Action</TableHead>
                     </TableRow>
                 </TableHeader>
+                <TableBody>
+                    {members.map((member) => (
+                        <MemberTableRow
+                        key={member.id}
+                        member={member}
+                        onSelect={onSelectMember}
+                        />
+                    ))}
+                </TableBody>
             </Table>
         </div>
     )
