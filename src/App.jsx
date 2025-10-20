@@ -1,14 +1,13 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
-import Login from "./components/Login";
-import Dashboard from "./components/Dashboard";
+// src/App.jsx
+import React from 'react';
+import ImpalaManagement from './pages/ImpalaManagement';
+import './App.css';
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Login />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-    </Routes>
+    <div className="min-h-screen bg-gray-50">
+      <ImpalaManagement />
+    </div>
   );
 }
 
