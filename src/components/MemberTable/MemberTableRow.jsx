@@ -19,7 +19,7 @@ const MemberTableRow = ({ member, onSelect }) => {
             <TableCell>
                 <Badge
                     variant={member.action === 'Detail' ? 'default' : 'secondary'}
-                    className='text-xs'
+                    className='text-xs bg-amber-400'
                 >
                     {member.action}
                 </Badge>

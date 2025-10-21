@@ -15,10 +15,13 @@ function App() {
   return (
     <Router>
       <div className="flex min-h-screen bg-gray-50">
-        <Sidebar />
+        <div className='flex-shrink-0'>
+          <Sidebar />
+        </div>
 
-        <div className='flex-1'>
-          <Routes>
+        <div className='flex-1 min-w-0'>
+          <div className='h-screen overflow-y-auto main-content-scroll animated-main-scroll glow-main-scroll'>
+            <Routes>
             <Route path='/' element={<Home />} />
             <Route path='/client' element={<ProgramClient />} />
             <Route path='/program' element={<Program />} />
@@ -27,6 +30,7 @@ function App() {
             <Route path='/form' element={<FormBuilder />} />
             <Route path='/user' element={<Account />} />
           </Routes>
+          </div>
         </div>
       </div>
     </Router>

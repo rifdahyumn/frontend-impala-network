@@ -6,7 +6,7 @@ const MemberTable = ({ members, onSelectMember }) => {
     return (
         <div className="rounded-md border">
             <Table>
-                <TableHeader className='bg-gray-200'>
+                <TableHeader className='bg-amber-50'>
                     <TableRow>
                         <TableHead>No</TableHead>
                         <TableHead>Full Name</TableHead>

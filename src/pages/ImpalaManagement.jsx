@@ -8,6 +8,8 @@ import AddMemberButton from '../components/ActionButton/AddMemberButton';
 import ExportButton from '../components/ActionButton/ExportButton';
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from '../components/Pagination/Pagination';
+import Header from '../components/Layout/Header';
+import FilterButton from '../components/SearchFilter/Filter';
 
 const ImpalaManagement = () => {
     const [selectedMember, setSelectedMember] = useState(null)
@@ -45,15 +47,7 @@ const ImpalaManagement = () => {
     return (
         <div className='flex min-h-screen bg-gray-100'>
             <div className='flex-1 p-6'>
-                <div className='mb-6 flex justify-between'>
-                    <h1 className='text-3xl font-bold text-gray-900'>Hello Faiz</h1>
-                    <div className='flex items-center justify-center gap-4 mr-4'>
-                        <User className='text-amber-400 text-lg' />
-                        <h2 className='text-lg font-semibold'>Faiz</h2>
-                        <ChevronDown className='text-amber-400 text-lg' />
-                    </div>
-                </div>
-
+                <Header />
                 <Card className='mb-6'>
                     <CardHeader>
                         <CardTitle className='text-xl'>Impala Management</CardTitle>
@@ -63,6 +57,7 @@ const ImpalaManagement = () => {
                             <div className='flex gap-2'>
                                 <SearchBar />
                                 <FilterDropdown />
+                                <FilterButton />
                             </div>
 
                             <div className='flex gap-2'>

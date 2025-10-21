@@ -27,8 +27,8 @@ const Sidebar = () => {
     }
 
     return (
-        <div className='w-64 bg-white border-gray-400 p-4'>
-            <div className='h-24 flex items-center justify-center gap-1'>
+        <div className='w-64 bg-white border-gray-400 p-4 sticky h-screen top-0 overflow-y-auto'>
+            <div className='h-24 flex items-center justify-center -mt-4 gap-1'>
                 <RiDashboardFill className='w-6 h-6 text-amber-400' />
                 <h2 className='text-xl font-semibold text-gray-800'>Dashboard</h2>
                 
