@@ -162,13 +162,13 @@ html, body {
 
 /* scrollbar */
 .main-content-scroll::-webkit-scrollbar {
-  width: 14px
+  width: 6px
 }
 
 .main-content-scroll::-webkit-scrollbar-track {
   background: #fefce8;
   border-radius: 12px;
-  margin: 8px 4px;
+  margin: 2px;
 }
 
 .main-content-scroll::-webkit-scrollbar-thumb {

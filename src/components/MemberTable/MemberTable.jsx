@@ -1,28 +1,26 @@
+// src/components/MemberTable/MemberTable.jsx
 import React from "react"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "../ui/table";
 import MemberTableRow from "./MemberTableRow";
 
-const MemberTable = ({ members, onSelectMember }) => {
+const MemberTable = ({ members, headers, onSelectMember }) => {
     return (
         <div className="rounded-md border">
             <Table>
                 <TableHeader className='bg-amber-50'>
                     <TableRow>
-                        <TableHead>No</TableHead>
-                        <TableHead>Full Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>No Whatsapp</TableHead>
-                        <TableHead>Gender</TableHead>
-                        <TableHead>Date of birth</TableHead>
-                        <TableHead className='w-20'>Action</TableHead>
+                        {headers.map((header, index) => (
+                            <TableHead key={index}>{header}</TableHead>
+                        ))}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {members.map((member) => (
                         <MemberTableRow
-                        key={member.id}
-                        member={member}
-                        onSelect={onSelectMember}
+                            key={member.id}
+                            member={member}
+                            headers={headers}
+                            onSelect={onSelectMember}
                         />
                     ))}
                 </TableBody>

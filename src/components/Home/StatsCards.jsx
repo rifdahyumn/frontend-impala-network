@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent } from "../ui/card";
-import { TrendingUp, Users, Target, FileText, BarChart3 } from 'lucide-react';
+import { TrendingUp, Users, Target, FileText, BarChart3, TrendingDown } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const StatsCards = () => {
@@ -8,46 +8,46 @@ const StatsCards = () => {
         {
             title: "Total Members",
             value: "1539",
-            subtitle: "& 400++",
-            percentage: "78%",
+            subtitle: "+ 400++",
+            percentage: "7,8%",
             trend: "up",
             period: "Last Month",
             icon: Users,
             color: "blue",
-            description: "个78% Last Month"
+            description: "7,8% Last Month"
         },
         {
-            title: "Total Members",
-            value: "1539",
-            subtitle: "& 400++",
-            percentage: "78%",
+            title: "Program Participants",
+            value: "400",
+            subtitle: "",
+            percentage: "5,7%",
             trend: "up",
             period: "Last Month",
             icon: Target,
             color: "green",
-            description: "个78% Last Month"
+            description: "5,7% Last Month"
         },
         {
-            title: "Total Members",
-            value: "1539",
+            title: "Form Filled",
+            value: "105",
             subtitle: "& 400++",
-            percentage: "78%",
+            percentage: "6,3%",
             trend: "up",
             period: "Last Month",
             icon: FileText,
             color: "orange",
-            description: "个78% Last Month"
+            description: "6,3% Last Month"
         },
         {
-            title: "Total Members",
-            value: "1539",
+            title: "Growth Rate",
+            value: "8,3",
             subtitle: "& 400++",
-            percentage: "78%",
-            trend: "up",
+            percentage: "8,3%",
+            trend: "down",
             period: "Last Month",
             icon: BarChart3,
             color: "purple",
-            description: "个78% Last Month"
+            description: "8,3% Last Month"
         },
     ];
 
@@ -59,6 +59,24 @@ const StatsCards = () => {
             purple: { bg: 'bg-purple-50', text: 'text-purple-600', icon: 'text-purple-600' },
         };
         return colors[color] || colors.blue;
+    }
+
+    const getTrendIcon = (trend) => {
+        if (trend === "up") {
+            return <TrendingUp className="h-4 w-4 text-green-500" />
+        } else if (trend === "down") {
+            return <TrendingDown className="h-4 w-4 text-red-500" />
+        }
+        return null
+    }
+
+    const getTrendColor = (trend) => {
+        if (trend === "up") {
+            return "text-green-500"
+        } else if (trend === "down") {
+            return "text-red-500"
+        }
+        return "text-gray-500"
     }
 
     return (
@@ -91,12 +109,6 @@ const StatsCards = () => {
                                     <span className="text-2xl font-bold text-gray-900">
                                         {stat.value}
                                     </span>
-
-                                    {stat.subtitle && (
-                                        <span>
-                                            {stat.subtitle}
-                                        </span>
-                                    )}
                                 </div>
                                 <h3 className="text-sm font-medium text-gray-600 mt-1">
                                     {stat.title}
@@ -105,8 +117,11 @@ const StatsCards = () => {
 
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <TrendingUp className="h-4 w-4 text-green-500" />
-                                    <span className="text-xs text-gray-500">
+                                    {getTrendIcon(stat.trend, stat.percentage)}
+                                    <span className={cn(
+                                        "text-xs font-medium",
+                                        getTrendColor(stat.trend)
+                                    )}>
                                         {stat.description}
                                     </span>
                                 </div>

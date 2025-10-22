@@ -11,7 +11,7 @@ const Sidebar = () => {
 
     const menuItems = [
             {icon: Home, label: 'Home', path: '/'},
-            {icon: Phone, label: 'Program Client', path: '/client'},
+            {icon: Phone, label: 'Client', path: '/client'},
             {icon: ClipboardList, label: 'Program', path: '/program'},
             {icon: BarChart3, label: 'Impala Management', path: '/impala'},
             {icon: Building2, label: 'Hetero Management', path: '/hetero'},

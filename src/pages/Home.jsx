@@ -6,9 +6,8 @@ import MemberGrowthDetails from "../components/Analytics/MemberGrowthDetails";
 
 const Home = () => {
     return (
-        <div className='flex min-h-screen bg-gray-100 overflow-x-hidden'>
+        <div className='flex pt-20 min-h-screen bg-gray-100 overflow-x-hidden'>
             <div className='flex-1 p-6 overflow-x-hidden'>
-                <Header />
                 <StatsCards />
                 <Analytics />
                 <YearlyComparison />

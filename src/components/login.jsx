@@ -30,8 +30,8 @@ export default function LoginPage() {
             localStorage.setItem('token', data.token)
             localStorage.setItem('user', JSON.stringify(data.user))
 
-            if (data.user.role === 'admin') navigate('/dashboard')
-            else if (data.user.role === 'manajer_program') navigate('/dashboard_manajer')
+            if (data.user.role === 'admin') navigate('/')
+            else if (data.user.role === 'manajer_program') navigate('/')
             else navigate('/')
         } catch (err) {
             setError(err.message)

@@ -180,7 +180,7 @@ const Analytics = () => {
                     </CardHeader>
 
                     <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center ml-6 gap-6">
                             <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-2">
                                     <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
@@ -196,7 +196,7 @@ const Analytics = () => {
                         <div className="flex items-center gap-4">
                             <Select
                                 value={selectedYear}
-                                onOpenChange={setSelectedYear}
+                                onValueChange={setSelectedYear}
                             >
                                 <SelectTrigger className="w-28">
                                     <SelectValue placeholder="Year" />
@@ -212,7 +212,7 @@ const Analytics = () => {
 
                             <Select
                                 value={chartType}
-                                onOpenChange={setChartType}
+                                onValueChange={setChartType}
                             >
                                 <SelectTrigger className="w-36" >
                                     <SelectValue placeholder="Chart Type" />
