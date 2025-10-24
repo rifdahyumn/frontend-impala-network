@@ -22,12 +22,12 @@ const ProgramClient = () => {
             phone: '+62 85293387788',
             company: 'MBG Company',
             industry: 'Fast Moving Consumer Goods',
-            program: 'Startup 1001',
+            programName: 'Startup 1001',
             status: 'Active',
             dealSize: 'Rp 250.000.000',
             gender: 'Laki-laki',
             business: 'Retail',
-            companySize: '500-1000 employees',
+            total_employee: '500-1000 employees',
             address: 'Jl. Semarang Barat No. 123',
             city: 'Semarang',
             country: 'Indonesia',
@@ -43,12 +43,12 @@ const ProgramClient = () => {
             phone: '+62 81122334455',
             company: 'Medical Lab Indonesia',
             industry: 'Healthcare Services',
-            program: 'Healthcare Analytics Pro',
+            programName: 'Healthcare Analytics Pro',
             status: 'Inactive',
             dealSize: 'Rp 420.000.000',
             gender: 'Laki-laki',
             business: 'Medical Laboratory',
-            companySize: '200-500 employees',
+            total_employee: '200-500 employees',
             address: 'Jl. Gatot Subroto Kav. 21, Jakarta',
             city: 'Jakarta',
             country: 'Indonesia',
@@ -59,9 +59,8 @@ const ProgramClient = () => {
         }
     ];
 
-    
     const tableConfig = {
-        headers: ['No', 'Full Name', 'Email', 'Phone', 'Company', 'Industry', 'Program', 'Deal', 'Status', 'Action'],
+        headers: ['No', 'Full Name', 'Email', 'Phone', 'Company', 'Industry', 'Program Name', 'Deal', 'Status', 'Action'],
         title: "Client Management",
         addButton: "Add Client",
         detailTitle: "Client Details"

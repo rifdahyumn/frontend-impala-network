@@ -3,57 +3,46 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
 import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, DollarSign } from "lucide-react";
 
-const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
-    const [activeCategory, setActiveCategory] = useState('Personal Information');
+const ProgramContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
+    const [activeCategory, setActiveCategory] = useState('Program Information');
 
     const detailFields = [
         {
-            category: 'Personal Information',
-            icon: User,
-            fields: [
-                { key: 'fullName', label: 'Full Name', icon: User },
-                { key: 'email', label: 'Email', icon: Mail },
-                { key: 'phone', label: 'Phone', icon: Phone },
-                { key: 'gender', label: 'Gender', icon: User },
-                { key: 'position', label: 'Position', icon: User }
-            ]
-        },
-        {
-            category: 'Company Details',
+            category: 'Program Information',
             icon: Building,
             fields: [
-                { key: 'company', label: 'Company', icon: Building },
-                { key: 'industry', label: 'Industry', icon: Building },
-                { key: 'business', label: 'Business Type', icon: Building },
-                { key: 'total_employee', label: 'Total Employee', icon: Building }
+                { key: 'programName', label: 'Program Name', icon: Building },
+                { key: 'programCode', label: 'Program Code', icon: Building },
+                { key: 'category', label: 'Category', icon: Building },
+                { key: 'description', label: 'Description', icon: Building }
             ]
         },
         {
-            category: 'Program & Deal',
+            category: 'Schedule & Duration',
+            icon: Calendar,
+            fields: [
+                { key: 'duration', label: 'Duration', icon: Calendar },
+                { key: 'startDate', label: 'Start Date', icon: Calendar },
+                { key: 'endDate', label: 'End Date', icon: Calendar },
+                { key: 'location', label: 'Location', icon: MapPin }
+            ]
+        },
+        {
+            category: 'Pricing & Capacity',
             icon: DollarSign,
             fields: [
-                { key: 'programName', label: 'Program Name', icon: DollarSign },
-                { key: 'status', label: 'Status', icon: DollarSign },
-                { key: 'dealSize', label: 'Deal Size', icon: DollarSign },
-                { key: 'joinDate', label: 'Join Date', icon: Calendar }
+                { key: 'price', label: 'Price', icon: DollarSign },
+                { key: 'capacity', label: 'Capacity', icon: User }
             ]
         },
         {
-            category: 'Location',
+            category: 'Instructur',
             icon: MapPin,
             fields: [
-                { key: 'address', label: 'Address', icon: MapPin },
-                { key: 'city', label: 'City', icon: MapPin },
-                { key: 'country', label: 'Country', icon: MapPin }
+                { key: 'instructor', label: 'Instructor', icon: User },
+                { key: 'tags', label: 'Tags', icon: User }
             ]
         },
-        {
-            category: 'Additional Information',
-            icon: Edit,
-            fields: [
-                { key: 'notes', label: 'Notes', icon: Edit }
-            ]
-        }
     ];
 
     const getActiveCategoryData = () => {
@@ -164,4 +153,4 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
 
 }
 
-export default ClientContent;
+export default ProgramContent;

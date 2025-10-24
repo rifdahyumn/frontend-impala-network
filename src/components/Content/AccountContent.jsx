@@ -1,59 +1,43 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, DollarSign } from "lucide-react";
+import { Edit, Trash2, User, Mail, Phone,Shield, History, CheckCircle, Lock, Image, EyeClosed, EyeOffIcon } from "lucide-react";
 
-const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
-    const [activeCategory, setActiveCategory] = useState('Personal Information');
+const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
+    const [activeCategory, setActiveCategory] = useState('Account Information');
 
     const detailFields = [
+        {
+            category: 'Account Information',
+            icon: User,
+            fields: [
+                { key: 'employeeId', label: 'Employee Id', icon: User },
+                { key: 'username', label: 'User Name', icon: User },
+                { key: 'password', label: 'Password', icon: EyeOffIcon },
+                { key: 'email', label: 'Email', icon: Mail },
+                { key: 'role', label: 'Role', icon: Shield }
+            ]
+        },
         {
             category: 'Personal Information',
             icon: User,
             fields: [
                 { key: 'fullName', label: 'Full Name', icon: User },
-                { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
-                { key: 'gender', label: 'Gender', icon: User },
-                { key: 'position', label: 'Position', icon: User }
+                { key: 'position', label: 'Position', icon: User },
+                { key: 'avatar', label: 'Avatar', icon: Image }
             ]
         },
         {
-            category: 'Company Details',
-            icon: Building,
+            category: 'Security & Access',
+            icon: Lock,
             fields: [
-                { key: 'company', label: 'Company', icon: Building },
-                { key: 'industry', label: 'Industry', icon: Building },
-                { key: 'business', label: 'Business Type', icon: Building },
-                { key: 'total_employee', label: 'Total Employee', icon: Building }
+                { key: 'lastLogin', label: 'Last Login', icon: History },
+                { key: 'emailVerified', label: 'Email Verified', icon: CheckCircle },
+                { key: 'twoFactorEnabled', label: 'Two Factor Enabled', icon: Shield },
+                { key: 'loginAttempts', label: 'Login Attempts', icon: Lock }
             ]
         },
-        {
-            category: 'Program & Deal',
-            icon: DollarSign,
-            fields: [
-                { key: 'programName', label: 'Program Name', icon: DollarSign },
-                { key: 'status', label: 'Status', icon: DollarSign },
-                { key: 'dealSize', label: 'Deal Size', icon: DollarSign },
-                { key: 'joinDate', label: 'Join Date', icon: Calendar }
-            ]
-        },
-        {
-            category: 'Location',
-            icon: MapPin,
-            fields: [
-                { key: 'address', label: 'Address', icon: MapPin },
-                { key: 'city', label: 'City', icon: MapPin },
-                { key: 'country', label: 'Country', icon: MapPin }
-            ]
-        },
-        {
-            category: 'Additional Information',
-            icon: Edit,
-            fields: [
-                { key: 'notes', label: 'Notes', icon: Edit }
-            ]
-        }
     ];
 
     const getActiveCategoryData = () => {
@@ -77,17 +61,22 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                 <div className='grid grid-cols-2 gap-4'>
                     {activeCategoryData.fields.map((field, index) => {
                         const FieldIcon = field.icon
+                        let displayValue = selectedMember[field.key]
+
+                        if (field.key === 'emailVerified' || field.key === 'twoFactorEnabled') {
+                            displayValue = selectedMember[field.key] ? 'Yes' : 'No'
+                        }
 
                         return (
                             <div key={index} className='flex items-start gap-3'>
-                                <FieldIcon className='h-4 w-4 text-gray-400 mt-1 flex-shrink-0'  />
+                                <FieldIcon cla ssName='h-4 w-4 text-gray-400 mt-1 flex-shrink-0'  />
 
                                 <div className='flex-1'>
                                     <label className='text-sm text-gray-500 block mb-1'>
                                         {field.label}
                                     </label>
                                     <p className='text-gray-900 text-sm font-medium'>
-                                        {selectedMember[field.key] || '-'}
+                                        {displayValue || '-'}
                                     </p>
                                 </div>
                             </div>
@@ -164,4 +153,4 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
 
 }
 
-export default ClientContent;
+export default AccountContent;

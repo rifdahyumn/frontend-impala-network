@@ -1,9 +1,9 @@
+import { User, Edit, Trash2, Mail, Phone, Calendar, GraduationCap, MapPin, Building, Award, DollarSign, Users, CheckCircle, Globe, Image } from "lucide-react";
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, DollarSign } from "lucide-react";
 
-const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
+const ImpalaContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
     const [activeCategory, setActiveCategory] = useState('Personal Information');
 
     const detailFields = [
@@ -12,46 +12,65 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             icon: User,
             fields: [
                 { key: 'fullName', label: 'Full Name', icon: User },
+                { key: 'nik', label: 'NIK', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
-                { key: 'position', label: 'Position', icon: User }
+                { key: 'dateOfBirth', label: 'Date Of Birth', icon: Calendar },
+                { key: 'education', label: 'Education', icon: GraduationCap },
+                { key: 'programName', label: 'Program Name', icon: Award },
+                { key: 'status', label: 'Status', icon: CheckCircle }
             ]
         },
         {
-            category: 'Company Details',
-            icon: Building,
-            fields: [
-                { key: 'company', label: 'Company', icon: Building },
-                { key: 'industry', label: 'Industry', icon: Building },
-                { key: 'business', label: 'Business Type', icon: Building },
-                { key: 'total_employee', label: 'Total Employee', icon: Building }
-            ]
-        },
-        {
-            category: 'Program & Deal',
-            icon: DollarSign,
-            fields: [
-                { key: 'programName', label: 'Program Name', icon: DollarSign },
-                { key: 'status', label: 'Status', icon: DollarSign },
-                { key: 'dealSize', label: 'Deal Size', icon: DollarSign },
-                { key: 'joinDate', label: 'Join Date', icon: Calendar }
-            ]
-        },
-        {
-            category: 'Location',
+            category: 'Personal Address',
             icon: MapPin,
             fields: [
                 { key: 'address', label: 'Address', icon: MapPin },
+                { key: 'subdistrict', label: 'Subdistrict', icon: MapPin },
                 { key: 'city', label: 'City', icon: MapPin },
-                { key: 'country', label: 'Country', icon: MapPin }
+                { key: 'province', label: 'Province', icon: MapPin },
+                { key: 'postalCode', label: 'Postal Code', icon: MapPin }
             ]
         },
         {
-            category: 'Additional Information',
-            icon: Edit,
+            category: 'Business Information',
+            icon: Building,
             fields: [
-                { key: 'notes', label: 'Notes', icon: Edit }
+                { key: 'bussinessName', label: 'Business Name', icon: Building },
+                { key: 'business', label: 'Business Type', icon: Building },
+                { key: 'bussinessAddress', label: 'Business Address', icon: MapPin },
+                { key: 'bussinessForm', label: 'Business Form', icon: Building },
+                { key: 'establishedYear', label: 'Established Year', icon: Calendar },
+                { key: 'certifications', label: 'Certifications', icon: Award }
+            ]
+        },
+        {
+            category: 'Business Performance',
+            icon: DollarSign,
+            fields: [
+                { key: 'monthly_revenue', label: 'Monthly Revenue', icon: DollarSign },
+                { key: 'total_employee', label: 'Total Employee', icon: Users },
+                { key: 'hasOrganizationStructur', label: 'Has Organization Structure', icon: CheckCircle }
+            ]
+        },
+        {
+            category: 'Digital Presence',
+            icon: Globe,
+            fields: [
+                { key: 'sosialMedia', label: 'Social Media', icon: Globe },
+                { key: 'marketplace', label: 'Marketplace', icon: Globe },
+                { key: 'google_bussiness', label: 'Google Business', icon: Globe },
+                { key: 'website', label: 'Website', icon: Globe }
+            ]
+        },
+        {
+            category: 'Media & Documents',
+            icon: Image,
+            fields: [
+                { key: 'ownerPhoto', label: 'Owner Photo', icon: Image },
+                { key: 'bussinessLogo', label: 'Business Logo', icon: Image },
+                { key: 'productPhoto', label: 'Product Photo', icon: Image }
             ]
         }
     ];
@@ -77,6 +96,11 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                 <div className='grid grid-cols-2 gap-4'>
                     {activeCategoryData.fields.map((field, index) => {
                         const FieldIcon = field.icon
+                        let displayValue = selectedMember[field.key]
+
+                        if (field.key === 'hasOrganizationStructur') {
+                            displayValue = selectedMember[field.key] ? 'Yes' : 'No'
+                        }
 
                         return (
                             <div key={index} className='flex items-start gap-3'>
@@ -87,7 +111,7 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                                         {field.label}
                                     </label>
                                     <p className='text-gray-900 text-sm font-medium'>
-                                        {selectedMember[field.key] || '-'}
+                                        {displayValue || '-'}
                                     </p>
                                 </div>
                             </div>
@@ -161,7 +185,6 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             </CardContent>
         </Card>
     )
-
 }
 
-export default ClientContent;
+export default ImpalaContent

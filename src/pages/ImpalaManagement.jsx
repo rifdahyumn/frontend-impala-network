@@ -1,14 +1,15 @@
+import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Plus } from "lucide-react";
+import { Button } from "../components/ui/button"
 import React, { useState } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
 import FilterDropdown from '../components/SearchFilter/FilterDropdown';
 import ExportButton from '../components/ActionButton/ExportButton';
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from '../components/Pagination/Pagination';
-import Header from '../components/Layout/Header';
 import FilterButton from '../components/SearchFilter/Filter';
-import { Plus } from "lucide-react";
-import { Button } from "../components/ui/button"
+import ImpalaContent from '../components/Content/ImpalaContent';
 
 const ImpalaManagement = () => {
     const [selectedMember, setSelectedMember] = useState(null)
@@ -16,34 +17,64 @@ const ImpalaManagement = () => {
     const members = [
         {
             id: 'IMP-001',
-            employeeId: 'EMP-2024-001',
-            fullName: 'Ahmad Rizki',
-            position: 'Software Engineer',
-            department: 'IT',
-            joinDate: '2023-01-15',
+            fullName: 'Lutfiana Dini Lathiifah',
+            nik: '3320000000000001',
+            email: 'dini@shopee.com',
+            phone: '0850000001',
+            gender: 'Perempuan',
+            dateOfBirth: '22/12/2002',
+            education: 'Sarjana',
+            programName: 'StartUp 1001',
+            address: 'Jl. Langon Tahunan',
+            subdistrict: 'Tahunan',
+            city: 'Jepara',
+            province: 'Jawa Tengah',
+            postalCode: '90909',
+            business: 'Furniture',
+            bussinessName: 'Dny Deco Jepara',
+            establishedYear: '2025',
+            bussinessAddress: 'Jl. Sukono Langon',
+            bussinessForm: 'PT.',
+            certifications: 'Halal',
+            monthly_revenue: '50000000 - 100000000',
+            total_employee: '5-10 Employees',
+            hasOrganizationStructur: true,
+            sosialMedia: 'instagram.com/dnydeco',
+            marketplace: 'shopee.com/dnydecojepara',
+            google_bussiness: 'g.page/dntdeco',
+            website: 'dnydeco.id',
+            ownerPhoto: 'images/dini',
+            bussinessLogo: 'images/logo',
+            productPhoto: 'images/product',
             status: 'Active',
-            salary: 'Rp 15,000,000',
-            action: 'Manage'
+            action: 'Detail'
         },
-        {
-            id: 'IMP-002',
-            employeeId: 'EMP-2024-002',
-            fullName: 'Sari Dewi',
-            position: 'Product Manager',
-            department: 'Product',
-            joinDate: '2023-03-20',
-            status: 'Active',
-            salary: 'Rp 20,000,000',
-            action: 'Manage'
-        }
     ];
 
-    // Configuration untuk table impala
     const tableConfig = {
-        headers: ['ID', 'Employee ID', 'Full Name', 'Position', 'Department', 'Join Date', 'Status', 'Salary', 'Action'],
+        headers: ['No', 'Full Name', 'Email', 'Phone', 'Program Name', 'Bussiness Name', 'Business Type', 'Action'],
         title: "Impala Management",
         addButton: "Add Member",
         detailTitle: "Member Details"
+    };
+
+    const handleEdit = () => {
+        if (selectedMember) {
+            console.log('Edit client:', selectedMember);
+            
+            alert(`Edit client: ${selectedMember.fullName}`);
+        }
+    };
+
+    const handleDelete = () => {
+        if (selectedMember) {
+            if (window.confirm(`Are you sure you want to delete ${selectedMember.fullName}?`)) {
+                console.log('Delete client:', selectedMember);
+                
+                setSelectedMember(null); 
+                alert(`Client ${selectedMember.fullName} deleted`);
+            }
+        }
     };
 
     return (
@@ -83,44 +114,12 @@ const ImpalaManagement = () => {
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-xl">Member Details</CardTitle>
-                    </CardHeader>
-
-                    <CardContent>
-                        {selectedMember ? (
-                            <div className='space-y-4'>
-                                <div className='grid grid-cols-2 gap-4'>
-                                    <div>
-                                        <label className='text-sm font-medium text-gray-500'>Full Name</label>
-                                        <p className='text-gray-900'>{selectedMember.fullName}</p>
-                                    </div>
-                                    <div>
-                                        <label className='text-sm font-medium text-gray-500'>Email</label>
-                                        <p className='text-gray-900'>{selectedMember.email}</p>
-                                    </div>
-                                    <div>
-                                        <label className='text-sm font-medium text-gray-500'>Whatsapp</label>
-                                        <p className='text-gray-900'>{selectedMember.whatsapp}</p>
-                                    </div>
-                                    <div>
-                                        <label className='text-sm font-medium text-gray-500'>Gender</label>
-                                        <p className='text-gray-900'>{selectedMember.gender}</p>
-                                    </div>
-                                    <div>
-                                        <label className='text-sm font-medium text-gray-500'>Date of Birth</label>
-                                        <p className='text-gray-900'>{selectedMember.dateOfBirth}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : ( 
-                            <div className='text-center py-8 text-gray-500'>
-                                <p>Select a member to view details</p>
-                            </div>
-                        )} 
-                    </CardContent>
-                </Card>
+                <ImpalaContent
+                    selectedMember={selectedMember}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    detailTitle={tableConfig.detailTitle}
+                />
             </div>
         </div>
     )
