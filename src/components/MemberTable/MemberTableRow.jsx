@@ -75,7 +75,7 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
                 return (
                     <Badge
                         variant="default"
-                        className="text-xs bg-amber-400 hover:bg-amber-500 text-white cursor-pointer"
+                        className="text-xs bg-amber-500 hover:bg-amber-400 text-white cursor-pointer"
                     >
                         Detail
                     </Badge>

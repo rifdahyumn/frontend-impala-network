@@ -54,8 +54,8 @@ const ImpalaManagement = () => {
     const tableConfig = {
         headers: ['No', 'Full Name', 'Email', 'Phone', 'Program Name', 'Bussiness Name', 'Business Type', 'Action'],
         title: "Impala Management",
-        addButton: "Add Member",
-        detailTitle: "Member Details"
+        addButton: "Add Participants",
+        detailTitle: "Participant Details"
     };
 
     const handleEdit = () => {

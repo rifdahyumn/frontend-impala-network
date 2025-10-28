@@ -1,5 +1,6 @@
 import AccountContent from "../components/Content/AccountContent";
 import Header from "../components/Layout/Header";
+import { X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Plus } from "lucide-react";
 import { Button } from "../components/ui/button"
@@ -10,9 +11,15 @@ import ExportButton from '../components/ActionButton/ExportButton';
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from '../components/Pagination/Pagination';
 import FilterButton from '../components/SearchFilter/Filter';
+import AddUser from "../components/AddButton/AddUser";
 
 const Account = () => {
     const [selectedMember, setSelectedMember] = useState(null)
+    const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+
+    const handleAddUser = () => {
+        setIsAddUserModalOpen(true);
+    };
 
     const members = [
         {
@@ -80,7 +87,10 @@ const Account = () => {
                             </div>
 
                             <div className='flex gap-2'>
-                                <Button className='flex items-center gap-2'>
+                                <Button 
+                                    className='flex items-center gap-2'
+                                    onClick={handleAddUser}
+                                >
                                     <Plus className="h-4 w-4" />
                                     {tableConfig.addButton}
                                 </Button>
@@ -106,6 +116,11 @@ const Account = () => {
                     onDelete={handleDelete}
                     detailTitle={tableConfig.detailTitle}
                 />
+             {/* Add User Modal */}
+             <AddUser 
+                isAddUserModalOpen={isAddUserModalOpen} 
+                setIsAddUserModalOpen={setIsAddUserModalOpen}
+             />
             </div>
         </div>
     )

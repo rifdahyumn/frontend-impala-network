@@ -45,7 +45,7 @@ const Sidebar = () => {
                         <Button
                             key={item.label}
                             variant={item.active ? "default" : "ghost"}
-                            className={cn('w-full p-8 justify-start items-center', active && 'text-white bg-gradient-to-r from-amber-400 to-pink-600 ')}
+                            className={cn('w-full p-8 justify-start items-center', active && 'text-white bg-gradient-to-r from-amber-400 to-pink-600 hover:text-white ')}
                             onClick={() => navigate(item.path)}
                         >   
                             <Icon />
