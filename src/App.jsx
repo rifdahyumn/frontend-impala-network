@@ -12,6 +12,8 @@ import FormBuilder from './pages/FormBuilder';
 import Account from './pages/Account';
 import Header from './components/Layout/Header';
 import LoginPage from './components/login';
+import HeteroBanyumas from './pages/HeteroManagement';
+import HeteroSemarang from './pages/HeteroSemarang';
 
 function App() {
   return (
@@ -32,7 +34,9 @@ function App() {
                 <Route path='/client' element={<ProgramClient />} />
                 <Route path='/program' element={<Program />} />
                 <Route path='/impala' element={<ImpalaManagement />} />
-                <Route path='/hetero' element={<HeteroManagement />} />
+                <Route path='/hetero/semarang' element={<HeteroSemarang />} />
+                <Route path='/hetero/banyumas' element={<HeteroBanyumas />} />
+                <Route path='/hetero/surakarta' element={<HeteroSurakarta />} />                
                 <Route path='/form' element={<FormBuilder />} />
                 <Route path='/user' element={<Account />} />
               </Routes>

@@ -137,9 +137,17 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
                                             required
                                         >
                                             <option value="">Select Position</option>
-                                            <option value="CEO_Program">CEO Program</option>
-                                            <option value="Staff_IT">Staff IT</option>
-                                            <option value="Head_Manager">Head Manager</option>
+                                            <option value="Managing_Director">Managing Director</option>
+                                            <option value="Director">Director</option>
+                                            <option value="General_Secretay">Head Manager</option>
+                                            <option value="Finance">Finance</option>
+                                            <option value="Legal">Legal</option>
+                                            <option value="Talent_Manager">Talent Manager</option>
+                                            <option value="Ecosystem Manager">Ecosystem Manager</option>
+                                            <option value="Strategic_Partnership_Executive">Strategic Partnership Executive</option>
+                                            <option value="Program_Manager">Program Manager</option>
+                                            <option value="Space_Manager">Space Manager</option>
+                                            <option value="Creative">Creative</option>
                                         </select>
                                     </div>
                                     <div>

@@ -10,7 +10,7 @@ import FilterButton from "../components/SearchFilter/Filter";
 import { Plus, X, ChevronDown, ChevronRight } from "lucide-react"
 import { Button } from "../components/ui/button"
 
-const HeteroBanyumas = () => {
+const HeteroSemarang = () => {
     const [selectedMember, setSelectedMember] = useState(null)
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
     
@@ -240,4 +240,4 @@ const HeteroBanyumas = () => {
     )
 }
 
-export default HeteroBanyumas;
+export default HeteroSemarang;
