@@ -60,7 +60,7 @@ const Analytics = () => {
                 label: 'Total Members',
                 data: currentData.map(data => data.totalMembers),
                 borderColor: 'rgb(34, 197, 94)',
-                backgroundColor: 'rgba(0, 0, 0, 1)',
+                backgroundColor: 'rgba(255, 0, 0, 0.1)',
                 fill: chartType === 'area',
                 tension: 0.4,
                 yAxisID: 'y1'
