@@ -24,7 +24,7 @@ function App() {
             <Sidebar />
           </div>
 
-          <div className='flex-1 flex flex-col min-w-0 ml-64'>
+          <div className='flex-1 flex flex-col min-w-0 ml-80'>
             <Header />
             <div className='h-screen overflow-y-auto main-content-scroll animated-main-scroll glow-main-scroll'>
               <Routes>

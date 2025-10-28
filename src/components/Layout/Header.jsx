@@ -27,7 +27,7 @@ const Header = () => {
 
     return (
         <div
-            className={`fixed top-0 left-64 right-0 z-30 bg-white/90 backdrop-blur-md border-b transition-all duration-300 ${
+            className={`fixed top-0 left-80 right-0 z-30 bg-white/90 backdrop-blur-md border-b transition-all duration-300 ${
             isScrolled 
                 ? 'border-gray-300 shadow-lg' 
                 : 'border-gray-200 shadow-sm'
