@@ -30,7 +30,7 @@ const ProgramClient = () => {
         company: '',
         program_name: '',
         sortBy: 'id',
-        sortOrder: 'desc'
+        // sortOrder: 'desc'
     });
     
     // const members = [
@@ -119,7 +119,7 @@ const ProgramClient = () => {
     }
 
     const tableConfig = {
-        headers: ['No', 'Full Name', 'Email', 'Phone', 'Company', 'Program Name', 'Deal', 'Status', 'Action'],
+        headers: ['No', 'Full Name', 'Email', 'Phone', 'Company', 'Program Name', 'Status', 'Action'],
         title: "Client Management",
         addButton: "Add Client",
         detailTitle: "Client Details"
@@ -153,22 +153,20 @@ const ProgramClient = () => {
         const currentPage = pagination.page;
         const itemsPerPage = pagination.limit;
         
-        // ✅ Nomor urut = (page - 1) * limit + index + 1
         const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
         
         return {
             id: client.id,
-            no: itemNumber, // ✅ Ini yang akan ditampilkan di kolom "No"
+            no: itemNumber,
             fullName: client.full_name,
             email: client.email,
             phone: client.phone,
             company: client.company,
             industry: client.industry,
             programName: client.program_name,
-            deal: client.deal_size,
+            // deal: client.deal_size,
             status: client.status,
             action: 'Detail',
-            // Original data untuk detail view
             ...client
         };
     });

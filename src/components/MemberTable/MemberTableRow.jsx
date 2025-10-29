@@ -27,7 +27,7 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Bussiness Name': 'bussinessName',
             'Category': 'category',
             'Status': 'status',
-            'Deal': 'deal_size',
+            // 'Deal': 'deal_size',
             'Gender': 'gender',
             'Email Verified': 'emailVerified',
             'Two Factor Enabled': 'twoFactorEnabled',

@@ -29,13 +29,13 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             ]
         },
         {
-            category: 'Program & Deal',
+            category: 'Program',
             icon: DollarSign,
             fields: [
                 { key: 'programName', label: 'Program Name', icon: DollarSign },
                 { key: 'status', label: 'Status', icon: DollarSign },
-                { key: 'dealSize', label: 'Deal Size', icon: DollarSign },
-                { key: 'joinDate', label: 'Join Date', icon: Calendar }
+                // { key: 'deal_size', label: 'Deal Size', icon: DollarSign },
+                { key: 'join_date', label: 'Join Date', icon: Calendar }
             ]
         },
         {
