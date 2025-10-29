@@ -17,64 +17,23 @@ import {
 } from "../ui/dialog";
 import { useState } from "react";
 
-const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
-  // Form state untuk Add User
+const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
+  // Form state untuk Add Client - DIPERBAIKI: tambah field yang missing
   const [formData, setFormData] = useState({
     fullName: '',
-    username: '',
     email: '',
+    phone: '',
+    company: '',
+    programname: '',
+    joindate: '',
+    gender: '',
     position: '',
-    role: '',
-    phone: ''
+    businesstype: '',
+    totalemployee: ''
   });
 
-  // Structure dengan sections
+  // Structure dengan sections - YANG SUDAH DIPERBAIKI
   const formSections = [
-    {
-      title: "Account Information",
-      fields: [
-        {
-          name: 'eployeeid',
-          label: 'Employee Id',
-          type: 'text',
-          required: true,
-          placeholder: 'Enter employee id'
-        },
-        {
-          name: 'username',
-          label: 'Username',
-          type: 'text',
-          required: true,
-          placeholder: 'Enter username'
-        },
-        {
-          name: 'password',
-          label: 'Password',
-          type: 'email',
-          required: true,
-          placeholder: 'Enter password'
-        },
-        {
-          name: 'email',
-          label: 'Email',
-          type: 'email',
-          required: true,
-          placeholder: 'Enter email address'
-        },
-        {
-          name: 'role',
-          label: 'Role',
-          type: 'select',
-          required: true,
-          placeholder: 'Select Role',
-          options: [
-            { value: 'admin', label: 'Admin' },
-            { value: 'manajer_Program', label: 'Manajer Program' },
-            { value: 'staff', label: 'Community Team' }
-          ]
-        }
-      ]
-    },
     {
       title: "Personal Information",
       fields: [
@@ -86,6 +45,13 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
           placeholder: 'Enter full name'
         },
         {
+          name: 'email',
+          label: 'Email',
+          type: 'email',
+          required: true,
+          placeholder: 'Enter email address'
+        },
+        {
           name: 'phone',
           label: 'Phone',
           type: 'tel',
@@ -93,25 +59,120 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
           placeholder: 'Enter phone number'
         },
         {
-          name: 'position',
-          label: 'Position',
+          name: 'gender',
+          label: 'Gender',
           type: 'select',
           required: true,
-          placeholder: 'Select Position',
+          placeholder: 'Select gender',
           options: [
-            { value: 'managing_Director', label: 'Managing Director' },
-            { value: 'director', label: 'Director' },
-            { value: 'general_Secretary', label: 'Head Manager' },
-            { value: 'finance', label: 'Finance' },
-            { value: 'legal', label: 'Legal' },
-            { value: 'talent_Manager', label: 'Talent Manager' },
-            { value: 'ecosystem_Manager', label: 'Ecosystem Manager' },
-            { value: 'strategic_Partnership_Executive', label: 'Strategic Partnership Executive' },
-            { value: 'program_Manager', label: 'Program Manager' },
-            { value: 'space_Manager', label: 'Space Manager' },
-            { value: 'creative', label: 'Creative' }
+            { value: 'male', label: 'Male' },
+            { value: 'female', label: 'Female' }
           ]
-        }
+        },
+        {
+          name: 'position',
+          label: 'Position',
+          type: 'text',
+          required: true,
+          placeholder: 'Enter position'
+        },
+      ]
+    },
+    {
+      title: "Company Detail",
+      fields: [
+        {
+          name: 'company',
+          label: 'Company',
+          type: 'text',
+          required: true,
+          placeholder: 'Enter company name'
+        },
+        {
+          name: 'businesstype',
+          label: 'Business Type',
+          type: 'select',
+          required: true,
+          placeholder: 'Select business type',
+          options: [
+            { value: 'retail', label: 'Retail' },
+            { value: 'technology', label: 'Technology' },
+            { value: 'healthcare', label: 'Healthcare' },
+            { value: 'finance', label: 'Finance' },
+            { value: 'education', label: 'Education' }
+          ]
+        },
+        {
+          name: 'totalemployee',
+          label: 'Total Employee',
+          type: 'select',
+          required: true,
+          placeholder: 'Select total employee',
+          options: [
+            { value: '1-50', label: '1-50 employees' },
+            { value: '50-100', label: '50-100 employees' },
+            { value: '100-500', label: '100-500 employees' },
+            { value: '500-1000', label: '500-1000 employees' },
+            { value: '1000+', label: '1000+ employees' }
+          ]
+        },
+      ]
+    },
+    {
+      title: "Program",
+      fields: [
+        {
+          name: 'programname',
+          label: 'Program Name',
+          type: 'text',
+          required: true,
+          placeholder: 'Enter program name'
+        },
+        {
+          name: 'joindate',
+          label: 'Join Date',
+          type: 'date',
+          required: true,
+          placeholder: 'Select join date'
+        },
+      ]
+    },
+    {
+      title: "Location",
+      fields: [
+        {
+          name: 'address',
+          label: 'Adress',
+          type: 'text',
+          required: true,
+          placeholder: 'Enter address'
+        },
+        {
+          name: 'city',
+          label: 'City',
+          type: 'text',
+          required: true,
+          placeholder: 'Enter city'
+        },
+        {
+          name: 'country',
+          label: 'Country',
+          type: 'text',
+          required: true,
+          placeholder: 'Enter country'
+        },
+      ]
+    },
+    {
+      title: "Additional Information",
+      fields: [
+        {
+          name: 'notes',
+          label: 'Notes',
+          type: 'text',
+          required: false,
+          placeholder: 'Enter notes'
+        },
       ]
     }
   ];
@@ -135,33 +196,41 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
     // Handle form submission logic here
-    alert(`User ${formData.fullName} added successfully!`);
+    alert(`Client ${formData.fullName} added successfully!`);
     setIsAddUserModalOpen(false);
-    // Reset form
+    // Reset form - DIPERBAIKI: tambah semua field
     setFormData({
       fullName: '',
-      username: '',
       email: '',
+      phone: '',
+      company: '',
+      programname: '',
+      joindate: '',
+      gender: '',
       position: '',
-      role: '',
-      phone: ''
+      businesstype: '',
+      totalemployee: ''
     });
   };
 
   const handleCloseModal = () => {
     setIsAddUserModalOpen(false);
-    // Reset form ketika modal ditutup
+    // Reset form ketika modal ditutup - DIPERBAIKI: tambah semua field
     setFormData({
       fullName: '',
-      username: '',
       email: '',
+      phone: '',
+      company: '',
+      programname: '',
+      joindate: '',
+      gender: '',
       position: '',
-      role: '',
-      phone: ''
+      businesstype: '',
+      totalemployee: ''
     });
   };
 
-  // Function untuk render field berdasarkan type
+  // Function untuk render field berdasarkan type - DIPERBAIKI: handle date type
   const renderField = (field) => {
     if (field.type === 'select') {
       return (
@@ -190,7 +259,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
       );
     }
 
-    // Default input field
+    // Default input field (termasuk date)
     return (
       <div key={field.name} className="space-y-2">
         <Label htmlFor={field.name}>
@@ -215,9 +284,9 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
     <Dialog open={isAddUserModalOpen} onOpenChange={setIsAddUserModalOpen}>
       <DialogContent className="sm:max-w-[625px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>Add New Client</DialogTitle>
           <DialogDescription>
-            Fill in the details below to add a new user to the system.
+            Fill in the details below to add a new client to the system.
           </DialogDescription>
         </DialogHeader>
 
@@ -229,11 +298,6 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
                 <h3 className="text-lg font-semibold text-gray-900">
                   {section.title}
                 </h3>
-                {section.description && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    {section.description}
-                  </p>
-                )}
               </div>
 
               {/* Section Fields */}
@@ -258,7 +322,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
               Cancel
             </Button>
             <Button type="submit">
-              Add User
+              Add Client
             </Button>
           </div>
         </form>
@@ -267,4 +331,4 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
   );
 };
 
-export default AddUser;
+export default AddClient;

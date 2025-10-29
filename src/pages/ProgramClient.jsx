@@ -11,6 +11,7 @@ import Pagination from '../components/Pagination/Pagination';
 import FilterButton from '../components/SearchFilter/Filter';
 import ClientContent from "../components/Content/ClientContent";
 import { toast } from 'react-hot-toast';
+import AddClient from "../components/AddButton/AddClient";
 
 const ProgramClient = () => {
     const [selectedMember, setSelectedMember] = useState(null)
@@ -23,6 +24,12 @@ const ProgramClient = () => {
         total: 0,
         totalPages: 0
     })
+            const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
+    
+        const handleAddClilent = () => {
+            setIsAddClientModalOpen(true);
+        }
+
     const [filters, setFilters] = useState({
         search: '',
         status: '',
@@ -32,8 +39,6 @@ const ProgramClient = () => {
         sortBy: 'id',
         // sortOrder: 'desc'
     });
-    
-    // const members = [
     //     {
     //         id: 1,
     //         fullName: 'Muhammad Faiz Al Izza',
@@ -206,7 +211,8 @@ const ProgramClient = () => {
                             </div>
 
                             <div className='flex gap-2'>
-                                <Button className='flex items-center gap-2'>
+                                <Button onClick={handleAddClilent} className='flex items-center gap-2'>
+                                    
                                     <Plus className="h-4 w-4" />
                                     {tableConfig.addButton}
                                 </Button>
@@ -244,6 +250,11 @@ const ProgramClient = () => {
                     onDelete={handleDelete}
                     detailTitle={tableConfig.detailTitle}
                 />
+
+                 <AddClient 
+                isAddUserModalOpen={isAddClientModalOpen} 
+                setIsAddUserModalOpen={setIsAddClientModalOpen}
+             />
             </div>
         </div>
     )

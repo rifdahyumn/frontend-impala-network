@@ -138,7 +138,7 @@ const HeteroBanyumas = () => {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-xl">Member Details - Semarang</CardTitle>
+                        <CardTitle className="text-xl">Member Details - Banyumas</CardTitle>
                     </CardHeader>
 
                     <CardContent>
