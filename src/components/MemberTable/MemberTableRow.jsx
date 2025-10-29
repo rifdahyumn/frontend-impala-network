@@ -6,9 +6,8 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
     const renderCellContent = (header, member) => {
 
         const fieldMap = {
-            'No': 'id',
-            'ID': 'id',
-            'Full Name': 'fullName',
+            'No': 'no',
+            'Full Name': 'full_name',
             'NIK': 'nik',
             'Email': 'email',
             'Username': 'username',
@@ -28,7 +27,7 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Bussiness Name': 'bussinessName',
             'Category': 'category',
             'Status': 'status',
-            'Deal': 'dealSize',
+            'Deal': 'deal_size',
             'Gender': 'gender',
             'Email Verified': 'emailVerified',
             'Two Factor Enabled': 'twoFactorEnabled',
