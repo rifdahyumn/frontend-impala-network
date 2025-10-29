@@ -1,8 +1,8 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, X } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
 import FilterDropdown from '../components/SearchFilter/FilterDropdown';
 import ExportButton from '../components/ActionButton/ExportButton';
@@ -10,54 +10,81 @@ import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from '../components/Pagination/Pagination';
 import FilterButton from '../components/SearchFilter/Filter';
 import ProgramContent from "../components/Content/ProgramClient";
+import { toast } from 'react-hot-toast';
+import { LoadingSpinner, LoadingOverlay, LoadingTable, LoadingCard } from '../components/Loading/'
 
 const Program = () => {
     const [selectedMember, setSelectedMember] = useState(null)
     const [isAddProgramModalOpen, setIsAddProgramModalOpen] = useState(false)
-    
-    const members = [
-        {
-            id: 1,
-            programName: 'Startup 1001',
-            programCode: 'STP-1001',
-            category: 'Business Development',
-            status: 'Active',
-            duration: '3 months',
-            startDate: '2025-10-01',
-            endDate: '2025-12-31',
-            price: 'Rp 250.000.000',
-            capacity: 50,
-            instructor: ['Ahmad Wijaya', 'Willie Salim', 'Pras Teguh', 'Deddy Corbuzier'],
-            location: 'Hetero Space Semarang',
-            description: 'Program intensif untuk startup early stage',
-            tags: ['Startup', 'Funding', 'Mentoring'],
-            action: 'Details'
-        },
-        {
-            id: 2,
-            programName: 'Healthcare Analytics Pro',
-            programCode: 'HCP-2001',
-            category: 'Healthcare Technology',
-            status: 'Active',
-            duration: '4 months',
-            startDate: '2025-10-01',
-            endDate: '2026-01-31',
-            price: 'Rp 420.000.000',
-            capacity: 30,
-            instructor: ['Dr. Sarah Miller', 'Dr. Tirta Peng Peng', 'Dr. Boyke'],
-            location: 'Hetero Space Solo & Online',
-            description: 'Advanced analytics untuk industri healthcare',
-            tags: ['Healthcare', 'Analytics', 'Data Science'],
-            action: 'Details'
-        },
-    ];
+    const [members, setMembers] = useState([]);
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0
+    })
+    const [filters, setFilters] = useState({
+        search: '',
+        status: '',
+        industry: '',
+        company: '',
+        program_name: '',
+        sortBy: 'id',
+        // sortOrder: 'desc'
+    });
+
+    const fetchClient = async (page = 1) => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            const queryParams = new URLSearchParams({
+                page: page.toString(),
+                limit: pagination.limit.toString(),
+                ...filters
+            }).toString();
+
+            const response = await fetch(`http://localhost:3000/api/program?${queryParams}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                setMembers(result.data || []);
+                setPagination(prev => ({
+                    ...prev,
+                    page: result.meta?.pagination?.page || page,
+                    total: result.meta?.pagination?.total || 0,
+                    totalPages: result.meta?.pagination?.totalPages || 0
+                }));
+            } else {
+                throw new Error(result.message || 'Failed to fetch clients');
+            }
+
+        } catch (error) {
+            console.error('Error fetching client:', error)
+            setError(error.message)
+            toast.error('Failed to load client')
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const tableConfig = {
-        headers: ['No', 'Program Name', 'Program Code', 'Category', 'Status', 'Duration', 'Price', 'Action'],
+        headers: ['No', 'Program Name', 'Client', 'Category', 'Status', 'Duration', 'Price', 'Action'],
         title: "Program Management",
         addButton: "Add Program",
         detailTitle: "Program Details"
     };
+
+    useEffect(() => {
+            fetchClient();
+    }, [])
 
     // Form state untuk Add Program
     const [formData, setFormData] = useState({
@@ -195,6 +222,27 @@ const Program = () => {
         }
     };
 
+    const formattedProgram = members.map((client, index) => {
+        const currentPage = pagination.page;
+        const itemsPerPage = pagination.limit;
+        
+        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
+        
+        return {
+            id: client.id,
+            no: itemNumber,
+            programName: client.full_name,
+            client: client.client,
+            category: client.category,
+            duration: client.duration,
+            price: client.price,
+            // deal: client.deal_size,
+            status: client.status,
+            action: 'Detail',
+            ...client
+        };
+    });
+
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
             <div className='flex-1 p-6'>
@@ -202,8 +250,37 @@ const Program = () => {
                 <Card className='mb-6'>
                     <CardHeader>
                         <CardTitle className='text-xl'>{tableConfig.title}</CardTitle>
+
+                        {loading && (
+                            <LoadingSpinner 
+                                size='sm'
+                                text='Loading Program...'
+                                className='px-4 py-2 bg-blue-50 rounded-full border border-blue-200'
+                            />
+                        )}
                     </CardHeader>
                     <CardContent>
+                        {error && (
+                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm">
+                                <div className="flex items-start gap-3">
+                                    <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <h3 className="text-sm font-semibold text-red-800">Failed to load clients</h3>
+                                        <p className="text-sm text-red-600 mt-1">{error}</p>
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        // onClick={handleRefresh}
+                                        className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
+                                    >
+                                        <RefreshCw className="h-4 w-4" />
+                                        Retry
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2'>
                                 <SearchBar />
@@ -223,15 +300,84 @@ const Program = () => {
                             </div>
                         </div>
 
-                        <MemberTable
-                            members={members}
-                            onSelectMember={setSelectedMember}
-                            headers={tableConfig.headers}
-                        />
+                        {loading && members.length === 0 ? (
+                            // ✅ Using Loading Components for initial load
+                            <div className="space-y-6">
+                                <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                                    <LoadingSpinner size="xl" text="Loading clients..." />
+                                    <div className="w-64 bg-gray-200 rounded-full h-2">
+                                        <div className="bg-blue-600 h-2 rounded-full animate-pulse w-3/4"></div>
+                                    </div>
+                                </div>
+                                
+                                {/* Optional: Show skeleton table while loading */}
+                                <LoadingTable columns={9} rows={5} />
+                            </div>
+                        ) : members.length === 0 ? (
+                            // Empty State
+                            <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
+                                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <Users className="w-10 h-10 text-gray-400" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-lg font-semibold text-gray-700">No clients found</h3>
+                                    <p className="text-sm text-gray-500 max-w-md">
+                                        {filters.search || Object.values(filters).some(f => f) 
+                                            ? "Try adjusting your search or filters to find what you're looking for."
+                                            : "Get started by adding your first client to the system."
+                                        }
+                                    </p>
+                                </div>
+                                <Button 
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                                    onClick={() => toast.success('Add client feature coming soon!')}
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Add Your First Client
+                                </Button>
+                            </div>
+                        ) : (
+                            // Data Loaded State
+                            <>
+                                <div className="relative">
+                                    {/* ✅ Using LoadingOverlay for refresh */}
+                                    {loading && (
+                                        <LoadingOverlay 
+                                            message="Updating data..."
+                                            blurBackground={true}
+                                        />
+                                    )}
+                                    
+                                    <MemberTable
+                                        members={formattedProgram}
+                                        onSelectMember={setSelectedMember}
+                                        headers={tableConfig.headers}
+                                        isLoading={loading}
+                                    />
+                                </div>
 
-                        <div className='mt-6'>
-                            <Pagination />
-                        </div>
+                                {/* Pagination */}
+                                <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
+                                    <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+                                        Showing <span className="font-semibold">{formattedProgram.length}</span> of{' '}
+                                        <span className="font-semibold">{pagination.total}</span> clients
+                                    </div>
+                                    
+                                    <Pagination 
+                                        currentPage={pagination.page}
+                                        totalPages={pagination.totalPages}
+                                        totalItems={pagination.total}
+                                        onPageChange={(page) => {
+                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            fetchClient(page);
+                                        }}
+                                        disabled={loading}
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        
                     </CardContent>
                 </Card>
 

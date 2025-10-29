@@ -11,8 +11,8 @@ const ProgramContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             category: 'Program Information',
             icon: Building,
             fields: [
-                { key: 'programName', label: 'Program Name', icon: Building },
-                { key: 'programCode', label: 'Program Code', icon: Building },
+                { key: 'program_name', label: 'Program Name', icon: Building },
+                { key: 'client', label: 'Client', icon: Building },
                 { key: 'category', label: 'Category', icon: Building },
                 { key: 'description', label: 'Description', icon: Building }
             ]
@@ -22,8 +22,8 @@ const ProgramContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             icon: Calendar,
             fields: [
                 { key: 'duration', label: 'Duration', icon: Calendar },
-                { key: 'startDate', label: 'Start Date', icon: Calendar },
-                { key: 'endDate', label: 'End Date', icon: Calendar },
+                { key: 'start_date', label: 'Start Date', icon: Calendar },
+                { key: 'end_date', label: 'End Date', icon: Calendar },
                 { key: 'location', label: 'Location', icon: MapPin }
             ]
         },
@@ -39,7 +39,7 @@ const ProgramContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             category: 'Instructur',
             icon: MapPin,
             fields: [
-                { key: 'instructor', label: 'Instructor', icon: User },
+                { key: 'instructors', label: 'Instructor', icon: User },
                 { key: 'tags', label: 'Tags', icon: User }
             ]
         },
