@@ -4,11 +4,12 @@ import { Label } from "../ui/label";
 import { Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import clientService from "../../services/clientService";
 
-const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient }) => {
+const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, editData = null, onEditClient = null }) => {
+    const isEditMode = !!editData
     const [formData, setFormData] = useState({
         full_name: '',
         email: '',
@@ -18,7 +19,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient }) =
         join_date: '',
         gender: '',
         position: '',
-        business_type: '',
+        business: '',
         total_employee: '',
         address: '',
         city: '',
@@ -174,6 +175,48 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient }) =
         }
     ];
 
+    useEffect(() => {
+        if (isEditMode && editData) {
+            setFormData({
+                full_name: editData.full_name || '',
+                email: editData.email || '',
+                phone: editData.phone || '',
+                company: editData.company || '',
+                program_name: editData.program_name || '',
+                join_date: editData.join_date || '',
+                gender: editData.gender || '',
+                position: editData.position || '',
+                business_type: editData.business || '',
+                total_employee: editData.total_employee || '',
+                address: editData.address || '',
+                city: editData.city || '',
+                country: editData.country || '',
+                notes: editData.notes || '',
+                status: editData.status || 'active'
+                
+            })
+        } else {
+            setFormData({
+                full_name: '',
+                email: '',
+                phone: '',
+                company: '',
+                program_name: '',
+                join_date: '',
+                gender: '',
+                position: '',
+                business: '',
+                total_employee: '',
+                address: '',
+                city: '',
+                country: '',
+                notes: '',
+                status: 'Active',
+            })
+        }
+        setErrors({})
+    }, [isEditMode, editData, isAddUserModalOpen])
+
     const validateForm = () => {
         const newErrors = {}
 
@@ -245,17 +288,26 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient }) =
                 joind_date: new Date().toISOString().split('T')[0]
             }
 
-            if (onAddClient) {
-                await onAddClient(clientData);
+            if (isEditMode) {
+                if (onEditClient) {
+                    await onEditClient(editData.id, clientData)
+                } else {
+                    await clientService.updateClient(editData.id, clientData)
+                    toast.success('updated successfully')
+                }
             } else {
-                await clientService.addClient(clientData)
-                toast.success('Client added successfully')
+                if (onAddClient) {
+                    await onAddClient(clientData)
+                } else {
+                    await clientService.addClient(clientData)
+                    toast.success('Added successfully')
+                }
             }
 
             handleCloseModal()
         } catch (error) {
-            console.error('Error adding client:', error)
-            toast.error(error.message || 'Failed to add client')
+            console.error(`Error ${isEditMode ? 'updating' : 'adding'} client: `, error)
+            toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'add'} client`)
         } finally {
             setLoading(false)
         }
@@ -263,23 +315,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient }) =
 
     const handleCloseModal = () => {
         setIsAddUserModalOpen(false);
-        setFormData({
-            full_name: '',
-            email: '',
-            phone: '',
-            company: '',
-            program_name: '',
-            join_date: '',
-            gender: '',
-            position: '',
-            business_type: '',
-            total_employee: '',
-            address: '',
-            city: '',
-            country: '',
-            notes: '',
-            status: 'Active'
-        });
         setErrors({})
     };
 
@@ -364,9 +399,14 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient }) =
         <Dialog open={isAddUserModalOpen} onOpenChange={setIsAddUserModalOpen}>
             <DialogContent className="max-h-[90vh] max-w-[900px] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Add New Client</DialogTitle>
+                    <DialogTitle>
+                        {isEditMode ? 'Edit Client' : 'Add New Client'}
+                    </DialogTitle>
                     <DialogDescription>
-                        Fill in the details below to add a new client to the system.
+                        {isEditMode
+                            ? 'Update the client information below'
+                            : 'Fill in the details below to add a new client to the system'
+                        }
                     </DialogDescription>
                 </DialogHeader>
 
@@ -400,7 +440,10 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient }) =
                         </Button>
                         <Button type="submit">
                             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                            {loading ? 'Adding Client...' : 'Add Client'}
+                            {loading 
+                                ? (isEditMode ? 'Updating Client...' : 'Adding Client...')
+                                : (isEditMode ? 'Update Client' : 'Add Client')
+                            }
                         </Button>
                     </div>
                 </form>

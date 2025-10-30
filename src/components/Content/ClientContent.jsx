@@ -2,9 +2,13 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
 import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, DollarSign } from "lucide-react";
+import clientService from '../../services/clientService';
+import toast from 'react-hot-toast';
 
-const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
+const ClientContent = ({ selectedMember, onDelete, detailTitle, onClientUpdated, onClientDeleted, onOpenEditModal }) => {
     const [activeCategory, setActiveCategory] = useState('Personal Information');
+    const [loading, setLoading] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false)
 
     const detailFields = [
         {
@@ -60,6 +64,39 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
         return detailFields.find(category => category.category === activeCategory);
     };
 
+    const handleEdit = () => {
+        if (!selectedMember) return
+        if (onOpenEditModal) {
+            onOpenEditModal(selectedMember)
+        }
+    }
+
+    const handleDelete = async () => {
+        if(!selectedMember) return
+        if(!window.confirm(`Are you sure want to delete ${selectedMember.full_name}? This action cannot be undone`)){
+            return
+        }
+
+        setDeleteLoading(true)
+        try {
+            if(onDelete) {
+                await onDelete(selectedMember.id)
+            } else {
+                await clientService.deleteClient(selectedMember.id)
+                toast.error('Client deleted successfully')
+            }
+
+            if (onClientDeleted) {
+                onClientDeleted()
+            }
+        } catch (error) {
+            console.error('Error deleting client:', error)
+            toast.error(error.message || 'Failed to delete client')
+        } finally {
+            setDeleteLoading(false)
+        }
+    }
+
     const ActiveCategoryContent = () => {
         const activeCategoryData = getActiveCategoryData()
 
@@ -77,6 +114,7 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                 <div className='grid grid-cols-2 gap-4'>
                     {activeCategoryData.fields.map((field, index) => {
                         const FieldIcon = field.icon
+                        const value = selectedMember[field.key] || selectedMember[field.key.toLowerCase()] || '-'
 
                         return (
                             <div key={index} className='flex items-start gap-3'>
@@ -87,7 +125,7 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                                         {field.label}
                                     </label>
                                     <p className='text-gray-900 text-sm font-medium'>
-                                        {selectedMember[field.key] || '-'}
+                                        {value}
                                     </p>
                                 </div>
                             </div>
@@ -133,7 +171,7 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                                         variant="outline" 
                                         size="sm"
                                         className="flex items-center gap-2"
-                                        onClick={onEdit}
+                                        onClick={handleEdit}
                                     >
                                         <Edit className="h-4 w-4" />
                                         Edit
@@ -142,10 +180,15 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                                         variant="outline" 
                                         size="sm"
                                         className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        onClick={onDelete}
+                                        onClick={handleDelete}
+                                        disabled={deleteLoading}
                                     >
-                                        <Trash2 className="h-4 w-4" />
-                                        Delete
+                                        {deleteLoading ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Trash2 className="h-4 w-4" />
+                                        )}
+                                        {deleteLoading ? 'Deleting...' : 'Delete'}
                                     </Button>
                                 </div>
                             )}
