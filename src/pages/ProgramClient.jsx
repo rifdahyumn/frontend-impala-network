@@ -24,7 +24,7 @@ const ProgramClient = () => {
         total: 0,
         totalPages: 0
     })
-            const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
+        const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
     
         const handleAddClilent = () => {
             setIsAddClientModalOpen(true);
