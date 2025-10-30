@@ -23,7 +23,7 @@ const ClientContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             icon: Building,
             fields: [
                 { key: 'company', label: 'Company', icon: Building },
-                { key: 'industry', label: 'Industry', icon: Building },
+                // { key: 'industry', label: 'Industry', icon: Building },
                 { key: 'business', label: 'Business Type', icon: Building },
                 { key: 'total_employee', label: 'Total Employee', icon: Building }
             ]
