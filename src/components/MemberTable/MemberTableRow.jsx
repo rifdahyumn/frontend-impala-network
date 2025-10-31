@@ -24,7 +24,6 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Established Year': 'establishedYear',
             'Industry': 'industry',
             'Program Name': 'program_name',
-            'Program Code': 'programCode',
             'Bussiness Name': 'bussinessName',
             'Category': 'category',
             'Status': 'status',

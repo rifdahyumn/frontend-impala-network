@@ -135,7 +135,7 @@ const ProgramClient = () => {
             email: client.email,
             phone: client.phone,
             company: client.company,
-            industry: client.industry,
+            // industry: client.industry,
             programName: client.program_name,
             status: client.status,
             action: 'Detail',
@@ -280,7 +280,6 @@ const ProgramClient = () => {
                     }}
                 />
 
-                {/* Add/Edit Client Modal */}
                 <AddClient 
                     isAddUserModalOpen={isAddClientModalOpen || isEditModalOpen}
                     setIsAddUserModalOpen={(open) => {

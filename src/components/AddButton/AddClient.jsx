@@ -162,16 +162,16 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
             ]
         },
         {
-        title: "Additional Information",
-        fields: [
-            {
-                name: 'notes',
-                label: 'Notes',
-                type: 'textarea',
-                required: false,
-                placeholder: 'Enter notes'
-            },
-        ]
+            title: "Additional Information",
+            fields: [
+                {
+                    name: 'notes',
+                    label: 'Notes',
+                    type: 'textarea',
+                    required: false,
+                    placeholder: 'Enter notes'
+                },
+            ]
         }
     ];
 
@@ -366,7 +366,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                         placeholder={field.placeholder}
                         required={field.required}
                         rows={3}
-                        className={`w-full px-3 py-2 border rounded-md ${error ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        className={`w-full px-3 py-2 border rounded-md ${error ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-amber-500`}
                     />
                     {error && <p className="text-red-500 text-sm">{error}</p>}
                 </div>
@@ -414,19 +414,19 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                     {formSections.map((section, sectionIndex) => (
                         <div key={section.title} className="space-y-4">
 
-                        <div className="border-b pb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                            {section.title}
-                            </h3>
-                        </div>
+                            <div className="border-b pb-2">
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    {section.title}
+                                </h3>
+                            </div>
 
-                        <div className="grid md:grid-cols-2 gap-4">
-                            {section.fields.map(renderField)}
-                        </div>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {section.fields.map(renderField)}
+                            </div>
 
-                        {sectionIndex < formSections.length - 1 && (
-                            <div className="pt-2" />
-                        )}
+                            {sectionIndex < formSections.length - 1 && (
+                                <div className="pt-2" />
+                            )}
                         </div>
                     ))}
 
