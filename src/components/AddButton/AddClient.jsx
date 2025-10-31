@@ -186,7 +186,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                 join_date: editData.join_date || '',
                 gender: editData.gender || '',
                 position: editData.position || '',
-                business_type: editData.business || '',
+                business: editData.business || '',
                 total_employee: editData.total_employee || '',
                 address: editData.address || '',
                 city: editData.city || '',
@@ -285,7 +285,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         try {
             const clientData = {
                 ...formData,
-                joind_date: new Date().toISOString().split('T')[0]
+                join_date: new Date().toISOString().split('T')[0]
             }
 
             if (isEditMode) {

@@ -80,25 +80,46 @@ export const useClients = (initialFilters = {}) => {
 
     const updateClient = async (clientId, clientData) => {
         try {
+            setLoading(true)
             const result = await clientService.updateClient(clientId, clientData)
-            toast.success('Client add successfully')
-            await fetchClients(pagination.page)
-            return result;
+            toast.success("Client updated successfully")
+
+            setMembers(prevMembers => 
+                prevMembers.map(member => 
+                    member.id === clientId
+                        ? { ...member, ...clientData, ...result.data || result }
+                        : member
+                )
+            );
+
+            return result.data || result;
         } catch (error) {
             toast.error('Failed to update client')
             throw error;
+        } finally {
+            setLoading(false)
         }
     }
 
     const deleteClient = async (clientId) => {
         try {
-            const result = await clientService.deleteClient(clientId)
-            toast.success('Client delete successfully')
-            await fetchClients(pagination.page)
-            return result;
+            setLoading(true)
+            await clientService.deleteClient(clientId)
+            // toast.success('Client deteled successfully')
+
+            setMembers(prevMembers =>
+                prevMembers.filter(members => members.id !== clientId)
+            )
+
+            setPagination(prev => ({
+                ...prev,
+                total: prev.total - 1
+            }))
         } catch (error) {
             toast.error('Failed to delete client')
             throw error;
+        } finally {
+            setLoading(false)
         }
     }
 

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, DollarSign } from "lucide-react";
+import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, Loader2, DollarSign } from "lucide-react";
 import clientService from '../../services/clientService';
 import toast from 'react-hot-toast';
 
-const ClientContent = ({ selectedMember, onDelete, detailTitle, onClientUpdated, onClientDeleted, onOpenEditModal }) => {
+const ClientContent = ({ selectedMember, onDelete, detailTitle, onClientUpdated, onClientDeleted, onOpenEditModal, onClientEdited }) => {
     const [activeCategory, setActiveCategory] = useState('Personal Information');
     const [loading, setLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false)
@@ -15,7 +15,7 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onClientUpdated,
             category: 'Personal Information',
             icon: User,
             fields: [
-                { key: 'fullName', label: 'Full Name', icon: User },
+                { key: 'full_name', label: 'Full Name', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
@@ -36,7 +36,7 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onClientUpdated,
             category: 'Program',
             icon: DollarSign,
             fields: [
-                { key: 'programName', label: 'Program Name', icon: DollarSign },
+                { key: 'program_name', label: 'Program Name', icon: DollarSign },
                 { key: 'status', label: 'Status', icon: DollarSign },
                 // { key: 'deal_size', label: 'Deal Size', icon: DollarSign },
                 { key: 'join_date', label: 'Join Date', icon: Calendar }
@@ -67,27 +67,26 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onClientUpdated,
     const handleEdit = () => {
         if (!selectedMember) return
         if (onOpenEditModal) {
-            onOpenEditModal(selectedMember)
+            onOpenEditModal(selectedMember, (updatedClient) => {
+                if (onClientEdited) {
+                    onClientEdited(updatedClient)
+                }
+
+                toast.success('Client updated successfully')
+            })
         }
     }
 
     const handleDelete = async () => {
-        if(!selectedMember) return
-        if(!window.confirm(`Are you sure want to delete ${selectedMember.full_name}? This action cannot be undone`)){
-            return
-        }
+        // if(!selectedMember) return
+        // if(!window.confirm(`Are you sure want to delete ${selectedMember.full_name}? This action cannot be undone`)){
+        //     return
+        // }
 
         setDeleteLoading(true)
         try {
             if(onDelete) {
                 await onDelete(selectedMember.id)
-            } else {
-                await clientService.deleteClient(selectedMember.id)
-                toast.error('Client deleted successfully')
-            }
-
-            if (onClientDeleted) {
-                onClientDeleted()
             }
         } catch (error) {
             console.error('Error deleting client:', error)

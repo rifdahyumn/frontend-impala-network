@@ -44,12 +44,22 @@ const ProgramClient = () => {
 
     const handleEditClient = async (clientId, clientData) => {
         try {
-            await updateClient(clientId, clientData);
-            setIsEditModalOpen(false);
-            setEditingClient(null);
-            toast.success('Client updated successfully');
+            const updatedClient = await updateClient(clientId, clientData)
+
+            if (selectedMember && selectedMember.id === clientId) {
+                setSelectedMember(prev => ({
+                    ...prev,
+                    ...clientData,
+                    ...updateClient
+                }))
+            }
+
+            setIsEditModalOpen(false)
+            setEditingClient(null)
+            toast.success('Client Updated successfully')
         } catch {
-            // 
+            console.error('Error updating', error)
+            toast.error(error.message || 'Failed to update client' )
         }
     };
 
@@ -73,11 +83,20 @@ const ProgramClient = () => {
         try {
             await deleteClient(clientId);
             setSelectedMember(null);
-            toast.success('Client deleted successfully');
+            // toast.success('Client deleted successfully');
         } catch {
             // 
         }
     };
+
+    useEffect(() => {
+        if (selectedMember && members.length > 0) {
+            const currentSelected = members.find(member => member.id === selectedMember.id)
+            if (currentSelected) {
+                setSelectedMember(currentSelected)
+            }
+        }
+    }, [members, selectedMember?.id])
 
     const handleRefresh = () => {
         fetchClients(pagination.page);
@@ -203,7 +222,7 @@ const ProgramClient = () => {
                                     </p>
                                 </div>
                                 <Button 
-                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                                    className="flex items-center gap-2"
                                     onClick={handleAddClient}
                                 >
                                     <Plus className="h-4 w-4" />
