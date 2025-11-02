@@ -252,7 +252,9 @@ const ProgramClient = () => {
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
                                     <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
                                         Showing <span className="font-semibold">{formattedMembers.length}</span> of{' '}
-                                        <span className="font-semibold">{pagination.total}</span> clients
+                                        <span className="font-semibold">
+                                            {pagination.total > 0 ? pagination.total : formattedMembers.length}
+                                        </span> program
                                     </div>
                                     
                                     <Pagination 

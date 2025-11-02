@@ -27,7 +27,7 @@ export const usePrograms = (initialFilters = {}) => {
             const result = await programService.fetchPrograms({
                 page,
                 limit: pagination.limit,
-                ...filters
+                ...currentFilters  
             })
 
             setPrograms(result.data || [])
@@ -61,7 +61,7 @@ export const usePrograms = (initialFilters = {}) => {
 
     const addProgram = async (programData) => {
         try {
-            const result = await programService.createProgram(programData)
+            const result = await programService.addProgram(programData)
             toast.success('Client add successfully')
 
             await fetchPrograms(pagination.page)

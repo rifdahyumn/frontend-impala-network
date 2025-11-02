@@ -18,12 +18,12 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         client: '',
         category: '',
         status: 'Active',
-        duration: '',
+        // duration: '',
         start_date: '',
         end_date: '',
         price: '',
         capacity: '',
-        instructor: [],
+        instructors: [],
         location: '',
         description: '',
         tags: []
@@ -66,7 +66,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 ...prev,
                 program_name: selectedProgram.program_name,
                 client: selectedProgram.company || '',
-                description: selectedProgram.program_name ? `Program ${selectedProgram.program_name} untuk ${selectedProgram.client_name || selectedProgram.company}` : ''
             }));
 
             if (errors.program_name) {
@@ -89,7 +88,8 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                     required: true,
                     placeholder: 'Select program name',
                     options: programNames,
-                    loading: loadingPrograms
+                    loading: loadingPrograms,
+                    disabled: isEditMode
                 },
                 {
                     name: 'client',
@@ -124,13 +124,13 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         {
             title: "Schedule & Duration",
             fields: [
-                {
-                    name: 'duration',
-                    label: 'Duration',
-                    type: 'text',
-                    required: true,
-                    placeholder: 'e.g., 3 months, 4 months'
-                },
+                // {
+                //     name: 'duration',
+                //     label: 'Duration',
+                //     type: 'text',
+                //     required: true,
+                //     placeholder: 'e.g., 3 months, 4 months'
+                // },
                 {
                     name: 'start_date',
                     label: 'Start Date',
@@ -207,14 +207,14 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                         </Button>
                     </div>
                 
-                {formData.instructor.length > 0 && (
+                {formData.instructors.length > 0 && (
                     <div className="flex flex-wrap gap-2">
-                        {formData.instructor.map((instructor, index) => (
+                        {formData.instructors.map((instructors, index) => (
                             <div
                                 key={index}
                                 className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
                             >
-                                {instructor}
+                                {instructors}
                                 <button
                                     type="button"
                                     onClick={() => handleRemoveInstructor(index)}
@@ -289,15 +289,15 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 client: editData.client || '',
                 category: editData.category || '',
                 status: editData.status || '',
-                duration: editData.duration || '',
+                // duration: editData.duration || '',
                 start_date: editData.start_date || '',
                 end_date: editData.end_date || '',
                 price: editData.price || '',
                 capacity: editData.capacity || '',
-                instructor: editData.instructor || '',
+                instructors: editData.instructors || [],
                 location: editData.location || '',
                 description: editData.description || '',
-                tags: editData.tags || ''
+                tags: editData.tags || []
             })
         } else {
             setFormData({
@@ -305,12 +305,12 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 client: '',
                 category: '',
                 status: '',
-                duration: '',
+                // duration: '',
                 start_date: '',
                 end_date: '',
                 price: '',
                 capacity: '',
-                instructor: '',
+                instructors: '',
                 location: '',
                 description: '',
                 tags: ''
@@ -389,7 +389,19 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
 
         try {
             const programData = {
-                ...formData,
+                program_name: formData.program_name,
+                client: formData.client,
+                category: formData.category,
+                status: formData.status || 'Active',
+                // duration: formData.duration,
+                start_date: formData.start_date,
+                end_date: formData.end_date,
+                price: formData.price,
+                capacity: formData.capacity,
+                instructors: Array.isArray(formData.instructors) ? formData.instructors : [formData.instructors],
+                location: formData.location,
+                description: formData.description,
+                tags: Array.isArray(formData.tags) ? formData.tags : [formData.tags]
             }
 
             if (isEditMode) {
@@ -425,10 +437,10 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
     };
 
     const handleAddInstructor = () => {
-        if (newInstructor.trim() && !formData.instructor.includes(newInstructor.trim())) {
+        if (newInstructor.trim() && !formData.instructors.includes(newInstructor.trim())) {
         setFormData(prev => ({
             ...prev,
-            instructor: [...prev.instructor, newInstructor.trim()]
+            instructors: [...prev.instructors, newInstructor.trim()]
         }));
         setNewInstructor('');
         }
@@ -437,7 +449,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
     const handleRemoveInstructor = (index) => {
         setFormData(prev => ({
             ...prev,
-            instructor: prev.instructor.filter((_, i) => i !== index)
+            instructors: prev.instructors.filter((_, i) => i !== index)
         }));
     };
 
@@ -466,6 +478,28 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
 
         const error = errors[field.name]
         const value = formData[field.name] || '';
+
+        if (field.disabled) {
+            return (
+                <div key={field.name || index} className="space-y-2">
+                    <Label htmlFor={field.name}>
+                        {field.label}
+                        {field.required && <span className="text-red-500 ml-1">*</span>}
+                    </Label>
+                    <Input
+                        id={field.name}
+                        name={field.name}
+                        value={value}
+                        placeholder={field.placeholder}
+                        disabled={true}
+                        className="bg-gray-100 text-gray-600"
+                    />
+                    <p className="text-xs text-gray-500">
+                        This field will auto-fill when you select a program
+                    </p>
+                </div>
+            );
+        }
 
         if (field.type === 'program_dropdown') {
             return (
@@ -545,28 +579,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
             );
         }
 
-        if (field.disabled) {
-            return (
-                <div key={field.name || index} className="space-y-2">
-                    <Label htmlFor={field.name}>
-                        {field.label}
-                        {field.required && <span className="text-red-500 ml-1">*</span>}
-                    </Label>
-                    <Input
-                        id={field.name}
-                        name={field.name}
-                        value={value}
-                        placeholder={field.placeholder}
-                        disabled={true}
-                        className="bg-gray-100 text-gray-600"
-                    />
-                    <p className="text-xs text-gray-500">
-                        This field will auto-fill when you select a program
-                    </p>
-                </div>
-            );
-        }
-
         if (field.type === 'select') {
             return (
                 <div key={field.name || index} className="space-y-2">
@@ -641,7 +653,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
 
     return (
         <Dialog open={isAddProgramModalOpen} onOpenChange={setIsAddProgramModalOpen}>
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-h-[90vh] max-w-[900px] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
                         {isEditMode ? 'Edit Program' : 'Add New Program'}

@@ -4,9 +4,9 @@ import { Button } from "../ui/button";
 const Pagination = () => {
     return (
         <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
+            {/* <div className="text-sm text-gray-600">
                 Display 1 to 10 of 200 data
-            </div>
+            </div> */}
 
             <div className="flex items-center gap-2">
                 <Button

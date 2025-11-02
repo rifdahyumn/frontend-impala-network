@@ -77,7 +77,8 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                     label: 'Company',
                     type: 'text',
                     required: true,
-                    placeholder: 'Enter company name'
+                    placeholder: 'Enter company name',
+                    disabled: isEditMode
                 },
                 {
                     name: 'business',
@@ -124,7 +125,8 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                     label: 'Program Name',
                     type: 'text',
                     required: true,
-                    placeholder: 'Enter program name'
+                    placeholder: 'Enter program name',
+                    disabled: isEditMode
                 },
                 // {
                 //   name: 'joindate',
@@ -222,7 +224,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
 
         formSections.forEach(section => {
             section.fields.forEach(field => {
-                if (field.required) {
+                if (field.required && !field.disabled) {
                     const value = formData[field.name]
                     if (!value || value.toString().trim() === '') {
                         newErrors[field.name] = `${field.label} is required`
@@ -245,6 +247,15 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+
+        const fieldConfig = formSections
+            .flatMap(section => section.fields)
+            .find(field => field.name === name);
+            
+        if (fieldConfig?.disabled) {
+            return;
+        }
+
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -259,6 +270,14 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
     };
 
     const handleSelectChange = (name, value) => {
+        const fieldConfig = formSections
+            .flatMap(section => section.fields)
+            .find(field => field.name === name);
+            
+        if (fieldConfig?.disabled) {
+            return;
+        }
+
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -318,9 +337,31 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         setErrors({})
     };
 
-    const renderField = (field) => {
+    const renderField = (field, index) => {
         const error = errors[field.name]
         const value = formData[field.name] || '';
+
+        if (field.disabled) {
+            return (
+                <div key={field.name || index} className="space-y-2">
+                    <Label htmlFor={field.name}>
+                        {field.label}
+                        {field.required && <span className="text-red-500 ml-1">*</span>}
+                    </Label>
+                    <Input
+                        id={field.name}
+                        name={field.name}
+                        value={value}
+                        placeholder={field.placeholder}
+                        disabled={true}
+                        className="bg-gray-100 text-gray-600"
+                    />
+                    <p className="text-xs text-gray-500">
+                        This field can't edit
+                    </p>
+                </div>
+            );
+        }
 
         if (field.type === 'select') {
             return (
@@ -333,6 +374,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                         value={value}
                         onValueChange={(value) => handleSelectChange(field.name, value)}
                         required={field.required}
+                        disabled={field.disabled}
                     >
                         <SelectTrigger className={error ? 'border-red-500' : ''} >
                             <SelectValue placeholder={field.placeholder} />
@@ -365,8 +407,9 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                         onChange={handleInputChange}
                         placeholder={field.placeholder}
                         required={field.required}
+                        disabled={field.disabled}
                         rows={3}
-                        className={`w-full px-3 py-2 border rounded-md ${error ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                        className={`w-full px-3 py-2 border rounded-md ${error ? 'border-red-500' : 'border-gray-300'} ${field.disabled ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''} focus:outline-none focus:ring-2 focus:ring-amber-500`}
                     />
                     {error && <p className="text-red-500 text-sm">{error}</p>}
                 </div>

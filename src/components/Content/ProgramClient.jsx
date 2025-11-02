@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, DollarSign } from "lucide-react";
+import { Edit, Trash2, Building, User, MapPin, Calendar, DollarSign } from "lucide-react";
+import toast from 'react-hot-toast';
 
-const ProgramContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
+const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModal, onProgramEdited }) => {
     const [activeCategory, setActiveCategory] = useState('Program Information');
+    const [deleteLoading, setDeleteLoading] = useState(false)
 
     const detailFields = [
         {
@@ -49,10 +51,37 @@ const ProgramContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
         return detailFields.find(category => category.category === activeCategory);
     };
 
+    const handleEdit = () => {
+        if(!selectedProgram) return
+        if (onOpenEditModal) {
+            onOpenEditModal(selectedProgram, (updatedProgram) => {
+                if (onProgramEdited) {
+                    onProgramEdited(updatedProgram)
+                }
+
+                toast.success('Program updated successfully')
+            })
+        }
+    }
+
+    const handleDelete = async () => {
+        setDeleteLoading(true)
+        try {
+            if (onDelete) {
+                await onDelete(selectedProgram.id)
+            }
+        } catch (error) {
+            console.error('Error deleteing program: ', error)
+            toast.error(error.message || 'Failed to delete program')
+        } finally {
+            setDeleteLoading(false)
+        }
+    }
+
     const ActiveCategoryContent = () => {
         const activeCategoryData = getActiveCategoryData()
 
-        if(!activeCategoryData || !selectedMember) return null;
+        if(!activeCategoryData || !selectedProgram) return null;
 
         const CategoryIcon = activeCategoryData.icon
 
@@ -76,7 +105,7 @@ const ProgramContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                                         {field.label}
                                     </label>
                                     <p className='text-gray-900 text-sm font-medium'>
-                                        {selectedMember[field.key] || '-'}
+                                        {selectedProgram[field.key] || '-'}
                                     </p>
                                 </div>
                             </div>
@@ -94,7 +123,7 @@ const ProgramContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             </CardHeader>
 
             <CardContent>
-                {selectedMember ? (
+                {selectedProgram ? (
                     <div className='space-y-6'>
                         <div className='flex flex-wrap items-center justify-between gap-4 mb-4'>
                             <div className='flex flex-wrap gap-2 mb-4'>
@@ -116,13 +145,13 @@ const ProgramContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                                 })}
                             </div>
 
-                            {selectedMember && (
+                            {selectedProgram && (
                                 <div className="flex gap-2">
                                     <Button 
                                         variant="outline" 
                                         size="sm"
                                         className="flex items-center gap-2"
-                                        onClick={onEdit}
+                                        onClick={handleEdit}
                                     >
                                         <Edit className="h-4 w-4" />
                                         Edit
@@ -131,7 +160,8 @@ const ProgramContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                                         variant="outline" 
                                         size="sm"
                                         className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        onClick={onDelete}
+                                        onClick={handleDelete}
+                                        disabled={deleteLoading}
                                     >
                                         <Trash2 className="h-4 w-4" />
                                         Delete

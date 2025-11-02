@@ -20,6 +20,7 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Last Login': 'lastLogin',
             'Phone': 'phone',
             'Company': 'company',
+            'Client Company': 'client_company',
             'Client': 'client',
             'Established Year': 'establishedYear',
             'Industry': 'industry',
@@ -70,6 +71,9 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
         const value = member[field];
 
         switch (header) {
+            case 'Duration':
+                return member.duration || '-'
+
             case 'Action':
                 return (
                     <Badge

@@ -1,6 +1,6 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, X, Loader2 } from "lucide-react";
+import { Plus, X, Loader2, Users } from "lucide-react";
 import { Button } from "../components/ui/button"
 import React, { useEffect, useState } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
@@ -20,43 +20,6 @@ const Program = () => {
     const [editingProgram, setEditingProgram] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const { programs, loading, error, pagination, filters, setFilters, fetchProgram, addProgram, updateProgram, deleteProgram } = usePrograms();
-    
-    // const members = [
-    //     {
-    //         id: 1,
-    //         program_name: 'Startup 1001',
-    //         client: 'STP-1001',
-    //         category: 'Business Development',
-    //         status: 'Active',
-    //         duration: '3 months',
-    //         startDate: '2025-10-01',
-    //         endDate: '2025-12-31',
-    //         price: 'Rp 250.000.000',
-    //         capacity: 50,
-    //         instructor: ['Ahmad Wijaya', 'Willie Salim', 'Pras Teguh', 'Deddy Corbuzier'],
-    //         location: 'Hetero Space Semarang',
-    //         description: 'Program intensif untuk startup early stage',
-    //         tags: ['Startup', 'Funding', 'Mentoring'],
-    //         action: 'Details'
-    //     },
-    //     {
-    //         id: 2,
-    //         program_name: 'Healthcare Analytics Pro',
-    //         client: 'HCP-2001',
-    //         category: 'Healthcare Technology',
-    //         status: 'Active',
-    //         duration: '4 months',
-    //         startDate: '2025-10-01',
-    //         endDate: '2026-01-31',
-    //         price: 'Rp 420.000.000',
-    //         capacity: 30,
-    //         instructor: ['Dr. Sarah Miller', 'Dr. Tirta Peng Peng', 'Dr. Boyke'],
-    //         location: 'Hetero Space Solo & Online',
-    //         description: 'Advanced analytics untuk industri healthcare',
-    //         tags: ['Healthcare', 'Analytics', 'Data Science'],
-    //         action: 'Details'
-    //     },
-    // ];
 
     const handleAddProgram = () => {
         setIsAddProgramModalOpen(true);
@@ -285,7 +248,9 @@ const Program = () => {
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
                                     <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
                                         Showing <span className="font-semibold">{formattedPrograms.length}</span> of{' '}
-                                        <span className="font-semibold">{pagination.total}</span> program
+                                        <span className="font-semibold">
+                                            {pagination.total > 0 ? pagination.total : formattedPrograms.length}
+                                        </span> program
                                     </div>
                                     
                                     <Pagination 
@@ -302,7 +267,7 @@ const Program = () => {
                 </Card>
 
                 <ProgramContent
-                    selectedMember={selectedProgram}
+                    selectedProgram={selectedProgram}
                     onOpenEditModal={handleOpenEditModal}
                     onEdit={handleEditProgram}
                     onDelete={handleDeleteProgram}

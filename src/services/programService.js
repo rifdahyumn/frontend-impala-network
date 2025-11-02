@@ -7,16 +7,23 @@ class ProgramService {
     }
 
     async handleResponse(response) {
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+
         if(!response.ok) {
-            const error = await response.text()
-            throw new Error (error || `HTTP status error ${response.status}`)
+            try {
+                const errorResult = await response.text()
+                console.log('Error response:', errorResult);
+                throw new Error(errorResult.message || errorResult.error || `HTTP error! status: ${response.status}`);
+            } catch (jsonError) {
+                const errorText = await response.text();
+                console.log('Error text:', errorText);
+                throw new Error(errorText || `HTTP error! status: ${response.status}`);
+            }
         }
 
         const result = await response.json()
-
-        if (!result.success) {
-            throw new Error(result.message)
-        }
+        console.log('Success response:', result);
 
         return result
     }

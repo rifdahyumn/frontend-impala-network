@@ -41,8 +41,8 @@ export const useClients = (initialFilters = {}) => {
             setPagination(prev => ({
                 ...prev,
                 page: result.meta?.pagination?.page || page,
-                total: result.meta?.pagination?.total || 0,
-                totalPages: result.meta?.pagination?.totalPages || 0,
+                total: result.pagination?.total || 0,
+                totalPages: result.pagination?.totalPages || 0,
             }))
 
         } catch (error) {

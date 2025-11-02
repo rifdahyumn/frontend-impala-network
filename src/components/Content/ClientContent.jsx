@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
 import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, Loader2, DollarSign } from "lucide-react";
-import clientService from '../../services/clientService';
+// import clientService from '../../services/clientService';
 import toast from 'react-hot-toast';
 
 const ClientContent = ({ selectedMember, onDelete, detailTitle, onClientUpdated, onClientDeleted, onOpenEditModal, onClientEdited }) => {
     const [activeCategory, setActiveCategory] = useState('Personal Information');
-    const [loading, setLoading] = useState(false);
+    // const [loading, setLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false)
 
     const detailFields = [
@@ -78,10 +78,6 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onClientUpdated,
     }
 
     const handleDelete = async () => {
-        // if(!selectedMember) return
-        // if(!window.confirm(`Are you sure want to delete ${selectedMember.full_name}? This action cannot be undone`)){
-        //     return
-        // }
 
         setDeleteLoading(true)
         try {
