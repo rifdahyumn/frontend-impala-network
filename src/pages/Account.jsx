@@ -1,77 +1,80 @@
-import AccountContent from "../components/Content/AccountContent";
 import Header from "../components/Layout/Header";
-import { X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus } from "lucide-react";
-import { Button } from "../components/ui/button"
 import React, { useState } from 'react';
-import SearchBar from '../components/SearchFilter/SearchBar';
-import FilterDropdown from '../components/SearchFilter/FilterDropdown';
-import ExportButton from '../components/ActionButton/ExportButton';
-import MemberTable from '../components/MemberTable/MemberTable';
-import Pagination from '../components/Pagination/Pagination';
-import FilterButton from '../components/SearchFilter/Filter';
-import AddUser from "../components/AddButton/AddUser";
+import SearchBar from "../components/SearchFilter/SearchBar";
+import FilterDropdown from "../components/SearchFilter/FilterDropdown";
+import ExportButton from "../components/ActionButton/ExportButton";
+import MemberTable from "../components/MemberTable/MemberTable";
+import Pagination from "../components/Pagination/Pagination";
+import FilterButton from "../components/SearchFilter/Filter";
+import { Plus } from "lucide-react"
+import { Button } from "../components/ui/button"
+import AddMember from "../components/AddButton/AddMember";
+import HeteroContent from "../components/Content/HeteroContent";
 
-const Account = () => {
+const HeteroSemarang = () => {
     const [selectedMember, setSelectedMember] = useState(null)
-    const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
-
-    const handleAddUser = () => {
-        setIsAddUserModalOpen(true);
-    };
-
+    const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
+    
+    // Data khusus untuk Semarang - DITAMBAHKAN FIELD UNTUK HETEROCONTENT
     const members = [
         {
-            id: '1',
-            employeeId: 'USR-001',
-            username: 'ahmad_rizki',
-            email: 'ahmad.rizki@company.com',
-            password: 'encrypted_password_123',
-            role: 'Manajer_Program',
-            status: 'Active',
-            fullName: 'Ahmad Rizki',
-            phone: '+62 81234567890',
-            position: 'CEO Program',
-            avatar: '/avatars/ahmad.jpg',
-            lastLogin: '2024-01-15 09:30:25',
-            createdAt: '2023-01-15',
-            updatedAt: '2024-01-15',
-            emailVerified: true,
-            twoFactorEnabled: false,
-            loginAttempts: 1,
-            action: 'Details'
+            no: '1',
+            member_id: 'MEM-SMG-001',
+            full_name: 'Budi Santoso',
+            email: 'budisantoso@gmail.com',
+            phone: '082134567890',
+            company: 'PT. Maju Bersama',
+            registration_date: '2024-01-15', // ← FIELD BARU
+            membership_type: 'Premium',      // ← FIELD BARU  
+            status: 'Active',               // ← FIELD BARU
+            action: 'Manage'
+        },
+        {
+            no: '2',
+            member_id: 'MEM-SMG-002',
+            full_name: 'Rina Kurniawati',
+            email: 'rinakurniawati@gmail.com',
+            phone: '085678901234',
+            company: 'PT. Cipta Mandiri',
+            registration_date: '2024-01-10', // ← FIELD BARU
+            membership_type: 'Standard',     // ← FIELD BARU
+            status: 'Active',               // ← FIELD BARU
+            action: 'Manage'
         }
-    ]
+    ];
 
     const tableConfig = {
-        headers: ['No', 'Employee ID', 'Username', 'Email', 'Position', 'Role', 'Status', 'Last Login', 'Action'],
-        title: 'User Account Management',
-        addButton: 'Add User',
-        detailTitle: 'User Details'
-    }
+        headers: ['No', 'Member ID', 'Full Name', 'Email', 'Phone', 'Company', 'Status', 'Action'], // ← Ditambah Status
+        title: "Hetero Semarang",
+        addButton: "Add Member",
+        detailTitle: "Member Details - Semarang" // ← Bisa ditambah identifier
+    };
+
+    const handleAddMember = () => {
+        setIsAddMemberModalOpen(true);
+    };
 
     const handleEdit = () => {
         if (selectedMember) {
-            console.log('Edit client:', selectedMember);
-            
-            alert(`Edit client: ${selectedMember.fullName}`);
+            console.log('Edit member:', selectedMember);
+            alert(`Edit member: ${selectedMember.full_name}`);
         }
     };
 
     const handleDelete = () => {
         if (selectedMember) {
-            if (window.confirm(`Are you sure you want to delete ${selectedMember.fullName}?`)) {
-                console.log('Delete client:', selectedMember);
-                
+            if (window.confirm(`Are you sure you want to delete ${selectedMember.full_name}?`)) {
+                console.log('Delete member:', selectedMember);
                 setSelectedMember(null); 
-                alert(`Client ${selectedMember.fullName} deleted`);
+                alert(`Member ${selectedMember.full_name} deleted`);
             }
         }
     };
 
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
+            {/* Main Content */}
             <div className='flex-1 p-6'>
                 <Header />
                 <Card className='mb-6'>
@@ -89,7 +92,7 @@ const Account = () => {
                             <div className='flex gap-2'>
                                 <Button 
                                     className='flex items-center gap-2'
-                                    onClick={handleAddUser}
+                                    onClick={handleAddMember}
                                 >
                                     <Plus className="h-4 w-4" />
                                     {tableConfig.addButton}
@@ -110,20 +113,22 @@ const Account = () => {
                     </CardContent>
                 </Card>
 
-                <AccountContent
+                {/* HANYA HETEROCONTENT SAJA - HAPUS CARD MANUAL DETAIL */}
+                <HeteroContent
                     selectedMember={selectedMember}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     detailTitle={tableConfig.detailTitle}
                 />
-             {/* Add User Modal */}
-             <AddUser 
-                isAddUserModalOpen={isAddUserModalOpen} 
-                setIsAddUserModalOpen={setIsAddUserModalOpen}
-             />
+
+                {/* Add Member Modal */}
+                <AddMember 
+                    isAddMemberModalOpen={isAddMemberModalOpen} 
+                    setIsAddMemberModalOpen={setIsAddMemberModalOpen}
+                />
             </div>
         </div>
     )
 }
 
-export default Account;
+export default HeteroSemarang;

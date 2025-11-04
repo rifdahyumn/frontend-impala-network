@@ -10,6 +10,7 @@ import FilterButton from "../components/SearchFilter/Filter";
 import { Plus, X } from "lucide-react"
 import { Button } from "../components/ui/button"
 import AddMemberSurakarta from "../components/AddButton/AddMemberSurakarta";
+import HeteroContent from "../components/Content/HeteroContent";
 
 const HeteroSurakarta = () => {
     const [selectedMember, setSelectedMember] = useState(null)
@@ -116,48 +117,12 @@ const HeteroSurakarta = () => {
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-xl">{tableConfig.detailTitle} - Surakarta</CardTitle>
-                    </CardHeader>
-
-                    <CardContent>
-                        {selectedMember ? (
-                            <div className='space-y-4'>
-                                <div className='grid grid-cols-2 gap-4'>
-                                    <div>
-                                        <label className='text-sm font-medium text-gray-500'>Full Name</label>
-                                        <p className='text-gray-900'>{selectedMember.full_name}</p> {/* ganti jadi full_name */}
-                                    </div>
-                                    <div>
-                                        <label className='text-sm font-medium text-gray-500'>Email</label>
-                                        <p className='text-gray-900'>{selectedMember.email}</p>
-                                    </div>
-                                    <div>
-                                        <label className='text-sm font-medium text-gray-500'>Phone</label>
-                                        <p className='text-gray-900'>{selectedMember.phone}</p>
-                                    </div>
-                                    <div>
-                                        <label className='text-sm font-medium text-gray-500'>Company</label>
-                                        <p className='text-gray-900'>{selectedMember.company}</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2 pt-4">
-                                    <Button onClick={handleEdit} variant="outline">
-                                        Edit
-                                    </Button>
-                                    <Button onClick={handleDelete} variant="destructive">
-                                        Delete
-                                    </Button>
-                                </div>
-                            </div>
-                        ) : ( 
-                            <div className='text-center py-8 text-gray-500'>
-                                <p>Select a member to view details</p>
-                            </div>
-                        )} 
-                    </CardContent>
-                </Card>
+                <HeteroContent
+                    selectedMember={selectedMember}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    detailTitle={tableConfig.detailTitle}
+                />
 
                 {/* Add Member Modal */}
                 <AddMemberSurakarta 

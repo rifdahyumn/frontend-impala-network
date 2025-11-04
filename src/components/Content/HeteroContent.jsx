@@ -36,7 +36,7 @@ const HeteroContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             category: 'Business / Organization',
             icon: Building,
             fields: [
-                { key: 'bussinessName', label: 'Name of Company', icon: Building }
+                { key: 'company', label: 'Name of Company', icon: Building }
             ]
         },
         {
