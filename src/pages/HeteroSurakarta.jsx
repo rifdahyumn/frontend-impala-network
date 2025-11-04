@@ -1,102 +1,82 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import React, { useState } from 'react';
-import SearchBar from '../components/SearchFilter/SearchBar';
-import FilterDropdown from '../components/SearchFilter/FilterDropdown';
-import ExportButton from '../components/ActionButton/ExportButton';
-import MemberTable from '../components/MemberTable/MemberTable';
-import Pagination from '../components/Pagination/Pagination';
+import SearchBar from "../components/SearchFilter/SearchBar";
+import FilterDropdown from "../components/SearchFilter/FilterDropdown";
+import ExportButton from "../components/ActionButton/ExportButton";
+import MemberTable from "../components/MemberTable/MemberTable";
+import Pagination from "../components/Pagination/Pagination";
 import FilterButton from "../components/SearchFilter/Filter";
-import { Plus, X, ChevronDown, ChevronRight } from "lucide-react"
+import { Plus, X } from "lucide-react"
 import { Button } from "../components/ui/button"
+import AddMemberSurakarta from "../components/AddButton/AddMemberSurakarta";
 
 const HeteroSurakarta = () => {
     const [selectedMember, setSelectedMember] = useState(null)
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
     
-    // Data khusus untuk Semarang
+    // Data khusus untuk Surakarta - SESUAIKAN DENGAN FIELD MAP YANG ADA
     const members = [
         {
-            id: 'SMR-001',
-            employeeId: 'EMP-SMR-001',
-            fullName: 'Ahmad Rizki',
-            position: 'Software Engineer',
-            department: 'IT',
-            joinDate: '2023-01-15',
-            status: 'Active',
-            salary: 'Rp 15,000,000',
+            no: '1',
+            member_id: 'MEM-SRK-001', 
+            full_name: 'Dewi Sartika',
+            email: 'dewisartika@gmail.com',
+            phone: '081234567890',
+            company: 'PT. Solo Maju',
             action: 'Manage'
         },
         {
-            id: 'SMR-002',
-            employeeId: 'EMP-SMR-002',
-            fullName: 'Sari Dewi',
-            position: 'Product Manager',
-            department: 'Product',
-            joinDate: '2023-03-20',
-            status: 'Active',
-            salary: 'Rp 20,000,000',
+            no: '1',
+            member_id: 'MEM-SRK-002',
+            full_name: 'Rudi Hartono',
+            email: 'rudihartono@gmail.com',
+            phone: '082345678901',
+            company: 'CV. Batik Indah',
+            action: 'Manage'
+        },
+        {
+            no: '3',
+            member_id: 'MEM-SRK-003',
+            full_name: 'Siti Aminah',
+            email: 'sitiaminah@gmail.com',
+            phone: '083456789012',
+            company: 'PT. Jaya Abadi',
             action: 'Manage'
         }
     ];
 
+    // Ubah headers untuk match dengan fieldMap yang ada
     const tableConfig = {
-        headers: ['ID', 'Employee ID', 'Full Name', 'Position', 'Department', 'Join Date', 'Status', 'Salary', 'Action'],
-        title: "Hetero Semarang",
+        headers: ['No', 'Member ID', 'Full Name', 'Email', 'Phone', 'Company', 'Action'],
+        title: "Hetero Surakarta",
         addButton: "Add Member",
         detailTitle: "Member Details"
     };
 
-    // Form state untuk Add Member
-    const [formData, setFormData] = useState({
-        employeeId: '',
-        fullName: '',
-        position: '',
-        department: '',
-        joinDate: '',
-        status: 'Active',
-        salary: ''
-    });
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleAddMember = () => {
+    const handleAddMemberSurakarta = () => {
         setIsAddMemberModalOpen(true);
     };
 
-    const handleCloseModal = () => {
-        setIsAddMemberModalOpen(false);
-        setFormData({
-            employeeId: '',
-            fullName: '',
-            position: '',
-            department: '',
-            joinDate: '',
-            status: 'Active',
-            salary: ''
-        });
+    const handleEdit = () => {
+        if (selectedMember) {
+            console.log('Edit member:', selectedMember);
+            alert(`Edit member: ${selectedMember.full_name}`);
+        }
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        console.log('New member data:', formData);
-        alert(`Employee ${formData.fullName} added successfully to Semarang!`);
-        handleCloseModal();
+    const handleDelete = () => {
+        if (selectedMember) {
+            if (window.confirm(`Are you sure you want to delete ${selectedMember.full_name}?`)) { 
+                console.log('Delete member:', selectedMember);
+                setSelectedMember(null); 
+                alert(`Member ${selectedMember.full_name} deleted`);
+            }
+        }
     };
-
-    // Navigation handlers
 
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
-            {/* Main Sidebar */}
-
-
             {/* Main Content */}
             <div className='flex-1 p-6'>
                 <Header />
@@ -115,10 +95,10 @@ const HeteroSurakarta = () => {
                             <div className='flex gap-2'>
                                 <Button 
                                     className='flex items-center gap-2'
-                                    onClick={handleAddMember}
+                                    onClick={handleAddMemberSurakarta}
                                 >
                                     <Plus className="h-4 w-4" />
-                                    Add Member
+                                    {tableConfig.addButton}
                                 </Button>
                                 <ExportButton />
                             </div>
@@ -138,7 +118,7 @@ const HeteroSurakarta = () => {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-xl">Member Details - Surakarta</CardTitle>
+                        <CardTitle className="text-xl">{tableConfig.detailTitle} - Surakarta</CardTitle>
                     </CardHeader>
 
                     <CardContent>
@@ -147,28 +127,28 @@ const HeteroSurakarta = () => {
                                 <div className='grid grid-cols-2 gap-4'>
                                     <div>
                                         <label className='text-sm font-medium text-gray-500'>Full Name</label>
-                                        <p className='text-gray-900'>{selectedMember.fullName}</p>
+                                        <p className='text-gray-900'>{selectedMember.full_name}</p> {/* ganti jadi full_name */}
                                     </div>
                                     <div>
-                                        <label className='text-sm font-medium text-gray-500'>Position</label>
-                                        <p className='text-gray-900'>{selectedMember.position}</p>
+                                        <label className='text-sm font-medium text-gray-500'>Email</label>
+                                        <p className='text-gray-900'>{selectedMember.email}</p>
                                     </div>
                                     <div>
-                                        <label className='text-sm font-medium text-gray-500'>Department</label>
-                                        <p className='text-gray-900'>{selectedMember.department}</p>
+                                        <label className='text-sm font-medium text-gray-500'>Phone</label>
+                                        <p className='text-gray-900'>{selectedMember.phone}</p>
                                     </div>
                                     <div>
-                                        <label className='text-sm font-medium text-gray-500'>Join Date</label>
-                                        <p className='text-gray-900'>{selectedMember.joinDate}</p>
+                                        <label className='text-sm font-medium text-gray-500'>Company</label>
+                                        <p className='text-gray-900'>{selectedMember.company}</p>
                                     </div>
-                                    <div>
-                                        <label className='text-sm font-medium text-gray-500'>Status</label>
-                                        <p className='text-gray-900'>{selectedMember.status}</p>
-                                    </div>
-                                    <div>
-                                        <label className='text-sm font-medium text-gray-500'>Salary</label>
-                                        <p className='text-gray-900'>{selectedMember.salary}</p>
-                                    </div>
+                                </div>
+                                <div className="flex gap-2 pt-4">
+                                    <Button onClick={handleEdit} variant="outline">
+                                        Edit
+                                    </Button>
+                                    <Button onClick={handleDelete} variant="destructive">
+                                        Delete
+                                    </Button>
                                 </div>
                             </div>
                         ) : ( 
@@ -180,61 +160,10 @@ const HeteroSurakarta = () => {
                 </Card>
 
                 {/* Add Member Modal */}
-                {isAddMemberModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div 
-                            className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity"
-                            onClick={handleCloseModal}
-                        />
-                        
-                        <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
-                            <div className="flex items-center justify-between p-6 border-b">
-                                <h2 className="text-xl font-semibold">Add New Member - Semarang</h2>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleCloseModal}
-                                    className="h-8 w-8 p-0"
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-
-                            <form onSubmit={handleSubmit} className="p-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Employee ID *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="employeeId"
-                                            value={formData.employeeId}
-                                            onChange={handleInputChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder="EMP-SMR-XXX"
-                                            required
-                                        />
-                                    </div>
-                                    {/* ... rest of form fields ... */}
-                                </div>
-
-                                <div className="flex justify-end gap-3 pt-4 border-t">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={handleCloseModal}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button type="submit">
-                                        Add Member
-                                    </Button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
+                <AddMemberSurakarta 
+                    isAddMemberModalOpen={isAddMemberModalOpen} 
+                    setIsAddMemberModalOpen={setIsAddMemberModalOpen}
+                />
             </div>
         </div>
     )

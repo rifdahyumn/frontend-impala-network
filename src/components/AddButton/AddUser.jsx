@@ -34,7 +34,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
       title: "Account Information",
       fields: [
         {
-          name: 'eployeeid',
+          name: 'employeeid',
           label: 'Employee Id',
           type: 'text',
           required: true,

@@ -8,6 +8,7 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
         const fieldMap = {
             'No': 'no',
             'Full Name': 'full_name',
+            'Member ID' : 'member_id',
             'NIK': 'nik',
             'Email': 'email',
             'Username': 'username',
@@ -64,7 +65,12 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Location': 'location',
             'Description': 'description',
             'Tags': 'tags',
-            'Action': 'action'
+            'Action': 'action',
+            'Maneka':'maneka',
+            'Rembug':'rembug',
+            'Event Space':'eventSpace',
+            'Private Office':'privateOffice',
+            'Additional Information':'addInformation'
         };
 
         const field = fieldMap[header];
