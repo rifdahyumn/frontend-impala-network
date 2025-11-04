@@ -64,13 +64,48 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Location': 'location',
             'Description': 'description',
             'Tags': 'tags',
-            'Action': 'action'
+            'Institution': 'institution',
+            'Enrollment year': 'enrollment_year',
+            'Career Interest': 'career_interest',
+            'Workplace': 'workplace',
+            'Work Duration': 'work_duration',
+            'Industry Sector': 'industry_sector',
+            'Reason Join Program': 'reason_join_program',
+            'Name Community': 'name_community',
+            'Focus Area': 'focus_area',
+            'Total Members': 'total_members',
+            'Operational Area': 'operational_area',
+            'Action': 'action',
+            'Entity': 'entity'
         };
 
         const field = fieldMap[header];
         const value = member[field];
 
         switch (header) {
+            case 'Entity': {
+                const category = member?.category;
+                
+                if (category?.includes('UMKM') || category?.includes('Usaha') || category?.includes('Wirausaha') || category?.includes('StartUp')) {
+                    return member.bussinessName || '-';
+                }
+
+                if (category?.includes('Mahasiswa') || category?.includes('Pelajar') || category?.includes('Pemuda')) {
+                    return member.institution || '-';
+                }
+
+                if (category?.includes('Profesional') || category?.includes('Karyawan') || category?.includes('ASN') || category?.includes('BUMN')) {
+                    return member.workplace || '-'
+                }
+
+                if (category?.includes('Komunitas') || category?.includes('Asosiasi') || category?.includes('Organisasi')) {
+                    return member.name_community || '-'
+                }
+
+                return '-'
+            }
+               
+
             case 'Duration':
                 return member.duration || '-'
 

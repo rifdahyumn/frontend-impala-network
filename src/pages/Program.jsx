@@ -109,22 +109,6 @@ const Program = () => {
         detailTitle: "Program Details"
     };
 
-    // const [formData, setFormData] = useState({
-    //     programName: '',
-    //     programCode: '',
-    //     category: '',
-    //     status: 'Active',
-    //     duration: '',
-    //     startDate: '',
-    //     endDate: '',
-    //     price: '',
-    //     capacity: '',
-    //     instructor: [''],
-    //     location: '',
-    //     description: '',
-    //     tags: ['']
-    // });
-
     const formattedPrograms = programs.map((program, index) => {
         const currentPage = pagination.page;
         const itemsPerPage = pagination.limit;

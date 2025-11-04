@@ -4,6 +4,7 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from "../ui/table"
 import MemberTableRow from "./MemberTableRow";
 
 const MemberTable = ({ members, headers, onSelectMember }) => {
+
     return (
         <div className="rounded-md border">
             <Table>
