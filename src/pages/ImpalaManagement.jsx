@@ -38,6 +38,7 @@ const ImpalaManagement = () => {
             hasOrganizationStructur: true,
             sosialMedia: ["instagram.com/sarahfashion", "facebook.com/sarahfashion"],
             marketplace: ["tokopedia.com/sarahfashion", "shopee.com/sarahfashion"],
+            website: ["https://busineess_kue.com"],
             reason_join_program: 'Ingin belajar mengembangan usaha'
         },
         {

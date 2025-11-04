@@ -1,79 +1,14 @@
-import { User, Edit, Trash2, Mail, Phone, Calendar, GraduationCap, MapPin, Building, Award, DollarSign, Users, CheckCircle, Globe, Image } from "lucide-react";
-import React, { useState } from 'react';
+import { Edit, Trash2 } from "lucide-react";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
+import { useDetailFields } from './ImpalaContentConfig';
 
 const ImpalaContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
     const [activeCategory, setActiveCategory] = useState('Personal Information');
+    const { getDetailFields } = useDetailFields();
 
-    const detailFields = [
-        {
-            category: 'Personal Information',
-            icon: User,
-            fields: [
-                { key: 'fullName', label: 'Full Name', icon: User },
-                { key: 'nik', label: 'NIK', icon: User },
-                { key: 'email', label: 'Email', icon: Mail },
-                { key: 'phone', label: 'Phone', icon: Phone },
-                { key: 'gender', label: 'Gender', icon: User },
-                { key: 'dateOfBirth', label: 'Date Of Birth', icon: Calendar },
-                { key: 'education', label: 'Education', icon: GraduationCap },
-                { key: 'programName', label: 'Program Name', icon: Award },
-                { key: 'status', label: 'Status', icon: CheckCircle }
-            ]
-        },
-        {
-            category: 'Personal Address',
-            icon: MapPin,
-            fields: [
-                { key: 'address', label: 'Address', icon: MapPin },
-                { key: 'subdistrict', label: 'Subdistrict', icon: MapPin },
-                { key: 'city', label: 'City', icon: MapPin },
-                { key: 'province', label: 'Province', icon: MapPin },
-                { key: 'postalCode', label: 'Postal Code', icon: MapPin }
-            ]
-        },
-        {
-            category: 'Business Information',
-            icon: Building,
-            fields: [
-                { key: 'bussinessName', label: 'Business Name', icon: Building },
-                { key: 'business', label: 'Business Type', icon: Building },
-                { key: 'bussinessAddress', label: 'Business Address', icon: MapPin },
-                { key: 'bussinessForm', label: 'Business Form', icon: Building },
-                { key: 'establishedYear', label: 'Established Year', icon: Calendar },
-                { key: 'certifications', label: 'Certifications', icon: Award }
-            ]
-        },
-        {
-            category: 'Business Performance',
-            icon: DollarSign,
-            fields: [
-                { key: 'monthly_revenue', label: 'Monthly Revenue', icon: DollarSign },
-                { key: 'total_employee', label: 'Total Employee', icon: Users },
-                { key: 'hasOrganizationStructur', label: 'Has Organization Structure', icon: CheckCircle }
-            ]
-        },
-        {
-            category: 'Digital Presence',
-            icon: Globe,
-            fields: [
-                { key: 'sosialMedia', label: 'Social Media', icon: Globe },
-                { key: 'marketplace', label: 'Marketplace', icon: Globe },
-                { key: 'google_bussiness', label: 'Google Business', icon: Globe },
-                { key: 'website', label: 'Website', icon: Globe }
-            ]
-        },
-        {
-            category: 'Media & Documents',
-            icon: Image,
-            fields: [
-                { key: 'ownerPhoto', label: 'Owner Photo', icon: Image },
-                { key: 'bussinessLogo', label: 'Business Logo', icon: Image },
-                { key: 'productPhoto', label: 'Product Photo', icon: Image }
-            ]
-        }
-    ];
+    const detailFields = getDetailFields(selectedMember);
 
     const getActiveCategoryData = () => {
         return detailFields.find(category => category.category === activeCategory);
@@ -101,6 +36,10 @@ const ImpalaContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                         if (field.key === 'hasOrganizationStructur') {
                             displayValue = selectedMember[field.key] ? 'Yes' : 'No'
                         }
+                        
+                        if (Array.isArray(displayValue)) {
+                            displayValue = displayValue.join(', ');
+                        }
 
                         return (
                             <div key={index} className='flex items-start gap-3'>
@@ -121,6 +60,12 @@ const ImpalaContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             </div>
         )
     }
+
+    useEffect(() => {
+        if (selectedMember) {
+            setActiveCategory('Personal Information');
+        }
+    }, [selectedMember]);
 
     return (
         <Card>
@@ -151,28 +96,26 @@ const ImpalaContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                                 })}
                             </div>
 
-                            {selectedMember && (
-                                <div className="flex gap-2">
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        className="flex items-center gap-2"
-                                        onClick={onEdit}
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                        Edit
-                                    </Button>
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        onClick={onDelete}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                        Delete
-                                    </Button>
-                                </div>
-                            )}
+                            <div className="flex gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="flex items-center gap-2"
+                                    onClick={onEdit}
+                                >
+                                    <Edit className="h-4 w-4" />
+                                    Edit
+                                </Button>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={onDelete}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete
+                                </Button>
+                            </div>
                         </div>
 
                         <ActiveCategoryContent />
