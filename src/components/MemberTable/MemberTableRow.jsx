@@ -13,7 +13,7 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Email': 'email',
             'Username': 'username',
             'Password': 'password',
-            'Date Of Birth': 'dateOfBirth',
+            'Date Of Birth': 'date_of_birth',
             'Education': 'education',
             'Employee ID': 'employeeId',
             'Role': 'role',
@@ -26,7 +26,7 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Established Year': 'establishedYear',
             'Industry': 'industry',
             'Program Name': 'program_name',
-            'Bussiness Name': 'bussinessName',
+            'Business Name': 'business_name',
             'Category': 'category',
             'Status': 'status',
             // 'Deal': 'deal_size',
@@ -72,7 +72,7 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Work Duration': 'work_duration',
             'Industry Sector': 'industry_sector',
             'Reason Join Program': 'reason_join_program',
-            'Name Community': 'name_community',
+            'Name Community': 'community_name',
             'Focus Area': 'focus_area',
             'Total Members': 'total_members',
             'Operational Area': 'operational_area',
@@ -93,7 +93,7 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
                 const category = member?.category;
                 
                 if (category?.includes('UMKM') || category?.includes('Usaha') || category?.includes('Wirausaha') || category?.includes('StartUp')) {
-                    return member.bussinessName || '-';
+                    return member.business_name || '-';
                 }
 
                 if (category?.includes('Mahasiswa') || category?.includes('Pelajar') || category?.includes('Pemuda')) {
@@ -105,7 +105,7 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
                 }
 
                 if (category?.includes('Komunitas') || category?.includes('Asosiasi') || category?.includes('Organisasi')) {
-                    return member.name_community || '-'
+                    return member.community_name || '-'
                 }
 
                 return '-'

@@ -117,10 +117,6 @@ export const usePrograms = (initialFilters = {}) => {
         }
     }
 
-    useEffect(() => {
-        fetchPrograms(1)
-    }, [])
-
     return {
         programs, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchPrograms: changePage, addProgram, updateProgram, deleteProgram, setPagination, refetch: () => fetchPrograms(pagination.page)
     }

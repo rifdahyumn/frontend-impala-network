@@ -7,14 +7,14 @@ const memberTypeConfigs = {
             icon: User,
             fields: [
                 { key: 'full_name', label: 'Full Name', icon: User },
-                { key: 'nik', label: 'NIK', icon: User },
+                // { key: 'nik', label: 'NIK', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
-                { key: 'dateOfBirth', label: 'Date Of Birth', icon: Calendar },
-                { key: 'education', label: 'Education', icon: GraduationCap },
+                { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
+                // { key: 'education', label: 'Education', icon: GraduationCap },
                 { key: 'program_name', label: 'Program Name', icon: Award },
-                { key: 'status', label: 'Status', icon: CheckCircle }
+                // { key: 'status', label: 'Status', icon: CheckCircle }
             ]
         },
         {
@@ -22,10 +22,10 @@ const memberTypeConfigs = {
             icon: MapPin,
             fields: [
                 { key: 'address', label: 'Address', icon: MapPin },
-                { key: 'subdistrict', label: 'Subdistrict', icon: MapPin },
+                // { key: 'subdistrict', label: 'Subdistrict', icon: MapPin },
                 { key: 'city', label: 'City', icon: MapPin },
                 { key: 'province', label: 'Province', icon: MapPin },
-                { key: 'postalCode', label: 'Postal Code', icon: MapPin }
+                // { key: 'postalCode', label: 'Postal Code', icon: MapPin }
             ]
         },
         {
@@ -55,7 +55,7 @@ const memberTypeConfigs = {
             fields: [
                 { key: 'sosialMedia', label: 'Social Media', icon: Globe },
                 { key: 'marketplace', label: 'Marketplace', icon: Globe },
-                { key: 'google_bussiness', label: 'Google Business', icon: Globe },
+                // { key: 'google_bussiness', label: 'Google Business', icon: Globe },
                 { key: 'website', label: 'Website', icon: Globe }
             ]
         }
@@ -70,7 +70,7 @@ const memberTypeConfigs = {
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
-                { key: 'dateOfBirth', label: 'Date Of Birth', icon: Calendar },
+                { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
                 { key: 'program_name', label: 'Program Name', icon: Award },
                 { key: 'reason_join_program', label: 'Reason Join Program', icon: Award }
             ]
@@ -106,7 +106,7 @@ const memberTypeConfigs = {
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
-                { key: 'dateOfBirth', label: 'Date Of Birth', icon: Calendar },
+                { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
                 { key: 'program_name', label: 'Program Name', icon: Award },
                 { key: 'reason_join_program', label: 'Reason Join Program', icon: Award }
             ]
@@ -141,7 +141,7 @@ const memberTypeConfigs = {
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
-                { key: 'dateOfBirth', label: 'Date Of Birth', icon: Calendar },
+                { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
                 { key: 'program_name', label: 'Program Name', icon: Award },
                 { key: 'reason_join_program', label: 'Reason Join Program', icon: Award }
             ]
