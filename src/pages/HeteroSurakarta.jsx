@@ -20,32 +20,103 @@ const HeteroSurakarta = () => {
     const members = [
         {
             no: '1',
-            member_id: 'MEM-SRK-001', 
+            // Personal Information
+            member_id: 'MEM-SRK-001',
             full_name: 'Dewi Sartika',
+            nik: '3375010601930001',
             email: 'dewisartika@gmail.com',
             phone: '081234567890',
+            gender: 'Female',
+            dateOfBirth: '1993-01-06',
+            education: 'Bachelor Degree (S1)',
+            
+            // Residential Address
+            address: 'Jl. Slamet Riyadi No. 12, RT 04 RW 03',
+            district: 'Laweyan',
+            city: 'Kota Surakarta',
+            province: 'Jawa Tengah',
+            postalCode: '57148',
+            
+            // Business / Organization
             company: 'PT. Solo Maju',
+
+            // Service Requirements
+            maneka: 'Active',
+            rembug: 'Not Subscribed',
+            eventSpace: 'Yes',
+            privateOffice: 'No',
+
+            // Additional Information
+            addInformation:'Social Media',
+
             action: 'Manage'
         },
         {
-            no: '1',
+            no: '2',
+            // Personal Information
             member_id: 'MEM-SRK-002',
             full_name: 'Rudi Hartono',
+            nik: '3375021502890002',
             email: 'rudihartono@gmail.com',
             phone: '082345678901',
+            gender: 'Male',
+            dateOfBirth: '1989-02-15',
+            education: 'Master Degree (S2)',
+
+            // Residential Address
+            address: 'Jl. Adi Sucipto No. 55, RT 02 RW 06',
+            district: 'Banjarsari',
+            city: 'Kota Surakarta',
+            province: 'Jawa Tengah',
+            postalCode: '57138',
+
+            // Business / Organization
             company: 'CV. Batik Indah',
+
+             // Service Requirements
+            maneka: 'Not Subscribed',
+            rembug: 'Active',
+            eventSpace: 'Yes',
+            privateOffice: 'Yes',
+
+            // Additional Information
+            addInformation: 'Event / Exhibition',
             action: 'Manage'
         },
         {
             no: '3',
+            // Personal Information
             member_id: 'MEM-SRK-003',
             full_name: 'Siti Aminah',
+            nik: '3375032101970003',
             email: 'sitiaminah@gmail.com',
             phone: '083456789012',
+            gender: 'Female',
+            dateOfBirth: '1997-01-21',
+            education: 'Bachelor Degree (S1)',
+
+            // Residential Address
+            address: 'Jl. Diponegoro No. 23, RT 05 RW 02',
+            district: 'Jebres',
+            city: 'Kota Surakarta',
+            province: 'Jawa Tengah',
+            postalCode: '57126',
+
+            // Business / Organization
             company: 'PT. Jaya Abadi',
+
+            // Service Requirements
+            maneka: 'Active',
+            rembug: 'Active',
+            eventSpace: 'No',
+            privateOffice: 'Yes',
+
+            // Additional Information
+            addInformation: 'Event / Exhibition',
             action: 'Manage'
         }
     ];
+
 
     // Ubah headers untuk match dengan fieldMap yang ada
     const tableConfig = {

@@ -20,20 +20,66 @@ const HeteroSemarang = () => {
     const members = [
         {
             no: '1',
+             // Personal Information
             member_id: 'MEM-SMG-001',
             full_name: 'Budi Santoso',
+            nik: '3374091201890001',
             email: 'budisantoso@gmail.com',
             phone: '082134567890',
+            gender: 'Male',
+            dateOfBirth: '1989-01-12',
+            education: 'Bachelor (S1)',
+
+            // Residential Address
+            address: 'Jl. Pandanaran No. 45, RT 03 RW 02',
+            district: 'Semarang Tengah',
+            city: 'Kota Semarang',
+            province: 'Jawa Tengah',
+            postalCode: '50241',
+            
+            // Business / Organization
             company: 'PT. Maju Bersama',
+            
+            // Service Requirements
+            maneka: '',
+            rembug: 'Rembug 1',
+            eventSpace: '',
+            privateOffice: '',
+            
+            // Additional Information
+            addInformation: 'Social Media',
             action: 'Manage'
         },
         {
             no: '2',
+            // Personal Information
             member_id: 'MEM-SMG-002',
             full_name: 'Rina Kurniawati',
+            nik: '3374100503920002',
             email: 'rinakurniawati@gmail.com',
             phone: '085678901234',
+            gender: 'Female',
+            dateOfBirth: '1992-03-05',
+            education: 'Bachelor (S1)',
+
+            // Residential Address
+            address: 'Jl. Gajah Mada No. 18, RT 01 RW 05',
+            district: 'Candisari',
+            city: 'Kota Semarang',
+            province: 'Jawa Tengah',
+            postalCode: '50254',
+            
+            // Business / Organization
             company: 'PT. Cipta Mandiri',
+            
+            // Service Requirements
+            maneka: '',
+            rembug: 'Rembug 2',
+            eventSpace: '',
+            privateOffice: 'Private Office 4&5',
+            
+            // Additional Information
+            addInformation: 'Local Community',
             action: 'Manage'
         }
     ];

@@ -20,23 +20,70 @@ const HeteroManagement = () => {
     const members = [
         {
             no: '1',
+            // Personal Information
             member_id: 'MEM-BYM-001',
             full_name: 'Ahmad Rizki',
+            nik: '3275011502950001',
             email: 'ahmadrizki@gmail.com',
             phone: '087896543654',
+            gender: 'Male',
+            dateOfBirth: '1995-02-15',
+            education: 'Bachelor Degree (S1)',
+
+            // Residential Address
+            address: 'Jl. Ahmad Yani No. 17, RT 03 RW 04',
+            district: 'Purwokerto Selatan',
+            city: 'Kabupaten Banyumas',
+            province: 'Jawa Tengah',
+            postalCode: '53144',
+
+            // Business / Organization
             company: 'PT. Jaya Sentosa',
+
+            // Service Requirements
+            maneka: 'Active',
+            rembug: 'Not Subscribed',
+            eventSpace: 'Yes',
+            privateOffice: 'No',
+
+            // Additional Information
+            addInformation: 'Social Media',
             action: 'Manage'
         },
         {
             no: '2',
+            // Personal Information
             member_id: 'MEM-BYM-002',
             full_name: 'Bambang Prakoso',
+            nik: '3275020401880002',
             email: 'bambangprakos@gmail.com',
             phone: '085637826541',
+            gender: 'Male',
+            dateOfBirth: '1988-01-04',
+            education: 'Diploma (D3)',
+
+            // Residential Address
+            address: 'Jl. Gatot Subroto No. 8, RT 02 RW 01',
+            district: 'Banyumas',
+            city: 'Kabupaten Banyumas',
+            province: 'Jawa Tengah',
+            postalCode: '53192',
+
+            // Business / Organization
             company: 'CV. Makmur Abadi',
+
+            // Service Requirements
+            maneka: 'Not Subscribed',
+            rembug: 'Active',
+            eventSpace: 'No',
+            privateOffice: 'Yes',
+
+            // Additional Information
+            addInformation: 'Friends / Family Recommendation',
             action: 'Manage'
         }
     ];
+
 
     const tableConfig = {
         headers: ['No', 'Member ID', 'Full Name', 'Email', 'Phone', 'Company', 'Action'],

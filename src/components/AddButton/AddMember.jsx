@@ -16,7 +16,6 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { useState } from "react";
-import { Check, ChevronRight, Package, Calendar } from "lucide-react";
 
 const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) => {
   // Form state untuk Add Member Semarang
@@ -40,107 +39,137 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
     eventSpace: '',
     privateOffice: '',
     addInformation: '',
-    // State untuk package selection step
+    // State untuk duration dan date
+    manekaDuration: '',
     manekaDate: '',
+    rembugDuration: '',
     rembugDate: '',
+    eventSpaceDuration: '',
     eventSpaceDate: '',
+    privateOfficeDuration: '',
     privateOfficeDate: ''
   });
 
-  // State untuk mengelola step selection
-  const [selectionStep, setSelectionStep] = useState({
-    activeService: null, // 'maneka', 'rembug', 'eventSpace', 'privateOffice'
-    showPackageOptions: false,
-    showDatePicker: false
-  });
+  // Options untuk setiap service
+  const serviceOptions = {
+    maneka: {
+      packages: [
+        { 
+          value: 'personal', 
+          label: 'Personal Membership',
+          durations: [
+            { value: 'opsi1', label: '35k/Day' },
+            { value: 'opsi2', label: '472,5k/Day' },
+            { value: 'opsi3', label: '840k/Day' },
+          ]
+        },
+        { 
+          value: 'group', 
+          label: 'Group Membership',
+          durations: [
+            { value: 'opsi1', label: '3,6mio/Month' },
+            { value: 'opsi2', label: '18mio/Month' },
+            { value: 'opsi3', label: '30mio/Month' }
+          ]
+        }
+      ]
+    },
+    rembug: {
+      packages: [
+        { 
+          value: 'rembug1', 
+          label: 'Rembug 1',
+          durations: [
+            { value: 'opsi1', label: '120k/Hour' },
+            { value: 'opsi2', label: '850k/Full Day' }
+          ]
+        },
+        { 
+          value: 'rembug2', 
+          label: 'Rembug 2',
+          durations: [
+            { value: 'opsi1', label: '120k/Hour' },
+            { value: 'opsi2', label: '850k/Full Day' }
+          ]
+        },
+        { 
+          value: 'rembug3', 
+          label: 'Rembug 3',
+          durations: [
+            { value: 'opsi1', label: '200k/Hour' },
+            { value: 'opsi2', label: '1500k/Full Day' }
+          ]
+        }
+      ]
+    },
+    eventSpace: {
+      packages: [
+        { 
+          value: 'gatra', 
+          label: 'Gatra',
+          durations: [
+            { value: 'half-day', label: 'Setengah Hari (4 Jam)' },
+            { value: 'full-day', label: '1 Hari Penuh' },
+            { value: '2-days', label: '2 Hari' },
+            { value: '3-days', label: '3 Hari' }
+          ]
+        },
+        { 
+          value: 'maneka', 
+          label: 'Maneka',
+          durations: [
+            { value: 'half-day', label: 'Setengah Hari (4 Jam)' },
+            { value: 'full-day', label: '1 Hari Penuh' },
+            { value: '2-days', label: '2 Hari' },
+            { value: '3-days', label: '3 Hari' }
+          ]
+        },
+        { 
+          value: 'outdoor', 
+          label: 'Outdoor',
+          durations: [
+            { value: 'half-day', label: 'Setengah Hari (4 Jam)' },
+            { value: 'full-day', label: '1 Hari Penuh' },
+            { value: '2-days', label: '2 Hari' },
+            { value: '3-days', label: '3 Hari' }
+          ]
+        }
+      ]
+    },
+    privateOffice: {
+      packages: [
+        { 
+          value: 'private1', 
+          label: 'Private Office 1-3',
+          durations: [
+            { value: 'opsi1', label: '23mio/6 Month' },
+            { value: 'opsi2', label: '40mio/12 Month' }
+          ]
+        },
+        { 
+          value: 'private4', 
+          label: 'Private Office 4&5',
+          durations: [
+            { value: 'opsi1', label: '27mio/6 Month' },
+            { value: 'opsi2', label: '50mio/12 Month' }
+          ]
+        },
+        { 
+          value: 'private6', 
+          label: 'Private Office 6',
+          durations: [
+            { value: 'opsi1', label: '40mio/6 Month' },
+            { value: 'opsi2', label: '60mio/12 Month' }
+          ]
+        }
+      ]
+    }
+  };
 
-  // Data package options untuk setiap service
-  const packageOptions = {
-    maneka: [
-      { 
-        id: 'personal', 
-        name: 'Personal Membership', 
-        description: 'Akses penuh untuk individu',
-        features: ['Akses ruang kerja 24/7', 'Meeting room 4 jam/bulan', 'Free coffee & tea'],
-        price: 'Rp 1.500.000/bulan'
-      },
-      { 
-        id: 'group', 
-        name: 'Group Membership', 
-        description: 'Untuk tim 3-5 orang',
-        features: ['Akses untuk 3-5 orang', 'Meeting room 8 jam/bulan', 'Dedicated locker'],
-        price: 'Rp 3.500.000/bulan'
-      }
-    ],
-    rembug: [
-      { 
-        id: '1', 
-        name: 'Rembug 1', 
-        description: 'Paket meeting room dasar',
-        features: ['Kapasitas 10 orang', '4 jam penggunaan', 'Projector & screen'],
-        price: 'Rp 350.000/sesi'
-      },
-      { 
-        id: '2', 
-        name: 'Rembug 2', 
-        description: 'Paket meeting room premium',
-        features: ['Kapasitas 20 orang', '6 jam penggunaan', 'Full equipment'],
-        price: 'Rp 550.000/sesi'
-      },
-      { 
-        id: '3', 
-        name: 'Rembug 3', 
-        description: 'Paket meeting room executive',
-        features: ['Kapasitas 30 orang', '8 jam penggunaan', 'Catering included'],
-        price: 'Rp 850.000/sesi'
-      }
-    ],
-    eventSpace: [
-      { 
-        id: 'gatra', 
-        name: 'Gatra', 
-        description: 'Ruang event kecil',
-        features: ['Kapasitas 50 orang', 'Sound system basic', 'Standing room'],
-        price: 'Rp 2.500.000/hari'
-      },
-      { 
-        id: 'maneka', 
-        name: 'Maneka Hall', 
-        description: 'Ruang event medium',
-        features: ['Kapasitas 100 orang', 'Full sound system', 'Seating arrangement'],
-        price: 'Rp 5.000.000/hari'
-      },
-      { 
-        id: 'outdoor', 
-        name: 'Outdoor Space', 
-        description: 'Area outdoor',
-        features: ['Kapasitas 200 orang', 'Gazebo & canopy', 'Garden area'],
-        price: 'Rp 3.500.000/hari'
-      }
-    ],
-    privateOffice: [
-      { 
-        id: '1-3', 
-        name: 'Private Office 1-3', 
-        description: 'Office untuk 1-3 orang',
-        features: ['15m² space', 'Furniture included', 'Private access'],
-        price: 'Rp 4.500.000/bulan'
-      },
-      { 
-        id: '4&5', 
-        name: 'Private Office 4&5', 
-        description: 'Office untuk 4-5 orang',
-        features: ['25m² space', 'Meeting area', 'Storage cabinet'],
-        price: 'Rp 7.500.000/bulan'
-      },
-      { 
-        id: '6', 
-        name: 'Private Office 6', 
-        description: 'Office untuk 6+ orang',
-        features: ['35m² space', 'Executive furniture', 'Pantry area'],
-        price: 'Rp 10.000.000/bulan'
-      }
-    ]
+  // Helper function untuk mendapatkan package yang dipilih
+  const getSelectedPackage = (serviceKey) => {
+    if (!formData[serviceKey]) return null;
+    return serviceOptions[serviceKey]?.packages?.find(pkg => pkg.value === formData[serviceKey]) || null;
   };
 
   // Structure dengan sections untuk Semarang
@@ -272,30 +301,136 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
     {
       title: "Service Requirements",
       fields: [
-        // Service selection buttons
+        // MANEKA PACKAGE - STEP 1: Pilih package
         {
-          name: 'serviceSelection',
-          label: 'Select Services',
-          type: 'serviceButtons',
-          services: [
-            { key: 'maneka', label: 'Maneka Package', icon: Package },
-            { key: 'rembug', label: 'Rembug Package', icon: Package },
-            { key: 'eventSpace', label: 'Event Space', icon: Package },
-            { key: 'privateOffice', label: 'Private Office', icon: Package }
+          name: 'maneka',
+          label: 'Maneka Package',
+          type: 'select',
+          required: false,
+          placeholder: 'Select maneka package',
+          options: [
+            { value: 'none', label: 'Not choosing Maneka' },
+            ...serviceOptions.maneka.packages.map(pkg => ({
+              value: pkg.value,
+              label: pkg.label // HANYA LABEL SAJA
+            }))
           ]
         },
-        // Package options (akan muncul ketika service dipilih)
-        ...(selectionStep.showPackageOptions ? [{
-          name: 'packageOptions',
-          label: `Select ${selectionStep.activeService} Package`,
-          type: 'packageOptions'
+        // STEP 2: Jika package dipilih, tampilkan pilihan duration
+        ...(formData.maneka && formData.maneka !== 'none' ? [{
+          name: 'manekaDuration',
+          label: `Duration for ${getSelectedPackage('maneka')?.label}`,
+          type: 'select',
+          required: true,
+          placeholder: 'Select duration',
+          options: getSelectedPackage('maneka')?.durations?.map(dur => ({
+            value: dur.value,
+            label: dur.label // HANYA LABEL SAJA
+          })) || []
         }] : []),
-        // Date picker (akan muncul ketika package dipilih)
-        ...(selectionStep.showDatePicker ? [{
-          name: `${selectionStep.activeService}Date`,
-          label: `Select Date for ${formData[selectionStep.activeService]}`,
+        // STEP 3: Jika duration dipilih, tampilkan date picker
+        ...(formData.manekaDuration ? [{
+          name: 'manekaDate',
+          label: `Start Date for ${getSelectedPackage('maneka')?.label}`,
           type: 'date',
-          required: false
+          required: true,
+          placeholder: 'Select start date'
+        }] : []),
+
+        // REMBUG PACKAGE - STEP 1: Pilih package
+        {
+          name: 'rembug',
+          label: 'Rembug Package',
+          type: 'select',
+          required: false,
+          placeholder: 'Select rembug package',
+          options: [
+            { value: 'none', label: 'Not choosing Rembug' },
+            ...serviceOptions.rembug.packages.map(pkg => ({
+              value: pkg.value,
+              label: pkg.label // HANYA LABEL SAJA
+            }))
+          ]
+        },
+        // STEP 2: Jika package dipilih, tampilkan pilihan duration
+        ...(formData.rembug && formData.rembug !== 'none' ? [{
+          name: 'rembugDuration',
+          label: `Duration for ${getSelectedPackage('rembug')?.label}`,
+          type: 'select',
+          required: true,
+          placeholder: 'Select duration',
+          options: getSelectedPackage('rembug')?.durations?.map(dur => ({
+            value: dur.value,
+            label: dur.label // HANYA LABEL SAJA
+          })) || []
+        }] : []),
+        // STEP 3: Jika duration dipilih, tampilkan date picker
+        ...(formData.rembugDuration ? [{
+          name: 'rembugDate',
+          label: `Start Date for ${getSelectedPackage('rembug')?.label}`,
+          type: 'date',
+          required: true,
+          placeholder: 'Select start date'
+        }] : []),
+
+        // Event Space - STEP 1: Pilih package
+        {
+          name: 'eventSpace',
+          label: 'Event Space',
+          type: 'select',
+          required: false,
+          placeholder: 'Select event space',
+          options: [
+            { value: 'none', label: 'Not choosing Event Space' },
+            ...serviceOptions.eventSpace.packages.map(pkg => ({
+              value: pkg.value,
+              label: pkg.label
+            }))
+          ]
+        },
+        // STEP 2: Jika package dipilih, langsung tampilkan date picker
+        ...(formData.eventSpace && formData.eventSpace !== 'none' ? [{
+          name: 'eventSpaceDate',
+          label: `Event Date for ${getSelectedPackage('eventSpace')?.label}`,
+          type: 'date',
+          required: true,
+          placeholder: 'Select event date'
+        }] : []),
+
+        // PRIVATE OFFICE - STEP 1: Pilih package
+        {
+          name: 'privateOffice',
+          label: 'Private Office',
+          type: 'select',
+          required: false,
+          placeholder: 'Select private office',
+          options: [
+            { value: 'none', label: 'Not choosing Private Office' },
+            ...serviceOptions.privateOffice.packages.map(pkg => ({
+              value: pkg.value,
+              label: pkg.label // HANYA LABEL SAJA
+            }))
+          ]
+        },
+        // STEP 2: Jika package dipilih, tampilkan pilihan duration
+        ...(formData.privateOffice && formData.privateOffice !== 'none' ? [{
+          name: 'privateOfficeDuration',
+          label: `Duration for ${getSelectedPackage('privateOffice')?.label}`,
+          type: 'select',
+          required: true,
+          placeholder: 'Select duration',
+          options: getSelectedPackage('privateOffice')?.durations?.map(dur => ({
+            value: dur.value,
+            label: dur.label // HANYA LABEL SAJA
+          })) || []
+        }] : []),
+        // STEP 3: Jika duration dipilih, tampilkan date picker
+        ...(formData.privateOfficeDuration ? [{
+          name: 'privateOfficeDate',
+          label: `Start Date for ${getSelectedPackage('privateOffice')?.label}`,
+          type: 'date',
+          required: true,
+          placeholder: 'Select start date'
         }] : [])
       ]
     },
@@ -320,49 +455,6 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
     }
   ];
 
-  // Handler untuk service selection
-  const handleServiceSelect = (serviceKey) => {
-    setSelectionStep({
-      activeService: serviceKey,
-      showPackageOptions: true,
-      showDatePicker: false
-    });
-  };
-
-  // Handler untuk package selection
-  const handlePackageSelect = (packageId, packageName) => {
-    const serviceKey = selectionStep.activeService;
-    
-    // Update form data dengan package yang dipilih
-    setFormData(prev => ({
-      ...prev,
-      [serviceKey]: packageId
-    }));
-
-    // Lanjut ke date picker step
-    setSelectionStep(prev => ({
-      ...prev,
-      showDatePicker: true
-    }));
-  };
-
-  // Handler untuk kembali ke package selection
-  const handleBackToPackages = () => {
-    setSelectionStep(prev => ({
-      ...prev,
-      showDatePicker: false
-    }));
-  };
-
-  // Handler untuk cancel service selection
-  const handleCancelServiceSelection = () => {
-    setSelectionStep({
-      activeService: null,
-      showPackageOptions: false,
-      showDatePicker: false
-    });
-  };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -372,9 +464,31 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
   };
 
   const handleSelectChange = (name, value) => {
+    // Reset dependent fields ketika parent field diubah
+    let resetFields = {};
+    
+    if (name === 'maneka') {
+      resetFields = { manekaDuration: '', manekaDate: '' };
+    } else if (name === 'manekaDuration') {
+      resetFields = { manekaDate: '' };
+    } else if (name === 'rembug') {
+      resetFields = { rembugDuration: '', rembugDate: '' };
+    } else if (name === 'rembugDuration') {
+      resetFields = { rembugDate: '' };
+    } else if (name === 'eventSpace') {
+      resetFields = { eventSpaceDuration: '', eventSpaceDate: '' };
+    } else if (name === 'eventSpaceDuration') {
+      resetFields = { eventSpaceDate: '' };
+    } else if (name === 'privateOffice') {
+      resetFields = { privateOfficeDuration: '', privateOfficeDate: '' };
+    } else if (name === 'privateOfficeDuration') {
+      resetFields = { privateOfficeDate: '' };
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
+      ...resetFields
     }));
   };
 
@@ -387,7 +501,7 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
 
   const handleCloseModal = () => {
     setIsAddMemberModalOpen(false);
-    // Reset semua state
+    // Reset semua field
     setFormData({
       member_id: '',
       full_name: '',
@@ -408,102 +522,19 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
       eventSpace: '',
       privateOffice: '',
       addInformation: '',
+      manekaDuration: '',
       manekaDate: '',
+      rembugDuration: '',
       rembugDate: '',
+      eventSpaceDuration: '',
       eventSpaceDate: '',
+      privateOfficeDuration: '',
       privateOfficeDate: ''
-    });
-    setSelectionStep({
-      activeService: null,
-      showPackageOptions: false,
-      showDatePicker: false
     });
   };
 
   // Function untuk render field berdasarkan type
   const renderField = (field) => {
-    // Service selection buttons
-    if (field.type === 'serviceButtons') {
-      return (
-        <div key={field.name} className="space-y-4">
-          <Label>{field.label}</Label>
-          <div className="grid grid-cols-2 gap-3">
-            {field.services.map((service) => (
-              <Button
-                key={service.key}
-                type="button"
-                variant={formData[service.key] ? "default" : "outline"}
-                className="h-auto py-3 flex flex-col items-center gap-2"
-                onClick={() => handleServiceSelect(service.key)}
-              >
-                <service.icon className="h-5 w-5" />
-                <span className="text-sm">{service.label}</span>
-                {formData[service.key] && (
-                  <Check className="h-4 w-4 text-green-500" />
-                )}
-              </Button>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    // Package options display
-    if (field.type === 'packageOptions' && selectionStep.activeService) {
-      const serviceKey = selectionStep.activeService;
-      const packages = packageOptions[serviceKey] || [];
-      
-      return (
-        <div key={field.name} className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label className="text-lg">{field.label}</Label>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleCancelServiceSelection}
-            >
-              Cancel
-            </Button>
-          </div>
-          
-          <div className="grid gap-3">
-            {packages.map((pkg) => (
-              <div
-                key={pkg.id}
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                  formData[serviceKey] === pkg.id 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => handlePackageSelect(pkg.id, pkg.name)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">{pkg.name}</h4>
-                    <p className="text-sm text-gray-600 mt-1">{pkg.description}</p>
-                    <div className="mt-2">
-                      <p className="text-xs text-gray-500">Features:</p>
-                      <ul className="text-xs text-gray-600 mt-1 space-y-1">
-                        {pkg.features.map((feature, index) => (
-                          <li key={index} className="flex items-center">
-                            <Check className="h-3 w-3 text-green-500 mr-2" />
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <p className="text-sm font-semibold text-blue-600 mt-2">{pkg.price}</p>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
     if (field.type === 'select') {
       return (
         <div key={field.name} className="space-y-2">
@@ -521,7 +552,10 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
             </SelectTrigger>
             <SelectContent>
               {field.options.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
+                <SelectItem 
+                  key={`${field.name}-${option.value}`}
+                  value={option.value}
+                >
                   {option.label}
                 </SelectItem>
               ))}
@@ -531,31 +565,23 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
       );
     }
 
+    // Input untuk date type
     if (field.type === 'date') {
       return (
-        <div key={field.name} className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label className="text-lg">{field.label}</Label>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToPackages}
-            >
-              Back to Packages
-            </Button>
-          </div>
-          <div className="flex items-center gap-3 p-4 border rounded-lg">
-            <Calendar className="h-5 w-5 text-gray-400" />
-            <Input
-              name={field.name}
-              type="date"
-              value={formData[field.name]}
-              onChange={handleInputChange}
-              required={field.required}
-              className="flex-1"
-            />
-          </div>
+        <div key={field.name} className="space-y-2">
+          <Label htmlFor={field.name}>
+            {field.label}
+            {field.required && <span className="text-red-500 ml-1">*</span>}
+          </Label>
+          <Input
+            id={field.name}
+            name={field.name}
+            type="date"
+            value={formData[field.name]}
+            onChange={handleInputChange}
+            required={field.required}
+            className="w-full"
+          />
         </div>
       );
     }
@@ -583,7 +609,7 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
 
   return (
     <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Member - Semarang</DialogTitle>
           <DialogDescription>
@@ -602,12 +628,7 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
               </div>
 
               {/* Section Fields */}
-              <div className={
-                section.title === "Service Requirements" && 
-                (selectionStep.showPackageOptions || selectionStep.showDatePicker)
-                  ? "grid grid-cols-1 gap-4" 
-                  : "grid grid-cols-1 md:grid-cols-2 gap-4"
-              }>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {section.fields.map(renderField)}
               </div>
 
