@@ -26,7 +26,7 @@ const Sidebar = () => {
                 { label: 'Hetero Banyumas', path: '/hetero/banyumas' }
             ]
         },
-        {icon: FileSpreadsheet, label: 'Form Builder', path: '/form'},
+        {icon: FileSpreadsheet, label: 'Form Builder', path: '/form-builder'},
         {icon: User, label: 'Account', path: '/user'},
     ];
 

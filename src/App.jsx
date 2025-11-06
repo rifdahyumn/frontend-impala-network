@@ -38,7 +38,7 @@ function App() {
                 <Route path='/hetero/semarang' element={<HeteroSemarang />} />
                 <Route path='/hetero/banyumas' element={<HeteroBanyumas />} />
                 <Route path='/hetero/surakarta' element={<HeteroSurakarta />} />
-                <Route path='/form' element={<FormBuilder />} />
+                <Route path='/form-builder' element={<FormBuilder />} />
                 <Route path='/user' element={<Account />} />
               </Routes>
             </div>
