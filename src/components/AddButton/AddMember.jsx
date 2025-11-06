@@ -58,9 +58,9 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
           value: 'personal', 
           label: 'Personal Membership',
           durations: [
-            { value: 'opsi1', label: '35k/Day' },
-            { value: 'opsi2', label: '472,5k/Day' },
-            { value: 'opsi3', label: '840k/Day' },
+            { value: 'opsi1', label: '35k/1 Day' },
+            { value: 'opsi2', label: '472,5k/15Day' },
+            { value: 'opsi3', label: '840k/30 Day' },
           ]
         },
         { 
@@ -68,8 +68,8 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
           label: 'Group Membership',
           durations: [
             { value: 'opsi1', label: '3,6mio/Month' },
-            { value: 'opsi2', label: '18mio/Month' },
-            { value: 'opsi3', label: '30mio/Month' }
+            { value: 'opsi2', label: '18mio/6 Month' },
+            { value: 'opsi3', label: '30mio/12 Month' }
           ]
         }
       ]
@@ -80,7 +80,7 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
           value: 'rembug1', 
           label: 'Rembug 1',
           durations: [
-            { value: 'opsi1', label: '120k/Hour' },
+            { value: 'opsi1', label: '120k/1 Hour' },
             { value: 'opsi2', label: '850k/Full Day' }
           ]
         },
@@ -88,7 +88,7 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
           value: 'rembug2', 
           label: 'Rembug 2',
           durations: [
-            { value: 'opsi1', label: '120k/Hour' },
+            { value: 'opsi1', label: '120k/1 Hour' },
             { value: 'opsi2', label: '850k/Full Day' }
           ]
         },
@@ -96,7 +96,7 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
           value: 'rembug3', 
           label: 'Rembug 3',
           durations: [
-            { value: 'opsi1', label: '200k/Hour' },
+            { value: 'opsi1', label: '200k/1 Hour' },
             { value: 'opsi2', label: '1500k/Full Day' }
           ]
         }

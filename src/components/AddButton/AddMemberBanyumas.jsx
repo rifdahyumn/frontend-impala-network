@@ -32,14 +32,145 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
     district: '',
     city: '',
     province: '',
-    postalCode:'',
-    bussinessName:'',
+    postalCode: '',
+    bussinessName: '',
     maneka: '',
     rembug: '',
     eventSpace: '',
     privateOffice: '',
-    addInformation: ''
+    addInformation: '',
+    // State untuk duration dan date
+    manekaDuration: '',
+    manekaDate: '',
+    rembugDuration: '',
+    rembugDate: '',
+    eventSpaceDuration: '',
+    eventSpaceDate: '',
+    privateOfficeDuration: '',
+    privateOfficeDate: ''
   });
+
+  // Options untuk setiap service
+  const serviceOptions = {
+    maneka: {
+      packages: [
+        { 
+          value: 'personal', 
+          label: 'Personal Membership',
+          durations: [
+            { value: 'opsi1', label: '35k/1 Day' },
+            { value: 'opsi2', label: '472,5k/15Day' },
+            { value: 'opsi3', label: '840k/30 Day' },
+          ]
+        },
+        { 
+          value: 'group', 
+          label: 'Group Membership',
+          durations: [
+            { value: 'opsi1', label: '3,6mio/Month' },
+            { value: 'opsi2', label: '18mio/6 Month' },
+            { value: 'opsi3', label: '30mio/12 Month' }
+          ]
+        }
+      ]
+    },
+    rembug: {
+      packages: [
+        { 
+          value: 'rembug1', 
+          label: 'Rembug 1',
+          durations: [
+            { value: 'opsi1', label: '120k/1 Hour' },
+            { value: 'opsi2', label: '850k/Full Day' }
+          ]
+        },
+        { 
+          value: 'rembug2', 
+          label: 'Rembug 2',
+          durations: [
+            { value: 'opsi1', label: '120k/1 Hour' },
+            { value: 'opsi2', label: '850k/Full Day' }
+          ]
+        },
+        { 
+          value: 'rembug3', 
+          label: 'Rembug 3',
+          durations: [
+            { value: 'opsi1', label: '200k/1 Hour' },
+            { value: 'opsi2', label: '1500k/Full Day' }
+          ]
+        }
+      ]
+    },
+    eventSpace: {
+      packages: [
+        { 
+          value: 'gatra', 
+          label: 'Gatra',
+          durations: [
+            { value: 'half-day', label: 'Setengah Hari (4 Jam)' },
+            { value: 'full-day', label: '1 Hari Penuh' },
+            { value: '2-days', label: '2 Hari' },
+            { value: '3-days', label: '3 Hari' }
+          ]
+        },
+        { 
+          value: 'maneka', 
+          label: 'Maneka',
+          durations: [
+            { value: 'half-day', label: 'Setengah Hari (4 Jam)' },
+            { value: 'full-day', label: '1 Hari Penuh' },
+            { value: '2-days', label: '2 Hari' },
+            { value: '3-days', label: '3 Hari' }
+          ]
+        },
+        { 
+          value: 'outdoor', 
+          label: 'Outdoor',
+          durations: [
+            { value: 'half-day', label: 'Setengah Hari (4 Jam)' },
+            { value: 'full-day', label: '1 Hari Penuh' },
+            { value: '2-days', label: '2 Hari' },
+            { value: '3-days', label: '3 Hari' }
+          ]
+        }
+      ]
+    },
+    privateOffice: {
+      packages: [
+        { 
+          value: 'private1', 
+          label: 'Private Office 1-3',
+          durations: [
+            { value: 'opsi1', label: '23mio/6 Month' },
+            { value: 'opsi2', label: '40mio/12 Month' }
+          ]
+        },
+        { 
+          value: 'private4', 
+          label: 'Private Office 4&5',
+          durations: [
+            { value: 'opsi1', label: '27mio/6 Month' },
+            { value: 'opsi2', label: '50mio/12 Month' }
+          ]
+        },
+        { 
+          value: 'private6', 
+          label: 'Private Office 6',
+          durations: [
+            { value: 'opsi1', label: '40mio/6 Month' },
+            { value: 'opsi2', label: '60mio/12 Month' }
+          ]
+        }
+      ]
+    }
+  };
+
+  // Helper function untuk mendapatkan package yang dipilih
+  const getSelectedPackage = (serviceKey) => {
+    if (!formData[serviceKey]) return null;
+    return serviceOptions[serviceKey]?.packages?.find(pkg => pkg.value === formData[serviceKey]) || null;
+  };
 
   // Structure dengan sections untuk Banyumas
   const formSections = [
@@ -51,7 +182,7 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
           label: 'Member ID',
           type: 'text',
           required: true,
-          placeholder: 'MEM-BYM-XXX'
+          placeholder: 'MEM-SMG-XXX'
         },
         {
           name: 'full_name',
@@ -108,7 +239,7 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
           options: [
             { value: 'sma', label: 'Senior High School (SMA/SMK/MA)' },
             { value: 'd3', label: 'Diploma (D3)' },
-            { value: 's1', label: 'Bachleor Degree (S1)' },
+            { value: 's1', label: 'Bachelor Degree (S1)' },
             { value: 's2', label: 'Master Degree (S2)' },
             { value: 's3', label: 'Doctoral Degree (S3)' }
           ]
@@ -170,6 +301,7 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
     {
       title: "Service Requirements",
       fields: [
+        // MANEKA PACKAGE - STEP 1: Pilih package
         {
           name: 'maneka',
           label: 'Maneka Package',
@@ -177,10 +309,35 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
           required: false,
           placeholder: 'Select maneka package',
           options: [
-            { value: 'personal', label: 'Personal Membership' },
-            { value: 'group', label: 'Group Membership' }
+            { value: 'none', label: 'Not choosing Maneka' },
+            ...serviceOptions.maneka.packages.map(pkg => ({
+              value: pkg.value,
+              label: pkg.label // HANYA LABEL SAJA
+            }))
           ]
         },
+        // STEP 2: Jika package dipilih, tampilkan pilihan duration
+        ...(formData.maneka && formData.maneka !== 'none' ? [{
+          name: 'manekaDuration',
+          label: `Duration for ${getSelectedPackage('maneka')?.label}`,
+          type: 'select',
+          required: true,
+          placeholder: 'Select duration',
+          options: getSelectedPackage('maneka')?.durations?.map(dur => ({
+            value: dur.value,
+            label: dur.label // HANYA LABEL SAJA
+          })) || []
+        }] : []),
+        // STEP 3: Jika duration dipilih, tampilkan date picker
+        ...(formData.manekaDuration ? [{
+          name: 'manekaDate',
+          label: `Start Date for ${getSelectedPackage('maneka')?.label}`,
+          type: 'date',
+          required: true,
+          placeholder: 'Select start date'
+        }] : []),
+
+        // REMBUG PACKAGE - STEP 1: Pilih package
         {
           name: 'rembug',
           label: 'Rembug Package',
@@ -188,11 +345,35 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
           required: false,
           placeholder: 'Select rembug package',
           options: [
-            { value: '1', label: 'Rembug 1' },
-            { value: '2', label: 'Rembug 2' },
-            { value: '3', label: 'Rembug 3' },
+            { value: 'none', label: 'Not choosing Rembug' },
+            ...serviceOptions.rembug.packages.map(pkg => ({
+              value: pkg.value,
+              label: pkg.label // HANYA LABEL SAJA
+            }))
           ]
         },
+        // STEP 2: Jika package dipilih, tampilkan pilihan duration
+        ...(formData.rembug && formData.rembug !== 'none' ? [{
+          name: 'rembugDuration',
+          label: `Duration for ${getSelectedPackage('rembug')?.label}`,
+          type: 'select',
+          required: true,
+          placeholder: 'Select duration',
+          options: getSelectedPackage('rembug')?.durations?.map(dur => ({
+            value: dur.value,
+            label: dur.label // HANYA LABEL SAJA
+          })) || []
+        }] : []),
+        // STEP 3: Jika duration dipilih, tampilkan date picker
+        ...(formData.rembugDuration ? [{
+          name: 'rembugDate',
+          label: `Start Date for ${getSelectedPackage('rembug')?.label}`,
+          type: 'date',
+          required: true,
+          placeholder: 'Select start date'
+        }] : []),
+
+        // Event Space - STEP 1: Pilih package
         {
           name: 'eventSpace',
           label: 'Event Space',
@@ -200,11 +381,23 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
           required: false,
           placeholder: 'Select event space',
           options: [
-            { value: 'gatra', label: 'Gatra' },
-            { value: 'maneka', label: 'Maneka' },
-            { value: 'outdoor', label: 'Outdoor' },
+            { value: 'none', label: 'Not choosing Event Space' },
+            ...serviceOptions.eventSpace.packages.map(pkg => ({
+              value: pkg.value,
+              label: pkg.label
+            }))
           ]
         },
+        // STEP 2: Jika package dipilih, langsung tampilkan date picker
+        ...(formData.eventSpace && formData.eventSpace !== 'none' ? [{
+          name: 'eventSpaceDate',
+          label: `Event Date for ${getSelectedPackage('eventSpace')?.label}`,
+          type: 'date',
+          required: true,
+          placeholder: 'Select event date'
+        }] : []),
+
+        // PRIVATE OFFICE - STEP 1: Pilih package
         {
           name: 'privateOffice',
           label: 'Private Office',
@@ -212,11 +405,33 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
           required: false,
           placeholder: 'Select private office',
           options: [
-            { value: '1-3', label: 'Private Offive 1-3' },
-            { value: '4&5', label: 'Private Offive 4&5' },
-            { value: '6', label: 'Private Offive 6' },
+            { value: 'none', label: 'Not choosing Private Office' },
+            ...serviceOptions.privateOffice.packages.map(pkg => ({
+              value: pkg.value,
+              label: pkg.label // HANYA LABEL SAJA
+            }))
           ]
-        }
+        },
+        // STEP 2: Jika package dipilih, tampilkan pilihan duration
+        ...(formData.privateOffice && formData.privateOffice !== 'none' ? [{
+          name: 'privateOfficeDuration',
+          label: `Duration for ${getSelectedPackage('privateOffice')?.label}`,
+          type: 'select',
+          required: true,
+          placeholder: 'Select duration',
+          options: getSelectedPackage('privateOffice')?.durations?.map(dur => ({
+            value: dur.value,
+            label: dur.label // HANYA LABEL SAJA
+          })) || []
+        }] : []),
+        // STEP 3: Jika duration dipilih, tampilkan date picker
+        ...(formData.privateOfficeDuration ? [{
+          name: 'privateOfficeDate',
+          label: `Start Date for ${getSelectedPackage('privateOffice')?.label}`,
+          type: 'date',
+          required: true,
+          placeholder: 'Select start date'
+        }] : [])
       ]
     },
     {
@@ -232,7 +447,7 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
             { value: 'sosmed', label: 'Social Media' },
             { value: 'website', label: 'Company Website' },
             { value: 'friend', label: 'Friends / Family Recommendation' },
-            { value: 'event', label: 'Event / Exhibiton' },
+            { value: 'event', label: 'Event / Exhibition' },
             { value: 'local', label: 'Local Community' }
           ]
         }
@@ -249,9 +464,31 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
   };
 
   const handleSelectChange = (name, value) => {
+    // Reset dependent fields ketika parent field diubah
+    let resetFields = {};
+    
+    if (name === 'maneka') {
+      resetFields = { manekaDuration: '', manekaDate: '' };
+    } else if (name === 'manekaDuration') {
+      resetFields = { manekaDate: '' };
+    } else if (name === 'rembug') {
+      resetFields = { rembugDuration: '', rembugDate: '' };
+    } else if (name === 'rembugDuration') {
+      resetFields = { rembugDate: '' };
+    } else if (name === 'eventSpace') {
+      resetFields = { eventSpaceDuration: '', eventSpaceDate: '' };
+    } else if (name === 'eventSpaceDuration') {
+      resetFields = { eventSpaceDate: '' };
+    } else if (name === 'privateOffice') {
+      resetFields = { privateOfficeDuration: '', privateOfficeDate: '' };
+    } else if (name === 'privateOfficeDuration') {
+      resetFields = { privateOfficeDate: '' };
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
+      ...resetFields
     }));
   };
 
@@ -259,34 +496,12 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
     e.preventDefault();
     console.log('New member data for Banyumas:', formData);
     alert(`Member ${formData.full_name} added successfully to Banyumas!`);
-    setIsAddMemberModalOpen(false);
-    // Reset form
-    setFormData({
-      member_id: '',
-      full_name: '',
-      nik: '',
-      email: '',
-      phone: '',
-      gender: '',
-      dateOfBirth: '',
-      education: '',
-      address: '',
-      district: '',
-      city: '',
-      province: '',
-      postalCode:'',
-      bussinessName:'',
-      maneka: '',
-      rembug: '',
-      eventSpace: '',
-      privateOffice: '',
-      addInformation: ''
-    });
+    handleCloseModal();
   };
 
   const handleCloseModal = () => {
     setIsAddMemberModalOpen(false);
-    // Reset form ketika modal ditutup
+    // Reset semua field
     setFormData({
       member_id: '',
       full_name: '',
@@ -300,13 +515,21 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
       district: '',
       city: '',
       province: '',
-      postalCode:'',
-      bussinessName:'',
+      postalCode: '',
+      bussinessName: '',
       maneka: '',
       rembug: '',
       eventSpace: '',
       privateOffice: '',
-      addInformation: ''
+      addInformation: '',
+      manekaDuration: '',
+      manekaDate: '',
+      rembugDuration: '',
+      rembugDate: '',
+      eventSpaceDuration: '',
+      eventSpaceDate: '',
+      privateOfficeDuration: '',
+      privateOfficeDate: ''
     });
   };
 
@@ -329,7 +552,10 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
             </SelectTrigger>
             <SelectContent>
               {field.options.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
+                <SelectItem 
+                  key={`${field.name}-${option.value}`}
+                  value={option.value}
+                >
                   {option.label}
                 </SelectItem>
               ))}
@@ -383,11 +609,11 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
 
   return (
     <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
-      <DialogContent className="sm:max-w-[625px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Member - Banyumas</DialogTitle>
           <DialogDescription>
-            Fill in the details below to add a new member to Banyumas branch.
+            Fill in the details below to add a new member to Banyumas branch. Select service packages and choose dates as needed.
           </DialogDescription>
         </DialogHeader>
 
@@ -399,11 +625,6 @@ const AddMemberBanyumas = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
                 <h3 className="text-lg font-semibold text-gray-900">
                   {section.title}
                 </h3>
-                {section.description && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    {section.description}
-                  </p>
-                )}
               </div>
 
               {/* Section Fields */}
