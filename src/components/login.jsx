@@ -22,7 +22,6 @@ export default function LoginPage() {
         setError('');
 
         try {
-            console.log('🔄 Attempting login...', { email });
             
             const res = await fetch("http://localhost:3000/api/auth/login", {
                 method: "POST",
@@ -33,23 +32,19 @@ export default function LoginPage() {
             const data = await res.json();
             
             if (!res.ok) {
-                console.log('❌ Login failed:', data.error);
                 throw new Error(data.error || 'Login Failed');
             }
-
-            console.log('✅ Login successful:', data.user);
 
             // Gunakan login function dari context
             login(data.token, data.user);
 
             // Redirect to intended page
             const from = location.state?.from?.pathname || '/';
-            console.log('🔄 Redirecting to:', from);
             navigate(from, { replace: true });
             
         } catch (err) {
             setError(err.message);
-            console.error('❌ Login error:', err);
+            console.error('Login error:', err);
         } finally {
             setLoading(false);
         }

@@ -5,8 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { useAuth } from '../../context/AuthContext';
 
 const Header = () => {
+    const { logout } = useAuth();
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState(3)
     const [isScrolled, setIsScrolled] = useState(false);
@@ -21,7 +23,22 @@ const Header = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const handleLogout = () => navigate('/login')
+    const handleLogout = async () => {
+        try {
+            await fetch("http://localhost:3000/api/auth/logout", {
+                method: "POST",
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+            
+        } catch (error) {
+            console.error('Logout error:', error)
+        } finally {
+            logout()
+            navigate('/login')
+        }
+    }
     const handleSettings = () => navigate('/');
     const handleNotifications = () => navigate('/');
 

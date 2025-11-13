@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Plus } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
 import FilterDropdown from '../components/SearchFilter/FilterDropdown';
 import ExportButton from '../components/ActionButton/ExportButton';
@@ -12,60 +12,93 @@ import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from '../components/Pagination/Pagination';
 import FilterButton from '../components/SearchFilter/Filter';
 import AddUser from "../components/AddButton/AddUser";
+import { useUsers } from "../hooks/useUser";
 
 const Account = () => {
-    const [selectedMember, setSelectedMember] = useState(null)
+    const [selectedUser, setSelectedUser] = useState(null)
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingUser, setEditingUser] = useState(null);
+    const { users, loading, error, pagination, filters, setFilters, fetchUser } = useUsers()
 
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
     };
 
-    const members = [
-        {
-            no: '1',
-            employeeId: 'USR-001',
-            username: 'ahmad_rizki',
-            email: 'ahmad.rizki@company.com',
-            password: 'encrypted_password_123',
-            role: 'Manajer_Program',
-            status: 'Active',
-            fullName: 'Ahmad Rizki',
-            phone: '+62 81234567890',
-            position: 'CEO Program',
-            avatar: '/avatars/ahmad.jpg',
-            lastLogin: '2024-01-15 09:30:25',
-            createdAt: '2023-01-15',
-            updatedAt: '2024-01-15',
-            emailVerified: true,
-            twoFactorEnabled: false,
-            loginAttempts: 1,
-            action: 'Details'
+    const handleOpenEditModal = (program) => {
+        setEditingUser(program);
+        setIsEditModalOpen(true);
+    };
+
+    useEffect(() => {
+        if (selectedUser && users.length > 0) {
+            const currentSelected = users.find(member => member.id === selectedUser.id)
+            if (currentSelected) {
+                setSelectedUser(currentSelected)
+            }
         }
-    ]
+    }, [users, selectedUser?.id])
+
+    const handleRefresh = () => {
+        fetchUser(pagination.page);
+    };
+
+    const handleSearch = (searchTerm) => {
+        setFilters({ ...filters, search: searchTerm });
+    };
+
+    const handleFilterChange = (newFilters) => {
+        setFilters({ ...filters, ...newFilters });
+    };
+
+    const handlePageChange = (page) => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        fetchUser(page);
+    };
 
     const tableConfig = {
-        headers: ['No', 'Employee ID', 'Username', 'Email', 'Position', 'Role', 'Status', 'Last Login', 'Action'],
+        headers: ['No', 'Employee ID', 'Full Name', 'Email', 'Position', 'Role', 'Status', 'Last Login', 'Action'],
         title: 'User Account Management',
         addButton: 'Add User',
         detailTitle: 'User Details'
     }
 
+    const formattedUsers = users.map((user, index) => {
+        const currentPage = pagination.page
+        const itemsPerPage = pagination.limit
+        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1
+
+        return {
+            id: user.id,
+            no: itemNumber,
+            full_name: user.full_name,
+            email: user.email,
+            password: user.password,
+            role: user.role,
+            status: user.status,
+            phone: user.phone,
+            position: user.position,
+            avatar: user.avatar,
+            action: 'Detail',
+            ...user
+        }
+    })
+
     const handleEdit = () => {
-        if (selectedMember) {
-            console.log('Edit client:', selectedMember);
+        if (selectedUser) {
+            console.log('Edit client:', selectedUser);
             
-            alert(`Edit client: ${selectedMember.fullName}`);
+            alert(`Edit client: ${selectedUser.fullName}`);
         }
     };
 
     const handleDelete = () => {
-        if (selectedMember) {
-            if (window.confirm(`Are you sure you want to delete ${selectedMember.fullName}?`)) {
-                console.log('Delete client:', selectedMember);
+        if (selectedUser) {
+            if (window.confirm(`Are you sure you want to delete ${selectedUser.fullName}?`)) {
+                console.log('Delete client:', selectedUser);
                 
-                setSelectedMember(null); 
-                alert(`Client ${selectedMember.fullName} deleted`);
+                setSelectedUser(null); 
+                alert(`Client ${selectedUser.fullName} deleted`);
             }
         }
     };
@@ -99,19 +132,25 @@ const Account = () => {
                         </div>
 
                         <MemberTable
-                            members={members}
-                            onSelectMember={setSelectedMember}
+                            members={users}
+                            onSelectMember={setSelectedUser}
                             headers={tableConfig.headers}
                         />
 
                         <div className='mt-6'>
-                            <Pagination />
+                            <Pagination 
+                                currentPage={pagination.page}
+                                totalPages={pagination.totalPages}
+                                totalItems={pagination.total}
+                                onPageChange={handlePageChange}
+                                disabled={loading}
+                            />
                         </div>
                     </CardContent>
                 </Card>
 
                 <AccountContent
-                    selectedMember={selectedMember}
+                    selectedMember={selectedUser}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     detailTitle={tableConfig.detailTitle}

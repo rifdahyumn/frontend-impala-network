@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
         setUser(parsedUser);
         console.log('✅ User authenticated:', parsedUser.email);
-      } catch (error) {
+      } catch {
         console.log('❌ Error parsing user data');
         logout();
       }

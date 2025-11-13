@@ -128,13 +128,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                     placeholder: 'Enter program name',
                     disabled: isEditMode
                 },
-                // {
-                //   name: 'joindate',
-                //   label: 'Join Date',
-                //   type: 'date',
-                //   required: true,
-                //   placeholder: 'Select join date'
-                // },
             ]
         },
         {
