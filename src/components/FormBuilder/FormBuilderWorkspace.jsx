@@ -6,6 +6,7 @@ import FormCanvas from './FormCanvas';
 import FieldConfigPanel from './FieldConfigPanel';
 import FormPreview from './FormPreview';
 import TemplateSelector from './TemplateSelector';
+import PublicFormPreview from './PublicFormPreview'; // Tambahkan ini
 import { Button } from '../ui/button';
 
 const FormBuilderWorkspace = () => {
@@ -13,6 +14,7 @@ const FormBuilderWorkspace = () => {
     const [fields, setFields] = useState([]);
     const [selectedField, setSelectedField] = useState(null);
     const [previewMode, setPreviewMode] = useState(false);
+    const [publicPreviewMode, setPublicPreviewMode] = useState(false); // Mode baru untuk preview public
 
     // Template tetap untuk Personal Information
     const personalInfoFields = [
@@ -20,9 +22,17 @@ const FormBuilderWorkspace = () => {
             id: 'full_name', 
             type: 'text', 
             name: 'full_name', 
-            label: 'Full Name', 
+            label: 'Nama Lengkap', 
             required: true,
             placeholder: 'Masukkan nama lengkap'
+        },
+        {
+            id: 'nik',
+            type: 'text',
+            name: 'nik',
+            label: 'NIK',
+            required: true,
+            placeholder: 'Enter NIK'
         },
         { 
             id: 'email', 
@@ -36,7 +46,7 @@ const FormBuilderWorkspace = () => {
             id: 'phone', 
             type: 'phone', 
             name: 'phone', 
-            label: 'Phone Number', 
+            label: 'Nomor Telepon', 
             required: true,
             placeholder: '+62 812 3456 7890'
         },
@@ -44,7 +54,7 @@ const FormBuilderWorkspace = () => {
             id: 'gender', 
             type: 'select', 
             name: 'gender', 
-            label: 'Gender', 
+            label: 'Jenis Kelamin', 
             required: true,
             options: ['Laki-laki', 'Perempuan']
         },
@@ -52,7 +62,7 @@ const FormBuilderWorkspace = () => {
             id: 'dateOfBirth', 
             type: 'date', 
             name: 'dateOfBirth', 
-            label: 'Date of Birth', 
+            label: 'Tanggal Lahir', 
             required: true
         }
     ];
@@ -256,6 +266,16 @@ const FormBuilderWorkspace = () => {
         );
     }
 
+    if (publicPreviewMode) {
+        return (
+            <PublicFormPreview
+                fields={fields}
+                category={selectedCategory}
+                onBack={() => setPublicPreviewMode(false)}
+            />
+        );
+    }
+
     return (
         <div className="flex flex-col">
             <div className="flex justify-between items-center mb-4">
@@ -295,14 +315,18 @@ const FormBuilderWorkspace = () => {
                 />
             </div>
 
-            <div className="flex gap-2 mt-4 justify-end">
-                <Button onClick={() => setPreviewMode(true)} variant="outline">
-                    Preview Form
-                </Button>
-                <Button onClick={handleSave}>
-                    Simpan Form
-                </Button>
-            </div>
+            // Di bagian button, update teks tombol:
+<div className="flex gap-2 mt-4 justify-end">
+    <Button onClick={() => setPreviewMode(true)} variant="outline">
+        Preview Form (Admin)
+    </Button>
+    <Button onClick={() => setPublicPreviewMode(true)} variant="default">
+        Preview Form (User Eksternal)
+    </Button>
+    <Button onClick={handleSave}>
+        Simpan Form
+    </Button>
+</div>
         </div>
     );
 };
