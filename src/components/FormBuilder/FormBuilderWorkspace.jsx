@@ -315,19 +315,26 @@ const FormBuilderWorkspace = () => {
                 />
             </div>
 
-            // Di bagian button, update teks tombol:
+            // Di bagian button FormBuilderWorkspace.jsx:
 <div className="flex gap-2 mt-4 justify-end">
     <Button onClick={() => setPreviewMode(true)} variant="outline">
-        Preview Form (Admin)
+        Preview Form
     </Button>
-    <Button onClick={() => setPublicPreviewMode(true)} variant="default">
-        Preview Form (User Eksternal)
+    <Button 
+        onClick={() => {
+            const publicLink = `${window.location.origin}/register`;
+            navigator.clipboard.writeText(publicLink);
+            alert(`✅ Link public disalin!\n\n${publicLink}\n\nShare link ini ke user eksternal untuk pendaftaran.`);
+        }}
+        variant="default"
+    >
+        📋 Salin Link Public
     </Button>
     <Button onClick={handleSave}>
         Simpan Form
     </Button>
 </div>
-        </div>
+</div>
     );
 };
 

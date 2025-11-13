@@ -16,6 +16,7 @@ import LoginPage from './components/Login';
 import HeteroBanyumas from './pages/HeteroManagement';
 import HeteroSemarang from './pages/HeteroSemarang';
 import HeteroSurakarta from './pages/HeteroSurakarta';
+import PublicForm from './pages/PublicForm'; // TAMBAH IMPORT INI
 
 // Main Layout Component
 const MainLayout = ({ children }) => {
@@ -86,11 +87,27 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
+// Public Form Route - TANPA AUTH & LAYOUT
+const PublicFormRoute = ({ children }) => {
+  return children; // Langsung render tanpa auth check dan layout
+};
+
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
+          {/* PUBLIC ROUTES (tanpa layout & auth) */}
+          <Route 
+            path="/register" 
+            element={
+              <PublicFormRoute>
+                <PublicForm />
+              </PublicFormRoute>
+            } 
+          />
+          
+          {/* AUTH ROUTES (dengan login check) */}
           <Route 
             path="/login" 
             element={
@@ -100,6 +117,7 @@ function App() {
             } 
           />
           
+          {/* PROTECTED ROUTES (dengan layout & auth) */}
           <Route 
             path="/" 
             element={
