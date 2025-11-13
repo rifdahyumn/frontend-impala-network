@@ -2,7 +2,7 @@ import AccountContent from "../components/Content/AccountContent";
 import Header from "../components/Layout/Header";
 import { X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { Button } from "../components/ui/button"
 import React, { useState, useEffect } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
@@ -71,10 +71,12 @@ const Account = () => {
         return {
             id: user.id,
             no: itemNumber,
+            employee_id: user.employee_id,
             full_name: user.full_name,
             email: user.email,
             password: user.password,
             role: user.role,
+            last_login: user.last_login,
             status: user.status,
             phone: user.phone,
             position: user.position,
@@ -110,6 +112,12 @@ const Account = () => {
                 <Card className='mb-6'>
                     <CardHeader>
                         <CardTitle className='text-xl'>{tableConfig.title}</CardTitle>
+                        {loading && (
+                            <div className="flex items-center gap-2 text-blue-600">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span className="text-sm">Loading clients...</span>
+                            </div>
+                        )}
                     </CardHeader>
                     <CardContent>
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
@@ -131,21 +139,75 @@ const Account = () => {
                             </div>
                         </div>
 
-                        <MemberTable
-                            members={users}
-                            onSelectMember={setSelectedUser}
-                            headers={tableConfig.headers}
-                        />
+                        {loading && users.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                <span className="text-gray-600">Loading users...</span>
+                                <div className="w-64 bg-gray-200 rounded-full h-2">
+                                    <div className="bg-blue-600 h-2 rounded-full animate-pulse w-3/4"></div>
+                                </div>
+                            </div>
+                        ) : users.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
+                                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <Users className="w-10 h-10 text-gray-400" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-lg font-semibold text-gray-700">No users found</h3>
+                                    <p className="text-sm text-gray-500 max-w-md">
+                                        {filters.search || Object.values(filters).some(f => f) 
+                                            ? "Try adjusting your search or filters to find what you're looking for."
+                                            : "Get started by adding your first client to the system."
+                                        }
+                                    </p>
+                                </div>
+                                <Button 
+                                    className="flex items-center gap-2"
+                                    onClick={handleAddUser}
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Add Your First User
+                                </Button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="relative">
+                                    {loading && (
+                                        <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
+                                            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-lg border">
+                                                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                                                <span className="text-sm text-gray-600">Updating data...</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    <MemberTable
+                                        members={formattedUsers}
+                                        onSelectMember={setSelectedUser}
+                                        headers={tableConfig.headers}
+                                        isLoading={loading}
+                                    />
+                                </div>
 
-                        <div className='mt-6'>
-                            <Pagination 
-                                currentPage={pagination.page}
-                                totalPages={pagination.totalPages}
-                                totalItems={pagination.total}
-                                onPageChange={handlePageChange}
-                                disabled={loading}
-                            />
-                        </div>
+                                <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
+                                    <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+                                        Showing <span className="font-semibold">{formattedUsers.length}</span> of{' '}
+                                        <span className="font-semibold">
+                                            {pagination.total > 0 ? pagination.total : formattedUsers.length}
+                                        </span> program
+                                    </div>
+                                    
+                                    <Pagination 
+                                        currentPage={pagination.page}
+                                        totalPages={pagination.totalPages}
+                                        totalItems={pagination.total}
+                                        onPageChange={handlePageChange}
+                                        disabled={loading}
+                                    />
+                                </div>
+                            </>
+                        )}
+                        
                     </CardContent>
                 </Card>
 

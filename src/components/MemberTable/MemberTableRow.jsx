@@ -15,10 +15,10 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Password': 'password',
             'Date Of Birth': 'date_of_birth',
             'Education': 'education',
-            'Employee ID': 'employeeId',
+            'Employee ID': 'employee_id',
             'Role': 'role',
             'Avatar': 'avatar',
-            'Last Login': 'lastLogin',
+            'Last Login': 'last_login',
             'Phone': 'phone',
             'Company': 'company',
             'Client Company': 'client_company',
@@ -138,6 +138,35 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
                         {value}
                     </Badge>
                 );
+
+            case 'Last Login': {
+                if (!value) return 'Never logged in';
+
+                const date = new Date(value);
+                const now = new Date();
+                const diffTime = Math.abs(now - date);
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 0) {
+                    return 'Today ' + date.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })
+                } else if (diffDays === 1) {
+                    return 'Yesterday ' + date.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })
+                } else if (diffDays < 7) {
+                    return `${diffDays} days ago`
+                } else {
+                    return date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    })
+                }
+            }
 
             case 'Salary':
                 if (typeof value === 'number') {

@@ -11,8 +11,7 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             category: 'Account Information',
             icon: User,
             fields: [
-                { key: 'employeeId', label: 'Employee Id', icon: User },
-                { key: 'username', label: 'User Name', icon: User },
+                { key: 'employee_id', label: 'Employee Id', icon: User },
                 { key: 'password', label: 'Password', icon: EyeOffIcon },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'role', label: 'Role', icon: Shield }
