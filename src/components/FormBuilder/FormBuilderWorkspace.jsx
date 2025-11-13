@@ -321,7 +321,7 @@ const FormBuilderWorkspace = () => {
         Preview Form (Admin)
     </Button>
     <Button onClick={() => setPublicPreviewMode(true)} variant="default">
-        Preview Form (User Eksternal) - Dengan Pilihan Kategori
+        Preview Form (User Eksternal)
     </Button>
     <Button onClick={handleSave}>
         Simpan Form
