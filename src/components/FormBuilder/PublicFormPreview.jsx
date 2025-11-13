@@ -285,7 +285,7 @@ const PublicFormPreview = ({ fields, category, onBack }) => {
                     {/* Form Header */}
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
                         <h2 className="text-xl font-semibold text-center">
-                            Form Pendaftaran Program Impala
+                            Form Pendaftaran Peserta Program
                         </h2>
                     </div>
 
