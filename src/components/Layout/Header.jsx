@@ -8,12 +8,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useAuth } from '../../context/AuthContext';
 
 const Header = () => {
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState(3)
     const [isScrolled, setIsScrolled] = useState(false);
 
-    // Effect untuk menambah shadow saat scroll
     useEffect(() => {
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 10);
@@ -42,6 +41,47 @@ const Header = () => {
     const handleSettings = () => navigate('/');
     const handleNotifications = () => navigate('/');
 
+    const getInitials = (name) => {
+        if (!name) return 'U'
+        return name
+            .split(' ')
+            .map(word => word.charAt(0))
+            .join('')
+            .toUpperCase()
+            .slice(0, 2)
+    }
+
+    const formatPosition = (position) => {
+        if (!position) return 'User'
+
+        return position
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ')
+    }
+
+    const getShortName = (name) => {
+        if (!name) return 'User'
+
+        const words = name.split(' ')
+        if (words.length <= 2) {
+            return name
+        }
+
+        return words.slice(0, 2).join(' ')
+    }
+
+    const formatRole = (role) => {
+        if (!role) return 'User'
+
+        return role
+            .split('_')
+            .map(word => {
+                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            })
+            .join(' ')
+    }
+
     return (
         <div
             className={`fixed top-0 left-80 right-0 z-30 bg-white/90 backdrop-blur-md border-b transition-all duration-300 ${
@@ -51,12 +91,14 @@ const Header = () => {
         }`}>
             <div className='flex justify-between items-center p-4'>
                 <div className="flex items-center gap-4">
-                    <h1 className='text-3xl font-bold text-gray-900'>Hello Faiz</h1>
+                    <h1 className='text-2xl font-bold text-gray-900'>
+                        Hello {user?.full_name || 'User'}
+                    </h1>
                     <Badge
                         variant="secondary"
                         className="bg-amber-100 text-amber-800 hover:bg-amber-200"
                     >
-                        Manager IT
+                        {user?.position ? formatPosition(user.position) : 'User'}
                     </Badge>
                 </div>  
 
@@ -85,13 +127,14 @@ const Header = () => {
                                     <Avatar className="h-9 w-9 border-2 border-amber-200 group-hover:border-amber-300 transition-colors">
                                         <AvatarImage alt="profil" />
                                         <AvatarFallback className="bg-gradient-to-br from-amber-500 to-yellow-500 text-white font-semibold">
-                                            FA
+                                            {getInitials(user?.full_name)}
                                         </AvatarFallback>
                                     </Avatar>
 
                                     <div className="flex flex-col items-start mr-2">
-                                        <span className="text-sm font-semibold text-gray-800">Faiz</span>
-                                        <span className="text-xs text-gray-500">Admin</span>
+                                        <span className="text-xs text-gray-500">
+                                            {formatRole(user?.role)}
+                                        </span>
                                     </div>
                                     <ChevronDown className="h-4 w-4 text-amber-600 transition-transform group-data-[state=open]:rotate-180" />
                                 </div>
@@ -106,8 +149,12 @@ const Header = () => {
                             <DropdownMenuLabel className="font-normal p-0">
                                 <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-xl border-b border-amber-100">
                                     <div className="flex flex-col flex-1">
-                                        <p className="text-sm font-semibold text-gray-900">Muhammad Faiz</p>
-                                        <p className="text-xs text-gray-600 mt-0.5">faiz@impala.com</p>
+                                        <p className="text-sm font-semibold text-gray-900">
+                                            {getShortName(user?.full_name)}
+                                        </p>
+                                        <p className="text-xs text-gray-600 mt-0.5">
+                                            {user?.email}
+                                        </p>
                                     </div>
                                 </div>
                             </DropdownMenuLabel>

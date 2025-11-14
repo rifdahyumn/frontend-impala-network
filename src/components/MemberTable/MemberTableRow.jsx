@@ -41,7 +41,7 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Owner Photo': 'ownerPhoto',
             'Bussiness Logo': 'bussinessLogo',
             'Product Photo': 'productPhoto',
-            'Login Attempts': 'loginAttempts',
+            'Login Attempts': 'login_attempts',
             'Business Type': 'business',
             'Total Employee': 'total_employee',
             'Address': 'address',
@@ -144,7 +144,18 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
 
                 const date = new Date(value);
                 const now = new Date();
-                const diffTime = Math.abs(now - date);
+
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+
+                const yesterday = new Date()
+                yesterday.setDate(yesterday.getDate() - 1)
+
+                const loginDate = new Date()
+                loginDate.setHours(0, 0, 0, 0)
+
+
+                const diffTime = today - loginDate;
                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
                 if (diffDays === 0) {

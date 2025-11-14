@@ -4,11 +4,13 @@ import { Button } from '../ui/button';
 import { RiDashboardFill } from "react-icons/ri";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/utils';
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
     const location = useLocation()
     const navigate = useNavigate()
     const [isHeteroOpen, setIsHeteroOpen] = useState(false)
+    const { user } = useAuth()
 
     const menuItems = [
         {icon: Home, label: 'Home', path: '/'},
@@ -27,7 +29,9 @@ const Sidebar = () => {
             ]
         },
         {icon: FileSpreadsheet, label: 'Form Builder', path: '/form-builder'},
-        {icon: User, label: 'Account', path: '/user'},
+        ...(user?.role === 'admin' ? [
+            {icon: User, label: 'Account', path: '/user'}
+        ] : [])
     ];
 
     const isActive = (path) => {
@@ -89,7 +93,6 @@ const Sidebar = () => {
                                 )}
                             </Button>
 
-                            {/* Submenu untuk Hetero Management */}
                             {isHeteroItem && isHeteroOpen && (
                                 <div className="ml-6 mt-2 space-y-1 border-l-2 border-amber-200 pl-3">
                                     {item.submenu.map((subItem) => {

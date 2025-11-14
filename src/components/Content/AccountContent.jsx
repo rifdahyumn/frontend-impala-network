@@ -21,7 +21,7 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             category: 'Personal Information',
             icon: User,
             fields: [
-                { key: 'fullName', label: 'Full Name', icon: User },
+                { key: 'full_name', label: 'Full Name', icon: User },
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'position', label: 'Position', icon: User },
                 { key: 'avatar', label: 'Avatar', icon: Image }
@@ -31,10 +31,10 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             category: 'Security & Access',
             icon: Lock,
             fields: [
-                { key: 'lastLogin', label: 'Last Login', icon: History },
+                { key: 'last_login', label: 'Last Login', icon: History },
                 { key: 'emailVerified', label: 'Email Verified', icon: CheckCircle },
                 { key: 'twoFactorEnabled', label: 'Two Factor Enabled', icon: Shield },
-                { key: 'loginAttempts', label: 'Login Attempts', icon: Lock }
+                { key: 'login_attempts', label: 'Login Attempts', icon: Lock }
             ]
         },
     ];

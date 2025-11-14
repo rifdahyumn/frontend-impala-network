@@ -115,7 +115,7 @@ const Account = () => {
                         {loading && (
                             <div className="flex items-center gap-2 text-blue-600">
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                <span className="text-sm">Loading clients...</span>
+                                <span className="text-sm">Loading users...</span>
                             </div>
                         )}
                     </CardHeader>
