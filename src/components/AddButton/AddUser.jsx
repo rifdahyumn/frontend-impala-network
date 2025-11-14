@@ -4,23 +4,29 @@ import { Badge } from "../ui/badge";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
+import userService from "../../services/userService";
 
-const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
+const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editData = null, onEditUser = null }) => {
+    const isEditMode = !!editData
     const [formData, setFormData] = useState({
-        fullName: '',
-        username: '',
+        employee_id: '',
         email: '',
-        position: '',
+        password: '',
         role: '',
-        phone: ''
+        full_name: '',
+        position: '',
+        phone: '',
+        avatar: ''
     });
     const [avatar, setAvatar] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({})
 
     const formSections = [
         {
@@ -55,7 +61,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
                     placeholder: 'Select Role',
                     options: [
                         { value: 'admin', label: 'Admin' },
-                        { value: 'manajer_Program', label: 'Manajer Program' },
+                        { value: 'manajer_program', label: 'Manajer Program' },
                         { value: 'staff', label: 'Community Team' }
                     ]
                 }
@@ -85,17 +91,17 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
                     required: true,
                     placeholder: 'Select Position',
                     options: [
-                        { value: 'managing_Director', label: 'Managing Director' },
-                        { value: 'director', label: 'Director' },
-                        { value: 'general_Secretary', label: 'Head Manager' },
-                        { value: 'finance', label: 'Finance' },
-                        { value: 'legal', label: 'Legal' },
-                        { value: 'talent_Manager', label: 'Talent Manager' },
-                        { value: 'ecosystem_Manager', label: 'Ecosystem Manager' },
-                        { value: 'strategic_Partnership_Executive', label: 'Strategic Partnership Executive' },
-                        { value: 'program_Manager', label: 'Program Manager' },
-                        { value: 'space_Manager', label: 'Space Manager' },
-                        { value: 'creative', label: 'Creative' }
+                        { value: 'Managing Director', label: 'Managing Director' },
+                        { value: 'Director', label: 'Director' },
+                        { value: 'General Secretary', label: 'Head Manager' },
+                        { value: 'Finance', label: 'Finance' },
+                        { value: 'Legal', label: 'Legal' },
+                        { value: 'Talent Manager', label: 'Talent Manager' },
+                        { value: 'Ecosystem Manager', label: 'Ecosystem Manager' },
+                        { value: 'Strategic Partnership_Executive', label: 'Strategic Partnership Executive' },
+                        { value: 'Program Manager', label: 'Program Manager' },
+                        { value: 'Space Manager', label: 'Space Manager' },
+                        { value: 'Creative', label: 'Creative' }
                     ]
                 }
             ]
@@ -117,19 +123,103 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
         },
     ];
 
+    useEffect(() => {
+        if (isEditMode && editData) {
+            setFormData({
+                employee_id: editData.employee_id || '',
+                email: editData.email || '',
+                password: editData.password || '',
+                role: editData.role || '',
+                full_name: editData.full_name || '',
+                position: editData.position || '',
+                phone: editData.phone || '',
+                avatar: editData.avatar || '',
+            })
+        } else {
+            setFormData({
+                employee_id: '',
+                email: '',
+                password: '',
+                role: '',
+                full_name: '',
+                position: '',
+                phone: '',
+                avatar: '',
+            })
+        }
+        setErrors({})
+    }, [isEditMode, editData, isAddUserModalOpen])
+
+    const validateForm = () => {
+        const newErrors = {}
+
+        formSections.forEach(section => {
+            section.fields.forEach(field => {
+                if (field.required && !field.disabled) {
+                    const value = formData[field.name]
+                    if (!value || value.toString().trim() === '') {
+                        newErrors[field.name] = `${field.label} is required`
+                    }
+                }
+            })
+        })
+
+        if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = 'Email is invalid';
+        }
+
+        if (formData.phone && formData.phone.replace(/\D/g, '').length < 10) {
+            newErrors.phone = 'Phone number is too short'
+        }
+
+        setErrors(newErrors)
+        return Object.keys(newErrors).length === 0
+    }
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        
+        const fieldConfig = formSections
+            .flatMap(section => section.fields)
+            .find(field => field.name === name)
+
+        if (fieldConfig?.disabled) {
+            return
+        }
+
         setFormData(prev => ({
             ...prev,
             [name]: value
         }));
+
+        if(errors[name]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }))
+        }
     };
 
     const handleSelectChange = (name, value) => {
+        const fieldConfig = formSections
+            .flatMap(section => section.fields)
+            .find(field => field.name === name);
+            
+        if (fieldConfig?.disabled) {
+            return;
+        }
+
         setFormData(prev => ({
             ...prev,
             [name]: value
         }));
+
+        if (errors[name]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }))
+        }
     };
 
     const handleAvatarChange = (e) => {
@@ -160,33 +250,51 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
         setAvatarPreview(null)
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        alert(`User ${formData.fullName} added successfully!`);
-        setIsAddUserModalOpen(false);
- 
-        setFormData({
-            fullName: '',
-            username: '',
-            email: '',
-            position: '',
-            role: '',
-            phone: ''
-        });
+        const currentUser = JSON.parse(localStorage.getItem('user'));
+        console.log('👤 Current user role:', currentUser?.role);
+        console.log('🔐 Token exists:', !!localStorage.getItem('token'));
+
+        if (!validateForm()) {
+            toast.error('Please fix the errors in the form')
+            return;
+        }
+        setLoading(true)
+
+        try {
+            const userData = {
+                ...formData
+            }
+
+            if (isEditMode) {
+                if (onEditUser) {
+                    await onEditUser(editData.id, userData)
+                } else {
+                    await userService.updateUser(editData.id, userData)
+                    toast.success('Updated successfully')
+                }
+            } else {
+                if (onAddUser) {
+                    await onAddUser(userData)
+                } else {
+                    await userService.addUser(userData)
+                    toast.success('Added successfully')
+                }
+            }
+            handleCloseModal()
+        } catch (error) {
+            console.error(`Error ${isEditMode ? 'updating' : 'adding'} user: `, error)
+            toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'add'} user`)
+        } finally {
+            setLoading(false)
+        }
     };
 
     const handleCloseModal = () => {
-        setIsAddUserModalOpen(false);
-
-        setFormData({
-            fullName: '',
-            username: '',
-            email: '',
-            position: '',
-            role: '',
-            phone: ''
-        });
+        setIsAddUserModalOpen(false)
+        setErrors({})
     };
 
     const renderField = (field) => {
@@ -298,11 +406,16 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
 
     return (
         <Dialog open={isAddUserModalOpen} onOpenChange={setIsAddUserModalOpen}>
-            <DialogContent className="sm:max-w-[625px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-h-[90vh] max-w-[900px] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Add New User</DialogTitle>
+                    <DialogTitle>
+                        {isEditMode ? 'Edit User' : 'Add New User'}
+                    </DialogTitle>
                     <DialogDescription>
-                        Fill in the details below to add a new user to the system.
+                        {isEditMode
+                            ? 'Update the user information below'
+                            : 'Fill in the details below to add a new user to the system'
+                        }
                     </DialogDescription>
                 </DialogHeader>
 
@@ -314,17 +427,10 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
                                 <h3 className="text-lg font-semibold text-gray-900">
                                     {section.title}
                                 </h3>
-                                {section.description && (
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        {section.description}
-                                    </p>
-                                )}
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid md:grid-cols-2 gap-4">
                                 {section.fields.map(renderField)}
                             </div>
-
 
                             {sectionIndex < formSections.length - 1 && (
                                 <div className="pt-2" />
@@ -341,7 +447,11 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen }) => {
                             Cancel
                         </Button>
                         <Button type="submit">
-                            Add User
+                            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                            {loading 
+                                ? (isEditMode ? 'Updating User...' : 'Adding User...')
+                                : (isEditMode ? 'Update User' : 'Add User')
+                            }
                         </Button>
                     </div>
                 </form>

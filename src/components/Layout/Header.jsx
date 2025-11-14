@@ -10,7 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 const Header = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const [notifications, setNotifications] = useState(3)
+    // const [notifications, setNotifications] = useState(3)
     const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
@@ -39,7 +39,7 @@ const Header = () => {
         }
     }
     const handleSettings = () => navigate('/');
-    const handleNotifications = () => navigate('/');
+    // const handleNotifications = () => navigate('/');
 
     const getInitials = (name) => {
         if (!name) return 'U'
@@ -103,7 +103,7 @@ const Header = () => {
                 </div>  
 
                 <div className='flex items-center gap-4'>
-                    <Button
+                    {/* <Button
                         variant="ghost"
                         icon="icon"
                         className="relative h-10 w-10 rounded-lg hover:bg-amber-50"
@@ -115,7 +115,7 @@ const Header = () => {
                                 {notifications}
                             </span>
                         )}
-                    </Button>
+                    </Button> */}
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

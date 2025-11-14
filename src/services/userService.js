@@ -53,6 +53,27 @@ class UserService {
             throw error;
         }
     }
+
+    async addUser(userData) {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) throw new Error('Token not found. Please log in again.');
+
+            const response = await fetch(`${this.baseURL}/user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body:JSON.stringify(userData)
+            })
+
+            return await this.handleResponse(response)
+        } catch (error) {
+            console.error('Error updating user: ', error)
+            throw error
+        }
+    }
 }
 
-export default new UserService;
+export default new UserService();

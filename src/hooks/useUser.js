@@ -64,7 +64,19 @@ export const useUsers = (initialFilters = {}) => {
         fetchUsers(1);
     }, [fetchUsers]); 
 
+    const addUser = async (userData) => {
+        try {
+            const result = await userService.addUser(userData)
+            toast.success('User add successfully')
+            await fetchUsers(pagination.page)
+            return result
+        } catch (error) {
+            toast.error('Failed to add user')
+            throw error
+        }
+    }
+
     return {
-        users, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchUsers: changePage
+        users, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchUsers: changePage, addUser
     }
 }
