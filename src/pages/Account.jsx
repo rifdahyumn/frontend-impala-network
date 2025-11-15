@@ -19,10 +19,19 @@ const Account = () => {
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-    const { users, loading, error, pagination, filters, setFilters, fetchUser } = useUsers()
+    const { users, loading, error, pagination, filters, setFilters, fetchUser, addUser } = useUsers()
 
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
+    };
+
+    const handleAddUserSuccess = async (userData) => {
+        try {
+            await addUser(userData);
+            setIsAddUserModalOpen(false);
+        } catch {
+            // Error sudah dihandle di hook
+        }
     };
 
     const handleOpenEditModal = (program) => {
@@ -221,6 +230,7 @@ const Account = () => {
              <AddUser 
                 isAddUserModalOpen={isAddUserModalOpen} 
                 setIsAddUserModalOpen={setIsAddUserModalOpen}
+                onAddUser={handleAddUserSuccess}
              />
             </div>
         </div>

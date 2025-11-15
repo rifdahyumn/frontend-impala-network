@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, User, Mail, Phone,Shield, History, CheckCircle, Lock, Image, EyeClosed, EyeOffIcon } from "lucide-react";
+import { Edit, Trash2, User, Mail, Phone,Shield, History, CheckCircle, Lock, Image, EyeClosed, EyeOffIcon, EyeOff, Eye } from "lucide-react";
 
 const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
     const [activeCategory, setActiveCategory] = useState('Account Information');
+    const [showPassword, setShowPassword] = useState(false)
 
     const detailFields = [
         {
@@ -12,7 +13,7 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             icon: User,
             fields: [
                 { key: 'employee_id', label: 'Employee Id', icon: User },
-                { key: 'password', label: 'Password', icon: EyeOffIcon },
+                { key: 'password', label: 'Password', icon: Lock, isPassword: true },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'role', label: 'Role', icon: Shield }
             ]
@@ -43,6 +44,11 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
         return detailFields.find(category => category.category === activeCategory);
     };
 
+    const maskPassword = (password) => {
+        if (!password) return '-'
+        return '•'.repeat(8);
+    }
+
     const ActiveCategoryContent = () => {
         const activeCategoryData = getActiveCategoryData()
 
@@ -66,9 +72,41 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                             displayValue = selectedMember[field.key] ? 'Yes' : 'No'
                         }
 
+                        if (field.isPassword) {
+                            return (
+                                <div key={index} className='flex items-start gap-3'>
+                                    <FieldIcon cla ssName='h-4 w-4 text-gray-400 mt-1 flex-shrink-0'  />
+
+                                    <div className='flex-1'>
+                                        <label className='text-sm text-gray-500 block mb-1'>
+                                            {field.label}
+                                        </label>
+                                        <div className='flex items-center gap-2'>
+                                            <p className='text-gray-900 text-sm font-medium'>
+                                                {showPassword ? (displayValue || '-') : maskPassword(displayValue)}
+                                            </p>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 w-6 p-0 hover:bg-gray-100"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                            >
+                                                {showPassword ? (
+                                                    <EyeOff className='h-3 w-3 text-gray-500' />
+                                                ) : (
+                                                    <Eye className='h-3 w-3 text-gray-500' />
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        }
+
                         return (
-                            <div key={index} className='flex items-start gap-3'>
-                                <FieldIcon cla ssName='h-4 w-4 text-gray-400 mt-1 flex-shrink-0'  />
+                            <div key={index} className='flex items-center gap-3'>
+                                <FieldIcon className='h-4 w-4 text-gray-400 mt-1 flex-shrink-0' />
 
                                 <div className='flex-1'>
                                     <label className='text-sm text-gray-500 block mb-1'>
@@ -106,7 +144,10 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                                             variant={activeCategory === category.category ? 'default' : 'outline'}
                                             size="sm"
                                             className="flex items-center gap-2"
-                                            onClick={() => setActiveCategory(category.category)}
+                                            onClick={() => {
+                                                setActiveCategory(category.category)
+                                                setShowPassword(false)
+                                            }}
                                         >
                                             <CategoryIcon className='h-4 w-4' />
                                             {category.category}

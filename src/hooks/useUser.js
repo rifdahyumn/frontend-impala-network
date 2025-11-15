@@ -14,13 +14,9 @@ export const useUsers = (initialFilters = {}) => {
     });
     const [filters, setFilters] = useState({
         search: '',
+        status: '',
+        role: '',
         ...initialFilters
-        // status: '',
-        // industry: '',
-        // company: '',
-        // program_name: '',
-        // sortBy: 'id',
-        // sortOrder: 'desc'
     });
 
     const fetchUsers = useCallback(async (page = 1, customFilters = null) => {
@@ -29,19 +25,21 @@ export const useUsers = (initialFilters = {}) => {
             setError(null)
 
             const currentFilters = customFilters || filters;
+            const currentPage = page || pagination.page;
 
             const result = await userService.fetchUsers({
                 page,
                 limit: pagination.limit,
-                ...filters
+                ...currentFilters
             });
 
             setUsers(result.data || [])
+
             setPagination(prev => ({
                 ...prev,
                 page: result.meta?.pagination?.page || page,
                 total: result.pagination?.total || 0,
-                totalPages: result.pagination?.totalPages || 0,
+                totalPages: result.pagination?.totalPages || Math.ceil((result.pagination?.total || result.total || 0) / pagination.limit),
             }))
         } catch (error) {
             console.error('Error fetching users:', error)
@@ -50,15 +48,19 @@ export const useUsers = (initialFilters = {}) => {
         } finally {
             setLoading(false)
         }
-    }, [filters, pagination.limit])
+    }, [filters, pagination.limit, pagination.page])
 
     const refetchWithFilters = useCallback((newFilters) => {
-        setFilters(newFilters);
+        setFilters(prev => ({ ...prev, ...newFilters }));
     }, []);
 
     const changePage = useCallback((page) => {
         fetchUsers(page);
     }, [fetchUsers]);
+
+    const refreshUsers = useCallback(() => {
+        fetchUsers(pagination.page);
+    }, [fetchUsers, pagination.page]);
 
     useEffect(() => {
         fetchUsers(1);
@@ -68,7 +70,8 @@ export const useUsers = (initialFilters = {}) => {
         try {
             const result = await userService.addUser(userData)
             toast.success('User add successfully')
-            await fetchUsers(pagination.page)
+            
+            await refreshUsers();
             return result
         } catch (error) {
             toast.error('Failed to add user')

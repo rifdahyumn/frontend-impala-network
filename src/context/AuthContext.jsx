@@ -1,78 +1,100 @@
 // src/context/AuthContext.jsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
-  const [user, setUser] = useState(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(null);
+    const [user, setUser] = useState(null);
 
-  const checkAuth = () => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    console.log('🔐 Checking auth:', { 
-      token: !!token, 
-      userData: !!userData 
-    });
+    const isTokenExpired = (token) => {
+        if (!token) return true
 
-    if (token && userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setIsAuthenticated(true);
-        setUser(parsedUser);
-        console.log('✅ User authenticated:', parsedUser.email);
-      } catch {
-        console.log('❌ Error parsing user data');
-        logout();
-      }
-    } else {
-      setIsAuthenticated(false);
-      setUser(null);
-      console.log('❌ No authentication data found');
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]))
+            const expirationTime = payload.exp * 1000
+            const currentTime = Date.now()
+
+            return currentTime > expirationTime
+        } catch (error) {
+            console.error('Error checking token expiration:', error)
+            return true
+        }
     }
-  };
 
-  // Login function
-  const login = (token, userData) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setIsAuthenticated(true);
-    setUser(userData);
-    console.log('✅ Login successful:', userData.email);
-  };
+    const checkAuth = () => {
+        const token = localStorage.getItem('token');
+        const userData = localStorage.getItem('user');
 
-  // Logout function
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setIsAuthenticated(false);
-    setUser(null);
-    console.log('✅ Logout successful');
-  };
+        if (token && userData) {
+            try {
+                if (isTokenExpired(token)) {
+                    logout()
+                    return
+                }
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+                const parsedUser = JSON.parse(userData);
+                setIsAuthenticated(true);
+                setUser(parsedUser);
+                
+            } catch { 
+                logout();
+            }
+        } else {
+            setIsAuthenticated(false);
+            setUser(null);
+        }
+    };
 
-  return (
-    <AuthContext.Provider value={{ 
-      isAuthenticated, 
-      user, 
-      login, 
-      logout, 
-      checkAuth 
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
+
+    const login = (token, userData) => {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(userData));
+        setIsAuthenticated(true);
+        setUser(userData);
+    };
+
+
+    const logout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setIsAuthenticated(false);
+        setUser(null);
+    };
+
+    useEffect(() => {
+        checkAuth();
+
+        const interval = setInterval(() => {
+            const token = localStorage.getItem('token')
+            if (token && isTokenExpired(token)) {
+                logout()
+            }
+        }, 60000)
+        return () => clearInterval(interval)
+
+    }, []);
+
+    return (
+        <AuthContext.Provider value={{ 
+            isAuthenticated, 
+            user, 
+            login, 
+            logout, 
+            checkAuth 
+        }}>
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
-// Custom hook untuk menggunakan auth context
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
-};
+
+// export const useAuth = () => {
+//     const context = useContext(AuthContext);
+//     if (!context) {
+//         throw new Error('useAuth must be used within AuthProvider');
+//     }
+//     return context;
+// };
+
+export { AuthContext }

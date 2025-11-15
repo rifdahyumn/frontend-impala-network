@@ -1,6 +1,7 @@
 import React from "react";
 import { TableCell, TableRow } from "../ui/table";
 import { Badge } from "../ui/badge";
+import { format, isToday, isYesterday } from "date-fns";
 
 const MemberTableRow = ({ member, headers, onSelect }) => {
     const renderCellContent = (header, member) => {
@@ -142,40 +143,19 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             case 'Last Login': {
                 if (!value) return 'Never logged in';
 
-                const date = new Date(value);
-                const now = new Date();
+                const loginDate = new Date(value)
 
-                const today = new Date()
-                today.setHours(0, 0, 0, 0)
-
-                const yesterday = new Date()
-                yesterday.setDate(yesterday.getDate() - 1)
-
-                const loginDate = new Date()
-                loginDate.setHours(0, 0, 0, 0)
-
-
-                const diffTime = today - loginDate;
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-                if (diffDays === 0) {
-                    return 'Today ' + date.toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })
-                } else if (diffDays === 1) {
-                    return 'Yesterday ' + date.toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })
-                } else if (diffDays < 7) {
-                    return `${diffDays} days ago`
+                if (isToday(loginDate)) {
+                    return 'Today ' + format(loginDate, 'hh:mm a')
+                } else if (isYesterday(loginDate)) {
+                    return 'Yesterday ' + format(loginDate, 'hh:mm a')
                 } else {
-                    return date.toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                    })
+                    const daysDiff = Math.floor((new Date() - loginDate) / (1000 * 60 * 60 * 24))
+                    if (daysDiff < 7) {
+                        return `${daysDiff} days ago`
+                    } else {
+                        return format(loginDate, 'MM dd, yyyy')
+                    }
                 }
             }
 

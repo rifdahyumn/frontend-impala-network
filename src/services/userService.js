@@ -54,7 +54,7 @@ class UserService {
         }
     }
 
-    async addUser(userData) {
+    async addUser(formData) {
         try {
             const token = localStorage.getItem('token');
             if (!token) throw new Error('Token not found. Please log in again.');
@@ -62,10 +62,10 @@ class UserService {
             const response = await fetch(`${this.baseURL}/user`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    // 'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body:JSON.stringify(userData)
+                body:formData
             })
 
             return await this.handleResponse(response)

@@ -1,9 +1,9 @@
 // src/components/Login.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../App.css";
 import { FaUser, FaLock } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext"; // Import dari context folder
+import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/impalalogo.png";
 import logo2 from "../assets/heterologo.png";
 
@@ -35,10 +35,8 @@ export default function LoginPage() {
                 throw new Error(data.error || 'Login Failed');
             }
 
-            // Gunakan login function dari context
             login(data.token, data.user);
 
-            // Redirect to intended page
             const from = location.state?.from?.pathname || '/';
             navigate(from, { replace: true });
             
@@ -49,6 +47,24 @@ export default function LoginPage() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const token = localStorage.getItem('token')
+        if(token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]))
+                const isExpired = Date.now() > (payload.exp * 1000)
+
+                if (isExpired) {
+                    localStorage.removeItem('token')
+                    localStorage.removeItem('user')
+                }
+            } catch (error) {
+                localStorage.removeItem('token')
+                localStorage.removeItem('user')
+            }
+        }
+    })
 
     return (
         <div className="login-page">

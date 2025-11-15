@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { RiDashboardFill } from "react-icons/ri";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/utils';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 const Sidebar = () => {
     const location = useLocation()

@@ -253,10 +253,6 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const currentUser = JSON.parse(localStorage.getItem('user'));
-        console.log('👤 Current user role:', currentUser?.role);
-        console.log('🔐 Token exists:', !!localStorage.getItem('token'));
-
         if (!validateForm()) {
             toast.error('Please fix the errors in the form')
             return;
@@ -264,22 +260,30 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
         setLoading(true)
 
         try {
-            const userData = {
-                ...formData
+            const formDataToSend = new FormData()
+
+            Object.keys(formData).forEach(key => {
+                if (formData[key] !== null && formData[key] !== undefined) {
+                    formDataToSend.append(key, formData[key])
+                }
+            })
+
+            if (avatar) {
+                formDataToSend.append('avatar_file', avatar)
             }
 
             if (isEditMode) {
                 if (onEditUser) {
-                    await onEditUser(editData.id, userData)
+                    await onEditUser(editData.id, formDataToSend)
                 } else {
-                    await userService.updateUser(editData.id, userData)
+                    await userService.updateUser(editData.id, formDataToSend)
                     toast.success('Updated successfully')
                 }
             } else {
                 if (onAddUser) {
-                    await onAddUser(userData)
+                    await onAddUser(formDataToSend)
                 } else {
-                    await userService.addUser(userData)
+                    await userService.addUser(formDataToSend)
                     toast.success('Added successfully')
                 }
             }
