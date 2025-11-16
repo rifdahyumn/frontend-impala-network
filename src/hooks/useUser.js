@@ -79,7 +79,30 @@ export const useUsers = (initialFilters = {}) => {
         }
     }
 
+    const updateUser = async (userId, userData) => {
+        try {
+            setLoading(true)
+            const result = await userService.updateUser(userId, userData)
+            toast.success('User updated successfully')
+
+            setUsers(preUsers => 
+                preUsers.map(user =>
+                    user.id === userId
+                        ? { ...user, ...userData, ...result.data || result }
+                        : user
+                )
+            )
+
+            return result.data || result
+        } catch (error) {
+            toast.error('Failed to update client')
+            throw error
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return {
-        users, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchUsers: changePage, addUser
+        users, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchUsers: changePage, addUser, updateUser
     }
 }

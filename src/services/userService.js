@@ -7,16 +7,7 @@ class UserService {
     }
 
     async handleResponse(response) {
-        if (!response.ok) {
-            const error = await response.text()
-            throw new Error (error || `HTTP status error ${response.status}`)
-        }
-
         const result = await response.json()
-
-        if (!result.success) {
-            throw new Error(result.message)
-        }
 
         return result
     }
@@ -66,6 +57,26 @@ class UserService {
                     'Authorization': `Bearer ${token}`
                 },
                 body:formData
+            })
+
+            return await this.handleResponse(response)
+        } catch (error) {
+            console.error('Error updating user: ', error)
+            throw error
+        }
+    }
+
+    async updateUser(userId, formData) {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) throw new Error('Token not found. Please log in again.');
+
+            const response = await fetch(`${this.baseURL}/user/${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
             })
 
             return await this.handleResponse(response)

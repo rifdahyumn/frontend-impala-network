@@ -134,6 +134,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                 position: editData.position || '',
                 phone: editData.phone || '',
                 avatar: editData.avatar || '',
+                status: editData.status || 'active'
             })
         } else {
             setFormData({
@@ -145,6 +146,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                 position: '',
                 phone: '',
                 avatar: '',
+                status: 'Active',
             })
         }
         setErrors({})
@@ -168,8 +170,13 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
             newErrors.email = 'Email is invalid';
         }
 
-        if (formData.phone && formData.phone.replace(/\D/g, '').length < 10) {
-            newErrors.phone = 'Phone number is too short'
+        if (formData.phone) {
+            const phoneString = formData.phone.toString(); // Convert ke string dulu
+            const digitsOnly = phoneString.replace(/\D/g, '');
+            
+            if (digitsOnly.length < 10) {
+                newErrors.phone = 'Phone number is too short'
+            }
         }
 
         setErrors(newErrors)

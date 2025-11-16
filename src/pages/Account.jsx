@@ -13,13 +13,14 @@ import Pagination from '../components/Pagination/Pagination';
 import FilterButton from '../components/SearchFilter/Filter';
 import AddUser from "../components/AddButton/AddUser";
 import { useUsers } from "../hooks/useUser";
+import toast from "react-hot-toast";
 
 const Account = () => {
     const [selectedUser, setSelectedUser] = useState(null)
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-    const { users, loading, error, pagination, filters, setFilters, fetchUser, addUser } = useUsers()
+    const { users, loading, error, pagination, filters, setFilters, fetchUser, addUser, updateUser } = useUsers()
 
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
@@ -34,9 +35,30 @@ const Account = () => {
         }
     };
 
-    const handleOpenEditModal = (program) => {
-        setEditingUser(program);
+    const handleOpenEditModal = (user) => {
+        setEditingUser(user);
         setIsEditModalOpen(true);
+    };
+
+    const handleEditUser = async (userId, userData) => {
+        try {
+            const updatedUser = await updateUser(userId, userData)
+
+            if (selectedUser && selectedUser.id === userId) {
+                setSelectedUser(prev => ({
+                    ...prev,
+                    ...userData,
+                    ...updateUser
+                }))
+            }
+
+            setIsEditModalOpen(false)
+            setEditingUser(null)
+            toast.success('User updated successfully')
+        } catch (error) {
+            console.error('Error updating', error)
+            toast.error(error.message || 'Failed to update user')
+        }
     };
 
     useEffect(() => {
@@ -94,14 +116,6 @@ const Account = () => {
             ...user
         }
     })
-
-    const handleEdit = () => {
-        if (selectedUser) {
-            console.log('Edit client:', selectedUser);
-            
-            alert(`Edit client: ${selectedUser.fullName}`);
-        }
-    };
 
     const handleDelete = () => {
         if (selectedUser) {
@@ -221,16 +235,30 @@ const Account = () => {
                 </Card>
 
                 <AccountContent
-                    selectedMember={selectedUser}
-                    onEdit={handleEdit}
+                    selectedUser={selectedUser}
+                    onOpenEditModal={handleOpenEditModal}
                     onDelete={handleDelete}
                     detailTitle={tableConfig.detailTitle}
+                    onUserUpdated={() => fetchUser(pagination.page)}
+                    onClientDeleted={() => {
+                        fetchUser(pagination.page);
+                        setSelectedUser(null);
+                    }}
+                    
                 />
              {/* Add User Modal */}
              <AddUser 
-                isAddUserModalOpen={isAddUserModalOpen} 
-                setIsAddUserModalOpen={setIsAddUserModalOpen}
+                isAddUserModalOpen={isAddUserModalOpen || isEditModalOpen} 
+                setIsAddUserModalOpen={(open) => {
+                    if (!open) {
+                        setIsAddUserModalOpen(false)
+                        setIsEditModalOpen(false)
+                        setEditingUser(null)
+                    }
+                }}
                 onAddUser={handleAddUserSuccess}
+                editData={editingUser}
+                onEditUser={handleEditUser}
              />
             </div>
         </div>

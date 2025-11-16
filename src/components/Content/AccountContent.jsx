@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
 import { Edit, Trash2, User, Mail, Phone,Shield, History, CheckCircle, Lock, Image, EyeClosed, EyeOffIcon, EyeOff, Eye } from "lucide-react";
+import toast from 'react-hot-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
-const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
+const AccountContent = ({ selectedUser, onOpenEditModal, detailTitle, onDelete, onUserEdited }) => {
     const [activeCategory, setActiveCategory] = useState('Account Information');
     const [showPassword, setShowPassword] = useState(false)
 
@@ -25,7 +27,7 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                 { key: 'full_name', label: 'Full Name', icon: User },
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'position', label: 'Position', icon: User },
-                { key: 'avatar', label: 'Avatar', icon: Image }
+                { key: 'avatar', label: 'Avatar', icon: Image, isImage: true }
             ]
         },
         {
@@ -44,15 +46,63 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
         return detailFields.find(category => category.category === activeCategory);
     };
 
+    const handleEdit = () => {
+        if (!selectedUser) return
+        if (onOpenEditModal) {
+            onOpenEditModal(selectedUser, (updatedUser) => {
+                if (onUserEdited) {
+                    onUserEdited(updatedUser)
+                }
+
+                toast.success('User updated successfully')
+            })
+        }
+    }
+
     const maskPassword = (password) => {
         if (!password) return '-'
         return '•'.repeat(8);
     }
 
+    const getAvatarUrl = (avatarPath) => {
+        console.log('🔍 Debug Avatar:', {
+            avatarPath,
+            type: typeof avatarPath,
+            startsWithUpload: avatarPath?.startsWith('/uploads'),
+            fullUrl: avatarPath?.startsWith('http')
+        });
+        
+        if (!avatarPath) return null;
+        
+        // Jika sudah full URL, return langsung
+        if (avatarPath.startsWith('http')) {
+            return avatarPath;
+        }
+        
+        // Jika path relative (contoh: /uploads/avatars/avatar-123.jpg)
+        // Tambahkan base URL backend
+        // eslint-disable-next-line no-undef
+        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+        const fullUrl = `${baseUrl}${avatarPath}`;
+        
+        console.log('🔗 Generated URL:', fullUrl);
+        return fullUrl;
+    };
+
+    const getInitials = (name) => {
+        if (!name) return 'U';
+        return name
+            .split(' ')
+            .map(word => word[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
     const ActiveCategoryContent = () => {
         const activeCategoryData = getActiveCategoryData()
 
-        if(!activeCategoryData || !selectedMember) return null;
+        if(!activeCategoryData || !selectedUser) return null;
 
         const CategoryIcon = activeCategoryData.icon
 
@@ -66,10 +116,10 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                 <div className='grid grid-cols-2 gap-4'>
                     {activeCategoryData.fields.map((field, index) => {
                         const FieldIcon = field.icon
-                        let displayValue = selectedMember[field.key]
+                        let displayValue = selectedUser[field.key]
 
                         if (field.key === 'emailVerified' || field.key === 'twoFactorEnabled') {
-                            displayValue = selectedMember[field.key] ? 'Yes' : 'No'
+                            displayValue = selectedUser[field.key] ? 'Yes' : 'No'
                         }
 
                         if (field.isPassword) {
@@ -104,10 +154,42 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                             )
                         }
 
-                        return (
-                            <div key={index} className='flex items-center gap-3'>
-                                <FieldIcon className='h-4 w-4 text-gray-400 mt-1 flex-shrink-0' />
+                        if (field.isImage) {
+                            const avatarUrl = getAvatarUrl(displayValue)
+                            return (
+                                <div key={index} className='flex items-start gap-3'>
+                                    <FieldIcon className='h-4 w-4 text-gray-400 mt-1 flex-shrink-0' />
 
+                                    <div className='flex-1'>
+                                        <label className='text-sm text-gray-500 block mb-1'>
+                                            {field.label}
+                                        </label>
+                                        <div className='flex items-center gap-4'>
+                                            <Avatar className='h-16 w-16 border-2 border-gray-200'>
+                                                <AvatarImage 
+                                                    src={avatarUrl}
+                                                    alt={`${selectedUser.full_name}'s avatar`}
+                                                    className='object-cover'
+                                                />
+                                                <AvatarFallback className='bg-gradient-to-br from-blue-500 to-purple-600 text-white text-lg font-semibold'>
+                                                    {getInitials(selectedUser.full_name)}
+                                                </AvatarFallback>
+                                            </Avatar>
+
+                                            <div className='flex-1'>
+                                                <p className={`text-sm font-medium ${displayValue ? 'text-green-600' : 'text-gray-500'}`}>
+                                                    {displayValue ? '✓ Profile picture uploaded' : 'No profile picture'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        }
+
+                        return (
+                            <div key={index} className='flex items-start gap-3'>
+                                <FieldIcon className='h-4 w-4 text-gray-400 mt-1 flex-shrink-0' />
                                 <div className='flex-1'>
                                     <label className='text-sm text-gray-500 block mb-1'>
                                         {field.label}
@@ -117,7 +199,7 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                                     </p>
                                 </div>
                             </div>
-                        )
+                        );
                     })}
                 </div>
             </div>
@@ -131,7 +213,7 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             </CardHeader>
 
             <CardContent>
-                {selectedMember ? (
+                {selectedUser ? (
                     <div className='space-y-6'>
                         <div className='flex flex-wrap items-center justify-between gap-4 mb-4'>
                             <div className='flex flex-wrap gap-2 mb-4'>
@@ -156,13 +238,13 @@ const AccountContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                                 })}
                             </div>
 
-                            {selectedMember && (
+                            {selectedUser && (
                                 <div className="flex gap-2">
                                     <Button 
                                         variant="outline" 
                                         size="sm"
                                         className="flex items-center gap-2"
-                                        onClick={onEdit}
+                                        onClick={handleEdit}
                                     >
                                         <Edit className="h-4 w-4" />
                                         Edit
