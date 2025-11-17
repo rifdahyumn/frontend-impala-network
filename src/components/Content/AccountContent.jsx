@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, User, Mail, Phone,Shield, History, CheckCircle, Lock, Image, EyeClosed, EyeOffIcon, EyeOff, Eye } from "lucide-react";
+import { Edit, Trash2, User, Mail, Phone,Shield, History, CheckCircle, Lock, Image, EyeClosed, EyeOffIcon, EyeOff, Eye, Loader2, UserCheck } from "lucide-react";
 import toast from 'react-hot-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
-const AccountContent = ({ selectedUser, onOpenEditModal, detailTitle, onDelete, onUserEdited }) => {
+const AccountContent = ({ selectedUser, onOpenEditModal, detailTitle, onDelete, onUserEdited, onActivateUser  }) => {
     const [activeCategory, setActiveCategory] = useState('Account Information');
     const [showPassword, setShowPassword] = useState(false)
+    const [deleteLoading, setDeleteLoading] = useState(false)
+    const [activateLoading, setActivateLoading] = useState(false)
 
     const detailFields = [
         {
@@ -59,18 +61,48 @@ const AccountContent = ({ selectedUser, onOpenEditModal, detailTitle, onDelete, 
         }
     }
 
+    const handleDelete = async () => {
+        setDeleteLoading(true)
+        try {
+            if (onDelete) {
+                await onDelete(selectedUser.id)
+            }
+        } catch (error) {
+            console.error('Error deleting client:', error)
+            toast.error(error.message || 'Failed to delete User')
+        } finally {
+            setDeleteLoading(false)
+        }
+    }
+
+    const handleActivate = async () => {
+        if (!selectedUser) return
+
+        if (!window.confirm(`Are you sure want to activate user ${selectedUser.full_name}?`)){
+            return
+        }
+
+        setActivateLoading(true)
+        try {
+            if (onActivateUser) {
+                await onActivateUser(selectedUser.id);
+            }
+
+            toast.success(`User "${selectedUser.full_name}" activated successfully`);
+        } catch (error) {
+            console.error('❌ Error activating user:', error);
+            toast.error(error.message || 'Failed to activate user');
+        } finally {
+            setActivateLoading(false)
+        }
+    }
+
     const maskPassword = (password) => {
         if (!password) return '-'
         return '•'.repeat(8);
     }
 
     const getAvatarUrl = (avatarPath) => {
-        console.log('🔍 Debug Avatar:', {
-            avatarPath,
-            type: typeof avatarPath,
-            startsWithUpload: avatarPath?.startsWith('/uploads'),
-            fullUrl: avatarPath?.startsWith('http')
-        });
         
         if (!avatarPath) return null;
         
@@ -84,8 +116,6 @@ const AccountContent = ({ selectedUser, onOpenEditModal, detailTitle, onDelete, 
         // eslint-disable-next-line no-undef
         const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
         const fullUrl = `${baseUrl}${avatarPath}`;
-        
-        console.log('🔗 Generated URL:', fullUrl);
         return fullUrl;
     };
 
@@ -249,15 +279,34 @@ const AccountContent = ({ selectedUser, onOpenEditModal, detailTitle, onDelete, 
                                         <Edit className="h-4 w-4" />
                                         Edit
                                     </Button>
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        onClick={onDelete}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                        Delete
-                                    </Button>
+
+                                    {selectedUser.status === 'Inactive' && (
+                                        <Button>
+                                            {activateLoading ? (
+                                                <Loader2 className='h-4 w-4 animate-spin' />
+                                            ) : (
+                                                <UserCheck className='h-4 w-4' />
+                                            )}
+                                            {activateLoading ? 'Activating...' : 'Activate'}
+                                        </Button>
+                                    )}
+
+                                    {selectedUser.status === 'Active' && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            onClick={handleDelete}
+                                            disabled={deleteLoading}
+                                        >
+                                            {deleteLoading ? (
+                                                <Loader2 className='h-4 w-4 animate-spin' />
+                                            ) : (
+                                                <Trash2 className='h-4 w-4' />
+                                            )}
+                                            {deleteLoading ? 'Deactivating...' : 'Deactivate'}
+                                        </Button>
+                                    )}
                                 </div>
                             )}
                         </div>

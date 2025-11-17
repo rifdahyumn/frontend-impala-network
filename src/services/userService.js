@@ -85,6 +85,46 @@ class UserService {
             throw error
         }
     }
+
+    async deleteUser(userId) {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) throw new Error('Token not found. Please log in again.');
+            
+            const response = await fetch(`${this.baseURL}/user/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+
+            return await this.handleResponse(response)
+        } catch (error) {
+            console.error('Error deleting user:', error)
+            throw error
+        }
+    }
+
+    async activateUser(userId) {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) throw new Error('Token not found. Please log in again.');
+
+            const response = await fetch(`${this.baseURL}/user/${userId}/activate`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            const result = await this.handleResponse(response);
+            return result;
+        } catch (error) {
+            console.error('Error activating user:', error);
+            throw error;
+        }
+    }
 }
 
 export default new UserService();

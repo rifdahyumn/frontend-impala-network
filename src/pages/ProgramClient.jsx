@@ -76,7 +76,7 @@ const ProgramClient = () => {
     const handleDeleteClient = async (clientId) => {
         if (!selectedMember) return;
 
-        if (!window.confirm(`Are you sure you want to delete ${selectedMember.full_name}? This action cannot be undone.`)) {
+        if (!window.confirm(`Are you sure want to delete ${selectedMember.full_name}? This action cannot be undone.`)) {
             return;
         }
 

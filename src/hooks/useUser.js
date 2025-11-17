@@ -27,29 +27,35 @@ export const useUsers = (initialFilters = {}) => {
             const currentFilters = customFilters || filters;
             const currentPage = page || pagination.page;
 
+            console.log('Fetching users:', { page: currentPage, filters: currentFilters });
+
+            // ✅ PERBAIKI: Gunakan fetchUsers (bukan getAllUsers)
             const result = await userService.fetchUsers({
-                page,
+                page: currentPage,
                 limit: pagination.limit,
                 ...currentFilters
             });
 
-            setUsers(result.data || [])
+            console.log('✅ Users fetched:', result.data?.length, 'users');
 
+            setUsers(result.data || [])
+            
             setPagination(prev => ({
                 ...prev,
-                page: result.meta?.pagination?.page || page,
-                total: result.pagination?.total || 0,
+                page: result.pagination?.page || currentPage,
+                total: result.pagination?.total || result.total || 0,
                 totalPages: result.pagination?.totalPages || Math.ceil((result.pagination?.total || result.total || 0) / pagination.limit),
             }))
         } catch (error) {
-            console.error('Error fetching users:', error)
-            setError(error.messsage);
-            toast.error('Failed to load user')
+            console.error('❌ Error fetching users:', error)
+            setError(error.message || 'Failed to fetch users');
+            toast.error('Failed to load users')
         } finally {
             setLoading(false)
         }
     }, [filters, pagination.limit, pagination.page])
 
+    // ... (rest of the hook remains the same) ...
     const refetchWithFilters = useCallback((newFilters) => {
         setFilters(prev => ({ ...prev, ...newFilters }));
     }, []);
@@ -58,51 +64,105 @@ export const useUsers = (initialFilters = {}) => {
         fetchUsers(page);
     }, [fetchUsers]);
 
-    const refreshUsers = useCallback(() => {
-        fetchUsers(pagination.page);
+    const refreshUsers = useCallback(async () => {
+        console.log('🔄 Manual refresh triggered');
+        await fetchUsers(pagination.page);
     }, [fetchUsers, pagination.page]);
+
+    const autoRefresh = useCallback(async () => {
+        console.log('🔄 Auto-refresh triggered');
+        
+        const remainingUsers = users.length - 1;
+        if (remainingUsers === 0 && pagination.page > 1) {
+            await fetchUsers(pagination.page - 1);
+        } else {
+            await fetchUsers(pagination.page);
+        }
+    }, [fetchUsers, pagination.page, users.length]);
 
     useEffect(() => {
         fetchUsers(1);
-    }, [fetchUsers]); 
+    }, [filters, fetchUsers]);
 
     const addUser = async (userData) => {
         try {
+            console.log('🔄 Adding user:', userData);
             const result = await userService.addUser(userData)
-            toast.success('User add successfully')
-            
-            await refreshUsers();
+            toast.success('User added successfully')
+            await autoRefresh();
             return result
         } catch (error) {
-            toast.error('Failed to add user')
+            console.error('❌ Error adding user:', error)
+            toast.error(error.message || 'Failed to add user')
             throw error
         }
     }
 
     const updateUser = async (userId, userData) => {
         try {
-            setLoading(true)
+            console.log('🔄 Updating user:', userId);
             const result = await userService.updateUser(userId, userData)
             toast.success('User updated successfully')
 
-            setUsers(preUsers => 
-                preUsers.map(user =>
+            setUsers(prevUsers => 
+                prevUsers.map(user =>
                     user.id === userId
                         ? { ...user, ...userData, ...result.data || result }
                         : user
                 )
             )
 
+            setTimeout(() => {
+                autoRefresh();
+            }, 500);
+
             return result.data || result
         } catch (error) {
-            toast.error('Failed to update client')
+            console.error('❌ Error updating user:', error)
+            toast.error(error.message || 'Failed to update user')
             throw error
-        } finally {
-            setLoading(false)
+        }
+    }
+
+    const deleteUser = async (userId) => {
+        try {
+            console.log('🔄 Deleting user with ID:', userId);
+            await userService.deleteUser(userId);
+            toast.success('User deactivated successfully');
+            await autoRefresh();
+        } catch (error) {
+            console.error('❌ Error deleting user:', error);
+            toast.error(error.message || 'Failed to delete user');
+            throw error;
+        }
+    }
+
+    const activateUser = async (userId) => {
+        try {
+            await userService.activateUser(userId)
+            toast.success('User activated successfully')
+
+            await autoRefresh()
+        } catch (error) {
+            console.error('❌ Error activating user:', error);
+            toast.error(error.message || 'Failed to activate user');
+            throw error;
         }
     }
 
     return {
-        users, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchUsers: changePage, addUser, updateUser
+        users, 
+        loading, 
+        error, 
+        pagination, 
+        filters,
+        setFilters: refetchWithFilters, 
+        fetchUsers: changePage, 
+        refreshUsers,
+        autoRefresh,
+        addUser,
+        updateUser,
+        deleteUser,
+        activateUser
     }
 }

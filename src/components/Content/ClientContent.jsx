@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
 import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, Loader2, DollarSign } from "lucide-react";
-// import clientService from '../../services/clientService';
 import toast from 'react-hot-toast';
 
-const ClientContent = ({ selectedMember, onDelete, detailTitle, onClientUpdated, onClientDeleted, onOpenEditModal, onClientEdited }) => {
+const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal, onClientEdited }) => {
     const [activeCategory, setActiveCategory] = useState('Personal Information');
     // const [loading, setLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false)

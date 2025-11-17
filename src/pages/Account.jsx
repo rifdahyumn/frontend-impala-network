@@ -20,7 +20,7 @@ const Account = () => {
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-    const { users, loading, error, pagination, filters, setFilters, fetchUser, addUser, updateUser } = useUsers()
+    const { users, loading, error, pagination, filters, setFilters, fetchUser, addUser, updateUser, deleteUser } = useUsers()
 
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
@@ -60,6 +60,21 @@ const Account = () => {
             toast.error(error.message || 'Failed to update user')
         }
     };
+
+    const handleDeleteUser = async (userId) => {
+        if (!selectedUser) return
+
+        if (!window.confirm(`Are you sure want to delete ${selectedUser.full_name}? This action cannot be undone`)) {
+            return
+        }
+
+        try {
+            await deleteUser(userId)
+            setSelectedUser(null)
+        } catch {
+            //
+        }
+    }
 
     useEffect(() => {
         if (selectedUser && users.length > 0) {
@@ -116,17 +131,6 @@ const Account = () => {
             ...user
         }
     })
-
-    const handleDelete = () => {
-        if (selectedUser) {
-            if (window.confirm(`Are you sure you want to delete ${selectedUser.fullName}?`)) {
-                console.log('Delete client:', selectedUser);
-                
-                setSelectedUser(null); 
-                alert(`Client ${selectedUser.fullName} deleted`);
-            }
-        }
-    };
 
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
@@ -237,7 +241,7 @@ const Account = () => {
                 <AccountContent
                     selectedUser={selectedUser}
                     onOpenEditModal={handleOpenEditModal}
-                    onDelete={handleDelete}
+                    onDelete={handleDeleteUser}
                     detailTitle={tableConfig.detailTitle}
                     onUserUpdated={() => fetchUser(pagination.page)}
                     onClientDeleted={() => {
