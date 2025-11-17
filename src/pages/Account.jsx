@@ -20,7 +20,7 @@ const Account = () => {
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-    const { users, loading, error, pagination, filters, setFilters, fetchUser, addUser, updateUser, deleteUser } = useUsers()
+    const { users, loading, error, pagination, filters, setFilters, fetchUser, addUser, updateUser, deleteUser, activateUser  } = useUsers()
 
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
@@ -75,6 +75,17 @@ const Account = () => {
             //
         }
     }
+
+    const handleActivate = async (userId) => {
+        try {
+            console.log('🔄 Activating user from parent:', userId);
+            await activateUser(userId);
+            console.log('✅ Activate completed, auto-refresh triggered');
+        } catch (error) {
+            console.error('❌ Error activating user from parent:', error);
+            throw error;
+        }
+    };
 
     useEffect(() => {
         if (selectedUser && users.length > 0) {
@@ -242,6 +253,7 @@ const Account = () => {
                     selectedUser={selectedUser}
                     onOpenEditModal={handleOpenEditModal}
                     onDelete={handleDeleteUser}
+                    onActivateUser={handleActivate}
                     detailTitle={tableConfig.detailTitle}
                     onUserUpdated={() => fetchUser(pagination.page)}
                     onClientDeleted={() => {

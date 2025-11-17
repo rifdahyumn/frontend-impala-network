@@ -67,7 +67,7 @@ const PublicForm = () => {
             setSelectedCategory(null);
             setCurrentStep(1);
         } catch (error) {
-            alert('Terjadi error saat mengirim form. Silakan coba lagi.');
+            alert('Terjadi error saat mengirim form. Silakan coba lagi.', error);
         } finally {
             setIsSubmitting(false);
         }
@@ -81,7 +81,6 @@ const PublicForm = () => {
         return data;
     };
 
-    // Data personal - SAMA untuk semua kategori
     const personalInfoFields = [
         { 
             id: 'full_name', 
@@ -118,7 +117,7 @@ const PublicForm = () => {
         { 
             id: 'dateOfBirth', 
             type: 'date', 
-            name: 'dateOfBirth', 
+            name: 'date_of_birth', 
             label: 'Tanggal Lahir', 
             required: true
         },
@@ -130,10 +129,18 @@ const PublicForm = () => {
             rows: 3,
             required: true,
             placeholder: 'Jl. Contoh No. 123, Kota, Provinsi'
+        },
+        { 
+            id: 'reason', 
+            type: 'textarea', 
+            name: 'reason_join_program', 
+            label: 'Reason Join Program',
+            rows: 3,
+            required: true,
+            placeholder: 'Ingin menambah wawasan'
         }
     ];
 
-    // Data tambahan - BERBEDA sesuai kategori
     const getCategoryFields = () => {
         const categoryTemplates = {
             umkm: [

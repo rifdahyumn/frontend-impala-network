@@ -11,21 +11,21 @@ const HeteroContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             category: 'Personal Information',
             icon: User,
             fields: [
-                { key: 'member_id', label: 'Member ID', icon: User },
                 { key: 'full_name', label: 'Full Name', icon: User },
                 { key: 'nik', label: 'NIK', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone Number', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
                 { key: 'dateOfBirth', label: 'Date of Birth', icon: Calendar },
-                { key: 'education', label: 'Last Education', icon: BookOpen }
+                { key: 'education', label: 'Last Education', icon: BookOpen },
+                { key: 'company', label: 'Company/Organization', icon: Building }
             ]
         },
         {
             category: 'Residential Address',
             icon: Home,
             fields: [
-                { key: 'address', label: 'Complete Address', icon: MapPin },
+                { key: 'address', label: 'Address', icon: MapPin },
                 { key: 'district', label: 'District / Sub District', icon: MapPin },
                 { key: 'city', label: 'City / Regency', icon: MapPin },
                 { key: 'province', label: 'Province', icon: MapPin },
@@ -33,27 +33,13 @@ const HeteroContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
             ]
         },
         {
-            category: 'Business / Organization',
-            icon: Building,
-            fields: [
-                { key: 'company', label: 'Name of Company', icon: Building }
-            ]
-        },
-        {
             category: 'Service Requirements',
             icon: Package,
             fields: [
-                { key: 'maneka', label: 'Maneka Package', icon: Package },
-                { key: 'rembug', label: 'Rembug Package', icon: Package },
-                { key: 'eventSpace', label: 'Event Space', icon: Package },
-                { key: 'privateOffice', label: 'Private Office', icon: Package }
-            ]
-        },
-        {
-            category: 'Additional Information',
-            icon: Info,
-            fields: [
-                { key: 'addInformation', label: 'How did you find out about Hetero?', icon: Info }
+                { key: 'space', label: 'Space', icon: Package },
+                { key: 'add_on', label: 'Add On', icon: Package },
+                { key: 'join_date', label: 'Join Date', icon: Calendar },
+                { key: 'end_date', label: 'End Date', icon: Calendar },
             ]
         },
     ];
@@ -65,7 +51,6 @@ const HeteroContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
     const formatDisplayValue = (key, value) => {
         if (!value) return '-';
         
-        // Format untuk nilai select/options
         const optionMappings = {
             gender: {
                 'male': 'Male',
