@@ -1,340 +1,575 @@
 // src/components/FormBuilder/FormBuilderWorkspace.jsx
-import React, { useState } from 'react';
-import { DndContext } from '@dnd-kit/core';
-import FieldSidebar from './FieldSidebar';
+import React, { useState, useEffect } from 'react';
 import FormCanvas from './FormCanvas';
-import FieldConfigPanel from './FieldConfigPanel';
-import FormPreview from './FormPreview';
-import TemplateSelector from './TemplateSelector';
-import PublicFormPreview from './PublicFormPreview'; // Tambahkan ini
-import { Button } from '../ui/button';
+import FieldConfigPanel from './fields/FieldConfigPanel';
 
 const FormBuilderWorkspace = () => {
-    const [selectedCategory, setSelectedCategory] = useState(null);
-    const [fields, setFields] = useState([]);
+    const [formConfig, setFormConfig] = useState(null);
     const [selectedField, setSelectedField] = useState(null);
-    const [previewMode, setPreviewMode] = useState(false);
-    const [publicPreviewMode, setPublicPreviewMode] = useState(false); // Mode baru untuk preview public
+    const [isSaving, setIsSaving] = useState(false);
 
-    // Template tetap untuk Personal Information
-    const personalInfoFields = [
-        { 
-            id: 'full_name', 
-            type: 'text', 
-            name: 'full_name', 
-            label: 'Nama Lengkap', 
-            required: true,
-            placeholder: 'Masukkan nama lengkap'
-        },
-        {
-            id: 'nik',
-            type: 'text',
-            name: 'nik',
-            label: 'NIK',
-            required: true,
-            placeholder: 'Enter NIK'
-        },
-        { 
-            id: 'email', 
-            type: 'email', 
-            name: 'email', 
-            label: 'Email', 
-            required: true,
-            placeholder: 'email@example.com'
-        },
-        { 
-            id: 'phone', 
-            type: 'phone', 
-            name: 'phone', 
-            label: 'Nomor Telepon', 
-            required: true,
-            placeholder: '+62 812 3456 7890'
-        },
-        { 
-            id: 'gender', 
-            type: 'select', 
-            name: 'gender', 
-            label: 'Jenis Kelamin', 
-            required: true,
-            options: ['Laki-laki', 'Perempuan']
-        },
-        { 
-            id: 'dateOfBirth', 
-            type: 'date', 
-            name: 'dateOfBirth', 
-            label: 'Tanggal Lahir', 
-            required: true
+    // Load dari localStorage saat component mount
+    useEffect(() => {
+        const savedConfig = localStorage.getItem('impalaFormConfig');
+        if (savedConfig) {
+            setFormConfig(JSON.parse(savedConfig));
+        } else {
+            // Default config dengan programName dan data lengkap
+            setFormConfig({
+                programName: "Impala Management", // Field nama program
+                title: "Pendaftaran Program Impala Management",
+                description: "1 Form untuk Semua Kategori - Pilih yang Sesuai dengan Profil Anda",
+                sections: {
+                    // Section baru untuk program info
+                    programInfo: {
+                        id: "programInfo",
+                        name: "Informasi Program",
+                        description: "Detail program pendaftaran",
+                        locked: true,
+                        fields: [
+                            {
+                                id: 'program_name',
+                                type: 'text',
+                                name: 'program_name',
+                                label: 'Nama Program',
+                                required: true,
+                                placeholder: 'Masukkan nama program',
+                                locked: true
+                            }
+                        ]
+                    },
+                    personalInfo: {
+                        id: "personalInfo",
+                        name: "Informasi Pribadi",
+                        description: "Data diri peserta",
+                        locked: true,
+                        fields: [
+                            {
+                                id: 'full_name',
+                                type: 'text',
+                                name: 'full_name',
+                                label: 'Nama Lengkap',
+                                required: true,
+                                placeholder: 'Masukkan nama lengkap sesuai KTP',
+                                locked: true
+                            },
+                            { 
+                                id: 'nik', 
+                                type: 'number', 
+                                name: 'nik', 
+                                label: 'NIK (Nomor Induk Kependudukan)', 
+                                required: true,
+                                placeholder: 'Enter your NIK 17 digits',
+                                locked: true
+                            },
+                            {
+                                id: 'email',
+                                type: 'email',
+                                name: 'email',
+                                label: 'Email',
+                                required: true,
+                                placeholder: 'email@example.com',
+                                locked: true
+                            },
+                            {
+                                id: 'phone',
+                                type: 'number',
+                                name: 'phone',
+                                label: 'Nomor WhatsApp',
+                                required: true,
+                                placeholder: '+62-xxx-xxxx-xxxx',
+                                locked: true
+                            },
+                            {
+                                id: 'gender',
+                                type: 'select',
+                                name: 'gender',
+                                label: 'Jenis Kelamin',
+                                required: true,
+                                options: ['Laki-laki', 'Perempuan'],
+                                locked: true
+                            },
+                            {
+                                id: 'dateOfBirth',
+                                type: 'date',
+                                name: 'dateOfBirth',
+                                label: 'Tanggal Lahir',
+                                required: true,
+                                locked: true
+                            },
+                            {
+                                id: 'education',
+                                type: 'select',
+                                name: 'education',
+                                label: 'Pendidikan Terakhir',
+                                required: true,
+                                options: [ 'Sekolah Menengah Atas (SMA/SMK/MA)', 'Diploma (D3)', 'Sarjana (S1)', 'Magister (S2)', 'Doctor (S3)'],
+                                locked: true
+                            },
+                            {
+                                id: 'address',
+                                type: 'textarea',
+                                name: 'address',
+                                label: 'Alamat Lengkap',
+                                required: true,
+                                placeholder: 'Jl. Contoh No. 123, Kota, Provinsi',
+                                locked: true
+                            },
+                            { 
+                                id: 'district', 
+                                type: 'text', 
+                                name: 'district', 
+                                label: 'Kecamatan', 
+                                required: true,
+                                locked: true
+                            },
+                            {
+                                id: 'city',
+                                type: 'text',
+                                name: 'city',
+                                label: 'Kota / Kabupaten',
+                                required: true,
+                                locked: true
+                            },
+                            {
+                                id: 'province', 
+                                type: 'text', 
+                                name: 'province', 
+                                label: 'Provinsi', 
+                                required: true,
+                                locked: true
+                            },
+                            {
+                                id: 'postal_code',
+                                type: 'text',
+                                name: 'postal_code',
+                                label: 'Kode Pos',
+                                required: true,
+                                locked: true
+                            }
+                        ]
+                    }
+                },
+                categories: {
+                    umkm: {
+                        id: "umkm",
+                        name: "UMKM",
+                        description: "Usaha Mikro, Kecil, dan Menengah",
+                        icon: "🏢",
+                        locked: true,
+                        fields: [
+                            {
+                                id: 'business_name',
+                                type: 'text',
+                                name: 'business_name',
+                                label: 'Nama Bisnis / Usaha',
+                                required: true,
+                                placeholder: 'Masukkan nama bisnis / usaha',
+                                locked: true
+                            },
+                            {
+                                id: 'business_type',
+                                type: 'select',
+                                name: 'business_type',
+                                label: 'Jenis Bisnis',
+                                required: true,
+                                options: ['Retail', 'Manufacturing', 'Service', 'Food & Beverage', 'Teknologi'],
+                                locked: true
+                            },
+                            {
+                                id: 'established_year',
+                                type: 'number',
+                                name: 'established_year',
+                                label: 'Tahun Berdiri',
+                                required: true,
+                                placeholder: 'Masukkan tahun berdiri usaha',
+                                locked: true
+                            },
+                            {
+                                id: 'monthly_revenue',
+                                type: 'select',
+                                name: 'monthly_revenue',
+                                label: 'Pendapatan Bulanan',
+                                required: true,
+                                options: ['< Rp 5 juta', 'Rp 5-10 juta', 'Rp 10-50 juta', '> Rp 50 juta'],
+                                locked: true
+                            },
+                            {
+                                id: 'employee_count',
+                                type: 'number',
+                                name: 'employee_count',
+                                label: 'Jumlah Karyawan',
+                                required: true,
+                                placeholder: 'Masukkan jumlah karyawan',
+                                locked: true
+                            }
+                        ]
+                    },
+                    mahasiswa: {
+                        id: "mahasiswa",
+                        name: "Mahasiswa",
+                        description: "Pelajar/Mahasiswa Aktif", 
+                        icon: "🎓",
+                        locked: true,
+                        fields: [
+                            {
+                                id: 'institution',
+                                type: 'text',
+                                name: 'institution',
+                                label: 'Institusi Pendidikan',
+                                required: true,
+                                placeholder: 'Masukkan nama institusi',
+                                locked: true
+                            },
+                            {
+                                id: 'major',
+                                type: 'text', 
+                                name: 'major',
+                                label: 'Jurusan',
+                                required: true,
+                                placeholder: 'Masukkan nama jurusan',
+                                locked: true
+                            },
+                            {
+                                id: 'enrollment_year',
+                                type: 'number',
+                                name: 'enrollment_year',
+                                label: 'Tahun Masuk',
+                                required: true,
+                                placeholder: 'Masukkan tahun masuk',
+                                locked: true
+                            },
+                            {
+                                id: 'semester',
+                                type: 'number',
+                                name: 'semester',
+                                label: 'Semester',
+                                required: true,
+                                placeholder: 'Masukkan semester saat ini',
+                                locked: true
+                            },
+                            {
+                                id: 'career_interest',
+                                type: 'text',
+                                name: 'career_interest',
+                                label: 'Minat Karir',
+                                required: true,
+                                placeholder: 'Contoh: Data Analyst, Marketing',
+                                locked: true
+                            }
+                        ]
+                    },
+                    profesional: {
+                        id: "profesional",
+                        name: "Profesional",
+                        description: "Pekerja/Karyawan/Profesional",
+                        icon: "💼",
+                        locked: true,
+                        fields: [
+                            {
+                                id: 'company',
+                                type: 'text',
+                                name: 'company',
+                                label: 'Nama Perusahaan',
+                                required: true,
+                                placeholder: 'Masukkan nama perusahaan',
+                                locked: true
+                            },
+                            {
+                                id: 'position',
+                                type: 'text',
+                                name: 'position',
+                                label: 'Posisi/Jabatan',
+                                required: true,
+                                placeholder: 'Masukkan posisi/jabatan',
+                                locked: true
+                            },
+                            {
+                                id: 'work_experience',
+                                type: 'number',
+                                name: 'work_experience',
+                                label: 'Pengalaman Kerja (tahun)',
+                                required: true,
+                                placeholder: 'Masukkan lama pengalaman kerja',
+                                locked: true
+                            },
+                            {
+                                id: 'industry_sector',
+                                type: 'text',
+                                name: 'industry_sector',
+                                label: 'Sektor Industri',
+                                required: true,
+                                placeholder: 'Contoh: Pendidikan, Keuangan & Perbankan',
+                                locked: true
+                            },
+                            {
+                                id: 'skills',
+                                type: 'textarea',
+                                name: 'skills',
+                                label: 'Keahlian Utama',
+                                required: true,
+                                placeholder: 'Jelaskan keahlian utama Anda',
+                                locked: true
+                            }
+                        ]
+                    },
+                    komunitas: {
+                        id: "komunitas", 
+                        name: "Komunitas",
+                        description: "Organisasi/Komunitas",
+                        icon: "👥",
+                        locked: true,
+                        fields: [
+                            {
+                                id: 'community_name',
+                                type: 'text',
+                                name: 'community_name',
+                                label: 'Nama Komunitas',
+                                required: true,
+                                placeholder: 'Masukkan nama komunitas',
+                                locked: true
+                            },
+                            {
+                                id: 'community_role',
+                                type: 'text',
+                                name: 'community_role',
+                                label: 'Peran dalam Komunitas',
+                                required: true,
+                                placeholder: 'Masukkan peran Anda',
+                                locked: true
+                            },
+                            {
+                                id: 'member_count',
+                                type: 'number',
+                                name: 'member_count',
+                                label: 'Jumlah Anggota',
+                                required: true,
+                                placeholder: 'Masukkan jumlah anggota',
+                                locked: true
+                            },
+                            {
+                                id: 'focus_area',
+                                type: 'text',
+                                name: 'focus_area',
+                                label: 'Area Fokus',
+                                required: true,
+                                placeholder: 'Contoh: Pendidikan, Lingkungan, Teknologi',
+                                locked: true
+                            },
+                            {
+                                id: 'operational_area',
+                                type: 'select',
+                                name: 'operational_area',
+                                label: 'Area Operasional',
+                                required: true,
+                                options: ['Lokal', 'Nasional', 'Internasional'],
+                                locked: true
+                            }
+                        ]
+                    }
+                }
+            });
         }
-    ];
+    }, []);
 
-    const handleTemplateSelect = (category) => {
-        setSelectedCategory(category);
-        // Gabungkan personal info dengan template kategori
-        const categoryFields = getTemplateFields(category.id);
-        setFields([...personalInfoFields, ...categoryFields]);
-    };
+    // Debug: Log struktur formConfig
+    useEffect(() => {
+        if (formConfig) {
+            console.log('FormConfig loaded:', formConfig);
+            console.log('Program Info section exists:', !!formConfig.sections?.programInfo);
+            console.log('Program Name:', formConfig.programName);
+        }
+    }, [formConfig]);
 
-    const getTemplateFields = (categoryId) => {
-        const templates = {
-            umkm: [
-                { 
-                    id: 'businessName', 
-                    type: 'text', 
-                    name: 'businessName', 
-                    label: 'Nama Usaha', 
-                    required: true,
-                    placeholder: 'Masukkan nama usaha'
-                },
-                { 
-                    id: 'businessType', 
-                    type: 'select', 
-                    name: 'businessType', 
-                    label: 'Jenis Usaha', 
-                    options: ['Retail', 'Manufacturing', 'Service', 'Food & Beverage', 'Technology'] 
-                },
-                { 
-                    id: 'establishedYear', 
-                    type: 'number', 
-                    name: 'establishedYear', 
-                    label: 'Tahun Berdiri',
-                    min: 1900,
-                    max: new Date().getFullYear()
-                },
-                { 
-                    id: 'monthlyRevenue', 
-                    type: 'number', 
-                    name: 'monthlyRevenue', 
-                    label: 'Pendapatan Bulanan (Rp)' 
-                },
-                { 
-                    id: 'totalEmployees', 
-                    type: 'number', 
-                    name: 'totalEmployees', 
-                    label: 'Jumlah Karyawan' 
-                }
-            ],
-            mahasiswa: [
-                { 
-                    id: 'institution', 
-                    type: 'text', 
-                    name: 'institution', 
-                    label: 'Institusi Pendidikan', 
-                    required: true 
-                },
-                { 
-                    id: 'major', 
-                    type: 'text', 
-                    name: 'major', 
-                    label: 'Jurusan', 
-                    required: true 
-                },
-                { 
-                    id: 'enrollmentYear', 
-                    type: 'number', 
-                    name: 'enrollmentYear', 
-                    label: 'Tahun Masuk' 
-                },
-                { 
-                    id: 'semester', 
-                    type: 'number', 
-                    name: 'semester', 
-                    label: 'Semester' 
-                },
-                { 
-                    id: 'careerInterest', 
-                    type: 'text', 
-                    name: 'careerInterest', 
-                    label: 'Minat Karir' 
-                }
-            ],
-            profesional: [
-                { 
-                    id: 'workplace', 
-                    type: 'text', 
-                    name: 'workplace', 
-                    label: 'Tempat Kerja', 
-                    required: true 
-                },
-                { 
-                    id: 'position', 
-                    type: 'text', 
-                    name: 'position', 
-                    label: 'Posisi', 
-                    required: true 
-                },
-                { 
-                    id: 'workDuration', 
-                    type: 'text', 
-                    name: 'workDuration', 
-                    label: 'Lama Bekerja' 
-                },
-                { 
-                    id: 'industrySector', 
-                    type: 'text', 
-                    name: 'industrySector', 
-                    label: 'Sektor Industri' 
-                },
-                { 
-                    id: 'specialization', 
-                    type: 'text', 
-                    name: 'specialization', 
-                    label: 'Spesialisasi' 
-                }
-            ],
-            komunitas: [
-                { 
-                    id: 'communityName', 
-                    type: 'text', 
-                    name: 'communityName', 
-                    label: 'Nama Komunitas', 
-                    required: true 
-                },
-                { 
-                    id: 'focusArea', 
-                    type: 'text', 
-                    name: 'focusArea', 
-                    label: 'Area Fokus' 
-                },
-                { 
-                    id: 'totalMembers', 
-                    type: 'number', 
-                    name: 'totalMembers', 
-                    label: 'Jumlah Anggota' 
-                },
-                { 
-                    id: 'operationalArea', 
-                    type: 'select', 
-                    name: 'operationalArea', 
-                    label: 'Area Operasional', 
-                    options: ['Lokal', 'Nasional', 'Internasional'] 
-                },
-                { 
-                    id: 'communitySince', 
-                    type: 'number', 
-                    name: 'communitySince', 
-                    label: 'Tahun Berdiri Komunitas' 
-                }
-            ]
-        };
-        return templates[categoryId] || [];
-    };
+    // Auto-save ketika formConfig berubah
+    useEffect(() => {
+        if (formConfig) {
+            localStorage.setItem('impalaFormConfig', JSON.stringify(formConfig));
+        }
+    }, [formConfig]);
 
-    const handleDragEnd = (event) => {
-        const { active, over } = event;
+    // Fungsi untuk update nama program
+    const updateProgramName = (newProgramName) => {
+        if (!formConfig) return;
         
-        if (over && over.data.current?.accepts) {
-            const fieldType = active.data.current?.type;
-            const newField = {
-                id: `field-${Date.now()}`,
-                type: fieldType,
-                name: `field_${fields.length + 1}`,
-                label: `Field ${fields.length + 1}`,
-                required: false
-            };
-            setFields([...fields, newField]);
+        setFormConfig(prev => ({
+            ...prev,
+            programName: newProgramName
+        }));
+    };
+
+    const updateField = (sectionId, fieldId, updates) => {
+        if (!formConfig) return;
+
+        setIsSaving(true);
+        
+        setFormConfig(prev => {
+            const newConfig = { ...prev };
+            
+            // Cek apakah field ada di sections
+            if (newConfig.sections[sectionId]) {
+                newConfig.sections[sectionId].fields = newConfig.sections[sectionId].fields.map(field => 
+                    field.id === fieldId ? { ...field, ...updates } : field
+                );
+            }
+            
+            // Cek apakah field ada di categories
+            if (newConfig.categories[sectionId]) {
+                newConfig.categories[sectionId].fields = newConfig.categories[sectionId].fields.map(field => 
+                    field.id === fieldId ? { ...field, ...updates } : field
+                );
+            }
+            
+            return newConfig;
+        });
+
+        setTimeout(() => {
+            setIsSaving(false);
+        }, 500);
+    };
+
+    const handleSaveForm = () => {
+        if (!formConfig) return;
+        
+        setIsSaving(true);
+        localStorage.setItem('impalaFormConfig', JSON.stringify(formConfig));
+        
+        setTimeout(() => {
+            setIsSaving(false);
+            alert('Form berhasil disimpan!');
+        }, 1000);
+    };
+
+    // Reset form untuk testing (opsional)
+    const handleResetForm = () => {
+        if (confirm('Apakah Anda yakin ingin mereset form ke default? Semua perubahan akan hilang.')) {
+            localStorage.removeItem('impalaFormConfig');
+            window.location.reload();
         }
     };
 
-    const handleFieldUpdate = (updatedField) => {
-        setFields(fields.map(field => 
-            field.id === updatedField.id ? updatedField : field
-        ));
-        setSelectedField(updatedField);
-    };
-
-    const handleSave = () => {
-        const formConfig = {
-            category: selectedCategory?.id,
-            fields: fields,
-            createdAt: new Date().toISOString()
-        };
-        console.log('Form saved:', formConfig);
-        alert('Form berhasil disimpan!');
-    };
-
-    if (!selectedCategory) {
-        return <TemplateSelector onSelect={handleTemplateSelect} />;
-    }
-
-    if (previewMode) {
+    if (!formConfig) {
         return (
-            <FormPreview
-                fields={fields}
-                onBack={() => setPreviewMode(false)}
-                category={selectedCategory}
-            />
-        );
-    }
-
-    if (publicPreviewMode) {
-        return (
-            <PublicFormPreview
-                fields={fields}
-                category={selectedCategory}
-                onBack={() => setPublicPreviewMode(false)}
-            />
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-gray-600">Memuat form...</p>
+                </div>
+            </div>
         );
     }
 
     return (
-        <div className="flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-                <div>
-                    <h3 className="text-lg font-semibold">
-                        Building Form untuk: {selectedCategory.name}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                        Personal Information + {selectedCategory.name} Fields
+        <div className="min-h-[600px]">
+            {/* Header dengan preview mode dan judul dinamis */}
+            <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg">
+                <div className="flex justify-between items-center mb-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800">Form Builder</h1>
+                        <p className="text-gray-600">Bangun form pendaftaran dengan drag & drop</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="preview-mode flex items-center">
+                            <input 
+                                type="checkbox" 
+                                id="preview-mode" 
+                                checked 
+                                className="mr-2"
+                                onChange={() => {}} 
+                            />
+                            <label htmlFor="preview-mode" className="text-sm text-gray-600">
+                                MODE PREVIEW - Data tidak benar-benar disimpan
+                            </label>
+                        </div>
+                        <button 
+                            onClick={handleResetForm}
+                            className="text-sm bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200"
+                        >
+                            Reset Form
+                        </button>
+                    </div>
+                </div>
+                
+                {/* Preview judul formulir yang dinamis */}
+                <div className="preview-header-section">
+                    <div className="preview-title bg-pink-600 text-white p-4 rounded-lg text-center font-bold text-lg">
+                        {formConfig.programName 
+                            ? `Formulir Pendaftaran ${formConfig.programName}`
+                            : 'Formulir Pendaftaran Program'
+                        }
+                    </div>
+                    <p className="text-center text-gray-600 mt-2">
+                        Field "Nama Program" hanya untuk mengatur judul formulir dan tidak akan muncul di form yang diisi user
                     </p>
                 </div>
-                <Button 
-                    onClick={() => {
-                        setSelectedCategory(null);
-                        setFields([]);
-                    }}
-                    variant="outline"
-                >
-                    Ganti Kategori
-                </Button>
             </div>
 
-            <div className="flex gap-4 h-[600px]">
-                <DndContext onDragEnd={handleDragEnd}>
-                    <FieldSidebar />
-                    <FormCanvas
-                        fields={fields}
-                        onFieldSelect={setSelectedField}
-                        selectedField={selectedField}
-                        onFieldsUpdate={setFields}
-                    />
-                </DndContext>
-
-                <FieldConfigPanel
-                    field={selectedField}
-                    onFieldUpdate={handleFieldUpdate}
+            {/* Main Canvas Area */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-4">
+                <FormCanvas
+                    formConfig={formConfig}
+                    selectedField={selectedField}
+                    onFieldSelect={setSelectedField}
+                    onFieldUpdate={updateField}
+                    onProgramNameUpdate={updateProgramName}
                 />
             </div>
+            
+            {/* Save Button */}
+            <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-500">
+                    💡 Field "Nama Program" berada di section "Informasi Program" di bagian atas form
+                </div>
+                <button 
+                    onClick={handleSaveForm}
+                    disabled={isSaving}
+                    className={`px-6 py-2 rounded-lg flex items-center gap-2 ${
+                        isSaving 
+                            ? 'bg-gray-400 cursor-not-allowed' 
+                            : 'bg-green-600 hover:bg-green-700'
+                    } text-white transition-colors`}
+                >
+                    {isSaving ? (
+                        <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Menyimpan...
+                        </>
+                    ) : (
+                        <>
+                            💾 Simpan Perubahan
+                        </>
+                    )}
+                </button>
+            </div>
 
-            // Di bagian button FormBuilderWorkspace.jsx:
-<div className="flex gap-2 mt-4 justify-end">
-    <Button onClick={() => setPreviewMode(true)} variant="outline">
-        Preview Form
-    </Button>
-    <Button 
-        onClick={() => {
-            const publicLink = `${window.location.origin}/register`;
-            navigator.clipboard.writeText(publicLink);
-            alert(`✅ Link public disalin!\n\n${publicLink}\n\nShare link ini ke user eksternal untuk pendaftaran.`);
-        }}
-        variant="default"
-    >
-        📋 Salin Link Public
-    </Button>
-    <Button onClick={handleSave}>
-        Simpan Form
-    </Button>
-</div>
-</div>
+            {/* Field Configuration Panel */}
+            {selectedField && (
+                <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-lg z-50">
+                    <div className="p-4 h-full overflow-auto">
+                        <FieldConfigPanel
+                            field={selectedField}
+                            onUpdate={(updates) => {
+                                let sectionId = Object.keys(formConfig.sections).find(id =>
+                                    formConfig.sections[id].fields.some(f => f.id === selectedField.id)
+                                );
+                                
+                                if (!sectionId) {
+                                    sectionId = Object.keys(formConfig.categories).find(id =>
+                                        formConfig.categories[id].fields.some(f => f.id === selectedField.id)
+                                    );
+                                }
+                                
+                                if (sectionId) {
+                                    updateField(sectionId, selectedField.id, updates);
+                                }
+                            }}
+                            onClose={() => setSelectedField(null)}
+                            isLocked={selectedField.locked}
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 
