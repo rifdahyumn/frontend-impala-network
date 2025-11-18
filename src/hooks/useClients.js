@@ -16,12 +16,6 @@ export const useClients = (initialFilters = {}) => {
     const [filters, setFilters] = useState({
         search: '',
         ...initialFilters
-        // status: '',
-        // industry: '',
-        // company: '',
-        // program_name: '',
-        // sortBy: 'id',
-        // sortOrder: 'desc'
     });
 
     const fetchClients = useCallback(async (page = 1, customFilters = null) => {
