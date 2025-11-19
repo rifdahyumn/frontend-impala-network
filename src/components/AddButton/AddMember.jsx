@@ -3,10 +3,14 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
-import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, X, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
+import heteroSemarangService from "../../services/heteroSemarangService";
 
-const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) => {
+const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMember, editData = null, onEditMember }) => {
+    const isEditMode = !!editData
+
     const [formData, setFormData] = useState({
         full_name: '',
         nik: '',
@@ -23,8 +27,10 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
         postal_code: '',
         space: '',
         add_on: [],
-        join_date: '',
+        start_date: '',
         end_date: '',
+        duration: '',
+        status: 'Active',
         addInformation: ''
     });
 
@@ -45,6 +51,8 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
     
     const [selectedAddOn, setSelectedAddOn] = useState('');
     const [newAddOn, setNewAddOn] = useState('');
+    const [errors, setErrors] = useState({})
+    const [loading, setLoading] = useState(false)
 
     const handleAddOn = () => {
         let addOnToAdd = '';
@@ -191,7 +199,7 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
             ]
         },
         {
-            title: "Business / Organization",
+            title: "Service Requirements",
             fields: [
                 {
                     name: 'company',
@@ -199,12 +207,7 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
                     type: 'text',
                     required: true,
                     placeholder: 'Enter name of company'
-                }
-            ]
-        },
-        {
-            title: "Service Requirements",
-            fields: [
+                },
                 {
                     name: 'space',
                     label: 'Choose your package',
@@ -226,6 +229,20 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
                         { value: 'Virtual Office', label: 'Virtual Office' },
                         { value: 'Online Course', label: 'Course' },
                     ]
+                },
+                {
+                    name: 'join_date',
+                    label: 'Join Date',
+                    type: 'date',
+                    required: true,
+                    placeholder: 'Select start date'
+                },
+                {
+                    name: 'end_date',
+                    label: 'End Date',
+                    type: 'date',
+                    required: true,
+                    placeholder: 'Select end date'
                 },
                 {
                     customComponent: true,
@@ -307,6 +324,53 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
         }
     ];
 
+    useEffect(() => {
+        if (isEditMode && editData) {
+            setFormData({
+                full_name: editData.full_name || '',
+                nik: editData.nik || '',
+                email: editData.email || '',
+                phone: editData.phone || '',
+                gender: editData.gender || '',
+                date_of_birth: editData.date_of_birth || '',
+                education: editData.education || '',
+                address: editData.address || '',
+                district: editData.district || '',
+                city: editData.city || '',
+                province: editData.province || '',
+                postal_code: editData.postal_code || '',
+                company: editData.company || '',
+                space: editData.space || '',
+                start_date: editData.start_date || '',
+                end_date: editData.end_date || '',
+                add_on: editData.add_on || [],
+                add_information: editData.add_information || '',
+            })
+        } else {
+            setFormData({
+                full_name: '',
+                nik: '',
+                email: '',
+                phone: '',
+                gender: '',
+                date_of_birth: '',
+                education: '',
+                address: '',
+                district: '',
+                city: '',
+                province: '',
+                postal_code: '',
+                company: '',
+                space: '',
+                start_date: '',
+                end_date: '',
+                add_on: '',
+                add_information: '',
+            })
+        }
+        setErrors({})
+    }, isEditMode, editData, isAddMemberModalOpen)
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -320,39 +384,97 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
             ...prev,
             [name]: value
         }));
+
+        if (errors[name]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }))
+        }
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        console.log('New member data for Semarang:', formData);
-        alert(`Member ${formData.full_name} added successfully to Semarang!`);
-        handleCloseModal();
+    const validateForm = () => {
+        const newErrors = {}
+
+        formSections.forEach(section => {
+            if (section.fields && Array.isArray(section.fields)) {
+                section.fields.forEach(field => {
+                    if (field.required) {
+                        const value = formData[field.name];
+                        if (!value || value.toString().trim() === '') {
+                            newErrors[field.name] = `${field.label} is required`
+                        }
+                    }
+                })
+            }
+        })
+
+        setErrors(newErrors)
+        return Object.keys(newErrors).length === 0
+    }
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+
+        if(!validateForm){
+            toast.error('Please fix the error in the form')
+            return
+        }
+
+        setLoading(true)
+        
+        try {
+            const memberData = {
+                full_name: formData.full_name,
+                nik: formData.nik,
+                email: formData.email,
+                phone: formData.phone,
+                gender: formData.gender,
+                date_of_birth: formData.date_of_birth,
+                education: formData.education,
+                address: formData.address,
+                district: formData.district,
+                city: formData.city,
+                province: formData.province,
+                postal_code: formData.postal_code,
+                company: formData.company,
+                space: formData.space,
+                start_date: formData.start_date,
+                end_date: formData.end_date,
+                // duration: formData.duration,
+                add_on: Array.isArray(formData.add_on) ? formData.add_on : [formData.add_on],
+                add_information: formData.addInformation,
+                status: formData.status || 'Active'
+            }
+
+            if (isEditMode) {
+                if (onEditMember) {
+                    await onEditMember(editData.id, memberData)
+                } else {
+                    await heteroSemarangService.updateMemberHeteroSemarang(editData.id, memberData)
+                    toast.success('Update successfully')
+                }
+            } else {
+                if (onAddMember) {
+                    await onAddMember(memberData)
+                } else {
+                    await heteroSemarangService.addMemberHeteroSemarang(memberData)
+                    toast.success('Added successfully')
+                }
+            }
+
+            handleCloseModal()
+        } catch (error) {
+            console.error(`Error ${isEditMode ? 'updating' : 'adding'} member: `, error)
+            toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'add'} member`)
+        } finally {
+            setLoading(false)
+        }
     };
 
     const handleCloseModal = () => {
-        setIsAddMemberModalOpen(false);
-        setFormData({
-            full_name: '',
-            nik: '',
-            email: '',
-            phone: '',
-            gender: '',
-            date_of_birth: '',
-            education: '',
-            company: '',
-            address: '',
-            district: '',
-            city: '',
-            province: '',
-            postal_code: '',
-            space: '',
-            add_on: [],
-            join_date: '',
-            end_date: '',
-            addInformation: ''
-        });
-        setSelectedAddOn('');
-        setNewAddOn('');
+        setIsAddMemberModalOpen(false)
+        setErrors({})
     };
 
     const renderField = (field, index) => {
@@ -438,9 +560,14 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
         <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
             <DialogContent className="max-h-[90vh] max-w-[900px] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Add New Member - Semarang</DialogTitle>
+                    <DialogTitle>
+                        {isEditMode ? 'Edit Member' : 'Add Member'}
+                    </DialogTitle>
                     <DialogDescription>
-                        Fill in the details below to add a new member to Semarang branch. Select service packages and choose dates as needed.
+                        {isEditMode
+                            ? 'Update the member information below'
+                            : 'Fill in the details below to add a new member to the system'
+                        }
                     </DialogDescription>
                 </DialogHeader>
 
@@ -453,7 +580,7 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
                                 </h3>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-4">
                                 {section.fields.map((field, index) => renderField(field, index))}
                             </div>
 
@@ -472,7 +599,11 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen }) =>
                             Cancel
                         </Button>
                         <Button type="submit">
-                            Add Member
+                            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                            {loading 
+                                ? (isEditMode ? 'Updating Member...' : 'Adding Member...')
+                                : (isEditMode ? 'Update Member' : 'Add Member')
+                            }
                         </Button>
                     </div>
                 </form>

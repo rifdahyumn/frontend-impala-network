@@ -7,16 +7,20 @@ class HeteroSemarangService {
     }
 
     async handleResponse(response) {
-        if (!response.ok) {
-            const error = await response.text()
-            throw new Error (error || `HTTP status error ${response.status}`)
-        }
+        // if (!response.ok) {
+        //     const error = await response.text()
+        //     throw new Error (error || `HTTP status error ${response.status}`)
+        // }
+
+        // const result = await response.json()
+
+        // if (!result.success) {
+        //     throw new Error(result.message)
+        // }
+
+        // return result
 
         const result = await response.json()
-
-        if (!result.success) {
-            throw new Error(result.message)
-        }
 
         return result
     }
@@ -45,6 +49,40 @@ class HeteroSemarangService {
             return await this.handleResponse(response)
         } catch (error) {
             console.error('Error fetching member', error)
+        }
+    }
+
+    async addMemberHeteroSemarang(memberData) {
+        try {
+            const response = await fetch(`${this.baseURL}/hetero/semarang`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(memberData)
+            })
+
+            return await this.handleResponse(response)
+        } catch (error) {
+            console.error('Error adding member', error)
+            throw error
+        }
+    }
+
+    async updateMemberHeteroSemarang(memberId, memberData) {
+        try {
+            const response = await fetch(`${this.baseURL}/hetero/semarang/${memberId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(memberData)
+            })
+
+            return await this.handleResponse(response)
+        } catch (error) {
+            console.error('Error updating member: ', error)
+            throw error
         }
     }
 }

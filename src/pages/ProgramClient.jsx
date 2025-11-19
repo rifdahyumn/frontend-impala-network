@@ -50,7 +50,7 @@ const ProgramClient = () => {
                 setSelectedMember(prev => ({
                     ...prev,
                     ...clientData,
-                    ...updateClient
+                    ...updatedClient
                 }))
             }
 

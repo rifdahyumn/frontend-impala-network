@@ -174,7 +174,8 @@ const PublicForm = () => {
             name: 'postalCode', 
             label: 'Kode Pos', 
             required: true,
-
+        },
+        {
             id: 'reason', 
             type: 'textarea', 
             name: 'reason_join_program', 

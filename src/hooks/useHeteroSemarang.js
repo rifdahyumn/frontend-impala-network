@@ -58,7 +58,44 @@ export const useHeteroSemarang = (initialFilters = {}) => {
         fetchMembers(page)
     }, [fetchMembers])
 
+    const addMemberHeteroSemarang = async (memberData) => {
+        try {
+            const result = await heteroSemarangService.addMemberHeteroSemarang(memberData)
+            toast.success('Member add successfully')
+
+            await fetchMembers(pagination.page)
+            return result
+        } catch (error) {
+            toast.error('Failed to add member')
+            throw error
+        }
+    }
+
+    const updateMemberHeteroSemarang = async (memberId, memberData) => {
+        try {
+            setLoading(true)
+
+            const result = await heteroSemarangService.updateMemberHeteroSemarang(memberId, memberData)
+            toast.success('Member updated successfully')
+
+            setMembers(preMembers =>
+                preMembers.map(member =>
+                    member.id === memberId
+                        ? { ...member, ...memberData, ...result.data || result }
+                        : member
+                )
+            )
+
+            return result.data || result
+        } catch (error) {
+            toast.error('Failed to update member')
+            throw error
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return {
-        members, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchMembers: changePage
+        members, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchMembers: changePage, addMemberHeteroSemarang, updateMemberHeteroSemarang
     }
 }

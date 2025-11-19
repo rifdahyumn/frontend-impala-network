@@ -7,27 +7,47 @@ import ExportButton from "../components/ActionButton/ExportButton";
 import MemberTable from "../components/MemberTable/MemberTable";
 import Pagination from "../components/Pagination/Pagination";
 import FilterButton from "../components/SearchFilter/Filter";
-import { Loader2, Plus, X } from "lucide-react"
+import { Loader2, Plus, X, Users } from "lucide-react"
 import { Button } from "../components/ui/button"
 import AddMember from "../components/AddButton/AddMember";
 import HeteroContent from "../components/Content/HeteroContent";
 import { useHeteroSemarang } from "../hooks/useHeteroSemarang";
+import toast from "react-hot-toast";
 
 const HeteroSemarang = () => {
     const [selectedMember, setSelectedMember] = useState(null)
     const [editingMember, setEditingMember] = useState(null)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
-    const { members, loading, error, pagination, filters, setFilters, fetchMembers } = useHeteroSemarang()
+    const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroSemarang, updateMemberHeteroSemarang } = useHeteroSemarang()
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
     };
 
-    const handleEdit = () => {
-        if (selectedMember) {
-            console.log('Edit member:', selectedMember);
-            alert(`Edit member: ${selectedMember.full_name}`);
+    const handleOpenEditModal = (member) => {
+        setEditingMember(member)
+        setIsEditModalOpen(true)
+    }
+
+    const handleEdit = async (memberId, memberData) => {
+        try {
+            const updatedMember = await updateMemberHeteroSemarang(memberId, memberData)
+
+            if (selectedMember && selectedMember.id === clientId){
+                setSelectedMember(prev => ({
+                    ...prev,
+                    ...memberData,
+                    ...updatedMember
+                }))
+            }
+
+            setIsEditModalOpen(false)
+            setEditingMember(null)
+            toast.success('Member updated successfully')
+        } catch (error) {
+            console.error('Error updating', error)
+            toast.error(error.message || 'Failed to update member')
         }
     };
 
@@ -203,8 +223,17 @@ const HeteroSemarang = () => {
                 />
 
                 <AddMember 
-                    isAddMemberModalOpen={isAddMemberModalOpen} 
-                    setIsAddMemberModalOpen={setIsAddMemberModalOpen}
+                    isAddMemberModalOpen={isAddMemberModalOpen || isEditModalOpen} 
+                    setIsAddMemberModalOpen={(open) => {
+                        if (!open) {
+                            setIsAddMemberModalOpen(false)
+                            setIsEditModalOpen(false)
+                            setEditingMember(null)
+                        }
+                    }}
+                    onAddMember={handleAddMember}
+                    editData={editingMember}
+                    onEditMember={handleEdit}
                 />
             </div>
         </div>
