@@ -145,6 +145,16 @@ const FormBuilderWorkspace = () => {
                                 label: 'Kode Pos',
                                 required: true,
                                 locked: true
+                            },
+                            {
+                                id: 'reason', 
+                                type: 'textarea', 
+                                name: 'reason_join_program', 
+                                label: 'Reason Join Program',
+                                rows: 3,
+                                required: true,
+                                placeholder: 'Ingin menambah wawasan',
+                                locked: true
                             }
                         ]
                     }
@@ -363,7 +373,7 @@ const FormBuilderWorkspace = () => {
                                 required: true,
                                 options: ['Lokal', 'Nasional', 'Internasional'],
                                 locked: true
-                            }
+                            },
                         ]
                     }
                 }
