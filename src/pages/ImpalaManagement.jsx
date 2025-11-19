@@ -1,6 +1,6 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { Button } from "../components/ui/button"
 import React, { useEffect, useState } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
@@ -15,89 +15,6 @@ import { useImpala } from "../hooks/useImpala";
 const ImpalaManagement = () => {
     const [selectedParticipant, setSelectedParticipant] = useState(null)
     const { participant, loading, error, pagination, filters, setFilters, fetchImpala, addProgram, updateProgram, deleteProgram } = useImpala();
-    // const members = [
-    //     {
-    //         id: 1,
-    //         full_name: 'Sarah Brotoseno',
-    //         email: 'sarah@bussiness.com',
-    //         category: 'UMKM',
-    //         bussinessName: 'Sarah Fashion Store',
-    //         program_name: 'Business Development Program',
-    //         phone: '08976543211',
-    //         business: 'Retail',
-    //         dateOfBirth: '1990-01-15',
-    //         gender: 'Perempuan',
-    //         address: 'Jl. Business Center No. 123',
-    //         city: 'Jakarta Utara',
-    //         province: 'DKI Jakarta',
-    //         establishedYear: 2018,
-    //         bussinessAddress: 'Jl. Retail Street No. 456',
-    //         bussinessForm: 'PT',
-    //         certifications: ["ISO-9001", "Halal-Certificate"],
-    //         monthly_revenue: '50000000.00',
-    //         total_employee: 15,
-    //         hasOrganizationStructur: true,
-    //         sosialMedia: ["instagram.com/sarahfashion", "facebook.com/sarahfashion"],
-    //         marketplace: ["tokopedia.com/sarahfashion", "shopee.com/sarahfashion"],
-    //         website: ["https://busineess_kue.com"],
-    //         reason_join_program: 'Ingin belajar mengembangan usaha'
-    //     },
-    //     {
-    //         id: 2,
-    //         full_name: 'Budi Santoso',
-    //         email: 'budi@student.ac.id',
-    //         phone: '08976543211',
-    //         category: 'Mahasiswa',
-    //         institution: 'Universitas Indonesia',
-    //         program_name: 'Student Entrepreneurship Program',
-    //         dateOfBirth: '2001-08-20',
-    //         gender: 'Laki-laki',
-    //         address: 'Jl. Kampus No. 45',
-    //         city: 'Depok',
-    //         province: 'Jawa Barat',
-    //         major: 'Teknik Informatika',
-    //         enrollment_year: 2020,
-    //         career_interest: 'Wirausaha Teknologi',
-    //         core_competency: ["Programming", "Data Analysis", "Public Speaking"],
-    //         reason_join_program: 'Ingin menambah ilmu'
-    //     },
-    //     {
-    //         id: 3,
-    //         full_name: "Ahmad Fauzi",
-    //         email: "ahmad@kementerian.go.id",
-    //         phone: "+628112233445",
-    //         category: "Profesional",
-    //         program_name: "Professional Development Program",
-    //         dateOfBirth: "1980-12-05",
-    //         gender: "Laki-laki",
-    //         address: "Jl. Pemuda No. 10",
-    //         city: "Jakarta Pusat",
-    //         province: "DKI Jakarta",
-    //         workplace: "Kementerian BUMN",
-    //         position: "Analis Kebijakan",
-    //         work_duration: "8 tahun",
-    //         industry_sector: "Pemerintahan",
-    //         reason_join_program: 'Ingin menambah ilmu'
-    //     },
-    //     {
-    //         id: 4,
-    //         full_name: "Dewi Lestari",
-    //         email: "dewi@komunitas.org",
-    //         phone: "+628556677889",
-    //         program_name: "Community Empowerment Program",
-    //         category: "Komunitas",
-    //         dateOfBirth: "1992-07-15",
-    //         gender: "Perempuan",
-    //         address: "Jl. Melati No. 25",
-    //         city: "Bandung",
-    //         province: "Jawa Barat",
-    //         name_community: "Komunitas Digital Kreatif",
-    //         focus_area: "Pelatihan Digital Marketing",
-    //         total_members: 150,
-    //         operational_area: "Lokal",
-    //         reason_join_program: "Penguatan_komunitas",
-    //     }
-    // ];
 
     const handleEdit = () => {
         if (selectedParticipant) {
@@ -162,6 +79,13 @@ const ImpalaManagement = () => {
                 <Card className='mb-6'>
                     <CardHeader>
                         <CardTitle className='text-xl'>{tableConfig.title}</CardTitle>
+
+                        {loading && (
+                            <div className="flex items-center gap-2 text-blue-600">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span className="text-sm">Loading Participant...</span>
+                            </div>
+                        )}
                     </CardHeader>
                     <CardContent>
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
@@ -179,23 +103,75 @@ const ImpalaManagement = () => {
                                 <ExportButton />
                             </div>
                         </div>
+                        {loading && participant.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                <span className="text-gray-600">Loading participant...</span>
+                                <div className="w-64 bg-gray-200 rounded-full h-2">
+                                    <div className="bg-blue-600 h-2 rounded-full animate-pulse w-3/4"></div>
+                                </div>
+                            </div>
+                        ) : participant.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
+                                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <Users className="w-10 h-10 text-gray-400" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-lg font-semibold text-gray-700">No participant found</h3>
+                                    <p className="text-sm text-gray-500 max-w-md">
+                                        {filters.search || Object.values(filters).some(f => f) 
+                                            ? "Try adjusting your search or filters to find what you're looking for."
+                                            : "Get started by adding your first participant to the system."
+                                        }
+                                    </p>
+                                </div>
+                                <Button 
+                                    className="flex items-center gap-2"
+                                    // onClick={handleAddClie}
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Add Your First Client
+                                </Button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="relative">
+                                    {loading && (
+                                        <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
+                                            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-lg border">
+                                                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                                                <span className="text-sm text-gray-600">Updating data...</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    <MemberTable
+                                        members={formattedParticipants}
+                                        onSelectMember={setSelectedParticipant}
+                                        headers={tableConfig.headers}
+                                        isLoading={loading}
+                                    />
+                                </div>
 
-                        <MemberTable
-                            members={formattedParticipants}
-                            onSelectMember={setSelectedParticipant}
-                            headers={tableConfig.headers}
-                            isLoading={loading}
-                        />
-
-                        <div className='mt-6'>
-                            <Pagination 
-                                currentPage={pagination.page}
-                                totalPages={pagination.totalPages}
-                                totalItems={pagination.total}
-                                // onPageChange={handlePageChange}
-                                disabled={loading}
-                            />
-                        </div>
+                                <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
+                                    <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+                                        Showing <span className="font-semibold">{formattedParticipants.length}</span> of{' '}
+                                        <span className="font-semibold">
+                                            {pagination.total > 0 ? pagination.total : formattedParticipants.length}
+                                        </span> Member
+                                    </div>
+                                    
+                                    <Pagination 
+                                        currentPage={pagination.page}
+                                        totalPages={pagination.totalPages}
+                                        totalItems={pagination.total}
+                                        // onPageChange={handlePageChange}
+                                        disabled={loading}
+                                    />
+                                </div>
+                            </>
+                        )}
+                        
                     </CardContent>
                 </Card>
 

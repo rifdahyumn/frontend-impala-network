@@ -18,7 +18,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         client: '',
         category: '',
         status: 'Active',
-        // duration: '',
         start_date: '',
         end_date: '',
         price: '',
