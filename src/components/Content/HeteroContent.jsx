@@ -16,7 +16,7 @@ const HeteroContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone Number', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
-                { key: 'dateOfBirth', label: 'Date of Birth', icon: Calendar },
+                { key: 'date_of_birth', label: 'Date of Birth', icon: Calendar },
                 { key: 'education', label: 'Last Education', icon: BookOpen },
                 { key: 'company', label: 'Company/Organization', icon: Building }
             ]
@@ -29,7 +29,7 @@ const HeteroContent = ({ selectedMember, onEdit, onDelete, detailTitle }) => {
                 { key: 'district', label: 'District / Sub District', icon: MapPin },
                 { key: 'city', label: 'City / Regency', icon: MapPin },
                 { key: 'province', label: 'Province', icon: MapPin },
-                { key: 'postalCode', label: 'Postal Code', icon: MapPin }
+                { key: 'postal_code', label: 'Postal Code', icon: MapPin }
             ]
         },
         {
