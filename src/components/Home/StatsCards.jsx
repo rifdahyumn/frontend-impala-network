@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils';
 const StatsCards = () => {
     const stats = [
         {
-            title: "Total Members",
+            title: "Total Client",
             value: "1539",
             subtitle: "+ 400++",
             percentage: "7,8%",
@@ -17,7 +17,7 @@ const StatsCards = () => {
             description: "7,8% Last Month"
         },
         {
-            title: "Program Participants",
+            title: "Total Programs",
             value: "400",
             subtitle: "",
             percentage: "5,7%",
@@ -28,7 +28,7 @@ const StatsCards = () => {
             description: "5,7% Last Month"
         },
         {
-            title: "Form Filled",
+            title: "Total Participant",
             value: "105",
             subtitle: "& 400++",
             percentage: "6,3%",

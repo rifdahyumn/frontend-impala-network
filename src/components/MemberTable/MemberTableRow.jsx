@@ -83,7 +83,8 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Rembug':'rembug',
             'Event Space':'eventSpace',
             'Private Office':'privateOffice',
-            'Additional Information':'addInformation'
+            'Additional Information':'add_information',
+            'Space': 'space'
         }
 
         const field = fieldMap[header];
