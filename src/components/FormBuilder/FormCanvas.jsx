@@ -1,105 +1,217 @@
 // src/components/FormBuilder/FormCanvas.jsx
 import React from 'react';
-import { useDroppable } from '@dnd-kit/core';
-import { Card, CardContent } from '../ui/card';
-import FormField from './fields/FormField';
 
-const FormCanvas = ({ fields, onFieldSelect, selectedField, onFieldsUpdate }) => {
-    const { isOver, setNodeRef } = useDroppable({
-        id: 'form-canvas',
-        data: { accepts: ['text', 'email', 'number', 'phone', 'select', 'textarea', 'date'] }
-    });
-
-    const handleFieldClick = (field) => {
-        onFieldSelect(field);
+const FormCanvas = ({ 
+    formConfig, 
+    selectedField, 
+    onFieldSelect, 
+    onFieldUpdate,
+    onProgramNameUpdate
+}) => {
+    
+    const handleProgramNameChange = (e) => {
+        if (onProgramNameUpdate) {
+            onProgramNameUpdate(e.target.value);
+        }
     };
 
-    const handleFieldChange = (fieldId, updates) => {
-        const updatedFields = fields.map(field =>
-            field.id === fieldId ? { ...field, ...updates } : field
+    const renderField = (field, sectionId) => {
+        // Render khusus untuk field nama program
+        if (field.id === 'program_name') {
+            return (
+                <div 
+                    key={field.id}
+                    className={`field-item p-4 border-2 border-blue-200 bg-blue-50 rounded-lg mb-4 ${
+                        selectedField?.id === field.id ? 'border-blue-500 bg-blue-100' : 'border-blue-200'
+                    } ${field.locked ? 'opacity-75' : ''}`}
+                >
+                    <div className="field-header mb-3">
+                        <label className="block text-sm font-bold text-blue-700 mb-1">
+                            {field.label}
+                            {field.required && <span className="text-red-500 ml-1">*</span>}
+                        </label>
+                    </div>
+                    
+                    <input
+                        type="text"
+                        value={formConfig.programName || ''}
+                        onChange={handleProgramNameChange}
+                        placeholder={field.placeholder}
+                        className="w-full px-3 py-2 border-2 border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium"
+                    />
+                    
+                    <p className="text-xs text-blue-600 mt-2">
+                        💡 Nama program ini akan menjadi judul formulir pendaftaran (tidak muncul di form yang diisi user)
+                    </p>
+                </div>
+            );
+        }
+
+        // Render field biasa
+        return (
+            <div 
+                key={field.id}
+                className={`field-item p-4 border rounded-lg mb-4 ${
+                    selectedField?.id === field.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                } ${field.locked ? 'opacity-75' : ''}`}
+                onClick={() => !field.locked && onFieldSelect(field)}
+            >
+                <div className="field-header mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {field.label}
+                        {field.required && <span className="text-red-500 ml-1">*</span>}
+                    </label>
+                </div>
+                
+                {/* Preview field berdasarkan type */}
+                {field.type === 'text' && (
+                    <input
+                        type="text"
+                        placeholder={field.placeholder}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                        readOnly
+                    />
+                )}
+                
+                {field.type === 'email' && (
+                    <input
+                        type="email"
+                        placeholder={field.placeholder}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                        readOnly
+                    />
+                )}
+                
+                {field.type === 'select' && (
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" disabled>
+                        <option>Pilih {field.label.toLowerCase()}</option>
+                    </select>
+                )}
+                
+                {field.type === 'textarea' && (
+                    <textarea
+                        placeholder={field.placeholder}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                        readOnly
+                    />
+                )}
+                
+                {field.type === 'number' && (
+                    <input
+                        type="number"
+                        placeholder={field.placeholder}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                        readOnly
+                    />
+                )}
+                
+                {field.type === 'date' && (
+                    <input
+                        type="date"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                        readOnly
+                    />
+                )}
+                
+                {field.description && (
+                    <p className="text-xs text-gray-500 mt-1">{field.description}</p>
+                )}
+            </div>
         );
-        onFieldsUpdate(updatedFields);
     };
-
-    // Pisahkan fields menjadi personal info dan category fields
-    const personalInfoFields = fields.slice(0, 5); // 5 field pertama adalah personal info
-    const categoryFields = fields.slice(5); // Sisanya adalah category fields
 
     return (
-        <Card className="flex-1">
-            <CardContent className="p-6 h-full">
-                <div
-                    ref={setNodeRef}
-                    className={`h-full border-2 border-dashed rounded-lg p-4 transition-colors ${
-                        isOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-                    }`}
-                >
-                    <h3 className="text-lg font-semibold mb-4">Form Canvas</h3>
-                    
-                    {fields.length === 0 ? (
-                        <div className="text-center text-gray-500 py-8">
-                            Pilih kategori form untuk mulai membangun
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            {/* Personal Information Section */}
-                            <div>
-                                <h4 className="font-semibold text-gray-800 mb-3 pb-2 border-b">
-                                    📋 Personal Information
-                                </h4>
-                                <div className="space-y-4">
-                                    {personalInfoFields.map((field) => (
-                                        <div
-                                            key={field.id}
-                                            onClick={() => handleFieldClick(field)}
-                                            className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                                                selectedField?.id === field.id
-                                                    ? 'border-blue-500 bg-blue-50'
-                                                    : 'border-gray-200 hover:border-gray-400'
-                                            }`}
-                                        >
-                                            <FormField
-                                                field={field}
-                                                onChange={(updates) => handleFieldChange(field.id, updates)}
-                                                isEditing={true}
-                                            />
-                                        </div>
-                                    ))}
+        <div className="form-canvas">
+            <div className="canvas-header mb-6">
+                <h2 className="text-xl font-semibold text-gray-800">Form Builder</h2>
+                <p className="text-gray-600">Drag and drop fields to build your form</p>
+            </div>
+
+            <div className="canvas-content">
+                {/* Section Program Info - HANYA untuk Builder, tidak untuk Preview */}
+                {formConfig.sections.programInfo && (
+                    <div key={formConfig.sections.programInfo.id} className="section mb-8">
+                        <div className="section-header mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                                    <span className="text-white text-sm">⚙️</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-medium text-blue-800">
+                                        {formConfig.sections.programInfo.name}
+                                    </h3>
+                                    {formConfig.sections.programInfo.description && (
+                                        <p className="text-sm text-blue-600">
+                                            {formConfig.sections.programInfo.description}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
-
-                            {/* Category Fields Section */}
-                            {categoryFields.length > 0 && (
-                                <div>
-                                    <h4 className="font-semibold text-gray-800 mb-3 pb-2 border-b">
-                                        🏷️ Additional Information
-                                    </h4>
-                                    <div className="space-y-4">
-                                        {categoryFields.map((field) => (
-                                            <div
-                                                key={field.id}
-                                                onClick={() => handleFieldClick(field)}
-                                                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                                                    selectedField?.id === field.id
-                                                        ? 'border-blue-500 bg-blue-50'
-                                                        : 'border-gray-200 hover:border-gray-400'
-                                                }`}
-                                            >
-                                                <FormField
-                                                    field={field}
-                                                    onChange={(updates) => handleFieldChange(field.id, updates)}
-                                                    isEditing={true}
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                            <div className="mt-2 bg-blue-100 border border-blue-300 rounded px-3 py-1">
+                                <p className="text-xs text-blue-700">
+                                    🔒 Pengaturan internal - tidak akan muncul di form yang diisi user
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div className="section-fields">
+                            {formConfig.sections.programInfo.fields.map(field => 
+                                renderField(field, formConfig.sections.programInfo.id)
                             )}
                         </div>
-                    )}
+                    </div>
+                )}
+
+                {/* Render section personalInfo */}
+                {formConfig.sections.personalInfo && (
+                    <div key={formConfig.sections.personalInfo.id} className="section mb-8">
+                        <div className="section-header mb-4">
+                            <h3 className="text-lg font-medium text-gray-800">
+                                {formConfig.sections.personalInfo.name}
+                            </h3>
+                            {formConfig.sections.personalInfo.description && (
+                                <p className="text-sm text-gray-600">
+                                    {formConfig.sections.personalInfo.description}
+                                </p>
+                            )}
+                        </div>
+                        
+                        <div className="section-fields">
+                            {formConfig.sections.personalInfo.fields.map(field => 
+                                renderField(field, formConfig.sections.personalInfo.id)
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Render categories sections */}
+                <div className="categories-section">
+                    <h3 className="text-lg font-medium text-gray-800 mb-4">Kategori Peserta</h3>
+                    <p className="text-sm text-gray-600 mb-6">
+                        Pilih kategori yang sesuai dengan profil Anda
+                    </p>
+                    
+                    {Object.values(formConfig.categories || {}).map(category => (
+                        <div key={category.id} className="category-section mb-8">
+                            <div className="category-header mb-4 p-4 bg-gray-50 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-2xl">{category.icon}</span>
+                                    <div>
+                                        <h4 className="font-medium text-gray-800">{category.name}</h4>
+                                        <p className="text-sm text-gray-600">{category.description}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="category-fields pl-4">
+                                {category.fields.map(field => renderField(field, category.id))}
+                            </div>
+                        </div>
+                    ))}
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 };
 

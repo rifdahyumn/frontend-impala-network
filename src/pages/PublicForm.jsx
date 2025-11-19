@@ -1,4 +1,3 @@
-// src/pages/PublicForm.jsx
 import React, { useState } from 'react';
 import { Button } from '../components/ui/button';
 import FormField from '../components/FormBuilder/fields/FormField';
@@ -91,6 +90,16 @@ const PublicForm = () => {
             placeholder: 'Masukkan nama lengkap sesuai KTP'
         },
         { 
+            id: 'nik', 
+            type: 'nik', 
+            name: 'nik', 
+            label: 'NIK (Nomor Induk Kependudukan)', 
+            required: true,
+            placeholder: 'Enter your NIK 17 digits',
+            minlength:'17',
+            maxlength:'17'
+        },
+        { 
             id: 'email', 
             type: 'email', 
             name: 'email', 
@@ -102,9 +111,9 @@ const PublicForm = () => {
             id: 'phone', 
             type: 'phone', 
             name: 'phone', 
-            label: 'Nomor Telepon/WhatsApp', 
+            label: 'Nomor WhatsApp', 
             required: true,
-            placeholder: '+62 812 3456 7890'
+            placeholder: '+62-xxx-xxxx-xxxx'
         },
         { 
             id: 'gender', 
@@ -121,6 +130,14 @@ const PublicForm = () => {
             label: 'Tanggal Lahir', 
             required: true
         },
+        {
+            id: 'education',
+            type: 'select',
+            name: 'education',
+            label: 'Pendidikan Terakhir',
+            required: true,
+            options: [ 'Sekolah Menengah Atas (SMA/SMK/MA)', 'Diploma (D3)', 'Sarjana (S1)', 'Magister (S2)', 'Doctor (S3)']
+        },
         { 
             id: 'address', 
             type: 'textarea', 
@@ -131,6 +148,33 @@ const PublicForm = () => {
             placeholder: 'Jl. Contoh No. 123, Kota, Provinsi'
         },
         { 
+            id: 'district', 
+            type: 'text', 
+            name: 'district', 
+            label: 'Kecamatan', 
+            required: true,
+        },
+        {
+            id: 'city', 
+            type: 'text', 
+            name: 'city', 
+            label: 'Kota / Kabupaten', 
+            required: true,
+        },
+        {
+            id: 'province', 
+            type: 'text', 
+            name: 'province', 
+            label: 'Provinsi', 
+            required: true,
+        },
+        {
+            id: 'postalCode', 
+            type: 'text', 
+            name: 'postalCode', 
+            label: 'Kode Pos', 
+            required: true,
+
             id: 'reason', 
             type: 'textarea', 
             name: 'reason_join_program', 
@@ -145,20 +189,20 @@ const PublicForm = () => {
         const categoryTemplates = {
             umkm: [
                 { 
-                    id: 'businessName', 
+                    id: 'business_name', 
                     type: 'text', 
-                    name: 'businessName', 
-                    label: 'Nama Usaha', 
+                    name: 'business_name', 
+                    label: 'Nama Bisnis / Usaha', 
                     required: true,
-                    placeholder: 'Masukkan nama usaha'
+                    placeholder: 'Masukkan nama bisnis / usaha'
                 },
                 { 
-                    id: 'businessType', 
+                    id: 'business', 
                     type: 'select', 
-                    name: 'businessType', 
-                    label: 'Jenis Usaha', 
+                    name: 'business', 
+                    label: 'Jenis Bisnis', 
                     required: true,
-                    options: ['Retail', 'Manufacturing', 'Service', 'Food & Beverage', 'Technology'] 
+                    options: ['Retail', 'Manufacturing', 'Service', 'Food & Beverage', 'Teknologi'] 
                 },
                 { 
                     id: 'establishedYear', 
@@ -171,16 +215,17 @@ const PublicForm = () => {
                 },
                 { 
                     id: 'monthlyRevenue', 
-                    type: 'number', 
+                    type: 'select', 
                     name: 'monthlyRevenue', 
-                    label: 'Pendapatan Bulanan (Rp)',
-                    placeholder: 'Contoh: 5000000'
+                    label: 'Omset Bulanan (Rp)',
+                    options: ['Rp 500.000 - Rp 1.000.000', 'Rp 1.000.000 - Rp 5.000.000', 'Rp 5.000.000 - Rp 10.000.000', 'Rp 10.000.000 - Rp 15.000.000', 'Lebih dari Rp 15.000.000']
                 },
                 { 
-                    id: 'totalEmployees', 
-                    type: 'number', 
-                    name: 'totalEmployees', 
-                    label: 'Jumlah Karyawan' 
+                    id: 'total_employee', 
+                    type: 'select', 
+                    name: 'total_employee', 
+                    label: 'Total Karyawan',
+                    options: ['1 - 50', '50 - 100', '100 - 500', '500 - 1000', 'Lebih dari 1000']
                 }
             ],
             mahasiswa: [
@@ -188,9 +233,9 @@ const PublicForm = () => {
                     id: 'institution', 
                     type: 'text', 
                     name: 'institution', 
-                    label: 'Nama Institusi Pendidikan', 
+                    label: 'Institusi', 
                     required: true,
-                    placeholder: 'Nama universitas atau kampus'
+                    placeholder: 'Masukkan nama institusi'
                 },
                 { 
                     id: 'major', 
@@ -198,13 +243,13 @@ const PublicForm = () => {
                     name: 'major', 
                     label: 'Jurusan', 
                     required: true,
-                    placeholder: 'Contoh: Teknik Informatika'
+                    placeholder: 'Masukkan nama jurusan'
                 },
                 { 
                     id: 'enrollmentYear', 
                     type: 'number', 
                     name: 'enrollmentYear', 
-                    label: 'Tahun Masuk',
+                    label: 'Tahun Pendaftaran',
                     required: true,
                     min: 2000,
                     max: new Date().getFullYear()
@@ -213,15 +258,25 @@ const PublicForm = () => {
                     id: 'semester', 
                     type: 'number', 
                     name: 'semester', 
-                    label: 'Semester Saat Ini',
+                    label: 'Semester',
                     min: 1,
                     max: 14
                 },
                 { 
-                    id: 'studentId', 
+                    id: 'coreCompetency', 
                     type: 'text', 
-                    name: 'studentId', 
-                    label: 'NIM/NIS' 
+                    name: 'CoreCompetency', 
+                    label: 'Kompetensi',
+                    required: true,
+                    placeholder: 'Contoh: Data Analyst, Public Speaking'
+                },
+                { 
+                    id: 'careerInterest', 
+                    type: 'text', 
+                    name: 'careerInterest', 
+                    label: 'Minat Karier',
+                    required: true,
+                    placeholder: 'Contoh: Data Analyst, Public Speaking'
                 }
             ],
             profesional: [
@@ -229,7 +284,7 @@ const PublicForm = () => {
                     id: 'workplace', 
                     type: 'text', 
                     name: 'workplace', 
-                    label: 'Tempat Kerja', 
+                    label: 'Nama Perusahaan / Instansi', 
                     required: true,
                     placeholder: 'Nama perusahaan atau instansi'
                 },
@@ -239,20 +294,22 @@ const PublicForm = () => {
                     name: 'position', 
                     label: 'Posisi', 
                     required: true,
-                    placeholder: 'Contoh: Software Engineer, Marketing Manager'
+                    placeholder: 'Contoh: Software Engineer'
                 },
                 { 
                     id: 'workDuration', 
                     type: 'text', 
                     name: 'workDuration', 
                     label: 'Lama Bekerja',
+                    required: true,
                     placeholder: 'Contoh: 3 tahun 2 bulan'
                 },
                 { 
                     id: 'industrySector', 
                     type: 'text', 
                     name: 'industrySector', 
-                    label: 'Sektor Industri' 
+                    label: 'Sektor Industri',
+                    placeholder: 'Contoh: Pendidikan, Keuangan & Perbankan'
                 }
             ],
             komunitas: [
@@ -336,7 +393,7 @@ const PublicForm = () => {
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
                         <h2 className="text-xl font-semibold text-center">
-                            Form Pendaftaran Program Impala
+                            Formulir Pendaftaran Program Impala
                         </h2>
                     </div>
 
@@ -444,7 +501,7 @@ const PublicForm = () => {
 
                 {/* Contact Info */}
                 <div className="text-center mt-8 text-gray-500 text-sm">
-                    <p>Butuh bantuan? support@impala-management.com | 0812-3456-7890</p>
+                    <p>Butuh bantuan? support@impala.network | +62 811-1011-512</p>
                 </div>
             </div>
         </div>
