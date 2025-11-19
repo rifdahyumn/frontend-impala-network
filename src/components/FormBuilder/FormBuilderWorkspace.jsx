@@ -1,26 +1,44 @@
-// src/components/FormBuilder/FormBuilderWorkspace.jsx
 import React, { useState, useEffect } from 'react';
 import FormCanvas from './FormCanvas';
 import FieldConfigPanel from './fields/FieldConfigPanel';
+import { getProgramNames } from '../../utils/programData';
 
 const FormBuilderWorkspace = () => {
     const [formConfig, setFormConfig] = useState(null);
     const [selectedField, setSelectedField] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [availablePrograms, setAvailablePrograms] = useState([]);
 
     // Load dari localStorage saat component mount
     useEffect(() => {
         const savedConfig = localStorage.getItem('impalaFormConfig');
+        
+        const loadAvailablePrograms = () => {
+            try {
+                // Gunakan utility function yang sudah dibuat
+                const programNames = getProgramNames();
+                if (programNames.length > 0) {
+                    setAvailablePrograms(programNames);
+                    console.log('📋 Loaded programs for dropdown:', programNames);
+                } else {
+                    // Fallback ke default programs
+                    setAvailablePrograms(["Impala Management"]);
+                    console.log('⚠️ No programs found, using default');
+                }
+            } catch (error) {
+                console.error('❌ Error loading programs:', error);
+                setAvailablePrograms(["Impala Management"]);
+            }
+        };
+
         if (savedConfig) {
             setFormConfig(JSON.parse(savedConfig));
         } else {
             // Default config dengan programName dan data lengkap
             setFormConfig({
-                programName: "Impala Management", // Field nama program
+                programName: "Impala Management",
                 title: "Pendaftaran Program Impala Management",
-                description: "1 Form untuk Semua Kategori - Pilih yang Sesuai dengan Profil Anda",
                 sections: {
-                    // Section baru untuk program info
                     programInfo: {
                         id: "programInfo",
                         name: "Informasi Program",
@@ -29,11 +47,12 @@ const FormBuilderWorkspace = () => {
                         fields: [
                             {
                                 id: 'program_name',
-                                type: 'text',
+                                type: 'select',
                                 name: 'program_name',
                                 label: 'Nama Program',
                                 required: true,
-                                placeholder: 'Masukkan nama program',
+                                placeholder: 'Pilih nama program',
+                                options: [], // Akan diisi nanti
                                 locked: true
                             }
                         ]
@@ -145,6 +164,16 @@ const FormBuilderWorkspace = () => {
                                 name: 'postal_code',
                                 label: 'Kode Pos',
                                 required: true,
+                                locked: true
+                            },
+                            {
+                                id: 'reason', 
+                                type: 'textarea', 
+                                name: 'reason_join_program', 
+                                label: 'Reason Join Program',
+                                rows: 3,
+                                required: true,
+                                placeholder: 'Ingin menambah wawasan',
                                 locked: true
                             }
                         ]
@@ -304,7 +333,7 @@ const FormBuilderWorkspace = () => {
                             },
                             {
                                 id: 'skills',
-                                type: 'textarea',
+                                type: 'text',
                                 name: 'skills',
                                 label: 'Keahlian Utama',
                                 required: true,
@@ -364,19 +393,38 @@ const FormBuilderWorkspace = () => {
                                 required: true,
                                 options: ['Lokal', 'Nasional', 'Internasional'],
                                 locked: true
-                            }
+                            },
                         ]
                     }
                 }
             });
         }
+
+        loadAvailablePrograms(); // PANGGIL FUNGSI DI SINI
     }, []);
+
+    // Update formConfig ketika availablePrograms berubah
+    useEffect(() => {
+        if (formConfig && availablePrograms.length > 0) {
+            // Update options untuk field program_name
+            setFormConfig(prev => {
+                const newConfig = { ...prev };
+                if (newConfig.sections.programInfo) {
+                    newConfig.sections.programInfo.fields = newConfig.sections.programInfo.fields.map(field => 
+                        field.id === 'program_name' 
+                            ? { ...field, options: availablePrograms }
+                            : field
+                    );
+                }
+                return newConfig;
+            });
+        }
+    }, [availablePrograms, formConfig]);
 
     // Debug: Log struktur formConfig
     useEffect(() => {
         if (formConfig) {
             console.log('FormConfig loaded:', formConfig);
-            console.log('Program Info section exists:', !!formConfig.sections?.programInfo);
             console.log('Program Name:', formConfig.programName);
         }
     }, [formConfig]);
@@ -464,23 +512,7 @@ const FormBuilderWorkspace = () => {
             {/* Header dengan preview mode dan judul dinamis */}
             <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg">
                 <div className="flex justify-between items-center mb-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-800">Form Builder</h1>
-                        <p className="text-gray-600">Bangun form pendaftaran dengan drag & drop</p>
-                    </div>
                     <div className="flex items-center gap-4">
-                        <div className="preview-mode flex items-center">
-                            <input 
-                                type="checkbox" 
-                                id="preview-mode" 
-                                checked 
-                                className="mr-2"
-                                onChange={() => {}} 
-                            />
-                            <label htmlFor="preview-mode" className="text-sm text-gray-600">
-                                MODE PREVIEW - Data tidak benar-benar disimpan
-                            </label>
-                        </div>
                         <button 
                             onClick={handleResetForm}
                             className="text-sm bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200"
@@ -492,15 +524,18 @@ const FormBuilderWorkspace = () => {
                 
                 {/* Preview judul formulir yang dinamis */}
                 <div className="preview-header-section">
-                    <div className="preview-title bg-pink-600 text-white p-4 rounded-lg text-center font-bold text-lg">
-                        {formConfig.programName 
-                            ? `Formulir Pendaftaran ${formConfig.programName}`
-                            : 'Formulir Pendaftaran Program'
-                        }
+                    <div className="preview-container bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg shadow-lg overflow-hidden">
+                        <div className="preview-header p-6 text-center">
+                            <h1 className="text-2xl font-bold">
+                                {formConfig?.programName 
+                                    ? `Formulir Pendaftaran ${formConfig.programName}`
+                                    : 'Formulir Pendaftaran Program'
+                                }
+                            </h1>
+                            <p className="text-lg opacity-90 mt-2">
+                            </p>
+                        </div>
                     </div>
-                    <p className="text-center text-gray-600 mt-2">
-                        Field "Nama Program" hanya untuk mengatur judul formulir dan tidak akan muncul di form yang diisi user
-                    </p>
                 </div>
             </div>
 
@@ -512,13 +547,14 @@ const FormBuilderWorkspace = () => {
                     onFieldSelect={setSelectedField}
                     onFieldUpdate={updateField}
                     onProgramNameUpdate={updateProgramName}
+                    availablePrograms={availablePrograms}
                 />
             </div>
             
             {/* Save Button */}
             <div className="flex justify-between items-center">
                 <div className="text-sm text-gray-500">
-                    💡 Field "Nama Program" berada di section "Informasi Program" di bagian atas form
+                    💡 Pilih nama program dari daftar yang tersedia
                 </div>
                 <button 
                     onClick={handleSaveForm}

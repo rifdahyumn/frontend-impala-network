@@ -6,7 +6,8 @@ const FormCanvas = ({
     selectedField, 
     onFieldSelect, 
     onFieldUpdate,
-    onProgramNameUpdate
+    onProgramNameUpdate,
+    availablePrograms = [] // PROPS BARU
 }) => {
     
     const handleProgramNameChange = (e) => {
@@ -16,7 +17,7 @@ const FormCanvas = ({
     };
 
     const renderField = (field, sectionId) => {
-        // Render khusus untuk field nama program
+        // Render khusus untuk field nama program - SEKARANG DROPDOWN
         if (field.id === 'program_name') {
             return (
                 <div 
@@ -32,22 +33,34 @@ const FormCanvas = ({
                         </label>
                     </div>
                     
-                    <input
-                        type="text"
+                    {/* UBAH DARI INPUT TEXT KE SELECT DROPDOWN */}
+                    <select
                         value={formConfig.programName || ''}
                         onChange={handleProgramNameChange}
-                        placeholder={field.placeholder}
                         className="w-full px-3 py-2 border-2 border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium"
-                    />
+                    >
+                        <option value="">Pilih Program</option>
+                        {availablePrograms.map((program, index) => (
+                            <option key={index} value={program}>
+                                {program}
+                            </option>
+                        ))}
+                    </select>
                     
                     <p className="text-xs text-blue-600 mt-2">
-                        💡 Nama program ini akan menjadi judul formulir pendaftaran (tidak muncul di form yang diisi user)
+                        💡 Pilih nama program dari daftar yang tersedia
                     </p>
+                    
+                    {availablePrograms.length === 0 && (
+                        <p className="text-xs text-red-600 mt-1">
+                            ⚠️ Tidak ada program yang tersedia. Silakan tambah program terlebih dahulu.
+                        </p>
+                    )}
                 </div>
             );
         }
 
-        // Render field biasa
+        // Render field biasa (tetap sama)
         return (
             <div 
                 key={field.id}
@@ -85,6 +98,9 @@ const FormCanvas = ({
                 {field.type === 'select' && (
                     <select className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" disabled>
                         <option>Pilih {field.label.toLowerCase()}</option>
+                        {field.options && field.options.map((option, index) => (
+                            <option key={index} value={option}>{option}</option>
+                        ))}
                     </select>
                 )}
                 
@@ -121,15 +137,18 @@ const FormCanvas = ({
         );
     };
 
+    // ... sisa kode tetap sama
     return (
         <div className="form-canvas">
             <div className="canvas-header mb-6">
                 <h2 className="text-xl font-semibold text-gray-800">Form Builder</h2>
-                <p className="text-gray-600">Drag and drop fields to build your form</p>
+                <p className="text-gray-600 mt-1">
+                    Tersedia {availablePrograms.length} program untuk dipilih
+                </p>
             </div>
 
             <div className="canvas-content">
-                {/* Section Program Info - HANYA untuk Builder, tidak untuk Preview */}
+                {/* Section Program Info */}
                 {formConfig.sections.programInfo && (
                     <div key={formConfig.sections.programInfo.id} className="section mb-8">
                         <div className="section-header mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -148,22 +167,18 @@ const FormCanvas = ({
                                     )}
                                 </div>
                             </div>
-                            <div className="mt-2 bg-blue-100 border border-blue-300 rounded px-3 py-1">
-                                <p className="text-xs text-blue-700">
-                                    🔒 Pengaturan internal - tidak akan muncul di form yang diisi user
-                                </p>
-                            </div>
                         </div>
                         
                         <div className="section-fields">
-                            {formConfig.sections.programInfo.fields.map(field => 
-                                renderField(field, formConfig.sections.programInfo.id)
+                            {formConfig.sections.programInfo.fields
+                                .filter(field => field.id === 'program_name')
+                                .map(field => renderField(field, formConfig.sections.programInfo.id)
                             )}
                         </div>
                     </div>
                 )}
 
-                {/* Render section personalInfo */}
+                {/* ... sisa kode untuk personalInfo dan categories tetap sama */}
                 {formConfig.sections.personalInfo && (
                     <div key={formConfig.sections.personalInfo.id} className="section mb-8">
                         <div className="section-header mb-4">

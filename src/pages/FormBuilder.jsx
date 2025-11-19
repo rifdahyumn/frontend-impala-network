@@ -20,6 +20,55 @@ const FormBuilder = () => {
         }
     };
 
+    // Handler untuk publish form - BUKA DI TAB BARU
+    const handlePublishForm = () => {
+        const savedConfig = localStorage.getItem('impalaFormConfig');
+        if (!savedConfig) {
+            alert('Belum ada form yang disimpan. Silakan simpan form terlebih dahulu.');
+            return;
+        }
+
+        try {
+            const config = JSON.parse(savedConfig);
+            
+            // Generate unique form ID
+            const formId = `form_${Date.now()}`;
+            
+            // Simpan sebagai published form dengan metadata
+            const publishedConfig = {
+                ...config,
+                id: formId,
+                published: true,
+                publishedAt: new Date().toISOString(),
+                publicUrl: `/public-form/${formId}`
+            };
+
+            // Simpan ke localStorage untuk public access
+            localStorage.setItem('impalaPublishedForm', JSON.stringify(publishedConfig));
+            
+            // Buka form di tab baru
+            const baseUrl = window.location.origin;
+            const publicUrl = `${baseUrl}/public-form/${formId}`;
+            window.open(publicUrl, '_blank', 'noopener,noreferrer');
+            
+            alert('Form berhasil dipublish! Formulir sekarang dapat diakses oleh user eksternal.');
+            
+        } catch (error) {
+            console.error('Error publishing form:', error);
+            alert('Terjadi error saat mempublish form.');
+        }
+    };
+
+    // Handler untuk save form
+    const handleSaveForm = () => {
+        const savedConfig = localStorage.getItem('impalaFormConfig');
+        if (savedConfig) {
+            alert('Form berhasil disimpan!');
+        } else {
+            alert('Belum ada form yang dibuat. Silakan buat form terlebih dahulu.');
+        }
+    };
+
     if (previewMode && formConfig) {
         return (
             <FormPreview 
@@ -38,32 +87,23 @@ const FormBuilder = () => {
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <h1 className="text-2xl font-bold">Form Builder - Impala Management</h1>
-                            <p className="text-gray-600 mt-1">
-                                Bangun form pendaftaran dengan drag & drop. Semua form sudah termasuk data personal.
-                            </p>
                         </div>
                         <div className="flex gap-3">
                             <button 
                                 onClick={handleGetFormConfig}
-                                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 flex items-center gap-2"
+                                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2 transition-colors"
                             >
                                 👁️ Preview
                             </button>
                             <button 
-                                onClick={() => {
-                                    localStorage.setItem('impalaFormConfig', JSON.stringify(formConfig));
-                                    alert('Form berhasil disimpan!');
-                                }}
-                                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
+                                onClick={handleSaveForm}
+                                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-colors"
                             >
                                 💾 Save
                             </button>
                             <button 
-                                onClick={() => {
-                                    localStorage.setItem('impalaFormConfig', JSON.stringify(formConfig));
-                                    alert('Form berhasil dipublish!');
-                                }}
-                                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
+                                onClick={handlePublishForm}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
                             >
                                 🚀 Publish
                             </button>
