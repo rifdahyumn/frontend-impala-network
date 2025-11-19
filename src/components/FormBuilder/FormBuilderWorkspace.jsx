@@ -1,16 +1,36 @@
-// src/components/FormBuilder/FormBuilderWorkspace.jsx
 import React, { useState, useEffect } from 'react';
 import FormCanvas from './FormCanvas';
 import FieldConfigPanel from './fields/FieldConfigPanel';
+import { getProgramNames } from '../../utils/programData';
 
 const FormBuilderWorkspace = () => {
     const [formConfig, setFormConfig] = useState(null);
     const [selectedField, setSelectedField] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [availablePrograms, setAvailablePrograms] = useState([]);
 
     // Load dari localStorage saat component mount
     useEffect(() => {
         const savedConfig = localStorage.getItem('impalaFormConfig');
+        
+        const loadAvailablePrograms = () => {
+            try {
+                // Gunakan utility function yang sudah dibuat
+                const programNames = getProgramNames();
+                if (programNames.length > 0) {
+                    setAvailablePrograms(programNames);
+                    console.log('📋 Loaded programs for dropdown:', programNames);
+                } else {
+                    // Fallback ke default programs
+                    setAvailablePrograms(["Impala Management"]);
+                    console.log('⚠️ No programs found, using default');
+                }
+            } catch (error) {
+                console.error('❌ Error loading programs:', error);
+                setAvailablePrograms(["Impala Management"]);
+            }
+        };
+
         if (savedConfig) {
             setFormConfig(JSON.parse(savedConfig));
         } else {
@@ -19,7 +39,6 @@ const FormBuilderWorkspace = () => {
                 programName: "Impala Management",
                 title: "Pendaftaran Program Impala Management",
                 sections: {
-                    // Section untuk program info
                     programInfo: {
                         id: "programInfo",
                         name: "Informasi Program",
@@ -28,11 +47,12 @@ const FormBuilderWorkspace = () => {
                         fields: [
                             {
                                 id: 'program_name',
-                                type: 'text',
+                                type: 'select',
                                 name: 'program_name',
                                 label: 'Nama Program',
                                 required: true,
-                                placeholder: 'Masukkan nama program',
+                                placeholder: 'Pilih nama program',
+                                options: [], // Akan diisi nanti
                                 locked: true
                             }
                         ]
@@ -379,7 +399,27 @@ const FormBuilderWorkspace = () => {
                 }
             });
         }
+
+        loadAvailablePrograms(); // PANGGIL FUNGSI DI SINI
     }, []);
+
+    // Update formConfig ketika availablePrograms berubah
+    useEffect(() => {
+        if (formConfig && availablePrograms.length > 0) {
+            // Update options untuk field program_name
+            setFormConfig(prev => {
+                const newConfig = { ...prev };
+                if (newConfig.sections.programInfo) {
+                    newConfig.sections.programInfo.fields = newConfig.sections.programInfo.fields.map(field => 
+                        field.id === 'program_name' 
+                            ? { ...field, options: availablePrograms }
+                            : field
+                    );
+                }
+                return newConfig;
+            });
+        }
+    }, [availablePrograms, formConfig]);
 
     // Debug: Log struktur formConfig
     useEffect(() => {
@@ -484,16 +524,16 @@ const FormBuilderWorkspace = () => {
                 
                 {/* Preview judul formulir yang dinamis */}
                 <div className="preview-header-section">
-                    {/* Container Preview yang Lebih Menarik */}
                     <div className="preview-container bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg shadow-lg overflow-hidden">
-                        {/* Header dengan Judul */}
                         <div className="preview-header p-6 text-center">
                             <h1 className="text-2xl font-bold">
-                                {formConfig.programName 
+                                {formConfig?.programName 
                                     ? `Formulir Pendaftaran ${formConfig.programName}`
                                     : 'Formulir Pendaftaran Program'
                                 }
                             </h1>
+                            <p className="text-lg opacity-90 mt-2">
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -507,11 +547,15 @@ const FormBuilderWorkspace = () => {
                     onFieldSelect={setSelectedField}
                     onFieldUpdate={updateField}
                     onProgramNameUpdate={updateProgramName}
+                    availablePrograms={availablePrograms}
                 />
             </div>
             
             {/* Save Button */}
             <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-500">
+                    💡 Pilih nama program dari daftar yang tersedia
+                </div>
                 <button 
                     onClick={handleSaveForm}
                     disabled={isSaving}

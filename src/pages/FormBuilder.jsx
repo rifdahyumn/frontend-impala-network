@@ -87,7 +87,6 @@ const FormBuilder = () => {
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <h1 className="text-2xl font-bold">Form Builder - Impala Management</h1>
-                            <p className="text-gray-600">Bangun form pendaftaran dengan drag & drop. Semua form sudah termasuk data personal.</p>
                         </div>
                         <div className="flex gap-3">
                             <button 
