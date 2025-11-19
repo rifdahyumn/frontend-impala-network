@@ -41,7 +41,7 @@ const FormCanvas = ({
                     />
                     
                     <p className="text-xs text-blue-600 mt-2">
-                        💡 Nama program ini akan menjadi judul formulir pendaftaran (tidak muncul di form yang diisi user)
+                        💡 Nama program ini akan menjadi judul formulir pendaftaran
                     </p>
                 </div>
             );
@@ -125,7 +125,6 @@ const FormCanvas = ({
         <div className="form-canvas">
             <div className="canvas-header mb-6">
                 <h2 className="text-xl font-semibold text-gray-800">Form Builder</h2>
-                <p className="text-gray-600">Drag and drop fields to build your form</p>
             </div>
 
             <div className="canvas-content">
@@ -148,16 +147,13 @@ const FormCanvas = ({
                                     )}
                                 </div>
                             </div>
-                            <div className="mt-2 bg-blue-100 border border-blue-300 rounded px-3 py-1">
-                                <p className="text-xs text-blue-700">
-                                    🔒 Pengaturan internal - tidak akan muncul di form yang diisi user
-                                </p>
-                            </div>
                         </div>
                         
                         <div className="section-fields">
-                            {formConfig.sections.programInfo.fields.map(field => 
-                                renderField(field, formConfig.sections.programInfo.id)
+                            {/* HANYA render field program_name, tidak ada program_description */}
+                            {formConfig.sections.programInfo.fields
+                                .filter(field => field.id === 'program_name') // FILTER: hanya tampilkan program_name
+                                .map(field => renderField(field, formConfig.sections.programInfo.id)
                             )}
                         </div>
                     </div>

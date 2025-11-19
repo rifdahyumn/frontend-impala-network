@@ -16,7 +16,7 @@ import LoginPage from './components/Login';
 import HeteroBanyumas from './pages/HeteroManagement';
 import HeteroSemarang from './pages/HeteroSemarang';
 import HeteroSurakarta from './pages/HeteroSurakarta';
-import PublicForm from './pages/PublicForm'; // TAMBAH IMPORT INI
+import PublicForm from './pages/PublicForm';
 
 // Main Layout Component
 const MainLayout = ({ children }) => {
@@ -97,9 +97,25 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* PUBLIC FORM ROUTE - TANPA AUTH & LAYOUT */}
+          {/* PUBLIC FORM ROUTES - TANPA AUTH & LAYOUT */}
           <Route 
             path="/register" 
+            element={
+              <PublicFormRoute>
+                <PublicForm />
+              </PublicFormRoute>
+            } 
+          />
+          <Route 
+            path="/public-form" 
+            element={
+              <PublicFormRoute>
+                <PublicForm />
+              </PublicFormRoute>
+            } 
+          />
+          <Route 
+            path="/public-form/:formId" 
             element={
               <PublicFormRoute>
                 <PublicForm />

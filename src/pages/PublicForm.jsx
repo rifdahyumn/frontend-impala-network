@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// src/components/PublicForm/PublicForm.jsx
+import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import FormField from '../components/FormBuilder/fields/FormField';
 
@@ -6,7 +7,36 @@ const PublicForm = () => {
     const [formData, setFormData] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
-    const [currentStep, setCurrentStep] = useState(1); // 1: Personal, 2: Category, 3: Additional
+    const [currentStep, setCurrentStep] = useState(1);
+    const [formConfig, setFormConfig] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Load formConfig dari localStorage - PRIORITAS published form
+    useEffect(() => {
+        const loadFormConfig = () => {
+            try {
+                // Coba load dari published form terlebih dahulu
+                const publishedConfig = localStorage.getItem('impalaPublishedForm');
+                const draftConfig = localStorage.getItem('impalaFormConfig');
+                
+                if (publishedConfig) {
+                    console.log('Loading published form...');
+                    setFormConfig(JSON.parse(publishedConfig));
+                } else if (draftConfig) {
+                    console.log('Loading draft form...');
+                    setFormConfig(JSON.parse(draftConfig));
+                } else {
+                    console.log('No form configuration found');
+                }
+            } catch (error) {
+                console.error('Error loading form config:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadFormConfig();
+    }, []);
 
     const handleInputChange = (fieldName, value) => {
         setFormData(prev => ({
@@ -17,12 +47,11 @@ const PublicForm = () => {
 
     const handleCategorySelect = (categoryType) => {
         setSelectedCategory(categoryType);
-        setCurrentStep(3); // Langsung ke step 3
+        setCurrentStep(3);
     };
 
     const nextStep = () => {
         if (currentStep === 1) {
-            // Validasi data personal dulu
             if (!formData.full_name || !formData.email || !formData.phone) {
                 alert('Harap lengkapi data personal terlebih dahulu!');
                 return;
@@ -52,10 +81,16 @@ const PublicForm = () => {
                 },
                 category: selectedCategory,
                 additional_info: getCategoryFormData(),
-                submittedAt: new Date().toISOString()
+                submittedAt: new Date().toISOString(),
+                formId: formConfig?.id || 'unknown'
             };
             
             console.log('Form data submitted:', submissionData);
+            
+            // Simpan data submission (dalam real app, ini akan ke API)
+            const submissions = JSON.parse(localStorage.getItem('impalaFormSubmissions') || '[]');
+            submissions.push(submissionData);
+            localStorage.setItem('impalaFormSubmissions', JSON.stringify(submissions));
             
             await new Promise(resolve => setTimeout(resolve, 2000));
             
@@ -65,8 +100,10 @@ const PublicForm = () => {
             setFormData({});
             setSelectedCategory(null);
             setCurrentStep(1);
+            
         } catch (error) {
-            alert('Terjadi error saat mengirim form. Silakan coba lagi.', error);
+            console.error('Error submitting form:', error);
+            alert('Terjadi error saat mengirim form. Silakan coba lagi.');
         } finally {
             setIsSubmitting(false);
         }
@@ -96,8 +133,8 @@ const PublicForm = () => {
             label: 'NIK (Nomor Induk Kependudukan)', 
             required: true,
             placeholder: 'Enter your NIK 17 digits',
-            minlength:'17',
-            maxlength:'17'
+            minlength: '17',
+            maxlength: '17'
         },
         { 
             id: 'email', 
@@ -174,7 +211,8 @@ const PublicForm = () => {
             name: 'postalCode', 
             label: 'Kode Pos', 
             required: true,
-
+        },
+        {
             id: 'reason', 
             type: 'textarea', 
             name: 'reason_join_program', 
@@ -354,13 +392,38 @@ const PublicForm = () => {
         { id: 'komunitas', name: 'Komunitas', description: 'Organisasi/Komunitas', icon: '👥' }
     ];
 
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Memuat formulir...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!formConfig) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold text-gray-800 mb-2">Formulir Tidak Ditemukan</h1>
+                    <p className="text-gray-600">Formulir yang Anda cari tidak tersedia atau telah dihapus.</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
             <div className="container mx-auto px-4 max-w-3xl">
                 {/* Header */}
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                        🚀 Pendaftaran Program Impala Management
+                        🚀 {formConfig?.programName 
+                            ? `Pendaftaran Program ${formConfig.programName}`
+                            : 'Pendaftaran Program Impala Management'
+                        }
                     </h1>
                     <p className="text-gray-600">
                         1 Form untuk Semua Kategori - Pilih yang Sesuai dengan Profil Anda
@@ -391,9 +454,13 @@ const PublicForm = () => {
 
                 {/* Form Card */}
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
-                        <h2 className="text-xl font-semibold text-center">
-                            Formulir Pendaftaran Program Impala
+                    {/* Header Form */}
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 text-center">
+                        <h2 className="text-xl font-semibold">
+                            {formConfig?.programName 
+                                ? `Formulir Pendaftaran ${formConfig.programName}`
+                                : 'Formulir Pendaftaran Program Impala'
+                            }
                         </h2>
                     </div>
 
