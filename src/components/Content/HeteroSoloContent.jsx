@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, User, Mail, Phone, MapPin, Building, Package, Info, Calendar, BookOpen, Home } from "lucide-react";
+import { Edit, Trash2, User, Mail, Phone, MapPin, Building, Package, FileText, Calendar, BookOpen, Home } from "lucide-react";
 import toast from 'react-hot-toast';
 
 const HeteroSoloContent = ({ selectedMember, onOpenEditModal, onDelete, detailTitle, onMemberEdited }) => {
@@ -42,6 +42,13 @@ const HeteroSoloContent = ({ selectedMember, onOpenEditModal, onDelete, detailTi
                 { key: 'add_on', label: 'Add On', icon: Package },
                 { key: 'start_date', label: 'Start Date', icon: Calendar },
                 { key: 'end_date', label: 'End Date', icon: Calendar },
+            ]
+        },
+        {
+            category: 'Additional Information',
+            icon: FileText,
+            fields: [
+                { key: 'add_info', label: 'How did you find out about Hetero?', icon: FileText }
             ]
         },
     ];

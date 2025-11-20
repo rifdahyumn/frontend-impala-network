@@ -132,7 +132,7 @@ const PublicForm = () => {
             name: 'nik', 
             label: 'NIK (Nomor Induk Kependudukan)', 
             required: true,
-            placeholder: 'Enter your NIK 17 digits',
+            placeholder: 'Masukkan NIK 17 digit',
             minlength: '17',
             maxlength: '17'
         },
@@ -426,7 +426,7 @@ const PublicForm = () => {
                         }
                     </h1>
                     <p className="text-gray-600">
-                        1 Form untuk Semua Kategori - Pilih yang Sesuai dengan Profil Anda
+                         Pilih yang Sesuai dengan Profil Anda
                     </p>
                 </div>
 
