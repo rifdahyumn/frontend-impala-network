@@ -19,7 +19,8 @@ const HeteroSemarang = () => {
     const [editingMember, setEditingMember] = useState(null)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
-    const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroSemarang, updateMemberHeteroSemarang } = useHeteroSemarang()
+
+    const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroSemarang, updateMemberHeteroSemarang, deleteMemberHeteroSemarang } = useHeteroSemarang()
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
@@ -30,11 +31,11 @@ const HeteroSemarang = () => {
         setIsEditModalOpen(true)
     }
 
-    const handleEdit = async (memberId, memberData) => {
+    const handleEditMember = async (memberId, memberData) => {
         try {
             const updatedMember = await updateMemberHeteroSemarang(memberId, memberData)
 
-            if (selectedMember && selectedMember.id === clientId){
+            if (selectedMember && selectedMember.id === memberId){
                 setSelectedMember(prev => ({
                     ...prev,
                     ...memberData,
@@ -51,13 +52,28 @@ const HeteroSemarang = () => {
         }
     };
 
-    const handleDelete = () => {
-        if (selectedMember) {
-            if (window.confirm(`Are you sure you want to delete ${selectedMember.full_name}?`)) {
-                console.log('Delete member:', selectedMember);
-                setSelectedMember(null); 
-                alert(`Member ${selectedMember.full_name} deleted`);
-            }
+    const handleAddNewMember = async (memberData) => {
+        try {
+            await addMemberHeteroSemarang(memberData)
+            setIsAddMemberModalOpen(false)
+            toast.success('Member added successfully')
+        } catch {
+            //
+        }
+    }
+
+    const handleDeleteMember = async (memberId) => {
+        if (!selectedMember) return
+
+        if (!window.confirm(`Are you sure want to delete ${selectedMember.full_name}?. This Action cannot be undone.`)) {
+            return
+        }
+
+        try {
+            await deleteMemberHeteroSemarang(memberId)
+            setSelectedMember(null)
+        } catch {
+            //
         }
     };
 
@@ -72,6 +88,10 @@ const HeteroSemarang = () => {
 
     const handleRefresh = () => {
         fetchMembers(pagination.page)
+    }
+
+    const handleSearch = (searchTerm) => {
+        setFilters({ ...filters, search: searchTerm })
     }
 
     const handleFilterChange = (newFilters) => {
@@ -163,7 +183,7 @@ const HeteroSemarang = () => {
                                 </div>
                                 <Button 
                                     className="flex items-center gap-2"
-                                    // onClick={handleAddClie}
+                                    onClick={handleAddMember}
                                 >
                                     <Plus className="h-4 w-4" />
                                     Add Your First Client
@@ -212,8 +232,9 @@ const HeteroSemarang = () => {
 
                 <HeteroContent
                     selectedMember={selectedMember}
-                    // onOpenEditModal={handleOpenEditModal}
-                    // onDelete={handleDeleteClient}
+                    onOpenEditModal={handleOpenEditModal}
+                    onEdit={handleEditMember}
+                    onDelete={handleDeleteMember}
                     detailTitle={tableConfig.detailTitle}
                     onClientUpdated={() => fetchMembers(pagination.page)}
                     onClientDeleted={() => {
@@ -231,9 +252,9 @@ const HeteroSemarang = () => {
                             setEditingMember(null)
                         }
                     }}
-                    onAddMember={handleAddMember}
+                    onAddMember={handleAddNewMember}
                     editData={editingMember}
-                    onEditMember={handleEdit}
+                    onEditMember={handleEditMember}
                 />
             </div>
         </div>

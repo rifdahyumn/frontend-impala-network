@@ -31,7 +31,7 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
         end_date: '',
         duration: '',
         status: 'Active',
-        addInformation: ''
+        add_information: ''
     });
 
     const [addOnOptions, setAddOnOptions] = useState([
@@ -47,6 +47,9 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
         { value: 'Jabra Speaker & Mic Webinar', label: 'Jabra Speaker & Mic Webinar' },
         { value: 'Mic & Sound System', label: 'Mic & Sound System' },
         { value: 'TV + HDMI', label: 'TV + HDMI' },
+        { value: 'Fotografer', label: 'Fotografer' },
+        { value: 'Videografer', label: 'Videografer' },
+        { value: 'Reels Recap', label: 'Reels Recap' },
     ]);
     
     const [selectedAddOn, setSelectedAddOn] = useState('');
@@ -149,11 +152,11 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
                     required: true,
                     placeholder: 'Select last education',
                     options: [
-                        { value: 'sma', label: 'Senior High School (SMA/SMK/MA)' },
-                        { value: 'd3', label: 'Diploma (D3)' },
-                        { value: 's1', label: 'Bachelor Degree (S1)' },
-                        { value: 's2', label: 'Master Degree (S2)' },
-                        { value: 's3', label: 'Doctoral Degree (S3)' }
+                        { value: 'Senior High School (SMA/SMK/MA)', label: 'Senior High School (SMA/SMK/MA)' },
+                        { value: 'Diploma (D3)', label: 'Diploma (D3)' },
+                        { value: 'Bachelor Degree (S1)', label: 'Bachelor Degree (S1)' },
+                        { value: 'Master Degree (S2)', label: 'Master Degree (S2)' },
+                        { value: 'Doctoral Degree (S3)', label: 'Doctoral Degree (S3)' }
                     ]
                 }
             ]
@@ -231,8 +234,8 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
                     ]
                 },
                 {
-                    name: 'join_date',
-                    label: 'Join Date',
+                    name: 'start_date',
+                    label: 'Start Date',
                     type: 'date',
                     required: true,
                     placeholder: 'Select start date'

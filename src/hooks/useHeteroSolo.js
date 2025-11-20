@@ -1,8 +1,8 @@
 import toast from "react-hot-toast"
-import heteroSemarangService from "../services/heteroSemarangService"
 import { useCallback, useEffect, useState } from "react"
+import heteroSoloService from "../services/heteroSoloService"
 
-export const useHeteroSemarang = (initialFilters = {}) => {
+export const useHeteroSolo = (initialFilters = {}) => {
     const [members, setMembers] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -28,7 +28,7 @@ export const useHeteroSemarang = (initialFilters = {}) => {
 
             const currentFilters = customFilters || filters;
 
-            const result = await heteroSemarangService.fetchHeteroSemarang({
+            const result = await heteroSoloService.fetchHeteroSolo({
                 page,
                 limit: pagination.limit,
                 ...currentFilters
@@ -58,9 +58,9 @@ export const useHeteroSemarang = (initialFilters = {}) => {
         fetchMembers(page)
     }, [fetchMembers])
 
-    const addMemberHeteroSemarang = async (memberData) => {
+    const addMemberHeteroSolo = async (memberData) => {
         try {
-            const result = await heteroSemarangService.addMemberHeteroSemarang(memberData)
+            const result = await heteroSoloService.addMemberHeteroSolo(memberData)
             toast.success('Member add successfully')
 
             await fetchMembers(pagination.page)
@@ -71,11 +71,11 @@ export const useHeteroSemarang = (initialFilters = {}) => {
         }
     }
 
-    const updateMemberHeteroSemarang = async (memberId, memberData) => {
+    const updateMemberHeteroSolo = async (memberId, memberData) => {
         try {
             setLoading(true)
 
-            const result = await heteroSemarangService.updateMemberHeteroSemarang(memberId, memberData)
+            const result = await heteroSoloService.updateMemberHeteroSolo(memberId, memberData)
             toast.success('Member updated successfully')
 
             setMembers(preMembers =>
@@ -95,10 +95,10 @@ export const useHeteroSemarang = (initialFilters = {}) => {
         }
     }
 
-    const deleteMemberHeteroSemarang = async (memberId) => {
+    const deleteMemberHeteroSolo = async (memberId) => {
         try {
             setLoading(true)
-            await heteroSemarangService.deleteMemberHeteroSemarang(memberId)
+            await heteroSoloService.deleteMemberHeteroSolo(memberId)
             toast.success('Member deleted successfully')
 
             setMembers(prevMembers => 
@@ -118,6 +118,6 @@ export const useHeteroSemarang = (initialFilters = {}) => {
     }
 
     return {
-        members, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchMembers: changePage, addMemberHeteroSemarang, updateMemberHeteroSemarang, deleteMemberHeteroSemarang
+        members, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchMembers: changePage, addMemberHeteroSolo, updateMemberHeteroSolo, deleteMemberHeteroSolo
     }
 }

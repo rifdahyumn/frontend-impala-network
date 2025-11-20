@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-undef
 const API_BASE_URL = process.env.BASE_API_URL || 'http://localhost:3000/api';
 
-class HeteroSemarangService {
+class HeteroBanyumasService {
     constructor() {
         this.baseURL = API_BASE_URL
     }
@@ -21,7 +21,7 @@ class HeteroSemarangService {
         return result
     }
 
-    async fetchHeteroSemarang(params = {}) {
+    async fetchHeteroBanyumas(params = {}) {
         try {
             const {
                 page = 1,
@@ -35,7 +35,7 @@ class HeteroSemarangService {
                 ...(search && { search })
             })
 
-            const response = await fetch(`${this.baseURL}/hetero/semarang?${queryParams}`, {
+            const response = await fetch(`${this.baseURL}/hetero/banyumas?${queryParams}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -48,11 +48,9 @@ class HeteroSemarangService {
         }
     }
 
-    async addMemberHeteroSemarang(memberData) {
+    async addMemberHeteroBanyumas(memberData) {
         try {
-            console.log('Sending member data:', memberData); // Debug log
-
-            const response = await fetch(`${this.baseURL}/hetero/semarang`, {
+            const response = await fetch(`${this.baseURL}/hetero/banyumas`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -67,9 +65,9 @@ class HeteroSemarangService {
         }
     }
 
-    async updateMemberHeteroSemarang(memberId, memberData) {
+    async updateMemberHeteroBayumas(memberId, memberData) {
         try {
-            const response = await fetch(`${this.baseURL}/hetero/semarang/${memberId}`, {
+            const response = await fetch(`${this.baseURL}/hetero/banyumas/${memberId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -84,9 +82,9 @@ class HeteroSemarangService {
         }
     }
 
-    async deleteMemberHeteroSemarang(memberId) {
+    async deleteMemberHeteroBanyumas(memberId) {
         try {
-            const response = await fetch(`${this.baseURL}/hetero/semarang/${memberId}`, {
+            const response = await fetch(`${this.baseURL}/hetero/banyumas/${memberId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
@@ -101,4 +99,4 @@ class HeteroSemarangService {
     }
 }
 
-export default new HeteroSemarangService();
+export default new HeteroBanyumasService();

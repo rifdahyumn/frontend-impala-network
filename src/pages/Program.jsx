@@ -19,6 +19,7 @@ const Program = () => {
     const [isAddProgramModalOpen, setIsAddProgramModalOpen] = useState(false)
     const [editingProgram, setEditingProgram] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
     const { programs, loading, error, pagination, filters, setFilters, fetchProgram, addProgram, updateProgram, deleteProgram } = usePrograms();
 
     const handleAddProgram = () => {
@@ -38,7 +39,7 @@ const Program = () => {
                 setSelectedProgram(prev => ({
                     ...prev,
                     ...programData,
-                    ...updateProgram
+                    ...updatedProgram
                 }))
             }
 
@@ -112,7 +113,6 @@ const Program = () => {
     const formattedPrograms = programs.map((program, index) => {
         const currentPage = pagination.page;
         const itemsPerPage = pagination.limit;
-        
         const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
         
         return {

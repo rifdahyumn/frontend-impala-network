@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 import { Edit, Trash2, User, Mail, Phone, MapPin, Building, Package, Info, Calendar, BookOpen, Home } from "lucide-react";
 import toast from 'react-hot-toast';
 
-const HeteroContent = ({ selectedMember, onOpenEditModal, onDelete, detailTitle, onMemberEdited }) => {
+const HeteroBanyumasContent = ({ selectedMember, onOpenEditModal, onDelete, detailTitle, onMemberEdited }) => {
     const [activeCategory, setActiveCategory] = useState('Personal Information');
     const [deleteLoading, setDeleteLoading] = useState(false)
 
@@ -183,4 +183,4 @@ const HeteroContent = ({ selectedMember, onOpenEditModal, onDelete, detailTitle,
     )
 }
 
-export default HeteroContent;
+export default HeteroBanyumasContent;
