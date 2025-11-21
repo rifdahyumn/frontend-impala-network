@@ -7,14 +7,11 @@ const memberTypeConfigs = {
             icon: User,
             fields: [
                 { key: 'full_name', label: 'Full Name', icon: User },
-                // { key: 'nik', label: 'NIK', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
                 { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
-                // { key: 'education', label: 'Education', icon: GraduationCap },
                 { key: 'program_name', label: 'Program Name', icon: Award },
-                // { key: 'status', label: 'Status', icon: CheckCircle }
             ]
         },
         {
@@ -22,10 +19,8 @@ const memberTypeConfigs = {
             icon: MapPin,
             fields: [
                 { key: 'address', label: 'Address', icon: MapPin },
-                // { key: 'subdistrict', label: 'Subdistrict', icon: MapPin },
                 { key: 'city', label: 'City', icon: MapPin },
                 { key: 'province', label: 'Province', icon: MapPin },
-                // { key: 'postalCode', label: 'Postal Code', icon: MapPin }
             ]
         },
         {
@@ -55,7 +50,6 @@ const memberTypeConfigs = {
             fields: [
                 { key: 'sosialMedia', label: 'Social Media', icon: Globe },
                 { key: 'marketplace', label: 'Marketplace', icon: Globe },
-                // { key: 'google_bussiness', label: 'Google Business', icon: Globe },
                 { key: 'website', label: 'Website', icon: Globe }
             ]
         }
@@ -159,7 +153,7 @@ const memberTypeConfigs = {
             category: 'Community Information',
             icon: UsersIcon,
             fields: [
-                { key: 'name_community', label: 'Community Name', icon: UsersIcon },
+                { key: 'community_name', label: 'Name Community', icon: UsersIcon },
                 { key: 'focus_area', label: 'Focus Area', icon: Award },
                 { key: 'total_members', label: 'Total Members', icon: Users },
                 { key: 'operational_area', label: 'Operational Area', icon: MapPin }

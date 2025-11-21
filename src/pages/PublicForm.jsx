@@ -20,13 +20,17 @@ const PublicForm = () => {
                 const draftConfig = localStorage.getItem('impalaFormConfig');
                 
                 if (publishedConfig) {
-                    console.log('Loading published form...');
-                    setFormConfig(JSON.parse(publishedConfig));
+                    console.log('✅ Loading published form...');
+                    const config = JSON.parse(publishedConfig);
+                    console.log('📋 Published form config:', config);
+                    setFormConfig(config);
                 } else if (draftConfig) {
-                    console.log('Loading draft form...');
-                    setFormConfig(JSON.parse(draftConfig));
+                    console.log('📝 Loading draft form...');
+                    const config = JSON.parse(draftConfig);
+                    console.log('📋 Draft form config:', config);
+                    setFormConfig(config);
                 } else {
-                    console.log('No form configuration found');
+                    console.log('❌ No form configuration found');
                 }
             } catch (error) {
                 console.error('Error loading form config:', error);
@@ -37,6 +41,25 @@ const PublicForm = () => {
 
         loadFormConfig();
     }, []);
+
+    // ✅ FUNGSI: Get program name dari formConfig
+    const getProgramName = () => {
+        if (!formConfig) return 'Impala Management';
+        
+        // Cek berbagai kemungkinan lokasi programName
+        if (formConfig.programName) return formConfig.programName;
+        if (formConfig.sections?.programInfo?.fields) {
+            const programField = formConfig.sections.programInfo.fields.find(f => f.id === 'program_name');
+            if (programField && programField.value) return programField.value;
+        }
+        return 'Impala Management';
+    };
+
+    // ✅ FUNGSI: Get form title
+    const getFormTitle = () => {
+        const programName = getProgramName();
+        return `Pendaftaran Program ${programName}`;
+    };
 
     const handleInputChange = (fieldName, value) => {
         setFormData(prev => ({
@@ -70,7 +93,10 @@ const PublicForm = () => {
         setIsSubmitting(true);
         
         try {
+            const programName = getProgramName();
+            
             const submissionData = {
+                program_name: programName, // ✅ TAMBAH program name di submission
                 personal_info: {
                     full_name: formData.full_name,
                     email: formData.email,
@@ -85,16 +111,16 @@ const PublicForm = () => {
                 formId: formConfig?.id || 'unknown'
             };
             
-            console.log('Form data submitted:', submissionData);
+            console.log('📨 Form data submitted:', submissionData);
             
-            // Simpan data submission (dalam real app, ini akan ke API)
+            // Simpan data submission
             const submissions = JSON.parse(localStorage.getItem('impalaFormSubmissions') || '[]');
             submissions.push(submissionData);
             localStorage.setItem('impalaFormSubmissions', JSON.stringify(submissions));
             
             await new Promise(resolve => setTimeout(resolve, 2000));
             
-            alert('Pendaftaran berhasil! Terima kasih telah mendaftar program Impala Management.');
+            alert(`🎉 Pendaftaran berhasil! Terima kasih telah mendaftar program ${programName}.`);
             
             // Reset form
             setFormData({});
@@ -414,20 +440,24 @@ const PublicForm = () => {
         );
     }
 
+    const programName = getProgramName();
+    const formTitle = getFormTitle();
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
             <div className="container mx-auto px-4 max-w-3xl">
                 {/* Header */}
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                        🚀 {formConfig?.programName 
-                            ? `Pendaftaran Program ${formConfig.programName}`
-                            : 'Pendaftaran Program Impala Management'
-                        }
+                        🚀 {formTitle}
                     </h1>
                     <p className="text-gray-600">
                         1 Form untuk Semua Kategori - Pilih yang Sesuai dengan Profil Anda
                     </p>
+                    {/* Debug Info */}
+                    <div className="mt-2 text-sm text-blue-600 bg-blue-50 p-2 rounded-lg">
+                        Program: <strong>{programName}</strong>
+                    </div>
                 </div>
 
                 {/* Progress Steps */}
@@ -457,11 +487,11 @@ const PublicForm = () => {
                     {/* Header Form */}
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 text-center">
                         <h2 className="text-xl font-semibold">
-                            {formConfig?.programName 
-                                ? `Formulir Pendaftaran ${formConfig.programName}`
-                                : 'Formulir Pendaftaran Program Impala'
-                            }
+                            {formTitle}
                         </h2>
+                        <p className="text-blue-100 mt-1">
+                            Program: {programName}
+                        </p>
                     </div>
 
                     <div className="p-6">
@@ -547,7 +577,7 @@ const PublicForm = () => {
                                         <div className="flex items-start gap-3">
                                             <input type="checkbox" id="terms" required />
                                             <label htmlFor="terms" className="text-sm text-gray-700">
-                                                Saya menyetujui syarat dan ketentuan program Impala Management.
+                                                Saya menyetujui syarat dan ketentuan program {programName}.
                                             </label>
                                         </div>
                                     </div>

@@ -9,7 +9,6 @@ const FormBuilder = () => {
     const [previewMode, setPreviewMode] = useState(false);
     const [formConfig, setFormConfig] = useState(null);
 
-    // Handler untuk mendapatkan formConfig dari workspace
     const handleGetFormConfig = () => {
         const savedConfig = localStorage.getItem('impalaFormConfig');
         if (savedConfig) {
@@ -20,7 +19,6 @@ const FormBuilder = () => {
         }
     };
 
-    // Handler untuk publish form - BUKA DI TAB BARU
     const handlePublishForm = () => {
         const savedConfig = localStorage.getItem('impalaFormConfig');
         if (!savedConfig) {
@@ -30,11 +28,9 @@ const FormBuilder = () => {
 
         try {
             const config = JSON.parse(savedConfig);
-            
-            // Generate unique form ID
+
             const formId = `form_${Date.now()}`;
             
-            // Simpan sebagai published form dengan metadata
             const publishedConfig = {
                 ...config,
                 id: formId,
@@ -43,10 +39,8 @@ const FormBuilder = () => {
                 publicUrl: `/public-form/${formId}`
             };
 
-            // Simpan ke localStorage untuk public access
             localStorage.setItem('impalaPublishedForm', JSON.stringify(publishedConfig));
             
-            // Buka form di tab baru
             const baseUrl = window.location.origin;
             const publicUrl = `${baseUrl}/public-form/${formId}`;
             window.open(publicUrl, '_blank', 'noopener,noreferrer');
@@ -59,7 +53,6 @@ const FormBuilder = () => {
         }
     };
 
-    // Handler untuk save form
     const handleSaveForm = () => {
         const savedConfig = localStorage.getItem('impalaFormConfig');
         if (savedConfig) {
@@ -93,19 +86,19 @@ const FormBuilder = () => {
                                 onClick={handleGetFormConfig}
                                 className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2 transition-colors"
                             >
-                                👁️ Preview
+                                Preview
                             </button>
                             <button 
                                 onClick={handleSaveForm}
                                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-colors"
                             >
-                                💾 Save
+                                Save
                             </button>
                             <button 
                                 onClick={handlePublishForm}
                                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
                             >
-                                🚀 Publish
+                                Publish
                             </button>
                         </div>
                     </div>

@@ -1,43 +1,73 @@
 import React, { useState, useEffect } from 'react';
 import FormCanvas from './FormCanvas';
 import FieldConfigPanel from './fields/FieldConfigPanel';
-import { getProgramNames } from '../../utils/programData';
+import formBuilderService from '../../services/formBuilderService';
 
 const FormBuilderWorkspace = () => {
     const [formConfig, setFormConfig] = useState(null);
     const [selectedField, setSelectedField] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const [availablePrograms, setAvailablePrograms] = useState([]);
+    const [loadingPrograms, setLoadingPrograms] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
-    // Load dari localStorage saat component mount
     useEffect(() => {
         const savedConfig = localStorage.getItem('impalaFormConfig');
         
-        const loadAvailablePrograms = () => {
+        const loadAvailablePrograms = async (search = '') => {
             try {
-                // Gunakan utility function yang sudah dibuat
-                const programNames = getProgramNames();
+                setLoadingPrograms(true);
+                console.log('🔄 Loading programs with search:', search);
+                
+                const response = await formBuilderService.getProgramNamesToImpala(search);
+                console.log('✅ Service response:', response);
+                
+                const programNames = response.data || [];
+                console.log('📋 Programs found:', programNames);
+                
                 if (programNames.length > 0) {
                     setAvailablePrograms(programNames);
-                    console.log('📋 Loaded programs for dropdown:', programNames);
+                    console.log('✅ Set available programs:', programNames.length);
+                    
+                    // Auto-select program pertama jika belum ada programName
+                    if (!formConfig?.programName && programNames.length > 0) {
+                        const firstProgram = programNames[0];
+                        const firstProgramName = firstProgram.program_name || firstProgram;
+                        
+                        setFormConfig(prev => ({
+                            ...prev,
+                            programName: firstProgramName,
+                            title: `Pendaftaran Program ${firstProgramName}`
+                        }));
+                        console.log('🎯 Auto-selected first program:', firstProgramName);
+                    }
                 } else {
-                    // Fallback ke default programs
-                    setAvailablePrograms(["Impala Management"]);
-                    console.log('⚠️ No programs found, using default');
+                    setAvailablePrograms([]);
+                    console.log('⚠️ No programs found in database');
                 }
             } catch (error) {
                 console.error('❌ Error loading programs:', error);
-                setAvailablePrograms(["Impala Management"]);
+                setAvailablePrograms([]);
+            } finally {
+                setLoadingPrograms(false);
             }
         };
 
         if (savedConfig) {
-            setFormConfig(JSON.parse(savedConfig));
+            const parsedConfig = JSON.parse(savedConfig);
+            setFormConfig(parsedConfig);
+            console.log('📁 Loaded config from localStorage');
+
+            if (parsedConfig.programName) {
+                loadAvailablePrograms(parsedConfig.programName);
+            } else {
+                loadAvailablePrograms();
+            }
         } else {
-            // Default config dengan programName dan data lengkap
+            console.log('📝 Creating default config');
             setFormConfig({
-                programName: "Impala Management",
-                title: "Pendaftaran Program Impala Management",
+                programName: "",
+                title: "Pendaftaran Program",
                 sections: {
                     programInfo: {
                         id: "programInfo",
@@ -47,12 +77,13 @@ const FormBuilderWorkspace = () => {
                         fields: [
                             {
                                 id: 'program_name',
-                                type: 'select',
+                                type: 'program_dropdown',
                                 name: 'program_name',
                                 label: 'Nama Program',
                                 required: true,
                                 placeholder: 'Pilih nama program',
-                                options: [], // Akan diisi nanti
+                                options: [],
+                                loading: false,
                                 locked: true
                             }
                         ]
@@ -393,57 +424,73 @@ const FormBuilderWorkspace = () => {
                                 required: true,
                                 options: ['Lokal', 'Nasional', 'Internasional'],
                                 locked: true
-                            },
+                            }
                         ]
                     }
                 }
             });
+            
+            loadAvailablePrograms();
         }
-
-        loadAvailablePrograms(); // PANGGIL FUNGSI DI SINI
     }, []);
 
-    // Update formConfig ketika availablePrograms berubah
     useEffect(() => {
         if (formConfig && availablePrograms.length > 0) {
-            // Update options untuk field program_name
+            console.log('🔄 Updating form config with programs:', availablePrograms);
             setFormConfig(prev => {
                 const newConfig = { ...prev };
+                
                 if (newConfig.sections.programInfo) {
                     newConfig.sections.programInfo.fields = newConfig.sections.programInfo.fields.map(field => 
                         field.id === 'program_name' 
-                            ? { ...field, options: availablePrograms }
+                            ? { 
+                                ...field, 
+                                options: availablePrograms.map(p => p.program_name), 
+                                loading: loadingPrograms
+                            }
                             : field
                     );
                 }
                 return newConfig;
             });
         }
-    }, [availablePrograms, formConfig]);
+    }, [availablePrograms, loadingPrograms]);
 
-    // Debug: Log struktur formConfig
-    useEffect(() => {
-        if (formConfig) {
-            console.log('FormConfig loaded:', formConfig);
-            console.log('Program Name:', formConfig.programName);
+    const handleProgramSearch = async (query) => {
+        setSearchQuery(query);
+        console.log('🔍 Searching programs:', query);
+
+        try {
+            setLoadingPrograms(true);
+            const response = await formBuilderService.getProgramNamesToImpala(query);
+            const programNames = response.data || [];
+            console.log('🔍 Search results:', programNames);
+            setAvailablePrograms(programNames);
+        } catch (error) {
+            console.error('Error searching programs:', error);
+        } finally {
+            setLoadingPrograms(false);
         }
-    }, [formConfig]);
+    };
 
-    // Auto-save ketika formConfig berubah
-    useEffect(() => {
-        if (formConfig) {
-            localStorage.setItem('impalaFormConfig', JSON.stringify(formConfig));
+    const handleProgramSelect = (selectedProgramName) => {
+        console.log('Program selected:', selectedProgramName);
+        const selectedProgram = availablePrograms.find(program => 
+            program.program_name === selectedProgramName
+        );
+
+        if (selectedProgram) {
+            const programName = selectedProgram.program_name;
+            console.log('✅ Setting program name:', programName);
+
+            setFormConfig(prev => ({
+                ...prev,
+                programName: programName,
+                title: `Pendaftaran Program ${programName}`
+            }));
+
+            updateField('programInfo', 'program_name', { value: programName });
         }
-    }, [formConfig]);
-
-    // Fungsi untuk update nama program
-    const updateProgramName = (newProgramName) => {
-        if (!formConfig) return;
-        
-        setFormConfig(prev => ({
-            ...prev,
-            programName: newProgramName
-        }));
     };
 
     const updateField = (sectionId, fieldId, updates) => {
@@ -454,14 +501,12 @@ const FormBuilderWorkspace = () => {
         setFormConfig(prev => {
             const newConfig = { ...prev };
             
-            // Cek apakah field ada di sections
             if (newConfig.sections[sectionId]) {
                 newConfig.sections[sectionId].fields = newConfig.sections[sectionId].fields.map(field => 
                     field.id === fieldId ? { ...field, ...updates } : field
                 );
             }
             
-            // Cek apakah field ada di categories
             if (newConfig.categories[sectionId]) {
                 newConfig.categories[sectionId].fields = newConfig.categories[sectionId].fields.map(field => 
                     field.id === fieldId ? { ...field, ...updates } : field
@@ -484,16 +529,45 @@ const FormBuilderWorkspace = () => {
         
         setTimeout(() => {
             setIsSaving(false);
-            alert('Form berhasil disimpan!');
+            alert('Form berhasil disimpan sebagai draft!');
         }, 1000);
     };
 
-    // Reset form untuk testing (opsional)
     const handleResetForm = () => {
         if (confirm('Apakah Anda yakin ingin mereset form ke default? Semua perubahan akan hilang.')) {
             localStorage.removeItem('impalaFormConfig');
+            localStorage.removeItem('impalaPublishedForm');
             window.location.reload();
         }
+    };
+
+    const handlePublishForm = () => {
+        if (!formConfig) {
+            alert('Belum ada form yang disimpan. Silakan simpan form terlebih dahulu.');
+            return;
+        }
+
+        if (!formConfig.programName || formConfig.programName === '') {
+            alert('Silakan pilih nama program terlebih dahulu sebelum publish.');
+            return;
+        }
+
+        localStorage.setItem('impalaPublishedForm', JSON.stringify(formConfig));
+        
+        const previewLink = `${window.location.origin}/register`;
+        alert(`Form berhasil dipublish!\n\nForm "${formConfig.programName}" sekarang tersedia untuk publik.\n\nLink: ${previewLink}`);
+        
+        console.log('Form published:', formConfig);
+    };
+
+    const handlePreviewForm = () => {
+        if (!formConfig) {
+            alert('Belum ada form yang disimpan. Silakan simpan form terlebih dahulu.');
+            return;
+        }
+
+        localStorage.setItem('impalaPublishedForm', JSON.stringify(formConfig));
+        window.open('/register', '_blank');
     };
 
     if (!formConfig) {
@@ -509,7 +583,6 @@ const FormBuilderWorkspace = () => {
 
     return (
         <div className="min-h-[600px]">
-            {/* Header dengan preview mode dan judul dinamis */}
             <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg">
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-4">
@@ -520,9 +593,12 @@ const FormBuilderWorkspace = () => {
                             Reset Form
                         </button>
                     </div>
+                    
+                    <div className="text-sm text-gray-500">
+                        Program: <strong>{formConfig?.programName || 'Belum dipilih'}</strong>
+                    </div>
                 </div>
                 
-                {/* Preview judul formulir yang dinamis */}
                 <div className="preview-header-section">
                     <div className="preview-container bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg shadow-lg overflow-hidden">
                         <div className="preview-header p-6 text-center">
@@ -533,52 +609,96 @@ const FormBuilderWorkspace = () => {
                                 }
                             </h1>
                             <p className="text-lg opacity-90 mt-2">
+                                {formConfig?.programName ? `Program: ${formConfig.programName}` : 'Pilih program terlebih dahulu'}
                             </p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Main Canvas Area */}
             <div className="bg-white border border-gray-200 rounded-lg p-6 mb-4">
                 <FormCanvas
                     formConfig={formConfig}
                     selectedField={selectedField}
                     onFieldSelect={setSelectedField}
                     onFieldUpdate={updateField}
-                    onProgramNameUpdate={updateProgramName}
+                    onProgramNameUpdate={handleProgramSelect}
+                    onProgramSearch={handleProgramSearch}
                     availablePrograms={availablePrograms}
+                    loadingPrograms={loadingPrograms}
                 />
             </div>
             
-            {/* Save Button */}
             <div className="flex justify-between items-center">
                 <div className="text-sm text-gray-500">
-                    💡 Pilih nama program dari daftar yang tersedia
-                </div>
-                <button 
-                    onClick={handleSaveForm}
-                    disabled={isSaving}
-                    className={`px-6 py-2 rounded-lg flex items-center gap-2 ${
-                        isSaving 
-                            ? 'bg-gray-400 cursor-not-allowed' 
-                            : 'bg-green-600 hover:bg-green-700'
-                    } text-white transition-colors`}
-                >
-                    {isSaving ? (
-                        <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Menyimpan...
-                        </>
-                    ) : (
-                        <>
-                            💾 Simpan Perubahan
-                        </>
+                    Pilih nama program dari daftar yang tersedia
+                    {formConfig?.programName && (
+                        <span className="ml-2 text-green-600 font-semibold">
+                            ✓ Program: {formConfig.programName}
+                        </span>
                     )}
-                </button>
+                </div>
+                
+                <div className="flex gap-2">
+                    <button 
+                        onClick={handlePreviewForm}
+                        disabled={!formConfig}
+                        className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+                            !formConfig 
+                                ? 'bg-gray-400 cursor-not-allowed' 
+                                : 'bg-blue-600 hover:bg-blue-700'
+                        } text-white transition-colors`}
+                    >
+                        👁️ Preview
+                    </button>
+                    
+                    <button 
+                        onClick={handleSaveForm}
+                        disabled={isSaving}
+                        className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+                            isSaving 
+                                ? 'bg-gray-400 cursor-not-allowed' 
+                                : 'bg-green-600 hover:bg-green-700'
+                        } text-white transition-colors`}
+                    >
+                        {isSaving ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                Menyimpan...
+                            </>
+                        ) : (
+                            <>
+                                💾 Simpan Draft
+                            </>
+                        )}
+                    </button>
+                    
+                    <button 
+                        onClick={handlePublishForm}
+                        disabled={!formConfig || !formConfig.programName}
+                        className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+                            !formConfig || !formConfig.programName
+                                ? 'bg-gray-400 cursor-not-allowed' 
+                                : 'bg-purple-600 hover:bg-purple-700'
+                        } text-white transition-colors`}
+                    >
+                        🚀 Publish
+                    </button>
+                </div>
             </div>
 
-            {/* Field Configuration Panel */}
+            {formConfig && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="text-sm text-blue-800">
+                        <strong>Status Form:</strong> 
+                        {localStorage.getItem('impalaPublishedForm') 
+                            ? ' ✅ Published (tersedia untuk publik)' 
+                            : ' 📝 Draft (hanya tersedia di builder)'
+                        }
+                    </div>
+                </div>
+            )}
+
             {selectedField && (
                 <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-lg z-50">
                     <div className="p-4 h-full overflow-auto">
