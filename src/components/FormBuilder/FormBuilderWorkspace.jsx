@@ -109,7 +109,7 @@ const FormBuilderWorkspace = () => {
                                 name: 'nik', 
                                 label: 'NIK (Nomor Induk Kependudukan)', 
                                 required: true,
-                                placeholder: 'Enter your NIK 17 digits',
+                                placeholder: 'Masukkan NIK 17 digit',
                                 locked: true
                             },
                             {
