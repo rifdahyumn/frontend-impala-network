@@ -10,7 +10,6 @@ const FormCanvas = ({
     availablePrograms = []
 }) => {
     
-    // ✅ DEBUG: Lihat struktur data
     console.log('🔍 FormCanvas - availablePrograms:', availablePrograms);
     
     const handleProgramNameChange = (e) => {
@@ -19,7 +18,6 @@ const FormCanvas = ({
         }
     };
 
-    // ✅ FUNGSI: Extract program name dari object atau string
     const getProgramName = (program) => {
         if (typeof program === 'string') return program;
         if (program && program.program_name) return program.program_name;
@@ -27,7 +25,6 @@ const FormCanvas = ({
         return String(program); // fallback
     };
 
-    // ✅ FUNGSI: Extract company info jika ada
     const getCompanyInfo = (program) => {
         if (typeof program === 'string') return '';
         if (program && program.company) return program.company;

@@ -1,64 +1,139 @@
-// src/components/PublicForm/PublicForm.jsx
+// src/pages/PublicForm.jsx
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import FormField from '../components/FormBuilder/fields/FormField';
+import formTemplateService from '../services/formTemplateService';
+import { useToast } from '../hooks/use-toast';
 
 const PublicForm = () => {
+    const { slug } = useParams();
     const [formData, setFormData] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [currentStep, setCurrentStep] = useState(1);
     const [formConfig, setFormConfig] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [template, setTemplate] = useState(null); // ✅ SIMPAN DATA TEMPLATE LENGKAP
+    const { toast } = useToast();
 
-    // Load formConfig dari localStorage - PRIORITAS published form
+    // ✅ PERBAIKAN: Load HANYA dari API berdasarkan slug - TANPA FALLBACK KE LOCALSTORAGE
     useEffect(() => {
-        const loadFormConfig = () => {
+        const loadFormFromAPI = async () => {
             try {
-                // Coba load dari published form terlebih dahulu
-                const publishedConfig = localStorage.getItem('impalaPublishedForm');
-                const draftConfig = localStorage.getItem('impalaFormConfig');
+                setIsLoading(true);
+                console.log('🔍 Loading form with slug:', slug);
+
+                if (!slug) {
+                    throw new Error('Slug tidak ditemukan di URL');
+                }
+
+                // ✅ LOAD DARI API BERDASARKAN SLUG
+                const response = await formTemplateService.getFormTemplateBySlug(slug);
                 
-                if (publishedConfig) {
-                    console.log('✅ Loading published form...');
-                    const config = JSON.parse(publishedConfig);
-                    console.log('📋 Published form config:', config);
-                    setFormConfig(config);
-                } else if (draftConfig) {
-                    console.log('📝 Loading draft form...');
-                    const config = JSON.parse(draftConfig);
-                    console.log('📋 Draft form config:', config);
-                    setFormConfig(config);
+                console.log('📨 API Response:', response);
+                
+                if (response.success && response.data) {
+                    const templateData = response.data;
+                    console.log('✅ Template loaded from API:', templateData);
+                    
+                    // ✅ SIMPAN DATA TEMPLATE LENGKAP
+                    setTemplate(templateData);
+                    
+                    // ✅ GUNAKAN form_config DARI DATABASE
+                    setFormConfig(templateData.form_config);
+                    
+                    toast({
+                        title: "Form Dimuat",
+                        description: `Form "${templateData.program_name}" berhasil dimuat`,
+                        variant: "default"
+                    });
                 } else {
-                    console.log('❌ No form configuration found');
+                    throw new Error(response.message || 'Form tidak ditemukan di database');
                 }
             } catch (error) {
-                console.error('Error loading form config:', error);
+                console.error('❌ Error loading form from API:', error);
+                
+                // ❌ JANGAN GUNAKAN FALLBACK KE LOCALSTORAGE
+                console.log('🚫 Tidak menggunakan fallback ke localStorage');
+                
+                toast({
+                    title: "Form Tidak Ditemukan",
+                    description: `Form dengan slug "${slug}" tidak tersedia. Pastikan form sudah dipublish.`,
+                    variant: "destructive"
+                });
             } finally {
                 setIsLoading(false);
             }
         };
 
-        loadFormConfig();
-    }, []);
+        loadFormFromAPI();
+    }, [slug, toast]);
 
-    // ✅ FUNGSI: Get program name dari formConfig
+    // ✅ PERBAIKAN: Get program name langsung dari template data API
     const getProgramName = () => {
-        if (!formConfig) return 'Impala Management';
-        
-        // Cek berbagai kemungkinan lokasi programName
-        if (formConfig.programName) return formConfig.programName;
-        if (formConfig.sections?.programInfo?.fields) {
-            const programField = formConfig.sections.programInfo.fields.find(f => f.id === 'program_name');
-            if (programField && programField.value) return programField.value;
+        if (template) {
+            return template.program_name; // ✅ LANGSUNG DARI DATABASE
         }
-        return 'Impala Management';
+        
+        // Fallback hanya jika template belum loaded
+        if (formConfig?.programName) {
+            return formConfig.programName;
+        }
+        
+        return 'Loading...';
     };
 
     // ✅ FUNGSI: Get form title
     const getFormTitle = () => {
         const programName = getProgramName();
         return `Pendaftaran Program ${programName}`;
+    };
+
+    // ✅ FUNGSI: Render dynamic fields dari formConfig API
+    const renderDynamicFields = () => {
+        if (!formConfig) return [];
+
+        try {
+            const fields = [];
+            
+            // Render fields dari sections
+            if (formConfig.sections) {
+                Object.values(formConfig.sections).forEach(section => {
+                    if (section.fields && Array.isArray(section.fields)) {
+                        section.fields.forEach(field => {
+                            // Skip program_name field di public form
+                            if (field.id !== 'program_name') {
+                                fields.push({
+                                    ...field,
+                                    name: field.name || field.id
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+
+            // Render fields dari categories jika di step 3
+            if (currentStep === 3 && selectedCategory && formConfig.categories) {
+                const category = formConfig.categories[selectedCategory];
+                if (category && category.fields) {
+                    category.fields.forEach(field => {
+                        fields.push({
+                            ...field,
+                            name: field.name || field.id
+                        });
+                    });
+                }
+            }
+
+            console.log('🎨 Rendered dynamic fields from API:', fields);
+            return fields;
+            
+        } catch (error) {
+            console.error('Error rendering dynamic fields:', error);
+            return [];
+        }
     };
 
     const handleInputChange = (fieldName, value) => {
@@ -75,8 +150,16 @@ const PublicForm = () => {
 
     const nextStep = () => {
         if (currentStep === 1) {
-            if (!formData.full_name || !formData.email || !formData.phone) {
-                alert('Harap lengkapi data personal terlebih dahulu!');
+            // Validasi field required
+            const requiredFields = renderDynamicFields().filter(field => field.required);
+            const missingFields = requiredFields.filter(field => !formData[field.name]);
+            
+            if (missingFields.length > 0) {
+                toast({
+                    title: "Data Belum Lengkap",
+                    description: `Harap lengkapi ${missingFields.map(f => f.label).join(', ')}`,
+                    variant: "destructive"
+                });
                 return;
             }
             setCurrentStep(2);
@@ -96,19 +179,13 @@ const PublicForm = () => {
             const programName = getProgramName();
             
             const submissionData = {
-                program_name: programName, // ✅ TAMBAH program name di submission
-                personal_info: {
-                    full_name: formData.full_name,
-                    email: formData.email,
-                    phone: formData.phone,
-                    gender: formData.gender,
-                    dateOfBirth: formData.dateOfBirth,
-                    address: formData.address
-                },
+                program_name: programName,
+                form_slug: slug,
+                personal_info: { ...formData },
                 category: selectedCategory,
                 additional_info: getCategoryFormData(),
                 submittedAt: new Date().toISOString(),
-                formId: formConfig?.id || 'unknown'
+                form_config: formConfig
             };
             
             console.log('📨 Form data submitted:', submissionData);
@@ -117,10 +194,15 @@ const PublicForm = () => {
             const submissions = JSON.parse(localStorage.getItem('impalaFormSubmissions') || '[]');
             submissions.push(submissionData);
             localStorage.setItem('impalaFormSubmissions', JSON.stringify(submissions));
+
+            // TODO: Kirim data ke API backend
+            await new Promise(resolve => setTimeout(resolve, 1500));
             
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            alert(`🎉 Pendaftaran berhasil! Terima kasih telah mendaftar program ${programName}.`);
+            toast({
+                title: "Pendaftaran Berhasil! 🎉",
+                description: `Terima kasih telah mendaftar program ${programName}. Tim kami akan menghubungi Anda.`,
+                variant: "default"
+            });
             
             // Reset form
             setFormData({});
@@ -129,7 +211,11 @@ const PublicForm = () => {
             
         } catch (error) {
             console.error('Error submitting form:', error);
-            alert('Terjadi error saat mengirim form. Silakan coba lagi.');
+            toast({
+                title: "Error",
+                description: "Terjadi error saat mengirim form. Silakan coba lagi.",
+                variant: "destructive"
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -137,12 +223,17 @@ const PublicForm = () => {
 
     const getCategoryFormData = () => {
         const data = {};
-        getCategoryFields().forEach(field => {
+        const categoryFields = renderDynamicFields().filter(field => 
+            formConfig?.categories?.[selectedCategory]?.fields?.some(f => f.id === field.id)
+        );
+        
+        categoryFields.forEach(field => {
             data[field.name] = formData[field.name];
         });
         return data;
     };
 
+    // Default fields (hanya untuk fallback kosong)
     const personalInfoFields = [
         { 
             id: 'full_name', 
@@ -151,16 +242,6 @@ const PublicForm = () => {
             label: 'Nama Lengkap', 
             required: true,
             placeholder: 'Masukkan nama lengkap sesuai KTP'
-        },
-        { 
-            id: 'nik', 
-            type: 'nik', 
-            name: 'nik', 
-            label: 'NIK (Nomor Induk Kependudukan)', 
-            required: true,
-            placeholder: 'Masukkan NIK 17 digit',
-            minlength: '17',
-            maxlength: '17'
         },
         { 
             id: 'email', 
@@ -177,239 +258,8 @@ const PublicForm = () => {
             label: 'Nomor WhatsApp', 
             required: true,
             placeholder: '+62-xxx-xxxx-xxxx'
-        },
-        { 
-            id: 'gender', 
-            type: 'select', 
-            name: 'gender', 
-            label: 'Jenis Kelamin', 
-            required: true,
-            options: ['Laki-laki', 'Perempuan']
-        },
-        { 
-            id: 'dateOfBirth', 
-            type: 'date', 
-            name: 'date_of_birth', 
-            label: 'Tanggal Lahir', 
-            required: true
-        },
-        {
-            id: 'education',
-            type: 'select',
-            name: 'education',
-            label: 'Pendidikan Terakhir',
-            required: true,
-            options: [ 'Sekolah Menengah Atas (SMA/SMK/MA)', 'Diploma (D3)', 'Sarjana (S1)', 'Magister (S2)', 'Doctor (S3)']
-        },
-        { 
-            id: 'address', 
-            type: 'textarea', 
-            name: 'address', 
-            label: 'Alamat Lengkap',
-            rows: 3,
-            required: true,
-            placeholder: 'Jl. Contoh No. 123, Kota, Provinsi'
-        },
-        { 
-            id: 'district', 
-            type: 'text', 
-            name: 'district', 
-            label: 'Kecamatan', 
-            required: true,
-        },
-        {
-            id: 'city', 
-            type: 'text', 
-            name: 'city', 
-            label: 'Kota / Kabupaten', 
-            required: true,
-        },
-        {
-            id: 'province', 
-            type: 'text', 
-            name: 'province', 
-            label: 'Provinsi', 
-            required: true,
-        },
-        {
-            id: 'postalCode', 
-            type: 'text', 
-            name: 'postalCode', 
-            label: 'Kode Pos', 
-            required: true,
-        },
-        {
-            id: 'reason', 
-            type: 'textarea', 
-            name: 'reason_join_program', 
-            label: 'Reason Join Program',
-            rows: 3,
-            required: true,
-            placeholder: 'Ingin menambah wawasan'
         }
     ];
-
-    const getCategoryFields = () => {
-        const categoryTemplates = {
-            umkm: [
-                { 
-                    id: 'business_name', 
-                    type: 'text', 
-                    name: 'business_name', 
-                    label: 'Nama Bisnis / Usaha', 
-                    required: true,
-                    placeholder: 'Masukkan nama bisnis / usaha'
-                },
-                { 
-                    id: 'business', 
-                    type: 'select', 
-                    name: 'business', 
-                    label: 'Jenis Bisnis', 
-                    required: true,
-                    options: ['Retail', 'Manufacturing', 'Service', 'Food & Beverage', 'Teknologi'] 
-                },
-                { 
-                    id: 'establishedYear', 
-                    type: 'number', 
-                    name: 'establishedYear', 
-                    label: 'Tahun Berdiri',
-                    required: true,
-                    min: 1900,
-                    max: new Date().getFullYear()
-                },
-                { 
-                    id: 'monthlyRevenue', 
-                    type: 'select', 
-                    name: 'monthlyRevenue', 
-                    label: 'Omset Bulanan (Rp)',
-                    options: ['Rp 500.000 - Rp 1.000.000', 'Rp 1.000.000 - Rp 5.000.000', 'Rp 5.000.000 - Rp 10.000.000', 'Rp 10.000.000 - Rp 15.000.000', 'Lebih dari Rp 15.000.000']
-                },
-                { 
-                    id: 'total_employee', 
-                    type: 'select', 
-                    name: 'total_employee', 
-                    label: 'Total Karyawan',
-                    options: ['1 - 50', '50 - 100', '100 - 500', '500 - 1000', 'Lebih dari 1000']
-                }
-            ],
-            mahasiswa: [
-                { 
-                    id: 'institution', 
-                    type: 'text', 
-                    name: 'institution', 
-                    label: 'Institusi', 
-                    required: true,
-                    placeholder: 'Masukkan nama institusi'
-                },
-                { 
-                    id: 'major', 
-                    type: 'text', 
-                    name: 'major', 
-                    label: 'Jurusan', 
-                    required: true,
-                    placeholder: 'Masukkan nama jurusan'
-                },
-                { 
-                    id: 'enrollmentYear', 
-                    type: 'number', 
-                    name: 'enrollmentYear', 
-                    label: 'Tahun Pendaftaran',
-                    required: true,
-                    min: 2000,
-                    max: new Date().getFullYear()
-                },
-                { 
-                    id: 'semester', 
-                    type: 'number', 
-                    name: 'semester', 
-                    label: 'Semester',
-                    min: 1,
-                    max: 14
-                },
-                { 
-                    id: 'coreCompetency', 
-                    type: 'text', 
-                    name: 'CoreCompetency', 
-                    label: 'Kompetensi',
-                    required: true,
-                    placeholder: 'Contoh: Data Analyst, Public Speaking'
-                },
-                { 
-                    id: 'careerInterest', 
-                    type: 'text', 
-                    name: 'careerInterest', 
-                    label: 'Minat Karier',
-                    required: true,
-                    placeholder: 'Contoh: Data Analyst, Public Speaking'
-                }
-            ],
-            profesional: [
-                { 
-                    id: 'workplace', 
-                    type: 'text', 
-                    name: 'workplace', 
-                    label: 'Nama Perusahaan / Instansi', 
-                    required: true,
-                    placeholder: 'Nama perusahaan atau instansi'
-                },
-                { 
-                    id: 'position', 
-                    type: 'text', 
-                    name: 'position', 
-                    label: 'Posisi', 
-                    required: true,
-                    placeholder: 'Contoh: Software Engineer'
-                },
-                { 
-                    id: 'workDuration', 
-                    type: 'text', 
-                    name: 'workDuration', 
-                    label: 'Lama Bekerja',
-                    required: true,
-                    placeholder: 'Contoh: 3 tahun 2 bulan'
-                },
-                { 
-                    id: 'industrySector', 
-                    type: 'text', 
-                    name: 'industrySector', 
-                    label: 'Sektor Industri',
-                    placeholder: 'Contoh: Pendidikan, Keuangan & Perbankan'
-                }
-            ],
-            komunitas: [
-                { 
-                    id: 'communityName', 
-                    type: 'text', 
-                    name: 'communityName', 
-                    label: 'Nama Komunitas', 
-                    required: true,
-                    placeholder: 'Nama resmi komunitas'
-                },
-                { 
-                    id: 'focusArea', 
-                    type: 'text', 
-                    name: 'focusArea', 
-                    label: 'Area Fokus',
-                    placeholder: 'Contoh: Pendidikan, Lingkungan, Teknologi'
-                },
-                { 
-                    id: 'totalMembers', 
-                    type: 'number', 
-                    name: 'totalMembers', 
-                    label: 'Jumlah Anggota',
-                    required: true
-                },
-                { 
-                    id: 'operationalArea', 
-                    type: 'select', 
-                    name: 'operationalArea', 
-                    label: 'Area Operasional', 
-                    options: ['Lokal', 'Nasional', 'Internasional'] 
-                }
-            ]
-        };
-        return categoryTemplates[selectedCategory] || [];
-    };
 
     const categoryOptions = [
         { id: 'umkm', name: 'UMKM', description: 'Usaha Mikro, Kecil, dan Menengah', icon: '🏢' },
@@ -424,17 +274,38 @@ const PublicForm = () => {
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                     <p className="text-gray-600">Memuat formulir...</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                        Slug: <strong>{slug}</strong>
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                        Mengambil data dari database...
+                    </p>
                 </div>
             </div>
         );
     }
 
-    if (!formConfig) {
+    if (!formConfig || !template) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold text-gray-800 mb-2">Formulir Tidak Ditemukan</h1>
-                    <p className="text-gray-600">Formulir yang Anda cari tidak tersedia atau telah dihapus.</p>
+                    <p className="text-gray-600 mb-4">Formulir dengan slug "{slug}" tidak tersedia.</p>
+                    <div className="text-sm text-gray-500 bg-yellow-50 p-4 rounded-lg max-w-md">
+                        <p className="font-semibold">Kemungkinan penyebab:</p>
+                        <ul className="list-disc list-inside mt-2 text-left">
+                            <li>Form belum dipublish dari Form Builder</li>
+                            <li>Slug URL tidak sesuai dengan database</li>
+                            <li>Form telah dihapus</li>
+                            <li>Koneksi database bermasalah</li>
+                        </ul>
+                        <p className="mt-3 text-blue-600">
+                            Slug yang diminta: <strong>{slug}</strong>
+                        </p>
+                        <p className="mt-2 text-red-600 text-xs">
+                            ❌ Data diambil dari API, bukan localStorage
+                        </p>
+                    </div>
                 </div>
             </div>
         );
@@ -442,6 +313,10 @@ const PublicForm = () => {
 
     const programName = getProgramName();
     const formTitle = getFormTitle();
+    const currentFields = renderDynamicFields();
+
+    // Jika tidak ada fields, gunakan default
+    const displayFields = currentFields.length > 0 ? currentFields : personalInfoFields;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
@@ -452,11 +327,13 @@ const PublicForm = () => {
                         🚀 {formTitle}
                     </h1>
                     <p className="text-gray-600">
-                         Pilih yang Sesuai dengan Profil Anda
+                        Isi data diri Anda dengan lengkap dan benar
                     </p>
                     {/* Debug Info */}
                     <div className="mt-2 text-sm text-blue-600 bg-blue-50 p-2 rounded-lg">
-                        Program: <strong>{programName}</strong>
+                        <strong>Program:</strong> {programName} | <strong>Slug:</strong> {slug}
+                        <br />
+                        <span className="text-green-600 text-xs">✅ Data loaded from API | Template: {template.program_name}</span>
                     </div>
                 </div>
 
@@ -503,7 +380,7 @@ const PublicForm = () => {
                                         📝 Informasi Pribadi
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {personalInfoFields.map((field) => (
+                                        {displayFields.map((field) => (
                                             <div key={field.id} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
                                                 <FormField 
                                                     field={field}
@@ -554,13 +431,13 @@ const PublicForm = () => {
                             )}
 
                             {/* STEP 3: Category-specific Fields */}
-                            {currentStep === 3 && (
+                            {currentStep === 3 && selectedCategory && (
                                 <div className="space-y-6">
                                     <h3 className="text-xl font-semibold text-gray-800 mb-4">
                                         🏢 Informasi {categoryOptions.find(cat => cat.id === selectedCategory)?.name}
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {getCategoryFields().map((field) => (
+                                        {displayFields.map((field) => (
                                             <div key={field.id}>
                                                 <FormField 
                                                     field={field}
@@ -570,16 +447,6 @@ const PublicForm = () => {
                                                 />
                                             </div>
                                         ))}
-                                    </div>
-
-                                    {/* Terms & Submit */}
-                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                        <div className="flex items-start gap-3">
-                                            <input type="checkbox" id="terms" required />
-                                            <label htmlFor="terms" className="text-sm text-gray-700">
-                                                Saya menyetujui syarat dan ketentuan program {programName}.
-                                            </label>
-                                        </div>
                                     </div>
 
                                     <div className="flex justify-between">

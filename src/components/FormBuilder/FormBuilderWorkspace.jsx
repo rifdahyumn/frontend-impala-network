@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Loader2, Plus, Eye, Save, Rocket, FolderOpen, X } from 'lucide-react';
 import FormCanvas from './FormCanvas';
 import FieldConfigPanel from './fields/FieldConfigPanel';
+import FormTemplatesList from './FormTemplateList';
 import formBuilderService from '../../services/formBuilderService';
+import formTemplateService from '../../services/formTemplateService';
+import { useToast } from '../../hooks/use-toast';
 
 const FormBuilderWorkspace = () => {
     const [formConfig, setFormConfig] = useState(null);
@@ -9,62 +17,76 @@ const FormBuilderWorkspace = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [availablePrograms, setAvailablePrograms] = useState([]);
     const [loadingPrograms, setLoadingPrograms] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [formTemplates, setFormTemplates] = useState([]);
+    const [selectedTemplate, setSelectedTemplate] = useState(null);
+    const [showTemplates, setShowTemplates] = useState(false);
+    const { toast } = useToast();
 
+    // Load form templates
+    // Load form templates
     useEffect(() => {
-        const savedConfig = localStorage.getItem('impalaFormConfig');
-        
-        const loadAvailablePrograms = async (search = '') => {
+        const loadFormTemplates = async () => {
             try {
-                setLoadingPrograms(true);
-                console.log('🔄 Loading programs with search:', search);
+                console.log('🔄 Loading form templates...');
+                const response = await formTemplateService.getAllFormTemplates();
                 
-                const response = await formBuilderService.getProgramNamesToImpala(search);
-                console.log('✅ Service response:', response);
-                
-                const programNames = response.data || [];
-                console.log('📋 Programs found:', programNames);
-                
-                if (programNames.length > 0) {
-                    setAvailablePrograms(programNames);
-                    console.log('✅ Set available programs:', programNames.length);
-                    
-                    // Auto-select program pertama jika belum ada programName
-                    if (!formConfig?.programName && programNames.length > 0) {
-                        const firstProgram = programNames[0];
-                        const firstProgramName = firstProgram.program_name || firstProgram;
-                        
-                        setFormConfig(prev => ({
-                            ...prev,
-                            programName: firstProgramName,
-                            title: `Pendaftaran Program ${firstProgramName}`
-                        }));
-                        console.log('🎯 Auto-selected first program:', firstProgramName);
-                    }
+                // ✅ PERBAIKAN: Validasi response
+                if (response.success && Array.isArray(response.data)) {
+                    setFormTemplates(response.data);
+                    console.log('✅ Templates loaded:', response.data.length);
                 } else {
-                    setAvailablePrograms([]);
-                    console.log('⚠️ No programs found in database');
+                    console.warn('⚠️ No templates data:', response);
+                    setFormTemplates([]);
                 }
             } catch (error) {
-                console.error('❌ Error loading programs:', error);
+                console.error('❌ Error loading form templates:', error);
+                setFormTemplates([]);
+                toast({
+                    title: "Error",
+                    description: "Gagal memuat template form",
+                    variant: "destructive"
+                });
+            }
+        };
+
+        loadFormTemplates();
+    }, [toast]);
+
+    // Load available programs dan setup default config
+    useEffect(() => {
+        const loadAvailablePrograms = async () => {
+            try {
+                setLoadingPrograms(true);
+                const response = await formBuilderService.getProgramNamesToImpala();
+                const programs = response.data || [];
+                setAvailablePrograms(programs);
+
+                // Auto-select first program if available
+                if (programs.length > 0 && (!formConfig?.programName || formConfig.programName === "")) {
+                    const firstProgram = programs[0];
+                    const firstProgramName = firstProgram.program_name || firstProgram;
+                    
+                    setFormConfig(prev => ({
+                        ...prev,
+                        programName: firstProgramName,
+                        title: `Pendaftaran Program ${firstProgramName}`
+                    }));
+                }
+            } catch (error) {
+                console.error('Error loading programs:', error);
                 setAvailablePrograms([]);
+                toast({
+                    title: "Error",
+                    description: "Gagal memuat daftar program",
+                    variant: "destructive"
+                });
             } finally {
                 setLoadingPrograms(false);
             }
         };
 
-        if (savedConfig) {
-            const parsedConfig = JSON.parse(savedConfig);
-            setFormConfig(parsedConfig);
-            console.log('📁 Loaded config from localStorage');
-
-            if (parsedConfig.programName) {
-                loadAvailablePrograms(parsedConfig.programName);
-            } else {
-                loadAvailablePrograms();
-            }
-        } else {
-            console.log('📝 Creating default config');
+        // Initialize default config if no template selected
+        if (!selectedTemplate && !formConfig) {
             setFormConfig({
                 programName: "",
                 title: "Pendaftaran Program",
@@ -201,7 +223,7 @@ const FormBuilderWorkspace = () => {
                                 id: 'reason', 
                                 type: 'textarea', 
                                 name: 'reason_join_program', 
-                                label: 'Reason Join Program',
+                                label: 'Alasan Bergabung Program',
                                 rows: 3,
                                 required: true,
                                 placeholder: 'Ingin menambah wawasan',
@@ -432,11 +454,11 @@ const FormBuilderWorkspace = () => {
             
             loadAvailablePrograms();
         }
-    }, []);
+    }, [selectedTemplate, formConfig]);
 
+    // Update form config when available programs change
     useEffect(() => {
         if (formConfig && availablePrograms.length > 0) {
-            console.log('🔄 Updating form config with programs:', availablePrograms);
             setFormConfig(prev => {
                 const newConfig = { ...prev };
                 
@@ -456,33 +478,128 @@ const FormBuilderWorkspace = () => {
         }
     }, [availablePrograms, loadingPrograms]);
 
-    const handleProgramSearch = async (query) => {
-        setSearchQuery(query);
-        console.log('🔍 Searching programs:', query);
+    const handleTemplateSelect = (template) => {
+        setSelectedTemplate(template);
+        setFormConfig(template.form_config);
+        setShowTemplates(false);
+        toast({
+            title: "Template Dimuat",
+            description: `Template "${template.program_name}" berhasil dimuat`
+        });
+    };
+
+    const handleCreateTemplate = async () => {
+        if (!formConfig || !formConfig.programName) {
+            toast({
+                title: "Error",
+                description: "Silakan pilih program dan simpan form terlebih dahulu",
+                variant: "destructive"
+            });
+            return;
+        }
 
         try {
-            setLoadingPrograms(true);
-            const response = await formBuilderService.getProgramNamesToImpala(query);
-            const programNames = response.data || [];
-            console.log('🔍 Search results:', programNames);
-            setAvailablePrograms(programNames);
+            setIsSaving(true);
+            console.log('🔄 Creating template with config:', formConfig);
+            
+            const response = await formTemplateService.createFormTemplate({
+                program_name: formConfig.programName,
+                form_config: formConfig
+            });
+
+            // ✅ PERBAIKAN: Validasi response
+            if (!response.success) {
+                throw new Error(response.message || 'Gagal membuat template');
+            }
+
+            const newTemplate = response.data;
+            console.log('✅ Template created:', newTemplate);
+            
+            // ✅ PERBAIKAN: Pastikan newTemplate ada sebelum update state
+            if (newTemplate) {
+                setFormTemplates(prev => [newTemplate, ...prev]);
+                setSelectedTemplate(newTemplate);
+                
+                toast({
+                    title: "Template Berhasil Dibuat",
+                    description: `Template "${formConfig.programName}" berhasil dibuat`
+                });
+            } else {
+                throw new Error('Template data tidak valid');
+            }
         } catch (error) {
-            console.error('Error searching programs:', error);
+            console.error('❌ Error creating template:', error);
+            toast({
+                title: "Error",
+                description: error.message || "Gagal membuat form template",
+                variant: "destructive"
+            });
         } finally {
-            setLoadingPrograms(false);
+            setIsSaving(false);
+        }
+    };
+
+    const handlePublishTemplate = async () => {
+        // ✅ PERBAIKAN: Tambahkan validasi yang lebih ketat
+        if (!selectedTemplate || !selectedTemplate.id) {
+            toast({
+                title: "Error",
+                description: "Silakan buat atau pilih template terlebih dahulu",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        try {
+            console.log('🔄 Publishing template:', selectedTemplate);
+            
+            const response = await formTemplateService.publishFormTemplate(selectedTemplate.id);
+            
+            // ✅ PERBAIKAN: Validasi response
+            if (!response.success) {
+                throw new Error(response.message || 'Gagal mempublish template');
+            }
+
+            const updatedTemplate = response.data;
+            console.log('✅ Template published:', updatedTemplate);
+            
+            // ✅ PERBAIKAN: Update state dengan validasi
+            setFormTemplates(prev => 
+                prev.map(template => 
+                    template && template.id === updatedTemplate.id ? updatedTemplate : template
+                )
+            );
+            setSelectedTemplate(updatedTemplate);
+
+            const formLink = `http://localhost:5173/register/${updatedTemplate.unique_slug}`;
+            toast({
+                title: "Form Berhasil Dipublish!",
+                description: (
+                    <div>
+                        <p>Form "{updatedTemplate.program_name}" sekarang tersedia untuk publik</p>
+                        <p className="text-sm mt-1">
+                            <strong>Link:</strong> {formLink}
+                        </p>
+                    </div>
+                )
+            });
+        } catch (error) {
+            console.error('❌ Error publishing template:', error);
+            toast({
+                title: "Error",
+                description: error.message || "Gagal mempublish form",
+                variant: "destructive"
+            });
         }
     };
 
     const handleProgramSelect = (selectedProgramName) => {
-        console.log('Program selected:', selectedProgramName);
         const selectedProgram = availablePrograms.find(program => 
             program.program_name === selectedProgramName
         );
 
         if (selectedProgram) {
             const programName = selectedProgram.program_name;
-            console.log('✅ Setting program name:', programName);
-
             setFormConfig(prev => ({
                 ...prev,
                 programName: programName,
@@ -490,6 +607,23 @@ const FormBuilderWorkspace = () => {
             }));
 
             updateField('programInfo', 'program_name', { value: programName });
+        }
+    };
+
+    const handleProgramSearch = async (query) => {
+        try {
+            setLoadingPrograms(true);
+            const response = await formBuilderService.getProgramNamesToImpala(query);
+            setAvailablePrograms(response.data || []);
+        } catch (error) {
+            console.error('Error searching programs:', error);
+            toast({
+                title: "Error",
+                description: "Gagal mencari program",
+                variant: "destructive"
+            });
+        } finally {
+            setLoadingPrograms(false);
         }
     };
 
@@ -529,7 +663,10 @@ const FormBuilderWorkspace = () => {
         
         setTimeout(() => {
             setIsSaving(false);
-            alert('Form berhasil disimpan sebagai draft!');
+            toast({
+                title: "Form Disimpan",
+                description: "Form berhasil disimpan sebagai draft"
+            });
         }, 1000);
     };
 
@@ -537,32 +674,19 @@ const FormBuilderWorkspace = () => {
         if (confirm('Apakah Anda yakin ingin mereset form ke default? Semua perubahan akan hilang.')) {
             localStorage.removeItem('impalaFormConfig');
             localStorage.removeItem('impalaPublishedForm');
+            setSelectedTemplate(null);
+            setFormConfig(null);
             window.location.reload();
         }
     };
 
-    const handlePublishForm = () => {
-        if (!formConfig) {
-            alert('Belum ada form yang disimpan. Silakan simpan form terlebih dahulu.');
-            return;
-        }
-
-        if (!formConfig.programName || formConfig.programName === '') {
-            alert('Silakan pilih nama program terlebih dahulu sebelum publish.');
-            return;
-        }
-
-        localStorage.setItem('impalaPublishedForm', JSON.stringify(formConfig));
-        
-        const previewLink = `${window.location.origin}/register`;
-        alert(`Form berhasil dipublish!\n\nForm "${formConfig.programName}" sekarang tersedia untuk publik.\n\nLink: ${previewLink}`);
-        
-        console.log('Form published:', formConfig);
-    };
-
     const handlePreviewForm = () => {
         if (!formConfig) {
-            alert('Belum ada form yang disimpan. Silakan simpan form terlebih dahulu.');
+            toast({
+                title: "Error",
+                description: "Belum ada form yang disimpan",
+                variant: "destructive"
+            });
             return;
         }
 
@@ -574,7 +698,7 @@ const FormBuilderWorkspace = () => {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-blue-600" />
                     <p className="text-gray-600">Memuat form...</p>
                 </div>
             </div>
@@ -582,125 +706,182 @@ const FormBuilderWorkspace = () => {
     }
 
     return (
-        <div className="min-h-[600px]">
-            <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg">
-                <div className="flex justify-between items-center mb-4">
-                    <div className="flex items-center gap-4">
-                        <button 
-                            onClick={handleResetForm}
-                            className="text-sm bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200"
-                        >
-                            Reset Form
-                        </button>
-                    </div>
-                    
-                    <div className="text-sm text-gray-500">
-                        Program: <strong>{formConfig?.programName || 'Belum dipilih'}</strong>
-                    </div>
-                </div>
-                
-                <div className="preview-header-section">
-                    <div className="preview-container bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg shadow-lg overflow-hidden">
-                        <div className="preview-header p-6 text-center">
-                            <h1 className="text-2xl font-bold">
-                                {formConfig?.programName 
-                                    ? `Formulir Pendaftaran ${formConfig.programName}`
-                                    : 'Formulir Pendaftaran Program'
-                                }
-                            </h1>
-                            <p className="text-lg opacity-90 mt-2">
-                                {formConfig?.programName ? `Program: ${formConfig.programName}` : 'Pilih program terlebih dahulu'}
-                            </p>
+        <div className="min-h-screen space-y-6 p-6">
+            {/* Header Section */}
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle>Form Builder</CardTitle>
+                            <CardDescription>
+                                Buat dan kelola formulir pendaftaran program
+                            </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowTemplates(!showTemplates)}
+                                className="flex items-center gap-2"
+                            >
+                                <FolderOpen className="h-4 w-4" />
+                                {showTemplates ? 'Tutup Template' : 'Template'}
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={handleResetForm}
+                                className="flex items-center gap-2"
+                            >
+                                <X className="h-4 w-4" />
+                                Reset
+                            </Button>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-4">
-                <FormCanvas
-                    formConfig={formConfig}
-                    selectedField={selectedField}
-                    onFieldSelect={setSelectedField}
-                    onFieldUpdate={updateField}
-                    onProgramNameUpdate={handleProgramSelect}
-                    onProgramSearch={handleProgramSearch}
-                    availablePrograms={availablePrograms}
-                    loadingPrograms={loadingPrograms}
-                />
-            </div>
-            
-            <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-500">
-                    Pilih nama program dari daftar yang tersedia
-                    {formConfig?.programName && (
-                        <span className="ml-2 text-green-600 font-semibold">
-                            ✓ Program: {formConfig.programName}
-                        </span>
+                </CardHeader>
+                <CardContent>
+                    {/* Templates List */}
+                    {showTemplates && (
+                        <FormTemplatesList
+                            templates={formTemplates}
+                            selectedTemplate={selectedTemplate}
+                            onTemplateSelect={handleTemplateSelect}
+                            onClose={() => setShowTemplates(false)}
+                        />
                     )}
-                </div>
-                
-                <div className="flex gap-2">
-                    <button 
-                        onClick={handlePreviewForm}
-                        disabled={!formConfig}
-                        className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-                            !formConfig 
-                                ? 'bg-gray-400 cursor-not-allowed' 
-                                : 'bg-blue-600 hover:bg-blue-700'
-                        } text-white transition-colors`}
-                    >
-                        👁️ Preview
-                    </button>
-                    
-                    <button 
-                        onClick={handleSaveForm}
-                        disabled={isSaving}
-                        className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-                            isSaving 
-                                ? 'bg-gray-400 cursor-not-allowed' 
-                                : 'bg-green-600 hover:bg-green-700'
-                        } text-white transition-colors`}
-                    >
-                        {isSaving ? (
-                            <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                Menyimpan...
-                            </>
-                        ) : (
-                            <>
-                                💾 Simpan Draft
-                            </>
-                        )}
-                    </button>
-                    
-                    <button 
-                        onClick={handlePublishForm}
-                        disabled={!formConfig || !formConfig.programName}
-                        className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-                            !formConfig || !formConfig.programName
-                                ? 'bg-gray-400 cursor-not-allowed' 
-                                : 'bg-purple-600 hover:bg-purple-700'
-                        } text-white transition-colors`}
-                    >
-                        🚀 Publish
-                    </button>
-                </div>
-            </div>
 
-            {formConfig && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="text-sm text-blue-800">
-                        <strong>Status Form:</strong> 
-                        {localStorage.getItem('impalaPublishedForm') 
-                            ? ' ✅ Published (tersedia untuk publik)' 
-                            : ' 📝 Draft (hanya tersedia di builder)'
-                        }
+                    {/* Preview Header */}
+                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-6 text-center">
+                        <h1 className="text-2xl font-bold mb-2">
+                            {formConfig.programName 
+                                ? `Formulir Pendaftaran ${formConfig.programName}`
+                                : 'Formulir Pendaftaran Program'
+                            }
+                        </h1>
+                        <div className="flex justify-center items-center gap-4">
+                            {selectedTemplate?.unique_slug && (
+                                <Badge variant="secondary" className="text-sm">
+                                    Link: /register/{selectedTemplate.unique_slug}
+                                </Badge>
+                            )}
+                            {selectedTemplate?.is_published && (
+                                <Badge variant="default" className="bg-green-500">
+                                    Published
+                                </Badge>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                </CardContent>
+            </Card>
 
+            {/* Main Canvas */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        Form Canvas
+                        {loadingPrograms && (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        )}
+                    </CardTitle>
+                    <CardDescription>
+                        Drag and drop fields untuk membangun formulir
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <FormCanvas
+                        formConfig={formConfig}
+                        selectedField={selectedField}
+                        onFieldSelect={setSelectedField}
+                        onFieldUpdate={updateField}
+                        onProgramNameUpdate={handleProgramSelect}
+                        onProgramSearch={handleProgramSearch}
+                        availablePrograms={availablePrograms}
+                        loadingPrograms={loadingPrograms}
+                    />
+                </CardContent>
+            </Card>
+
+            {/* Action Buttons & Status */}
+            <Card>
+                <CardContent className="pt-6">
+                    <div className="flex justify-between items-center">
+                        <div className="space-y-2">
+                            <p className="text-sm text-gray-600">
+                                💡 Pilih nama program dari daftar yang tersedia
+                            </p>
+                            {formConfig.programName && (
+                                <Badge variant="outline" className="bg-green-50 text-green-700">
+                                    ✓ Program: {formConfig.programName}
+                                </Badge>
+                            )}
+                        </div>
+                        
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={handlePreviewForm}
+                                disabled={!formConfig}
+                                variant="outline"
+                                className="flex items-center gap-2"
+                            >
+                                <Eye className="h-4 w-4" />
+                                Preview
+                            </Button>
+                            
+                            <Button
+                                onClick={handleSaveForm}
+                                disabled={isSaving}
+                                className="flex items-center gap-2"
+                            >
+                                {isSaving ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Save className="h-4 w-4" />
+                                )}
+                                Simpan Draft
+                            </Button>
+                            
+                            <Button
+                                onClick={handleCreateTemplate}
+                                disabled={!formConfig?.programName}
+                                variant="secondary"
+                                className="flex items-center gap-2"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Buat Template
+                            </Button>
+                            
+                            <Button
+                                onClick={handlePublishTemplate}
+                                disabled={!selectedTemplate || selectedTemplate.is_published}
+                                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
+                            >
+                                <Rocket className="h-4 w-4" />
+                                Publish
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Status Info */}
+                    <Alert className="mt-4">
+                        <AlertDescription>
+                            <strong>Status Form:</strong>{' '}
+                            {selectedTemplate && selectedTemplate.id ? (
+                                selectedTemplate.is_published ? (
+                                    <span className="text-green-600">
+                                        ✅ Published - Link: /register/{selectedTemplate.unique_slug}
+                                    </span>
+                                ) : (
+                                    <span className="text-yellow-600">📝 Draft (belum dipublish)</span>
+                                )
+                            ) : (
+                                <span className="text-gray-600">📝 Belum ada template yang dipilih</span>
+                            )}
+                        </AlertDescription>
+                    </Alert>
+                </CardContent>
+            </Card>
+
+            {/* Field Configuration Panel */}
             {selectedField && (
-                <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-lg z-50">
+                <div className="fixed right-0 top-0 h-full w-80 bg-white border-l shadow-lg z-50">
                     <div className="p-4 h-full overflow-auto">
                         <FieldConfigPanel
                             field={selectedField}

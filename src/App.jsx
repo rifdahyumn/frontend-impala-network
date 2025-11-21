@@ -41,11 +41,6 @@ const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
 
-  console.log('🛡️ ProtectedRoute:', { 
-    isAuthenticated, 
-    path: location.pathname 
-  });
-
   if (isAuthenticated === null) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -58,7 +53,6 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!isAuthenticated) {
-    console.log('❌ Redirecting to login...');
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -69,8 +63,6 @@ const ProtectedRoute = ({ children }) => {
 const PublicRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
 
-  console.log('🔓 PublicRoute:', { isAuthenticated });
-
   if (isAuthenticated === null) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -80,16 +72,19 @@ const PublicRoute = ({ children }) => {
   }
 
   if (isAuthenticated) {
-    console.log('✅ Already auth, redirecting to home...');
     return <Navigate to="/" replace />;
   }
 
   return children;
 };
 
-// Public Form Route - TANPA AUTH & LAYOUT
+// ✅ PUBLIC FORM ROUTE - TANPA AUTH & TANPA LAYOUT
 const PublicFormRoute = ({ children }) => {
-  return children; // Langsung render tanpa auth check dan layout sidebar
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {children}
+    </div>
+  );
 };
 
 function App() {
@@ -97,25 +92,9 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* PUBLIC FORM ROUTES - TANPA AUTH & LAYOUT */}
+          {/* ✅ PUBLIC FORM ROUTES - HARUS DI ATAS ROUTE LAINNYA */}
           <Route 
-            path="/register" 
-            element={
-              <PublicFormRoute>
-                <PublicForm />
-              </PublicFormRoute>
-            } 
-          />
-          <Route 
-            path="/public-form" 
-            element={
-              <PublicFormRoute>
-                <PublicForm />
-              </PublicFormRoute>
-            } 
-          />
-          <Route 
-            path="/public-form/:formId" 
+            path="/register/:slug" 
             element={
               <PublicFormRoute>
                 <PublicForm />
@@ -123,7 +102,20 @@ function App() {
             } 
           />
           
-          {/* AUTH ROUTES (dengan login check) */}
+          {/* Route /register tanpa slug (untuk keperluan lain) */}
+          <Route 
+            path="/register" 
+            element={
+              <ProtectedRoute>
+                <div className="p-6">
+                  <h1>Register Page Lainnya</h1>
+                  <p>Halaman register untuk keperluan internal</p>
+                </div>
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* AUTH ROUTES */}
           <Route 
             path="/login" 
             element={
@@ -133,7 +125,7 @@ function App() {
             } 
           />
           
-          {/* PROTECTED ROUTES (dengan layout & auth) */}
+          {/* PROTECTED ROUTES */}
           <Route 
             path="/" 
             element={
@@ -215,7 +207,15 @@ function App() {
             } 
           />
           
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* ✅ PERBAIKI CATCH-ALL ROUTE - HARUS DI PALING BAWAH */}
+          <Route path="*" element={
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold text-gray-800 mb-2">Halaman Tidak Ditemukan</h1>
+                <p className="text-gray-600">URL yang Anda cari tidak ada.</p>
+              </div>
+            </div>
+          } />
         </Routes>
       </Router>
     </AuthProvider>
