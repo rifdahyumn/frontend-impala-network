@@ -187,7 +187,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                 city: editData.city || '',
                 country: editData.country || '',
                 notes: editData.notes || '',
-                status: editData.status || 'active'
+                status: editData.status || 'Active'
                 
             })
         } else {

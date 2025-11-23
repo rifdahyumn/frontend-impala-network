@@ -123,13 +123,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         {
             title: "Schedule & Duration",
             fields: [
-                // {
-                //     name: 'duration',
-                //     label: 'Duration',
-                //     type: 'text',
-                //     required: true,
-                //     placeholder: 'e.g., 3 months, 4 months'
-                // },
                 {
                     name: 'start_date',
                     label: 'Start Date',
@@ -288,7 +281,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 client: editData.client || '',
                 category: editData.category || '',
                 status: editData.status || '',
-                // duration: editData.duration || '',
                 start_date: editData.start_date || '',
                 end_date: editData.end_date || '',
                 price: editData.price || '',
@@ -304,7 +296,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 client: '',
                 category: '',
                 status: '',
-                // duration: '',
                 start_date: '',
                 end_date: '',
                 price: '',
@@ -392,7 +383,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 client: formData.client,
                 category: formData.category,
                 status: formData.status || 'Active',
-                // duration: formData.duration,
                 start_date: formData.start_date,
                 end_date: formData.end_date,
                 price: formData.price,

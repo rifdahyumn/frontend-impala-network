@@ -106,13 +106,10 @@ const AccountContent = ({ selectedUser, onOpenEditModal, detailTitle, onDelete, 
         
         if (!avatarPath) return null;
         
-        // Jika sudah full URL, return langsung
         if (avatarPath.startsWith('http')) {
             return avatarPath;
         }
         
-        // Jika path relative (contoh: /uploads/avatars/avatar-123.jpg)
-        // Tambahkan base URL backend
         // eslint-disable-next-line no-undef
         const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
         const fullUrl = `${baseUrl}${avatarPath}`;
@@ -281,7 +278,9 @@ const AccountContent = ({ selectedUser, onOpenEditModal, detailTitle, onDelete, 
                                     </Button>
 
                                     {selectedUser.status === 'Inactive' && (
-                                        <Button>
+                                        <Button
+                                            onClick={handleActivate}
+                                        >
                                             {activateLoading ? (
                                                 <Loader2 className='h-4 w-4 animate-spin' />
                                             ) : (

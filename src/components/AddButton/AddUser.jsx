@@ -134,7 +134,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                 position: editData.position || '',
                 phone: editData.phone || '',
                 avatar: editData.avatar || '',
-                status: editData.status || 'active'
+                status: editData.status || 'Active'
             })
         } else {
             setFormData({
@@ -171,7 +171,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
         }
 
         if (formData.phone) {
-            const phoneString = formData.phone.toString(); // Convert ke string dulu
+            const phoneString = formData.phone.toString();
             const digitsOnly = phoneString.replace(/\D/g, '');
             
             if (digitsOnly.length < 10) {

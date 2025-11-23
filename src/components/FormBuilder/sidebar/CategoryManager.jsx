@@ -1,8 +1,7 @@
-// components/FormBuilder/sidebar/CategoryManager.jsx
 import React, { useState } from 'react';
 
 const CategoryManager = ({ categories, onCategoryChange }) => {
-  const [expandedCategory, setExpandedCategory] = useState(null);
+    const [expandedCategory, setExpandedCategory] = useState(null);
 
   return (
     <div className="mt-6">

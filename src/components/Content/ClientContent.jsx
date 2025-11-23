@@ -6,7 +6,6 @@ import toast from 'react-hot-toast';
 
 const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal, onClientEdited }) => {
     const [activeCategory, setActiveCategory] = useState('Personal Information');
-    // const [loading, setLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false)
 
     const detailFields = [
@@ -26,7 +25,6 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
             icon: Building,
             fields: [
                 { key: 'company', label: 'Company', icon: Building },
-                // { key: 'industry', label: 'Industry', icon: Building },
                 { key: 'business', label: 'Business Type', icon: Building },
                 { key: 'total_employee', label: 'Total Employee', icon: Building }
             ]
@@ -37,7 +35,6 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
             fields: [
                 { key: 'program_name', label: 'Program Name', icon: DollarSign },
                 { key: 'status', label: 'Status', icon: DollarSign },
-                // { key: 'deal_size', label: 'Deal Size', icon: DollarSign },
                 { key: 'join_date', label: 'Join Date', icon: Calendar }
             ]
         },
