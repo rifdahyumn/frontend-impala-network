@@ -5,7 +5,7 @@ import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Loader2, Plus, Eye, Save, Rocket, FolderOpen, X } from 'lucide-react';
 import FormCanvas from './FormCanvas';
-import FieldConfigPanel from './fields/FieldConfigPanel';
+import FieldConfigPanel from "./fields/FieldConfigPanel";
 import FormTemplatesList from './FormTemplateList';
 import formBuilderService from '../../services/formBuilderService';
 import formTemplateService from '../../services/formTemplateService';

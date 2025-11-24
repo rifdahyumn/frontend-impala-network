@@ -48,7 +48,7 @@ const HeteroSoloContent = ({ selectedMember, onOpenEditModal, onDelete, detailTi
             category: 'Additional Information',
             icon: FileText,
             fields: [
-                { key: 'add_info', label: 'How did you find out about Hetero?', icon: FileText }
+                 { key: 'addInformation', label: 'How did you find out about Hetero?', icon: FileText }
             ]
         },
     ];

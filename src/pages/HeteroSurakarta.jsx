@@ -105,7 +105,7 @@ const HeteroSolo = () => {
 
     const tableConfig = {
         headers: ['No', 'Full Name', 'Email', 'Phone', 'Space', 'Company', 'Duration', 'Status', 'Action'],
-        title: 'Hetero Solo Management',
+        title: 'Hetero Surakarta Management',
         addButton: "Add Member",
         detailTitle: "Member Details"
     }
