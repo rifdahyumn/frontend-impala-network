@@ -119,14 +119,13 @@ const FormPreview = ({ formConfig, onBack }) => {
 
                     <div className="p-6">
                         <form onSubmit={handleSubmit}>
-                            {/* STEP 1: Personal Information */}
                             {currentStep === 1 && (
                                 <div className="space-y-6">
                                     <h3 className="text-xl font-semibold text-gray-800 mb-4">
                                         📝 Informasi Pribadi
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* HANYA render field dari personalInfo, BUKAN programInfo */}
+                                    
                                         {formConfig.sections.personalInfo.fields.map((field) => (
                                             <div key={field.id} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
                                                 <FormField 
@@ -139,7 +138,7 @@ const FormPreview = ({ formConfig, onBack }) => {
                                         ))}
                                     </div>
                                     <div className="flex justify-end">
-                                        {/* HAPUS: Button kembali dari step 1 */}
+                                       
                                         <button 
                                             onClick={nextStep}
                                             type="button"
@@ -150,8 +149,7 @@ const FormPreview = ({ formConfig, onBack }) => {
                                     </div>
                                 </div>
                             )}
-
-                            {/* STEP 2: Category Selection */}
+                                     
                             {currentStep === 2 && (
                                 <div className="space-y-6">
                                     <h3 className="text-xl font-semibold text-gray-800 mb-4">
@@ -181,12 +179,12 @@ const FormPreview = ({ formConfig, onBack }) => {
                                         >
                                             ← Kembali ke Data Personal
                                         </button>
-                                        {/* HAPUS: Button kembali ke builder dari step 2 */}
+                                          
                                     </div>
                                 </div>
                             )}
 
-                            {/* STEP 3: Category-specific Fields */}
+                            
                             {currentStep === 3 && (
                                 <div className="space-y-6">
                                     <h3 className="text-xl font-semibold text-gray-800 mb-4">
@@ -194,7 +192,7 @@ const FormPreview = ({ formConfig, onBack }) => {
                                         Informasi {formConfig.categories[selectedCategory]?.name}
                                     </h3>
                                     
-                                    {/* Category Fields */}
+                                
                                     {formConfig.categories[selectedCategory] && (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                             {formConfig.categories[selectedCategory].fields.map((field) => (
@@ -238,8 +236,7 @@ const FormPreview = ({ formConfig, onBack }) => {
                         </form>
                     </div>
                 </div>
-
-                {/* SATU Button Kembali di bagian bawah */}
+ 
                 <div className="mt-8 text-center">
                     <button 
                         onClick={onBack}

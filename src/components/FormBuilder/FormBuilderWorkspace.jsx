@@ -3,9 +3,8 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
-import { Loader2, Plus, Eye, Save, Rocket, FolderOpen, X } from 'lucide-react';
+import { Loader2, Plus, Eye, Save, Rocket, FolderOpen, X, Link, Calendar, Copy, ExternalLink } from 'lucide-react';
 import FormCanvas from './FormCanvas';
-import FieldConfigPanel from "./fields/FieldConfigPanel";
 import FormTemplatesList from './FormTemplateList';
 import formBuilderService from '../../services/formBuilderService';
 import formTemplateService from '../../services/formTemplateService';
@@ -20,27 +19,16 @@ const FormBuilderWorkspace = () => {
     const [formTemplates, setFormTemplates] = useState([]);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [showTemplates, setShowTemplates] = useState(false);
+    const [activeTab, setActiveTab] = useState('builder')
     const { toast } = useToast();
 
-    // Load form templates
-    // Load form templates
     useEffect(() => {
         const loadFormTemplates = async () => {
             try {
-                console.log('🔄 Loading form templates...');
                 const response = await formTemplateService.getAllFormTemplates();
-                
-                // ✅ PERBAIKAN: Validasi response
-                if (response.success && Array.isArray(response.data)) {
-                    setFormTemplates(response.data);
-                    console.log('✅ Templates loaded:', response.data.length);
-                } else {
-                    console.warn('⚠️ No templates data:', response);
-                    setFormTemplates([]);
-                }
+                setFormTemplates(response.data || []);
             } catch (error) {
-                console.error('❌ Error loading form templates:', error);
-                setFormTemplates([]);
+                console.error('Error loading form templates:', error);
                 toast({
                     title: "Error",
                     description: "Gagal memuat template form",
@@ -52,7 +40,6 @@ const FormBuilderWorkspace = () => {
         loadFormTemplates();
     }, [toast]);
 
-    // Load available programs dan setup default config
     useEffect(() => {
         const loadAvailablePrograms = async () => {
             try {
@@ -61,7 +48,6 @@ const FormBuilderWorkspace = () => {
                 const programs = response.data || [];
                 setAvailablePrograms(programs);
 
-                // Auto-select first program if available
                 if (programs.length > 0 && (!formConfig?.programName || formConfig.programName === "")) {
                     const firstProgram = programs[0];
                     const firstProgramName = firstProgram.program_name || firstProgram;
@@ -85,7 +71,6 @@ const FormBuilderWorkspace = () => {
             }
         };
 
-        // Initialize default config if no template selected
         if (!selectedTemplate && !formConfig) {
             setFormConfig({
                 programName: "",
@@ -110,127 +95,128 @@ const FormBuilderWorkspace = () => {
                             }
                         ]
                     },
-                    personalInfo: {
-                        id: "personalInfo",
-                        name: "Informasi Pribadi",
-                        description: "Data diri peserta",
-                        locked: true,
-                        fields: [
-                            {
-                                id: 'full_name',
-                                type: 'text',
-                                name: 'full_name',
-                                label: 'Nama Lengkap',
-                                required: true,
-                                placeholder: 'Masukkan nama lengkap sesuai KTP',
-                                locked: true
-                            },
-                            { 
-                                id: 'nik', 
-                                type: 'number', 
-                                name: 'nik', 
-                                label: 'NIK (Nomor Induk Kependudukan)', 
-                                required: true,
-                                placeholder: 'Masukkan NIK 17 digit',
-                                locked: true
-                            },
-                            {
-                                id: 'email',
-                                type: 'email',
-                                name: 'email',
-                                label: 'Email',
-                                required: true,
-                                placeholder: 'email@example.com',
-                                locked: true
-                            },
-                            {
-                                id: 'phone',
-                                type: 'number',
-                                name: 'phone',
-                                label: 'Nomor WhatsApp',
-                                required: true,
-                                placeholder: '+62-xxx-xxxx-xxxx',
-                                locked: true
-                            },
-                            {
-                                id: 'gender',
-                                type: 'select',
-                                name: 'gender',
-                                label: 'Jenis Kelamin',
-                                required: true,
-                                options: ['Laki-laki', 'Perempuan'],
-                                locked: true
-                            },
-                            {
-                                id: 'dateOfBirth',
-                                type: 'date',
-                                name: 'dateOfBirth',
-                                label: 'Tanggal Lahir',
-                                required: true,
-                                locked: true
-                            },
-                            {
-                                id: 'education',
-                                type: 'select',
-                                name: 'education',
-                                label: 'Pendidikan Terakhir',
-                                required: true,
-                                options: [ 'Sekolah Menengah Atas (SMA/SMK/MA)', 'Diploma (D3)', 'Sarjana (S1)', 'Magister (S2)', 'Doctor (S3)'],
-                                locked: true
-                            },
-                            {
-                                id: 'address',
-                                type: 'textarea',
-                                name: 'address',
-                                label: 'Alamat Lengkap',
-                                required: true,
-                                placeholder: 'Jl. Contoh No. 123, Kota, Provinsi',
-                                locked: true
-                            },
-                            { 
-                                id: 'district', 
-                                type: 'text', 
-                                name: 'district', 
-                                label: 'Kecamatan', 
-                                required: true,
-                                locked: true
-                            },
-                            {
-                                id: 'city',
-                                type: 'text',
-                                name: 'city',
-                                label: 'Kota / Kabupaten',
-                                required: true,
-                                locked: true
-                            },
-                            {
-                                id: 'province', 
-                                type: 'text', 
-                                name: 'province', 
-                                label: 'Provinsi', 
-                                required: true,
-                                locked: true
-                            },
-                            {
-                                id: 'postal_code',
-                                type: 'text',
-                                name: 'postal_code',
-                                label: 'Kode Pos',
-                                required: true,
-                                locked: true
-                            },
-                            {
-                                id: 'reason', 
-                                type: 'textarea', 
-                                name: 'reason_join_program', 
-                                label: 'Alasan Bergabung Program',
-                                rows: 3,
-                                required: true,
-                                placeholder: 'Ingin menambah wawasan',
-                                locked: true
-                            }
-                        ]
-                    }
+                    
+                },
+                personalInfo: {
+                    id: "personalInfo",
+                    name: "Informasi Pribadi",
+                    description: "Data diri peserta",
+                    locked: true,
+                    fields: [
+                        {
+                            id: 'full_name',
+                            type: 'text',
+                            name: 'full_name',
+                            label: 'Nama Lengkap',
+                            required: true,
+                            placeholder: 'Masukkan nama lengkap sesuai KTP',
+                            locked: true
+                        },
+                        { 
+                            id: 'nik', 
+                            type: 'number', 
+                            name: 'nik', 
+                            label: 'NIK (Nomor Induk Kependudukan)', 
+                            required: true,
+                            placeholder: 'Masukkan NIK 17 digit',
+                            locked: true
+                        },
+                        {
+                            id: 'email',
+                            type: 'email',
+                            name: 'email',
+                            label: 'Email',
+                            required: true,
+                            placeholder: 'email@example.com',
+                            locked: true
+                        },
+                        {
+                            id: 'phone',
+                            type: 'number',
+                            name: 'phone',
+                            label: 'Nomor WhatsApp',
+                            required: true,
+                            placeholder: '+62-xxx-xxxx-xxxx',
+                            locked: true
+                        },
+                        {
+                            id: 'gender',
+                            type: 'select',
+                            name: 'gender',
+                            label: 'Jenis Kelamin',
+                            required: true,
+                            options: ['Laki-laki', 'Perempuan'],
+                            locked: true
+                        },
+                        {
+                            id: 'dateOfBirth',
+                            type: 'date',
+                            name: 'dateOfBirth',
+                            label: 'Tanggal Lahir',
+                            required: true,
+                            locked: true
+                        },
+                        {
+                            id: 'education',
+                            type: 'select',
+                            name: 'education',
+                            label: 'Pendidikan Terakhir',
+                            required: true,
+                            options: [ 'Sekolah Menengah Atas (SMA/SMK/MA)', 'Diploma (D3)', 'Sarjana (S1)', 'Magister (S2)', 'Doctor (S3)'],
+                            locked: true
+                        },
+                        {
+                            id: 'address',
+                            type: 'textarea',
+                            name: 'address',
+                            label: 'Alamat Lengkap',
+                            required: true,
+                            placeholder: 'Jl. Contoh No. 123, Kota, Provinsi',
+                            locked: true
+                        },
+                        { 
+                            id: 'district', 
+                            type: 'text', 
+                            name: 'district', 
+                            label: 'Kecamatan', 
+                            required: true,
+                            locked: true
+                        },
+                        {
+                            id: 'city',
+                            type: 'text',
+                            name: 'city',
+                            label: 'Kota / Kabupaten',
+                            required: true,
+                            locked: true
+                        },
+                        {
+                            id: 'province', 
+                            type: 'text', 
+                            name: 'province', 
+                            label: 'Provinsi', 
+                            required: true,
+                            locked: true
+                        },
+                        {
+                            id: 'postal_code',
+                            type: 'text',
+                            name: 'postal_code',
+                            label: 'Kode Pos',
+                            required: true,
+                            locked: true
+                        },
+                        {
+                            id: 'reason', 
+                            type: 'textarea', 
+                            name: 'reason_join_program', 
+                            label: 'Alasan Bergabung Program',
+                            rows: 3,
+                            required: true,
+                            placeholder: 'Ingin menambah wawasan',
+                            locked: true
+                        }
+                    ]
                 },
                 categories: {
                     umkm: {
@@ -456,7 +442,6 @@ const FormBuilderWorkspace = () => {
         }
     }, [selectedTemplate, formConfig]);
 
-    // Update form config when available programs change
     useEffect(() => {
         if (formConfig && availablePrograms.length > 0) {
             setFormConfig(prev => {
@@ -477,6 +462,32 @@ const FormBuilderWorkspace = () => {
             });
         }
     }, [availablePrograms, loadingPrograms]);
+
+    const copyFormLink = (template) => {
+        const formLink = `http://localhost:5173/register/${template.unique_slug}`
+        navigator.clipboard.writeText(formLink)
+
+        toast({
+            title: "Link Disalin!",
+            description: `Link untuk "${template.program_name}" telah disalin ke clipboard`,
+            variant: "default"
+        })
+    }
+
+    const openFormLink = (template) => {
+        const formLink = `http://localhost:5173/register/${template.unique_slug}`
+        window.open(formLink, '_blank', 'noopener, noreferrer')
+    }
+
+    const formatDate = (dateString) => {
+        return new Date(dateString).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+    }
 
     const handleTemplateSelect = (template) => {
         setSelectedTemplate(template);
@@ -500,22 +511,16 @@ const FormBuilderWorkspace = () => {
 
         try {
             setIsSaving(true);
-            console.log('🔄 Creating template with config:', formConfig);
-            
             const response = await formTemplateService.createFormTemplate({
                 program_name: formConfig.programName,
                 form_config: formConfig
             });
 
-            // ✅ PERBAIKAN: Validasi response
             if (!response.success) {
                 throw new Error(response.message || 'Gagal membuat template');
             }
 
             const newTemplate = response.data;
-            console.log('✅ Template created:', newTemplate);
-            
-            // ✅ PERBAIKAN: Pastikan newTemplate ada sebelum update state
             if (newTemplate) {
                 setFormTemplates(prev => [newTemplate, ...prev]);
                 setSelectedTemplate(newTemplate);
@@ -528,7 +533,7 @@ const FormBuilderWorkspace = () => {
                 throw new Error('Template data tidak valid');
             }
         } catch (error) {
-            console.error('❌ Error creating template:', error);
+            console.error('Error creating template:', error);
             toast({
                 title: "Error",
                 description: error.message || "Gagal membuat form template",
@@ -540,7 +545,6 @@ const FormBuilderWorkspace = () => {
     };
 
     const handlePublishTemplate = async () => {
-        // ✅ PERBAIKAN: Tambahkan validasi yang lebih ketat
         if (!selectedTemplate || !selectedTemplate.id) {
             toast({
                 title: "Error",
@@ -551,19 +555,13 @@ const FormBuilderWorkspace = () => {
         }
 
         try {
-            console.log('🔄 Publishing template:', selectedTemplate);
-            
             const response = await formTemplateService.publishFormTemplate(selectedTemplate.id);
             
-            // ✅ PERBAIKAN: Validasi response
             if (!response.success) {
                 throw new Error(response.message || 'Gagal mempublish template');
             }
 
             const updatedTemplate = response.data;
-            console.log('✅ Template published:', updatedTemplate);
-            
-            // ✅ PERBAIKAN: Update state dengan validasi
             setFormTemplates(prev => 
                 prev.map(template => 
                     template && template.id === updatedTemplate.id ? updatedTemplate : template
@@ -572,19 +570,34 @@ const FormBuilderWorkspace = () => {
             setSelectedTemplate(updatedTemplate);
 
             const formLink = `http://localhost:5173/register/${updatedTemplate.unique_slug}`;
+            navigator.clipboard.writeText(formLink)
             toast({
                 title: "Form Berhasil Dipublish!",
                 description: (
                     <div>
-                        <p>Form "{updatedTemplate.program_name}" sekarang tersedia untuk publik</p>
-                        <p className="text-sm mt-1">
-                            <strong>Link:</strong> {formLink}
+                        <p>Form "<strong>{updatedTemplate.program_name}</strong>" sekarang live!</p>
+                        <p className="text-sm mt-2">
+                            <strong>Link Public:</strong>
+                            <br />
+                            <a 
+                                href={formLink}
+                                target='_blank'
+                                rel='noopener noreferrer'
+                                className='text-blue-600 underline break-all'
+                            >
+                                {formLink}
+                            </a>
+                        </p>
+                        <p className='text-xs text-green-600 mt-1'>
+                            Link sudah disalin ke clipboard
                         </p>
                     </div>
-                )
+                ),
+                duration: 5000
             });
+
         } catch (error) {
-            console.error('❌ Error publishing template:', error);
+            console.error('Error publishing template:', error);
             toast({
                 title: "Error",
                 description: error.message || "Gagal mempublish form",
@@ -594,6 +607,8 @@ const FormBuilderWorkspace = () => {
     };
 
     const handleProgramSelect = (selectedProgramName) => {
+        if (!formConfig) return;
+
         const selectedProgram = availablePrograms.find(program => 
             program.program_name === selectedProgramName
         );
@@ -606,7 +621,9 @@ const FormBuilderWorkspace = () => {
                 title: `Pendaftaran Program ${programName}`
             }));
 
-            updateField('programInfo', 'program_name', { value: programName });
+            // if (formConfig.sections && formConfig.sections.programInfo) {
+            //     updateField('programInfo', 'program_name', { value: programName });
+            // }
         }
     };
 
@@ -694,6 +711,233 @@ const FormBuilderWorkspace = () => {
         window.open('/register', '_blank');
     };
 
+    const FormLinksTab = () => {
+        const publishedTemplates = formTemplates.filter(template => template.is_published)
+        const draftTemplates = formTemplates.filter(template => !template.is_published)
+
+        return (
+            <div className='space-y-6'>
+                <div>
+                    <h3 className='text-lg font-semibold text-gray-800 mb-4'>
+                        Form yang di publish ({publishedTemplates.length})
+                    </h3>
+
+                    {publishedTemplates.length === 0 ? (
+                        <Alert>
+                            <AlertDescription>
+                                Belum ada form yang dipublish. Publish form terlebih dahulu untuk mendapatkan link public
+                            </AlertDescription>
+                        </Alert>
+                    ) : (
+                        <div className='grid grid-cols-1 gap-4'>
+                            {publishedTemplates.map(template => (
+                                <Card key={template.id} className="border-l-4 border-l-green-500">
+                                    <CardContent className='p-4'>
+                                        <div className='flex justify-between items-start'>
+                                            <div className='flex-1'>
+                                                <div className='flex items-center gap-3 mb-2'>
+                                                    <h4 className='font-semibold text-gray-800 text-lg'>
+                                                        {template.program_name}
+                                                    </h4>
+
+                                                    <Badge variant="default" className='bg-green-100 text-green-800'>
+                                                        Published
+                                                    </Badge>
+                                                </div>
+
+                                                <div className='space-y-1 text-sm text-gray-600'>
+                                                    <p className='flex items-center gap-2'>
+                                                        <Link className='h-4 w-4' />
+                                                        <span>
+                                                            /register/{template.unique_slug}
+                                                        </span>
+                                                    </p>
+                                                    <p className='flex items-center gap-2'>
+                                                        <Calendar className='h-4 w-4' />
+                                                        DiPublish: {formatDate(template.updated_at)}
+                                                    </p>
+                                                    <p className='text-xs text-gray-500'>
+                                                        ID: {template.id}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className='flex gap-2 ml-4'>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => copyFormLink(template)}
+                                                    className="flex items-center gap-1"
+                                                >
+                                                    <Copy className='h-3 w-3' />
+                                                    Copy
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="default"
+                                                    onClick={() => openFormLink(template)}
+                                                    className="flex items-center gap-1"
+                                                >   
+                                                    <ExternalLink className='h-3 w-3' />
+                                                    Buka
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        <div className='mt-3 pt-3 border-t border-gray-200'>
+                                            <div className='flex gap-2'>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => {
+                                                        setSelectedTemplate(template)
+                                                        setFormConfig(template.form_config)
+                                                        setActiveTab('builder')
+                                                    }}
+                                                >
+                                                    Edit Form
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => {
+                                                        toast({
+                                                            title: 'Fitur Coming Soon',
+                                                            description: "Fitur lihat submissions akan segera tersedia",
+                                                            variant: "default"
+                                                        })
+                                                    }}
+                                                >
+                                                    Lihat Responses
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div>
+                    <h3 className='text-lg font-semibold text-gray-800 mb-4'>
+                        Draft Form ({draftTemplates.length})
+                    </h3>
+
+                    {draftTemplates.length === 0 ? (
+                        <Alert>
+                            <AlertDescription>
+                                Belum ada form dalam draft
+                            </AlertDescription>
+                        </Alert>
+                    ) : (
+                        <div className='grid grid-cols-1 gap-4'>
+                            {draftTemplates.map(template => (
+                                <Card key={template} className='border-l-4 border-l-yellow-500'>
+                                    <CardContent className='p-4'>
+                                        <div className='flex justify-between items-start'>
+                                            <div className='flex-1'>
+                                                <div className='flex items-center gap-3 mb-2'>
+                                                    <h4 className='font-semibold text-gray-800'>
+                                                        {template.program_name}
+                                                    </h4>
+                                                    <Badge variant='outline' className='text-yellow-600'>
+                                                        Draft
+                                                    </Badge>
+                                                </div>
+
+                                                <div className='space-y-1 text-sm text-gray-600'>
+                                                    <p className='flex items-center gap-2'>
+                                                        <Calendar className='h-4 w-4' />
+                                                        Dibuat: {formatDate(template.created_at)}
+                                                    </p>
+                                                    <p className='text-xs text-gray-500'>
+                                                        ID: {template.id}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className='flex gap-2 ml-4'>
+                                                <Button
+                                                    size='sm'
+                                                    variant='outline'
+                                                    onClick={() => {
+                                                        setSelectedTemplate(template)
+                                                        setFormConfig(template.form_config)
+                                                        setActiveTab('builder')
+                                                    }}
+                                                >
+                                                    Lanjutkan Edit
+                                                </Button>
+                                                <Button
+                                                    size='sm'
+                                                    variant='default'
+                                                    onClick={async () => {
+                                                        try {
+                                                            const response = await formTemplateService.publishFormTemplate(template.id)
+                                                            const updatedTemplate = response.data
+
+                                                            setFormTemplates(prev =>
+                                                                prev.map(t => 
+                                                                    t.id === updatedTemplate.id ? updatedTemplate : t
+                                                                )
+                                                            )
+
+                                                            toast({
+                                                                title: 'Form Dipublish',
+                                                                description: `Form "${template.program_name}" sekarang live!`,
+                                                                variant: 'default'
+                                                            })
+                                                        } catch (error) {
+                                                            console.error('Error publishing template:', error)
+                                                            toast({
+                                                                title: 'Error',
+                                                                description: 'Gagal mempublish form',
+                                                                variant: 'destructive'
+                                                            })
+                                                        }
+                                                    }}
+                                                >
+                                                    <Rocket className='h-3 w-3 mr-1' />
+                                                    Publish
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <Card>
+                    <CardContent className='p-4'>
+                        <div className='grid grid-cols-3 gap-4 text-center'>
+                            <div>
+                                <p className='text-2xl font-bold text-blue-600'>
+                                    {formTemplates.length}
+                                </p>
+                                <p className='text-sm text-gray-600'>Total Form</p>
+                            </div>
+                            <div>
+                                <p className='text-2xl font-bold text-blue-600'>
+                                    {publishedTemplates.length}
+                                </p>
+                                <p className='text-sm text-gray-600'>Published</p>
+                            </div>
+                            <div>
+                                <p className='text-2xl font-bold text-blue-600'>
+                                    {draftTemplates.length}
+                                </p>
+                                <p className='text-sm text-gray-600'>Draft</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
     if (!formConfig) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -707,204 +951,202 @@ const FormBuilderWorkspace = () => {
 
     return (
         <div className="min-h-screen space-y-6 p-6">
-            {/* Header Section */}
-            <Card>
-                <CardHeader>
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <CardTitle>Form Builder</CardTitle>
-                            <CardDescription>
-                                Buat dan kelola formulir pendaftaran program
-                            </CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowTemplates(!showTemplates)}
-                                className="flex items-center gap-2"
-                            >
-                                <FolderOpen className="h-4 w-4" />
-                                {showTemplates ? 'Tutup Template' : 'Template'}
-                            </Button>
-                            <Button
-                                variant="destructive"
-                                onClick={handleResetForm}
-                                className="flex items-center gap-2"
-                            >
-                                <X className="h-4 w-4" />
-                                Reset
-                            </Button>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    {/* Templates List */}
-                    {showTemplates && (
-                        <FormTemplatesList
-                            templates={formTemplates}
-                            selectedTemplate={selectedTemplate}
-                            onTemplateSelect={handleTemplateSelect}
-                            onClose={() => setShowTemplates(false)}
-                        />
-                    )}
 
-                    {/* Preview Header */}
-                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-6 text-center">
-                        <h1 className="text-2xl font-bold mb-2">
-                            {formConfig.programName 
-                                ? `Formulir Pendaftaran ${formConfig.programName}`
-                                : 'Formulir Pendaftaran Program'
-                            }
-                        </h1>
-                        <div className="flex justify-center items-center gap-4">
-                            {selectedTemplate?.unique_slug && (
-                                <Badge variant="secondary" className="text-sm">
-                                    Link: /register/{selectedTemplate.unique_slug}
-                                </Badge>
-                            )}
-                            {selectedTemplate?.is_published && (
-                                <Badge variant="default" className="bg-green-500">
-                                    Published
-                                </Badge>
-                            )}
-                        </div>
+            <Card>
+                <CardContent className='p-6'>
+                    <div className='border-b border-gray-200'>
+                        <nav className='-mb-px flex space-x-8'>
+                            <button
+                                onClick={() => setActiveTab('builder')}
+                                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                                    activeTab === 'builder'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                Form Builder
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('links')}
+                                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                                    activeTab === 'links'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                Manage Links ({formTemplates.filter(t => t.is_published).length})
+                            </button>
+                        </nav>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Main Canvas */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        Form Canvas
-                        {loadingPrograms && (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        )}
-                    </CardTitle>
-                    <CardDescription>
-                        Drag and drop fields untuk membangun formulir
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <FormCanvas
-                        formConfig={formConfig}
-                        selectedField={selectedField}
-                        onFieldSelect={setSelectedField}
-                        onFieldUpdate={updateField}
-                        onProgramNameUpdate={handleProgramSelect}
-                        onProgramSearch={handleProgramSearch}
-                        availablePrograms={availablePrograms}
-                        loadingPrograms={loadingPrograms}
-                    />
-                </CardContent>
-            </Card>
+            {activeTab === 'builder' && (
+                <>
+                    <Card>
+                        <CardHeader>
+                            <div className='flex justify-between items-center'>
+                                <div>
+                                    <CardTitle>Form Builder</CardTitle>
+                                    <CardDescription>
+                                        Buat dan Kelola Formulir Pendaftaran Program
+                                    </CardDescription>
+                                </div>
 
-            {/* Action Buttons & Status */}
-            <Card>
-                <CardContent className="pt-6">
-                    <div className="flex justify-between items-center">
-                        <div className="space-y-2">
-                            <p className="text-sm text-gray-600">
-                                💡 Pilih nama program dari daftar yang tersedia
-                            </p>
-                            {formConfig.programName && (
-                                <Badge variant="outline" className="bg-green-50 text-green-700">
-                                    ✓ Program: {formConfig.programName}
-                                </Badge>
+                                <div className='flex items-center gap-2'>
+                                    <Button
+                                        variant='outline'
+                                        onClick={() => setShowTemplates(!showTemplates)}
+                                        className='flex items-center gap-2'
+                                    >
+                                        <FolderOpen className='h-4 w-4' />
+                                        {showTemplates ? 'Tutup Templates' : 'Template'}
+                                    </Button>
+                                    <Button
+                                        variant='destructive'
+                                        onClick={handleResetForm}
+                                        className='flex items-center gap-2'
+                                    >
+                                        <X className='h-4 w-4' />
+                                        Reset
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {showTemplates && (
+                                <FormTemplatesList 
+                                    templates={formTemplates}
+                                    selectedTemplate={selectedTemplate}
+                                    onTemplateSelect={handleTemplateSelect}
+                                    onClose={() => setShowTemplates(false)}
+                                />
                             )}
-                        </div>
-                        
-                        <div className="flex gap-2">
-                            <Button
-                                onClick={handlePreviewForm}
-                                disabled={!formConfig}
-                                variant="outline"
-                                className="flex items-center gap-2"
-                            >
-                                <Eye className="h-4 w-4" />
-                                Preview
-                            </Button>
-                            
-                            <Button
-                                onClick={handleSaveForm}
-                                disabled={isSaving}
-                                className="flex items-center gap-2"
-                            >
-                                {isSaving ? (
+
+                            <div className='bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-6 text-center'>
+                                <h1>
+                                    {formConfig.programName
+                                        ? `Formulir Pendaftaran ${formConfig.programName}`
+                                        : 'Formulir Pendaftaran Program'
+                                    }
+                                </h1>
+
+                                <div className='flex justify-center items-center gap-4'>
+                                    {selectedTemplate?.unique_slug && (
+                                        <Badge variant='secondary' className='text-sm'>
+                                            Link: /register/{selectedTemplate.unique_slug}
+                                        </Badge>
+                                    )}
+                                    {selectedTemplate?.is_published && (
+                                        <Badge variant="default" className="bg-green-500">
+                                            Published
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                Form Canvas
+                                {loadingPrograms && (
                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Save className="h-4 w-4" />
                                 )}
-                                Simpan Draft
-                            </Button>
+                            </CardTitle>
                             
-                            <Button
-                                onClick={handleCreateTemplate}
-                                disabled={!formConfig?.programName}
-                                variant="secondary"
-                                className="flex items-center gap-2"
-                            >
-                                <Plus className="h-4 w-4" />
-                                Buat Template
-                            </Button>
-                            
-                            <Button
-                                onClick={handlePublishTemplate}
-                                disabled={!selectedTemplate || selectedTemplate.is_published}
-                                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
-                            >
-                                <Rocket className="h-4 w-4" />
-                                Publish
-                            </Button>
-                        </div>
-                    </div>
+                        </CardHeader>
+                        <CardContent>
+                            <FormCanvas
+                                formConfig={formConfig}
+                                selectedField={selectedField}
+                                onFieldSelect={setSelectedField}
+                                onFieldUpdate={updateField}
+                                onProgramNameUpdate={handleProgramSelect}
+                                onProgramSearch={handleProgramSearch}
+                                availablePrograms={availablePrograms}
+                                loadingPrograms={loadingPrograms}
+                                showOnlyProgramInfo={true}
+                            />
+                        </CardContent>
+                    </Card>
 
-                    {/* Status Info */}
-                    <Alert className="mt-4">
-                        <AlertDescription>
-                            <strong>Status Form:</strong>{' '}
-                            {selectedTemplate && selectedTemplate.id ? (
-                                selectedTemplate.is_published ? (
-                                    <span className="text-green-600">
-                                        ✅ Published - Link: /register/{selectedTemplate.unique_slug}
-                                    </span>
-                                ) : (
-                                    <span className="text-yellow-600">📝 Draft (belum dipublish)</span>
-                                )
-                            ) : (
-                                <span className="text-gray-600">📝 Belum ada template yang dipilih</span>
-                            )}
-                        </AlertDescription>
-                    </Alert>
-                </CardContent>
-            </Card>
+                    <Card>
+                        <CardContent className='pt-6'>
+                            <div className='flex justify-between items-center'>
+                                <div className='space-y-2'>
+                                    <p className='text-sm text-gray-600'>
+                                        Pilih nama program dari daftar yang tersedia
+                                    </p>
+                                    {formConfig.programName && (
+                                        <Badge variant="outline" className="bg-green-50 text-green-700">
+                                            ✓ Program: {formConfig.programName}
+                                        </Badge>
+                                    )}
+                                </div>
 
-            {/* Field Configuration Panel */}
-            {selectedField && (
-                <div className="fixed right-0 top-0 h-full w-80 bg-white border-l shadow-lg z-50">
-                    <div className="p-4 h-full overflow-auto">
-                        <FieldConfigPanel
-                            field={selectedField}
-                            onUpdate={(updates) => {
-                                let sectionId = Object.keys(formConfig.sections).find(id =>
-                                    formConfig.sections[id].fields.some(f => f.id === selectedField.id)
-                                );
-                                
-                                if (!sectionId) {
-                                    sectionId = Object.keys(formConfig.categories).find(id =>
-                                        formConfig.categories[id].fields.some(f => f.id === selectedField.id)
-                                    );
-                                }
-                                
-                                if (sectionId) {
-                                    updateField(sectionId, selectedField.id, updates);
-                                }
-                            }}
-                            onClose={() => setSelectedField(null)}
-                            isLocked={selectedField.locked}
-                        />
-                    </div>
-                </div>
+                                <div className='flex gap-2'>
+                                    <Button
+                                        onClick={handlePreviewForm}
+                                        disabled={!formConfig}
+                                        variant="outline"
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                        Preview
+                                    </Button>
+                                    <Button
+                                        onClick={handleSaveForm}
+                                        disabled={isSaving}
+                                        className="flex items-center gap-2"
+                                    >
+                                        {isSaving ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Save className="h-4 w-4" />
+                                        )}
+                                        Simpan Draft
+                                    </Button>
+                                    <Button
+                                        onClick={handleCreateTemplate}
+                                        disabled={!formConfig?.programName}
+                                        variant="secondary"
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Buat Template
+                                    </Button>
+                                    <Button
+                                        onClick={handlePublishTemplate}
+                                        disabled={!selectedTemplate || selectedTemplate.is_published}
+                                        className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
+                                    >
+                                        <Rocket className="h-4 w-4" />
+                                        Publish
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <Alert className="mt-4">
+                                <AlertDescription>
+                                    <strong>Status Form:</strong>{' '}
+                                    {selectedTemplate && selectedTemplate.id ? (
+                                        selectedTemplate.is_published ? (
+                                            <span className="text-green-600">
+                                                Published - Link: /register/{selectedTemplate.unique_slug}
+                                            </span>
+                                        ) : (
+                                            <span className="text-yellow-600">📝 Draft (belum dipublish)</span>
+                                        )
+                                    ) : (
+                                        <span className="text-gray-600">📝 Belum ada template yang dipilih</span>
+                                    )}
+                                </AlertDescription>
+                            </Alert>
+                        </CardContent>
+                    </Card>
+
+                </>
             )}
         </div>
     );

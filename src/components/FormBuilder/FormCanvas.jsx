@@ -1,17 +1,14 @@
-// src/components/FormBuilder/FormCanvas.jsx
 import React from 'react';
 
 const FormCanvas = ({ 
     formConfig, 
     selectedField, 
     onFieldSelect, 
-    onFieldUpdate,
+    // onFieldUpdate,
     onProgramNameUpdate,
+    showOnlyProgramInfo = false,
     availablePrograms = []
 }) => {
-    
-    console.log('🔍 FormCanvas - availablePrograms:', availablePrograms);
-    
     const handleProgramNameChange = (e) => {
         if (onProgramNameUpdate) {
             onProgramNameUpdate(e.target.value);
@@ -32,7 +29,6 @@ const FormCanvas = ({
     };
 
     const renderField = (field, sectionId) => {
-        // Render khusus untuk field nama program
         if (field.id === 'program_name') {
             return (
                 <div 
@@ -48,7 +44,6 @@ const FormCanvas = ({
                         </label>
                     </div>
                     
-                    {/* ✅ PERBAIKI: Handle array of objects dengan benar */}
                     <select
                         value={formConfig.programName || ''}
                         onChange={handleProgramNameChange}
@@ -69,19 +64,18 @@ const FormCanvas = ({
                     </select>
                     
                     <p className="text-xs text-blue-600 mt-2">
-                        💡 Pilih nama program dari daftar yang tersedia
+                        Pilih nama program dari daftar yang tersedia
                     </p>
                     
                     {availablePrograms.length === 0 && (
                         <p className="text-xs text-red-600 mt-1">
-                            ⚠️ Tidak ada program yang tersedia. Silakan tambah program terlebih dahulu.
+                            Tidak ada program yang tersedia. Silakan tambah program terlebih dahulu.
                         </p>
                     )}
                 </div>
             );
         }
 
-        // Render field biasa
         return (
             <div 
                 key={field.id}
@@ -97,7 +91,6 @@ const FormCanvas = ({
                     </label>
                 </div>
                 
-                {/* Preview field berdasarkan type */}
                 {field.type === 'text' && (
                     <input
                         type="text"
@@ -169,22 +162,17 @@ const FormCanvas = ({
     return (
         <div className="form-canvas">
             <div className="canvas-header mb-6">
-                <h2 className="text-xl font-semibold text-gray-800">Form Builder</h2>
+                {/* <h2 className="text-xl font-semibold text-gray-800">Form Builder</h2> */}
                 <p className="text-gray-600 mt-1">
                     Tersedia {availablePrograms.length} program untuk dipilih
                 </p>
                 
-                {/* ✅ DEBUG INFO */}
-                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                    <strong>Debug Info:</strong> Programs loaded: {availablePrograms.length} | 
-                    First program: {availablePrograms[0] ? getProgramName(availablePrograms[0]) : 'None'}
-                </div>
+
             </div>
 
             <div className="canvas-content">
-                {/* Section Program Info */}
-                {formConfig.sections.programInfo && (
-                    <div key={formConfig.sections.programInfo.id} className="section mb-8">
+                {formConfig.sections && Object.values(formConfig.sections).map(section => (
+                    <div key={section.id} className="section mb-8">
                         <div className="section-header mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
@@ -192,11 +180,11 @@ const FormCanvas = ({
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-medium text-blue-800">
-                                        {formConfig.sections.programInfo.name}
+                                        {section.name}
                                     </h3>
-                                    {formConfig.sections.programInfo.description && (
+                                    {section.description && (
                                         <p className="text-sm text-blue-600">
-                                            {formConfig.sections.programInfo.description}
+                                            {section.description}
                                         </p>
                                     )}
                                 </div>
@@ -204,45 +192,39 @@ const FormCanvas = ({
                         </div>
                         
                         <div className="section-fields">
-                            {formConfig.sections.programInfo.fields
-                                .filter(field => field.id === 'program_name')
-                                .map(field => renderField(field, formConfig.sections.programInfo.id))
-                            }
+                            {section.fields.map(field => renderField(field, section.id))}
                         </div>
                     </div>
-                )}
+                ))}
 
-                {/* Section Personal Info */}
-                {formConfig.sections.personalInfo && (
-                    <div key={formConfig.sections.personalInfo.id} className="section mb-8">
-                        <div className="section-header mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-sm">👤</span>
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-medium text-green-800">
-                                        {formConfig.sections.personalInfo.name}
-                                    </h3>
-                                    {formConfig.sections.personalInfo.description && (
-                                        <p className="text-sm text-green-600">
-                                            {formConfig.sections.personalInfo.description}
-                                        </p>
+                {(formConfig.personalInfo || formConfig.categories) && (
+                    <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-start gap-3">
+                            <div className="text-green-600 mt-0.5">
+                                <span className="text-lg">📋</span>
+                            </div>
+                            <div>
+                                <h4 className="font-medium text-green-800 mb-2">
+                                    Form Lengkap Tersedia di Public Form
+                                </h4>
+                                <div className="text-sm text-green-600 space-y-1">
+                                    {formConfig.personalInfo && (
+                                        <p>✅ <strong>Informasi Pribadi:</strong> {formConfig.personalInfo.fields.length} field</p>
                                     )}
+                                    {formConfig.categories && (
+                                        <p>✅ <strong>Kategori Peserta:</strong> {Object.keys(formConfig.categories).length} kategori dengan field tambahan</p>
+                                    )}
+                                    <p className="text-xs mt-2">
+                                        Semua field akan ditampilkan saat peserta mengisi form pendaftaran
+                                    </p>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div className="section-fields grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {formConfig.sections.personalInfo.fields.map(field => 
-                                renderField(field, formConfig.sections.personalInfo.id)
-                            )}
                         </div>
                     </div>
                 )}
 
                 {/* Render categories sections */}
-                <div className="categories-section">
+                {/* <div className="categories-section">
                     <div className="section-header mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
                         <h3 className="text-lg font-medium text-purple-800 mb-2">Kategori Peserta</h3>
                         <p className="text-sm text-purple-600">
@@ -269,7 +251,7 @@ const FormCanvas = ({
                             </div>
                         ))}
                     </div>
-                </div>
+                </div> */}
             </div>
         </div>
     );

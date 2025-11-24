@@ -81,7 +81,7 @@ const FormBuilder = () => {
                         <div>
                             <h1 className="text-2xl font-bold">Form Builder - Impala Management</h1>
                         </div>
-                        <div className="flex gap-3">
+                        {/* <div className="flex gap-3">
                             <button 
                                 onClick={handleGetFormConfig}
                                 className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2 transition-colors"
@@ -100,7 +100,7 @@ const FormBuilder = () => {
                             >
                                 Publish
                             </button>
-                        </div>
+                        </div> */}
                     </div>
 
                     <FormBuilderWorkspace />
