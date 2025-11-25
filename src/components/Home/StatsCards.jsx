@@ -39,7 +39,7 @@ const StatsCards = () => {
             description: "6,3% Last Month"
         },
         {
-            title: "Growth Rate",
+            title: "Total Price",
             value: "8,3",
             subtitle: "& 400++",
             percentage: "8,3%",
