@@ -1,26 +1,61 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react'; // ✅ TAMBAH useMemo
 import SearchBar from "../components/SearchFilter/SearchBar";
 import FilterDropdown from "../components/SearchFilter/FilterDropdown";
 import ExportButton from "../components/ActionButton/ExportButton";
 import MemberTable from "../components/MemberTable/MemberTable";
 import Pagination from "../components/Pagination/Pagination";
 import FilterButton from "../components/SearchFilter/Filter";
-import { Loader2, Plus, X, Users } from "lucide-react"
+import { Loader2, Plus, X, Users, UserCheck, TrendingUp } from "lucide-react" // ✅ TAMBAH ICON
 import { Button } from "../components/ui/button"
 import AddMemberSurakarta from "../components/AddButton/AddMemberSurakarta";
 import HeteroSoloContent from "../components/Content/HeteroSoloContent";
 import { useHeteroSolo } from "../hooks/useHeteroSolo";
 import toast from "react-hot-toast";
+import MemberStatsCards from "../MemberHetero/MemberStatsCard"; // ✅ TAMBAH IMPORT
 
-const HeteroSolo = () => {
+const HeteroSurakarta = () => {
     const [selectedMember, setSelectedMember] = useState(null)
     const [editingMember, setEditingMember] = useState(null)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
 
     const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroSolo, updateMemberHeteroSolo, deleteMemberHeteroSolo } = useHeteroSolo()
+
+    // ✅ TAMBAHKAN: Stats data calculation - hanya 2 cards
+    const memberStats = useMemo(() => {
+        const totalMembers = members.length;
+        const activeMembers = members.filter(member => member.status === 'active').length;
+        
+        // Calculate active percentage
+        const activePercentage = totalMembers > 0 ? ((activeMembers / totalMembers) * 100).toFixed(1) : "0";
+
+        return [
+            {
+                title: "Total Members",
+                value: totalMembers.toString(),
+                subtitle: "",
+                percentage: `${totalMembers > 0 ? "12.5" : "0"}%`,
+                trend: totalMembers > 0 ? "up" : "neutral",
+                period: "Last Month",
+                icon: Users,
+                color: "blue",
+                description: `${totalMembers > 0 ? "12.5" : "0"}% Growth`
+            },
+            {
+                title: "Active Members",
+                value: activeMembers.toString(),
+                subtitle: "",
+                percentage: `${activePercentage}%`,
+                trend: activeMembers > 0 ? "up" : "down",
+                period: "Last Month",
+                icon: UserCheck,
+                color: "green",
+                description: `${activePercentage}% of total`
+            }
+        ];
+    }, [members]);
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
@@ -128,6 +163,10 @@ const HeteroSolo = () => {
         <div className='flex pt-20 min-h-screen bg-gray-100'>
             <div className='flex-1 p-6'>
                 <Header />
+                
+                {/* ✅ TAMBAHKAN: Stats Cards di sini */}
+                <MemberStatsCards statsData={memberStats} />
+
                 <Card className='mb-6'>
                     <CardHeader>
                         <CardTitle className='text-xl'>{tableConfig.title}</CardTitle>
@@ -261,4 +300,4 @@ const HeteroSolo = () => {
     )
 }
 
-export default HeteroSolo;
+export default HeteroSurakarta;

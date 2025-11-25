@@ -38,8 +38,9 @@ const Header = () => {
             navigate('/login')
         }
     }
-    const handleSettings = () => navigate('/');
-    // const handleNotifications = () => navigate('/');
+
+    // ✅ PERBAIKI: Navigate ke /account-settings untuk membuka account settings
+    const handleSettings = () => navigate('/account-settings');
 
     const getInitials = (name) => {
         if (!name) return 'U'
@@ -148,12 +149,21 @@ const Header = () => {
                         >
                             <DropdownMenuLabel className="font-normal p-0">
                                 <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-xl border-b border-amber-100">
+                                    <Avatar className="h-12 w-12 border-2 border-amber-200">
+                                        <AvatarImage alt="profil" />
+                                        <AvatarFallback className="bg-gradient-to-br from-amber-500 to-yellow-500 text-white font-semibold text-lg">
+                                            {getInitials(user?.full_name)}
+                                        </AvatarFallback>
+                                    </Avatar>
                                     <div className="flex flex-col flex-1">
                                         <p className="text-sm font-semibold text-gray-900">
                                             {getShortName(user?.full_name)}
                                         </p>
                                         <p className="text-xs text-gray-600 mt-0.5">
                                             {user?.email}
+                                        </p>
+                                        <p className="text-xs text-amber-600 font-medium mt-1">
+                                            {user?.position ? formatPosition(user.position) : 'User'}
                                         </p>
                                     </div>
                                 </div>
@@ -163,21 +173,23 @@ const Header = () => {
 
                             <DropdownMenuGroup>
                                 <DropdownMenuItem
-                                    className="flex items-center gap-3 py-3 cursor-pointer text-gray-700 hover:bg-amber-50 focus:bg-amber-50"
+                                    className="flex items-center gap-3 py-3 cursor-pointer text-gray-700 hover:bg-amber-50 focus:bg-amber-50 transition-colors"
                                     onClick={handleSettings}
                                 >
-                                    <Settings className="h-4 w-4 text-gray-500" />
-                                    <span>Account Setting</span>
+                                    <Settings className="h-4 w-4 text-amber-600" />
+                                    <span>Account Settings</span>
+                                    <DropdownMenuShortcut></DropdownMenuShortcut>
                                 </DropdownMenuItem>
 
                                 <DropdownMenuSeparator className="bg-amber-100" />
 
                                 <DropdownMenuItem
-                                    className="flex items-center gap-3 py-3 cursor-pointer text-gray-700 hover:bg-amber-50 focus:bg-amber-50"
+                                    className="flex items-center gap-3 py-3 cursor-pointer text-red-600 hover:bg-red-50 focus:bg-red-50 transition-colors"
                                     onClick={handleLogout}
                                 >
-                                    <LogOut className="h-4 w-4 text-gray-500" />
+                                    <LogOut className="h-4 w-4" />
                                     <span>Log Out</span>
+                                    <DropdownMenuShortcut></DropdownMenuShortcut>
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                         </DropdownMenuContent>

@@ -8,17 +8,18 @@ import Sidebar from './components/Layout/Sidebar';
 import Home from './pages/Home';
 import ProgramClient from './pages/ProgramClient';
 import Program from './pages/Program';
-import HeteroManagement from './pages/HeteroManagement';
+import HeteroManagement from './pages/HeteroBanyumas';
 import FormBuilder from './pages/FormBuilder';
 import Account from './pages/Account';
 import Header from './components/Layout/Header';
 import LoginPage from './components/Login';
-import HeteroBanyumas from './pages/HeteroManagement';
+import HeteroBanyumas from './pages/HeteroBanyumas';
 import HeteroSemarang from './pages/HeteroSemarang';
 import HeteroSurakarta from './pages/HeteroSurakarta';
 import PublicForm from './pages/PublicForm';
+import UserAccountSettings from "./components/UserAccountSettings/UserAccountSettings";
 
-// Main Layout Component
+// Main Layout Component - DENGAN SIDEBAR & HEADER (untuk halaman biasa)
 const MainLayout = ({ children }) => {
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -31,6 +32,18 @@ const MainLayout = ({ children }) => {
         <div className='h-screen overflow-y-auto main-content-scroll animated-main-scroll glow-main-scroll'>
           {children}
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Minimal Layout Component - TANPA SIDEBAR & TANPA HEADER (hanya untuk account settings)
+const MinimalLayout = ({ children }) => {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* TIDAK ADA HEADER DAN SIDEBAR */}
+      <div className='h-screen overflow-y-auto main-content-scroll animated-main-scroll glow-main-scroll'>
+        {children}
       </div>
     </div>
   );
@@ -57,6 +70,29 @@ const ProtectedRoute = ({ children }) => {
   }
 
   return <MainLayout>{children}</MainLayout>;
+};
+
+// Protected Route dengan Minimal Layout (khusus untuk account settings)
+const ProtectedRouteMinimal = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+
+  if (isAuthenticated === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return <MinimalLayout>{children}</MinimalLayout>;
 };
 
 // Public Route Wrapper
@@ -115,6 +151,16 @@ function App() {
             } 
           />
           
+          {/* ✅ ACCOUNT SETTINGS - MENGGUNAKAN MINIMAL LAYOUT (TANPA SIDEBAR & HEADER) */}
+          <Route 
+            path="/account-settings" 
+            element={
+              <ProtectedRouteMinimal>
+                <UserAccountSettings />
+              </ProtectedRouteMinimal>
+            }
+          />
+          
           {/* AUTH ROUTES */}
           <Route 
             path="/login" 
@@ -125,7 +171,7 @@ function App() {
             } 
           />
           
-          {/* PROTECTED ROUTES */}
+          {/* PROTECTED ROUTES DENGAN LAYOUT NORMAL (DENGAN SIDEBAR & HEADER) */}
           <Route 
             path="/" 
             element={
