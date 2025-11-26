@@ -9,8 +9,8 @@ import Pagination from "../components/Pagination/Pagination";
 import FilterButton from "../components/SearchFilter/Filter";
 import { Loader2, Plus, X, Users, UserCheck, TrendingUp } from "lucide-react" // ✅ TAMBAH ICON
 import { Button } from "../components/ui/button"
-import AddMember from "../components/AddButton/AddMember";
-import HeteroContent from "../components/Content/HeteroContent";
+import AddMember from "../components/AddButton/AddMemberSemarang";
+import HeteroContent from "../components/Content/HeteroSemarangContent";
 import { useHeteroSemarang } from "../hooks/useHeteroSemarang";
 import toast from "react-hot-toast";
 import MemberStatsCards from "../MemberHetero/MemberStatsCard";

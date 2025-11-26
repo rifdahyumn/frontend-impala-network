@@ -310,17 +310,17 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
             title: "Additional Information",
             fields: [
                 {
-                    name: 'addInformation',
+                    name: 'add_information',
                     label: 'How did you find out about Hetero?',
                     type: 'select',
                     required: true,
                     placeholder: 'Select additional information',
                     options: [
-                        { value: 'sosmed', label: 'Social Media' },
-                        { value: 'website', label: 'Company Website' },
-                        { value: 'friend', label: 'Friends / Family Recommendation' },
-                        { value: 'event', label: 'Event / Exhibition' },
-                        { value: 'local', label: 'Local Community' }
+                        { value: 'Sosial Media', label: 'Social Media' },
+                        { value: 'Company Website', label: 'Company Website' },
+                        { value: 'Friends / Family Recommendation', label: 'Friends / Family Recommendation' },
+                        { value: 'Event / Exhibition', label: 'Event / Exhibition' },
+                        { value: 'Local Community', label: 'Local Community' }
                     ]
                 }
             ]
@@ -402,7 +402,7 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
         formSections.forEach(section => {
             if (section.fields && Array.isArray(section.fields)) {
                 section.fields.forEach(field => {
-                    if (field.required) {
+                    if (field.required  && field.name) {
                         const value = formData[field.name];
                         if (!value || value.toString().trim() === '') {
                             newErrors[field.name] = `${field.label} is required`
@@ -445,7 +445,7 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
                 start_date: formData.start_date,
                 end_date: formData.end_date,
                 add_on: Array.isArray(formData.add_on) ? formData.add_on : [formData.add_on],
-                add_information: formData.addInformation,
+                add_information: formData.add_information,
                 status: formData.status || 'Active'
             }
 
