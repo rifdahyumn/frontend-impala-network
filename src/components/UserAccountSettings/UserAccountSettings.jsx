@@ -1,5 +1,5 @@
 // src/components/UserAccountSettings/UserAccountSettings.jsx
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -7,23 +7,102 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Card, CardContent } from "../ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Upload, X } from "lucide-react";
+import { Upload, X, ChevronDown, LogOut } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
 
 const UserAccountSettings = () => {
     const navigate = useNavigate();
+    const { user, logout } = useAuth();
+    const dropdownRef = useRef(null);
+    
     const [formData, setFormData] = useState({
-        email: 'helloadmin@gmail.com',
+        email: user?.email || 'helloadmin@gmail.com',
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-        fullName: 'Alexander Ratouli',
-        phone: '',
-        position: 'Ecosystem Manager',
-        avatar: ''
+        fullName: user?.full_name || 'Alexander Ratouli',
+        phone: user?.phone || '',
+        position: user?.position || 'Ecosystem Manager',
+        avatar: user?.avatar || ''
     });
 
     const [changePassword, setChangePassword] = useState(false);
     const [avatarPreview, setAvatarPreview] = useState(null);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Helper functions
+    const getInitials = (name) => {
+        if (!name) return 'U';
+        return name
+            .split(' ')
+            .map(word => word.charAt(0))
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
+    const formatPosition = (position) => {
+        if (!position) return 'User';
+        return position
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    };
+
+    const getShortName = (name) => {
+        if (!name) return 'User';
+        const words = name.split(' ');
+        if (words.length <= 2) {
+            return name;
+        }
+        return words.slice(0, 2).join(' ');
+    };
+
+    const formatRole = (role) => {
+        if (!role) return 'User';
+        return role
+            .split('_')
+            .map(word => {
+                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+            })
+            .join(' ');
+    };
+
+    // ✅ FUNGSI LOGOUT YANG SAMA DENGAN HEADER
+    const handleLogout = async () => {
+        try {
+            await fetch("http://localhost:3000/api/auth/logout", {
+                method: "POST",
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            logout();
+            navigate('/login');
+        }
+    };
+
+    const toggleDropdown = (e) => {
+        e.stopPropagation();
+        setIsDropdownOpen(!isDropdownOpen);
+    };
 
     const formSections = [
         {
@@ -141,20 +220,20 @@ const UserAccountSettings = () => {
         navigate(-1);
     };
 
-    // ✅ RENDER FIELD FUNCTION - sama seperti AddUser
+    // ✅ RENDER FIELD FUNCTION
     const renderField = (field) => {
         if (field.type === 'file') {
             return (
-                <Card key={field.name} className="p-4">
+                <Card key={field.name} className="p-4 border-amber-100">
                     <CardContent className='p-0'>
                         <div className="flex flex-row items-center gap-6">
                             <div className="flex-shrink-0">
                                 {avatarPreview ? (
                                     <div className="relative">
-                                        <Avatar className="w-20 h-20 border-2 border-border">
+                                        <Avatar className="w-20 h-20 border-2 border-amber-200">
                                             <AvatarImage src={avatarPreview} />
-                                            <AvatarFallback className='text-lg'>
-                                                <Upload className="w-6 h-6" />
+                                            <AvatarFallback className='text-lg bg-gradient-to-br from-amber-500 to-yellow-500 text-white'>
+                                                {getInitials(user?.full_name || formData.fullName)}
                                             </AvatarFallback>
                                         </Avatar>
                                         <Button
@@ -168,8 +247,8 @@ const UserAccountSettings = () => {
                                         </Button>
                                     </div>
                                 ) : (
-                                    <Avatar className="w-20 h-20 border-2 border-dashed border-muted-foreground/25">
-                                        <AvatarFallback className="bg-muted text-muted-foreground">
+                                    <Avatar className="w-20 h-20 border-2 border-dashed border-amber-200">
+                                        <AvatarFallback className="bg-amber-50 text-amber-600">
                                             <Upload className="w-6 h-6" />
                                         </AvatarFallback>
                                     </Avatar>
@@ -178,7 +257,7 @@ const UserAccountSettings = () => {
 
                             <div className="flex-1 space-y-3">
                                 <div className="space-y-2">
-                                    <Label htmlFor={field.name} className="text-base font-medium">
+                                    <Label htmlFor={field.name} className="text-base font-medium text-gray-900">
                                         {field.label}
                                         {field.required && <span className="text-destructive ml-1">*</span>}
                                     </Label>
@@ -188,7 +267,7 @@ const UserAccountSettings = () => {
                                         type="file"
                                         accept={field.accept}
                                         onChange={handleAvatarChange}
-                                        className="w-full cursor-pointer"
+                                        className="w-full cursor-pointer border-amber-200 focus:border-amber-500"
                                     />
                                 </div>
                                 <p className="text-sm text-gray-500">
@@ -204,7 +283,7 @@ const UserAccountSettings = () => {
         if (field.type === 'select') {
             return (
                 <div key={field.name} className="space-y-2">
-                    <Label htmlFor={field.name}>
+                    <Label htmlFor={field.name} className="text-gray-900">
                         {field.label}
                         {field.required && <span className="text-red-500 ml-1">*</span>}
                     </Label>
@@ -213,7 +292,7 @@ const UserAccountSettings = () => {
                         onValueChange={(value) => handleSelectChange(field.name, value)}
                         required={field.required}
                     >
-                        <SelectTrigger>
+                        <SelectTrigger className="border-amber-200 focus:border-amber-500">
                             <SelectValue placeholder={field.placeholder} />
                         </SelectTrigger>
                         <SelectContent>
@@ -228,14 +307,13 @@ const UserAccountSettings = () => {
             );
         }
 
-        // ✅ SPECIAL HANDLING FOR PASSWORD FIELDS
         if (field.name.includes('password') && !changePassword) {
-            return null; // jangan render password fields jika changePassword false
+            return null;
         }
 
         return (
             <div key={field.name} className="space-y-2">
-                <Label htmlFor={field.name}>
+                <Label htmlFor={field.name} className="text-gray-900">
                     {field.label}
                     {field.required && <span className="text-red-500 ml-1">*</span>}
                 </Label>
@@ -247,34 +325,89 @@ const UserAccountSettings = () => {
                     onChange={handleInputChange}
                     placeholder={field.placeholder}
                     required={field.required}
-                    className="w-full"
+                    className="w-full border-amber-200 focus:border-amber-500"
                 />
             </div>
         );
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="min-h-screen bg-gradient-to-br from-amber-50 to-yellow-50">
+            {/* Header dengan Dropdown */}
+            <header className="bg-white/80 backdrop-blur-sm border-b border-amber-100 shadow-sm">
                 <div className="container mx-auto px-6 py-4">
                     <div className="flex justify-between items-center">
+                        {/* Left Side - Title */}
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900">Account Settings</h1>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="text-right">
-                                <h2 className="text-xl font-semibold text-gray-800">
-                                    Hello Alexander Ratouli
-                                </h2>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-gray-600">Ecosystem Manager</span>
-                                    <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">Admin</span>
+                        
+                        {/* Right Side - User Info dengan Dropdown */}
+                        <div className="relative" ref={dropdownRef}>
+                            {/* Dropdown Trigger */}
+                            <div 
+                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-amber-50 cursor-pointer transition-colors"
+                                onClick={toggleDropdown}
+                            >
+                                <div className="text-right">
+                                    <h2 className="text-sm font-semibold text-gray-900">
+                                        Hello {getShortName(user?.full_name || formData.fullName)}
+                                    </h2>
+                                    <p className="text-xs text-gray-600">
+                                        {formatRole(user?.role)}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Avatar className="h-10 w-10 border-2 border-amber-200">
+                                        <AvatarImage alt="profile" src={user?.avatar} />
+                                        <AvatarFallback className="bg-gradient-to-br from-amber-500 to-yellow-500 text-white font-semibold">
+                                            {getInitials(user?.full_name || formData.fullName)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                                 </div>
                             </div>
-                            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                                AR
-                            </div>
+
+                            {/* Dropdown Menu */}
+                            {isDropdownOpen && (
+                                <div className="absolute right-0 top-full mt-2 w-64 bg-white/95 backdrop-blur-sm border border-amber-100 shadow-xl rounded-xl z-50">
+                                    {/* User Info Section */}
+                                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-xl border-b border-amber-100">
+                                        <Avatar className="h-12 w-12 border-2 border-amber-200">
+                                            <AvatarImage alt="profile" src={user?.avatar} />
+                                            <AvatarFallback className="bg-gradient-to-br from-amber-500 to-yellow-500 text-white font-semibold text-lg">
+                                                {getInitials(user?.full_name || formData.fullName)}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex flex-col flex-1">
+                                            <p className="text-sm font-semibold text-gray-900">
+                                                {getShortName(user?.full_name || formData.fullName)}
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-0.5">
+                                                {user?.email || formData.email}
+                                            </p>
+                                            <p className="text-xs text-amber-600 font-medium mt-1">
+                                                {user?.position ? formatPosition(user.position) : formatPosition(formData.position)}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Dropdown Items - HANYA LOGOUT seperti pada gambar */}
+                                    <div className="p-2">
+                                        {/* Log Out Item - PERBAIKAN: Gunakan button yang proper */}
+                                        <button
+                                            className="flex items-center gap-3 w-full py-3 px-3 cursor-pointer text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleLogout();
+                                            }}
+                                        >
+                                            <LogOut className="h-4 w-4" />
+                                            <span className="text-sm">Log Out</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -287,11 +420,11 @@ const UserAccountSettings = () => {
                 </div>
 
                 <div className="max-w-4xl mx-auto">
-                    <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-lg shadow-sm p-6">
-                        {/* ✅ RENDER SECTIONS - sama seperti AddUser */}
+                    <form onSubmit={handleSubmit} className="space-y-6 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-amber-100 p-6">
+                        {/* Form Sections */}
                         {formSections.map((section, sectionIndex) => (
                             <div key={section.title} className="space-y-4">
-                                <div className="border-b pb-2">
+                                <div className="border-b border-amber-100 pb-3">
                                     <h3 className="text-lg font-semibold text-gray-900">
                                         {section.title}
                                     </h3>
@@ -300,15 +433,15 @@ const UserAccountSettings = () => {
                                     )}
                                 </div>
 
-                                {/* Change Password Toggle untuk Account Information */}
+                                {/* Change Password Toggle */}
                                 {section.title === "Account Information" && (
-                                    <div className="flex items-center mb-4">
+                                    <div className="flex items-center mb-4 p-3 bg-amber-50 rounded-lg border border-amber-100">
                                         <input
                                             type="checkbox"
                                             id="changePassword"
                                             checked={changePassword}
                                             onChange={(e) => setChangePassword(e.target.checked)}
-                                            className="mr-3 text-blue-600 focus:ring-blue-500"
+                                            className="mr-3 text-amber-600 focus:ring-amber-500"
                                         />
                                         <label htmlFor="changePassword" className="text-sm font-medium text-gray-700">
                                             Change Password
@@ -316,11 +449,11 @@ const UserAccountSettings = () => {
                                     </div>
                                 )}
 
-                                {/* Password Fields (conditional) */}
+                                {/* Password Fields */}
                                 {section.title === "Account Information" && changePassword && (
-                                    <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <div className="space-y-4 bg-amber-50 p-4 rounded-lg border border-amber-200">
                                         <div className="space-y-2">
-                                            <Label htmlFor="currentPassword">
+                                            <Label htmlFor="currentPassword" className="text-gray-900">
                                                 Current Password
                                             </Label>
                                             <Input
@@ -330,11 +463,11 @@ const UserAccountSettings = () => {
                                                 value={formData.currentPassword}
                                                 onChange={handleInputChange}
                                                 placeholder="Enter current password"
-                                                className="w-full"
+                                                className="w-full border-amber-200 focus:border-amber-500"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="newPassword">
+                                            <Label htmlFor="newPassword" className="text-gray-900">
                                                 New Password
                                             </Label>
                                             <Input
@@ -344,11 +477,11 @@ const UserAccountSettings = () => {
                                                 value={formData.newPassword}
                                                 onChange={handleInputChange}
                                                 placeholder="Enter new password"
-                                                className="w-full"
+                                                className="w-full border-amber-200 focus:border-amber-500"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="confirmPassword">
+                                            <Label htmlFor="confirmPassword" className="text-gray-900">
                                                 Confirm New Password
                                             </Label>
                                             <Input
@@ -358,7 +491,7 @@ const UserAccountSettings = () => {
                                                 value={formData.confirmPassword}
                                                 onChange={handleInputChange}
                                                 placeholder="Confirm new password"
-                                                className="w-full"
+                                                className="w-full border-amber-200 focus:border-amber-500"
                                             />
                                         </div>
                                     </div>
@@ -375,17 +508,17 @@ const UserAccountSettings = () => {
                         ))}
 
                         {/* Action Buttons */}
-                        <div className="flex justify-between pt-6 border-t border-gray-200">
+                        <div className="flex justify-between pt-6 border-t border-amber-100">
                             <Button
                                 type="button"
                                 onClick={handleBack}
-                                className="bg-whote-500 text-black px-6 py-2 rounded-md hover:bg-white-600"
+                                className="bg-white text-gray-700 px-6 py-2 rounded-lg border border-amber-200 hover:bg-amber-50 transition-colors"
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
-                                className="bg-amber-500 text-white px-6 py-2 rounded-md hover:bg-amber-400/70"
+                                className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-6 py-2 rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-colors shadow-lg"
                             >
                                 Save Changes
                             </Button>
