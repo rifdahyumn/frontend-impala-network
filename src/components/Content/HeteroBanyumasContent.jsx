@@ -48,7 +48,7 @@ const HeteroBanyumasContent = ({ selectedMember, onOpenEditModal, onDelete, deta
             category: 'Additional Information',
             icon: FileText,
             fields: [
-                { key: 'addInformation', label: 'How did you find out about Hetero?', icon: FileText }
+                { key: 'add_information', label: 'How did you find out about Hetero?', icon: FileText }
             ]
         },
     ];

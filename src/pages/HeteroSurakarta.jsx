@@ -10,7 +10,7 @@ import FilterButton from "../components/SearchFilter/Filter";
 import { Loader2, Plus, X, Users, UserCheck, TrendingUp } from "lucide-react" // ✅ TAMBAH ICON
 import { Button } from "../components/ui/button"
 import AddMemberSurakarta from "../components/AddButton/AddMemberSurakarta";
-import HeteroSoloContent from "../components/Content/HeteroSoloContent";
+import HeteroSoloContent from "../components/Content/HeteroSurakartaContent";
 import { useHeteroSolo } from "../hooks/useHeteroSolo";
 import toast from "react-hot-toast";
 import MemberStatsCards from "../MemberHetero/MemberStatsCard"; // ✅ TAMBAH IMPORT
