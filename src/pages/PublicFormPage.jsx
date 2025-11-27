@@ -1,6 +1,5 @@
-// src/pages/PublicFormPage.jsx
 import React from 'react';
-import PublicForm from './PublicForm'; // Import dari pages, bukan components
+import PublicForm from './PublicForm'; 
 
 const PublicFormPage = () => {
     return <PublicForm />;

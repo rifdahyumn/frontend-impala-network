@@ -51,31 +51,49 @@ class FormTemplateService {
         }
     }
 
-// services/formTemplateService.js
-async getFormTemplateBySlug(slug) {
-    try {
-        console.log('🔍 Fetching template by slug:', slug);
-        
-        const response = await fetch(`${API_BASE_URL}/form-templates/${slug}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
+    async getFormTemplateBySlug(slug) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/form-templates/${slug}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || `HTTP error! status: ${response.status}`);
             }
-        });
 
-        const result = await response.json();
-        console.log('📨 Get template by slug response:', result);
-
-        if (!response.ok) {
-            throw new Error(result.message || `HTTP error! status: ${response.status}`);
+            return result;
+        } catch (error) {
+            console.error('Error fetching form template by slug:', error);
+            throw error;
         }
-
-        return result;
-    } catch (error) {
-        console.error('❌ Error fetching form template by slug:', error);
-        throw error;
     }
-}
+
+    async deleteFormTemplate(templateId) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/form-templates/${templateId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.message || `HTTP error! status: ${response.status}`)
+            }
+
+            return result
+        } catch (error) {
+            console.error('Error deleing form:', error)
+            throw error
+        }
+    }
 }
 
 export default new FormTemplateService()

@@ -1,13 +1,52 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
-import { X, FileText, Calendar } from 'lucide-react';
+import { X, FileText, Calendar, ExternalLink, Copy, Loader2, Trash2 } from 'lucide-react';
 
-const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onClose }) => {
+const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCopyLink, onDeleteTemplate }) => {
+    const [deletingId, setDeletingId] = useState(null)
+
+    const copyFullLink = (template) => {
+        const fullLink = `http://localhost:5173/register/${template.unique_slug}`
+        navigator.clipboard.writeText(fullLink)
+
+        if (onCopyLink) {
+            onCopyLink(fullLink, template.program_name);
+        } else {
+            alert(`Link berhasil disalin: ${fullLink}`);
+        }
+    }
+
+    const openFullLink = (template) => {
+        const fullLink = `http://localhost:5173/register/${template.unique_slug}`
+        window.open(fullLink, '_blank', 'noopener,noreferrer')
+    }
+
+    const handleDelete = async (template, e) => {
+        e.stopPropagation()
+
+        const confirmed = confirm(
+            `Apakah anda yakin ingin menghapus form "${template.program_name}"?\n\n` +
+            `Tindakan ini tidak dapat dibatalkan dan semua data yang terkait akan dihapus.`
+        )
+
+        if (!confirmed) return
+        setDeletingId(template.id)
+
+        try {
+            await onDeleteTemplate(template.id)
+        } catch (error) {
+            console.error('Error deleting template:', error)
+            alert('Gagal menghapus form. Silahkan coba lagi')
+        } finally {
+            setDeletingId(null)
+        }
+    }
+
     return (
-        <Card className='mb-4'>
+        <Card className='mb-4 min-h-screen'>
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <div>
@@ -20,19 +59,11 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onClo
                             Pilih template form yang dibuat
                         </CardDescription>
                     </div>
-
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onClose}
-                    >
-                        <X className='h-4 w-4' />
-                    </Button>
                 </div>
             </CardHeader>
 
             <CardContent>
-                <ScrollArea className="h-64">
+                <ScrollArea className="h-screen">
                     {templates.length === 0 ? (
                         <div className='text-center py-8 text-gray-500'>
                             <FileText className='h-12 w-12 mx-auto mb-2 opacity-50' />
@@ -72,9 +103,74 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onClo
                                     </div>
 
                                     {template.unique_slug && (
-                                        <p className='text-xs text-blue-600 font-mono bg-blue-50 px-2 py-1 rounded'>
-                                            /register/{template.unique_slug}
-                                        </p>
+                                        <div className='space-y-2'>
+                                            <p className='text-xs text-blue-600 font-mono bg-blue-50 px-2 py-1 rounded'>
+                                                /register/{template.unique_slug}
+                                            </p>
+
+                                            <div className='flex gap-2'>
+                                                <Button
+                                                    size='sm'
+                                                    variant='outline'
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        copyFullLink(template)
+                                                    }}
+                                                    className='flex items-center gap-1 text-xs'
+                                                >
+                                                    <Copy className='h-3 w-3' />
+                                                    Copy Form
+                                                </Button>
+                                                <Button
+                                                    size='sm'
+                                                    variant='outline'
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        openFullLink(template)
+                                                    }}
+                                                    className='flex items-center gap-1 text-xs'
+                                                >
+                                                    <ExternalLink className='h-3 w-3' />
+                                                    Buka Form
+                                                </Button>
+                                                <Button
+                                                    size='sm'
+                                                    variant='destructive'
+                                                    onClick={(e) => handleDelete(template, e)}
+                                                    className='flex items-center gap-1 text-xs'
+                                                >
+                                                    {deletingId === template.id ? (
+                                                        <Loader2 className='w-3 h-3 animate-spin' />
+                                                    ) : (
+                                                        <Trash2 className='w-3 h-3' />
+                                                    )}
+                                                    Hapus
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {!template.unique_slug && (
+                                        <div className="space-y-2">
+                                            <p className='text-xs text-gray-500 italic'>
+                                                Belum memiliki link (belum dipublish)
+                                            </p>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    onClick={(e) => handleDelete(template, e)}
+                                                    disabled={deletingId === template.id}
+                                                    className="flex items-center gap-1 text-xs"
+                                                >
+                                                    {deletingId === template.id ? (
+                                                        <Loader2 className='h-3 w-3 animate-spin' />
+                                                    ) : (
+                                                        <Trash2 className='h-3 w-3' />
+                                                    )}
+                                                    Hapus
+                                                </Button>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             ))}

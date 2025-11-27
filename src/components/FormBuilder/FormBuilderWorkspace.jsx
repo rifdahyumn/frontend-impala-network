@@ -18,7 +18,6 @@ const FormBuilderWorkspace = () => {
     const [loadingPrograms, setLoadingPrograms] = useState(false);
     const [formTemplates, setFormTemplates] = useState([]);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
-    const [showTemplates, setShowTemplates] = useState(false);
     const [activeTab, setActiveTab] = useState('builder')
     const { toast } = useToast();
 
@@ -149,9 +148,9 @@ const FormBuilderWorkspace = () => {
                             locked: true
                         },
                         {
-                            id: 'dateOfBirth',
+                            id: 'date_of_birth',
                             type: 'date',
-                            name: 'dateOfBirth',
+                            name: 'date_of_birth',
                             label: 'Tanggal Lahir',
                             required: true,
                             locked: true
@@ -172,14 +171,6 @@ const FormBuilderWorkspace = () => {
                             label: 'Alamat Lengkap',
                             required: true,
                             placeholder: 'Jl. Contoh No. 123, Kota, Provinsi',
-                            locked: true
-                        },
-                        { 
-                            id: 'district', 
-                            type: 'text', 
-                            name: 'district', 
-                            label: 'Kecamatan', 
-                            required: true,
                             locked: true
                         },
                         {
@@ -335,9 +326,9 @@ const FormBuilderWorkspace = () => {
                         locked: true,
                         fields: [
                             {
-                                id: 'company',
+                                id: 'workplace',
                                 type: 'text',
-                                name: 'company',
+                                name: 'workplace',
                                 label: 'Nama Perusahaan',
                                 required: true,
                                 placeholder: 'Masukkan nama perusahaan',
@@ -353,12 +344,12 @@ const FormBuilderWorkspace = () => {
                                 locked: true
                             },
                             {
-                                id: 'work_experience',
-                                type: 'number',
-                                name: 'work_experience',
-                                label: 'Pengalaman Kerja (tahun)',
+                                id: 'work_duration',
+                                type: 'text',
+                                name: 'work_duration',
+                                label: 'Pengalaman Kerja',
                                 required: true,
-                                placeholder: 'Masukkan lama pengalaman kerja',
+                                placeholder: 'Masukkan lama bekerja',
                                 locked: true
                             },
                             {
@@ -463,22 +454,6 @@ const FormBuilderWorkspace = () => {
         }
     }, [availablePrograms, loadingPrograms]);
 
-    const copyFormLink = (template) => {
-        const formLink = `http://localhost:5173/register/${template.unique_slug}`
-        navigator.clipboard.writeText(formLink)
-
-        toast({
-            title: "Link Disalin!",
-            description: `Link untuk "${template.program_name}" telah disalin ke clipboard`,
-            variant: "default"
-        })
-    }
-
-    const openFormLink = (template) => {
-        const formLink = `http://localhost:5173/register/${template.unique_slug}`
-        window.open(formLink, '_blank', 'noopener, noreferrer')
-    }
-
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('id-ID', {
             day: 'numeric',
@@ -492,7 +467,6 @@ const FormBuilderWorkspace = () => {
     const handleTemplateSelect = (template) => {
         setSelectedTemplate(template);
         setFormConfig(template.form_config);
-        setShowTemplates(false);
         toast({
             title: "Template Dimuat",
             description: `Template "${template.program_name}" berhasil dimuat`
@@ -620,10 +594,6 @@ const FormBuilderWorkspace = () => {
                 programName: programName,
                 title: `Pendaftaran Program ${programName}`
             }));
-
-            // if (formConfig.sections && formConfig.sections.programInfo) {
-            //     updateField('programInfo', 'program_name', { value: programName });
-            // }
         }
     };
 
@@ -643,6 +613,37 @@ const FormBuilderWorkspace = () => {
             setLoadingPrograms(false);
         }
     };
+
+    const handleDeleteTemplate = async (templateId) => {
+        try {
+            const response = await formTemplateService.deleteFormTemplate(templateId)
+
+            if (!response.success) {
+                throw new Error(response.message || 'Gagal menghapus form')
+            }
+
+            setFormTemplates(prev => prev.filter(template => template.id !== templateId))
+
+            if (selectedTemplate && selectedTemplate.id === templateId) {
+                setSelectedTemplate(null)
+                setFormConfig(null)
+            }
+
+            toast({
+                title: "Form berhasil dihapus",
+                description: "Form telah dihapus dari database",
+                variant: "default"
+            })
+        } catch (error) {
+            console.error('Error deleting form:', error)
+            toast({
+                title: "Error",
+                description: error.message || 'Gagal menghapus form',
+                variant: "destructive"
+            })
+            throw error
+        }
+    }
 
     const updateField = (sectionId, fieldId, updates) => {
         if (!formConfig) return;
@@ -670,45 +671,6 @@ const FormBuilderWorkspace = () => {
         setTimeout(() => {
             setIsSaving(false);
         }, 500);
-    };
-
-    const handleSaveForm = () => {
-        if (!formConfig) return;
-        
-        setIsSaving(true);
-        localStorage.setItem('impalaFormConfig', JSON.stringify(formConfig));
-        
-        setTimeout(() => {
-            setIsSaving(false);
-            toast({
-                title: "Form Disimpan",
-                description: "Form berhasil disimpan sebagai draft"
-            });
-        }, 1000);
-    };
-
-    const handleResetForm = () => {
-        if (confirm('Apakah Anda yakin ingin mereset form ke default? Semua perubahan akan hilang.')) {
-            localStorage.removeItem('impalaFormConfig');
-            localStorage.removeItem('impalaPublishedForm');
-            setSelectedTemplate(null);
-            setFormConfig(null);
-            window.location.reload();
-        }
-    };
-
-    const handlePreviewForm = () => {
-        if (!formConfig) {
-            toast({
-                title: "Error",
-                description: "Belum ada form yang disimpan",
-                variant: "destructive"
-            });
-            return;
-        }
-
-        localStorage.setItem('impalaPublishedForm', JSON.stringify(formConfig));
-        window.open('/register', '_blank');
     };
 
     const FormLinksTab = () => {
@@ -761,56 +723,6 @@ const FormBuilderWorkspace = () => {
                                                     </p>
                                                 </div>
                                             </div>
-
-                                            <div className='flex gap-2 ml-4'>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => copyFormLink(template)}
-                                                    className="flex items-center gap-1"
-                                                >
-                                                    <Copy className='h-3 w-3' />
-                                                    Copy
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="default"
-                                                    onClick={() => openFormLink(template)}
-                                                    className="flex items-center gap-1"
-                                                >   
-                                                    <ExternalLink className='h-3 w-3' />
-                                                    Buka
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        <div className='mt-3 pt-3 border-t border-gray-200'>
-                                            <div className='flex gap-2'>
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => {
-                                                        setSelectedTemplate(template)
-                                                        setFormConfig(template.form_config)
-                                                        setActiveTab('builder')
-                                                    }}
-                                                >
-                                                    Edit Form
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => {
-                                                        toast({
-                                                            title: 'Fitur Coming Soon',
-                                                            description: "Fitur lihat submissions akan segera tersedia",
-                                                            variant: "default"
-                                                        })
-                                                    }}
-                                                >
-                                                    Lihat Responses
-                                                </Button>
-                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -856,52 +768,6 @@ const FormBuilderWorkspace = () => {
                                                     </p>
                                                 </div>
                                             </div>
-
-                                            <div className='flex gap-2 ml-4'>
-                                                <Button
-                                                    size='sm'
-                                                    variant='outline'
-                                                    onClick={() => {
-                                                        setSelectedTemplate(template)
-                                                        setFormConfig(template.form_config)
-                                                        setActiveTab('builder')
-                                                    }}
-                                                >
-                                                    Lanjutkan Edit
-                                                </Button>
-                                                <Button
-                                                    size='sm'
-                                                    variant='default'
-                                                    onClick={async () => {
-                                                        try {
-                                                            const response = await formTemplateService.publishFormTemplate(template.id)
-                                                            const updatedTemplate = response.data
-
-                                                            setFormTemplates(prev =>
-                                                                prev.map(t => 
-                                                                    t.id === updatedTemplate.id ? updatedTemplate : t
-                                                                )
-                                                            )
-
-                                                            toast({
-                                                                title: 'Form Dipublish',
-                                                                description: `Form "${template.program_name}" sekarang live!`,
-                                                                variant: 'default'
-                                                            })
-                                                        } catch (error) {
-                                                            console.error('Error publishing template:', error)
-                                                            toast({
-                                                                title: 'Error',
-                                                                description: 'Gagal mempublish form',
-                                                                variant: 'destructive'
-                                                            })
-                                                        }
-                                                    }}
-                                                >
-                                                    <Rocket className='h-3 w-3 mr-1' />
-                                                    Publish
-                                                </Button>
-                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -909,31 +775,6 @@ const FormBuilderWorkspace = () => {
                         </div>
                     )}
                 </div>
-
-                <Card>
-                    <CardContent className='p-4'>
-                        <div className='grid grid-cols-3 gap-4 text-center'>
-                            <div>
-                                <p className='text-2xl font-bold text-blue-600'>
-                                    {formTemplates.length}
-                                </p>
-                                <p className='text-sm text-gray-600'>Total Form</p>
-                            </div>
-                            <div>
-                                <p className='text-2xl font-bold text-blue-600'>
-                                    {publishedTemplates.length}
-                                </p>
-                                <p className='text-sm text-gray-600'>Published</p>
-                            </div>
-                            <div>
-                                <p className='text-2xl font-bold text-blue-600'>
-                                    {draftTemplates.length}
-                                </p>
-                                <p className='text-sm text-gray-600'>Draft</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
             </div>
         )
     }
@@ -981,71 +822,32 @@ const FormBuilderWorkspace = () => {
                 </CardContent>
             </Card>
 
+            {activeTab === 'links' && (
+                <Card>
+                    <CardHeader>
+                        <div className='flex justify-between items-center'>
+                            <div>
+                                <CardTitle>Form Builder</CardTitle>
+                                <CardDescription>
+                                    Buat dan Kelola Formulir Pendaftaran Program
+                                </CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <FormTemplatesList 
+                            templates={formTemplates}
+                            selectedTemplate={selectedTemplate}
+                            onTemplateSelect={handleTemplateSelect}
+                            onDeleteTemplate={handleDeleteTemplate}
+                        />
+                    </CardContent>
+                </Card>
+            )}
+
             {activeTab === 'builder' && (
                 <>
-                    <Card>
-                        <CardHeader>
-                            <div className='flex justify-between items-center'>
-                                <div>
-                                    <CardTitle>Form Builder</CardTitle>
-                                    <CardDescription>
-                                        Buat dan Kelola Formulir Pendaftaran Program
-                                    </CardDescription>
-                                </div>
-
-                                <div className='flex items-center gap-2'>
-                                    <Button
-                                        variant='outline'
-                                        onClick={() => setShowTemplates(!showTemplates)}
-                                        className='flex items-center gap-2'
-                                    >
-                                        <FolderOpen className='h-4 w-4' />
-                                        {showTemplates ? 'Tutup Templates' : 'Template'}
-                                    </Button>
-                                    <Button
-                                        variant='destructive'
-                                        onClick={handleResetForm}
-                                        className='flex items-center gap-2'
-                                    >
-                                        <X className='h-4 w-4' />
-                                        Reset
-                                    </Button>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            {showTemplates && (
-                                <FormTemplatesList 
-                                    templates={formTemplates}
-                                    selectedTemplate={selectedTemplate}
-                                    onTemplateSelect={handleTemplateSelect}
-                                    onClose={() => setShowTemplates(false)}
-                                />
-                            )}
-
-                            <div className='bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-6 text-center'>
-                                <h1>
-                                    {formConfig.programName
-                                        ? `Formulir Pendaftaran ${formConfig.programName}`
-                                        : 'Formulir Pendaftaran Program'
-                                    }
-                                </h1>
-
-                                <div className='flex justify-center items-center gap-4'>
-                                    {selectedTemplate?.unique_slug && (
-                                        <Badge variant='secondary' className='text-sm'>
-                                            Link: /register/{selectedTemplate.unique_slug}
-                                        </Badge>
-                                    )}
-                                    {selectedTemplate?.is_published && (
-                                        <Badge variant="default" className="bg-green-500">
-                                            Published
-                                        </Badge>
-                                    )}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -1087,34 +889,13 @@ const FormBuilderWorkspace = () => {
 
                                 <div className='flex gap-2'>
                                     <Button
-                                        onClick={handlePreviewForm}
-                                        disabled={!formConfig}
-                                        variant="outline"
-                                        className="flex items-center gap-2"
-                                    >
-                                        <Eye className="h-4 w-4" />
-                                        Preview
-                                    </Button>
-                                    <Button
-                                        onClick={handleSaveForm}
-                                        disabled={isSaving}
-                                        className="flex items-center gap-2"
-                                    >
-                                        {isSaving ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Save className="h-4 w-4" />
-                                        )}
-                                        Simpan Draft
-                                    </Button>
-                                    <Button
                                         onClick={handleCreateTemplate}
                                         disabled={!formConfig?.programName}
                                         variant="secondary"
                                         className="flex items-center gap-2"
                                     >
                                         <Plus className="h-4 w-4" />
-                                        Buat Template
+                                        Buat Form
                                     </Button>
                                     <Button
                                         onClick={handlePublishTemplate}
@@ -1122,7 +903,7 @@ const FormBuilderWorkspace = () => {
                                         className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
                                     >
                                         <Rocket className="h-4 w-4" />
-                                        Publish
+                                        Publish Form
                                     </Button>
                                 </div>
                             </div>
@@ -1145,7 +926,6 @@ const FormBuilderWorkspace = () => {
                             </Alert>
                         </CardContent>
                     </Card>
-
                 </>
             )}
         </div>

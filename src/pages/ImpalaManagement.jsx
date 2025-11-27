@@ -65,7 +65,6 @@ const ImpalaManagement = () => {
             program_name: participant.program_name,
             phone: participant.phone,
             business: participant.business,
-            // dateOfBirth: participant.dateOfBirth,
             gender: participant.gender,
             action: 'Detail',
             ...participant
@@ -127,7 +126,6 @@ const ImpalaManagement = () => {
                                 </div>
                                 <Button 
                                     className="flex items-center gap-2"
-                                    // onClick={handleAddClie}
                                 >
                                     <Plus className="h-4 w-4" />
                                     Add Your First Client
@@ -165,7 +163,6 @@ const ImpalaManagement = () => {
                                         currentPage={pagination.page}
                                         totalPages={pagination.totalPages}
                                         totalItems={pagination.total}
-                                        // onPageChange={handlePageChange}
                                         disabled={loading}
                                     />
                                 </div>
