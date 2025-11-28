@@ -148,7 +148,7 @@ export const getDefaultFormConfig = () => ({
                     type: 'text',
                     name: 'business_name',
                     label: 'Nama Bisnis / Usaha',
-                    // required: false,
+                    required: false,
                     placeholder: 'Masukkan nama bisnis / usaha',
                     locked: true
                 },
@@ -295,6 +295,15 @@ export const getDefaultFormConfig = () => ({
                     required: false,
                     placeholder: 'Contoh: Data Analyst, Marketing',
                     locked: true
+                },
+                {
+                    id: 'core_competency',
+                    type: 'text',
+                    name: 'core_competency',
+                    label: 'Keahlian Utama',
+                    required: false,
+                    placeholder: 'Contoh: Kepemimpinan, Kreativitas',
+                    locked: true
                 }
             ]
         },
@@ -310,7 +319,7 @@ export const getDefaultFormConfig = () => ({
                     type: 'text',
                     name: 'workplace',
                     label: 'Nama Perusahaan',
-                    required: true,
+                    required: false,
                     placeholder: 'Masukkan nama perusahaan',
                     locked: true
                 },
@@ -319,7 +328,7 @@ export const getDefaultFormConfig = () => ({
                     type: 'text',
                     name: 'position',
                     label: 'Posisi/Jabatan',
-                    required: true,
+                    required: false,
                     placeholder: 'Masukkan posisi/jabatan',
                     locked: true
                 },
@@ -328,7 +337,7 @@ export const getDefaultFormConfig = () => ({
                     type: 'text',
                     name: 'work_duration',
                     label: 'Pengalaman Kerja',
-                    required: true,
+                    required: false,
                     placeholder: 'Masukkan lama bekerja',
                     locked: true
                 },
@@ -337,7 +346,7 @@ export const getDefaultFormConfig = () => ({
                     type: 'text',
                     name: 'industry_sector',
                     label: 'Sektor Industri',
-                    required: true,
+                    required: false,
                     placeholder: 'Contoh: Pendidikan, Keuangan & Perbankan',
                     locked: true
                 },
@@ -346,7 +355,7 @@ export const getDefaultFormConfig = () => ({
                     type: 'text',
                     name: 'skills',
                     label: 'Keahlian Utama',
-                    required: true,
+                    required: false,
                     placeholder: 'Jelaskan keahlian utama Anda',
                     locked: true
                 }
@@ -364,7 +373,7 @@ export const getDefaultFormConfig = () => ({
                     type: 'text',
                     name: 'community_name',
                     label: 'Nama Komunitas',
-                    required: true,
+                    required: false,
                     placeholder: 'Masukkan nama komunitas',
                     locked: true
                 },
@@ -373,7 +382,7 @@ export const getDefaultFormConfig = () => ({
                     type: 'text',
                     name: 'community_role',
                     label: 'Peran dalam Komunitas',
-                    required: true,
+                    required: false,
                     placeholder: 'Masukkan peran Anda',
                     locked: true
                 },
@@ -382,7 +391,7 @@ export const getDefaultFormConfig = () => ({
                     type: 'number',
                     name: 'member_count',
                     label: 'Jumlah Anggota',
-                    required: true,
+                    required: false,
                     placeholder: 'Masukkan jumlah anggota',
                     locked: true
                 },
@@ -391,7 +400,7 @@ export const getDefaultFormConfig = () => ({
                     type: 'text',
                     name: 'focus_area',
                     label: 'Area Fokus',
-                    required: true,
+                    required: false,
                     placeholder: 'Contoh: Pendidikan, Lingkungan, Teknologi',
                     locked: true
                 },
@@ -400,7 +409,7 @@ export const getDefaultFormConfig = () => ({
                     type: 'select',
                     name: 'operational_area',
                     label: 'Area Operasional',
-                    required: true,
+                    required: false,
                     options: ['Lokal', 'Nasional', 'Internasional'],
                     locked: true
                 }

@@ -12,6 +12,7 @@ const memberTypeConfigs = {
                 { key: 'gender', label: 'Gender', icon: User },
                 { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
                 { key: 'program_name', label: 'Program Name', icon: Award },
+                { key: 'reason_join_program', label: 'Reason Join Program', icon: Award }
             ]
         },
         {
@@ -77,6 +78,7 @@ const memberTypeConfigs = {
             fields: [
                 { key: 'institution', label: 'Institution', icon: School },
                 { key: 'major', label: 'Major', icon: GraduationCap },
+                { key: 'semester', label: 'Semester', icon: GraduationCap },
                 { key: 'enrollment_year', label: 'Enrollment Year', icon: Calendar },
                 { key: 'career_interest', label: 'Career Interest', icon: Briefcase },
                 { key: 'core_competency', label: 'Core Competency', icon: Award }
@@ -114,7 +116,8 @@ const memberTypeConfigs = {
                 { key: 'workplace', label: 'Workplace', icon: Building },
                 { key: 'position', label: 'Position', icon: User },
                 { key: 'work_duration', label: 'Work Duration', icon: Calendar },
-                { key: 'industry_sector', label: 'Industry Sector', icon: Briefcase }
+                { key: 'industry_sector', label: 'Industry Sector', icon: Briefcase },
+                { key: 'skills', label: 'Skills', icon: Award }
             ]
         }
     ],
@@ -148,8 +151,9 @@ const memberTypeConfigs = {
             fields: [
                 { key: 'community_name', label: 'Name Community', icon: UsersIcon },
                 { key: 'focus_area', label: 'Focus Area', icon: Award },
-                { key: 'total_members', label: 'Total Members', icon: Users },
-                { key: 'operational_area', label: 'Operational Area', icon: MapPin }
+                { key: 'member_count', label: 'Total Members', icon: Users },
+                { key: 'operational_area', label: 'Operational Area', icon: MapPin },
+                { key: 'community_role', label: 'Peran Dalam Komunitas', icon: Users },
             ]
         }
     ]

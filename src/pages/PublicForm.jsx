@@ -213,8 +213,9 @@ const PublicForm = () => {
                     institution: formData.institution,
                     major: formData.major,
                     enrollment_year: formData.enrollment_year,
+                    career_interest: formData.career_interest,
                     semester: formData.semester,
-                    career_interest: formData.career_interest
+                    core_competency: formData.core_competency ? [formData.core_competency] : []
                 }),
 
                 ...(selectedCategory === 'profesional' && {

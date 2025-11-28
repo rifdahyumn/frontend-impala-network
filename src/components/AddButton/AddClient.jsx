@@ -63,8 +63,8 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                     required: true,
                     placeholder: 'Select gender',
                     options: [
-                        { value: 'Laki-laki', label: 'Male' },
-                        { value: 'Perempuan', label: 'Female' }
+                        { value: 'Male', label: 'Male' },
+                        { value: 'Female', label: 'Female' }
                     ]
                 },
             ]

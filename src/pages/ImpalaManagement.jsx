@@ -36,15 +36,6 @@ const ImpalaManagement = () => {
         }
     };
 
-    // useEffect(() => {
-    //     const interval = setInterval(() => {
-    //         refreshData()
-    //         setLastRefresh(new Date())
-    //     }, 3000)
-
-    //     return () => clearInterval(interval)
-    // }, [refreshData])
-
     useEffect(() => {
         if (selectedParticipant && participant.length > 0) {
             const currentSelected = participant.find(participant => participant.id === selectedParticipant.id)
