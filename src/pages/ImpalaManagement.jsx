@@ -14,7 +14,8 @@ import { useImpala } from "../hooks/useImpala";
 
 const ImpalaManagement = () => {
     const [selectedParticipant, setSelectedParticipant] = useState(null)
-    const { participant, loading, error, pagination, filters, setFilters, fetchImpala, addProgram, updateProgram, deleteProgram } = useImpala();
+    const [lastRefresh, setLastRefresh] = useState(new Date())
+    const { participant, loading, error, refreshData, pagination, filters, setFilters, fetchImpala, addProgram, updateProgram, deleteProgram, handlePageChange } = useImpala();
 
     const handleEdit = () => {
         if (selectedParticipant) {
@@ -34,6 +35,15 @@ const ImpalaManagement = () => {
             }
         }
     };
+
+    // useEffect(() => {
+    //     const interval = setInterval(() => {
+    //         refreshData()
+    //         setLastRefresh(new Date())
+    //     }, 3000)
+
+    //     return () => clearInterval(interval)
+    // }, [refreshData])
 
     useEffect(() => {
         if (selectedParticipant && participant.length > 0) {
@@ -152,17 +162,13 @@ const ImpalaManagement = () => {
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-                                        Showing <span className="font-semibold">{formattedParticipants.length}</span> of{' '}
-                                        <span className="font-semibold">
-                                            {pagination.total > 0 ? pagination.total : formattedParticipants.length}
-                                        </span> Member
-                                    </div>
                                     
                                     <Pagination 
                                         currentPage={pagination.page}
                                         totalPages={pagination.totalPages}
                                         totalItems={pagination.total}
+                                        itemsPerPage={pagination.limit}
+                                        onPageChange={handlePageChange}
                                         disabled={loading}
                                     />
                                 </div>

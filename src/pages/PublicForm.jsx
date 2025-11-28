@@ -198,9 +198,15 @@ const PublicForm = () => {
                 ...(selectedCategory === 'umkm' && {
                     business_name: formData.business_name,
                     business_type: formData.business_type,
+                    business_form: formData.business_form,
+                    business_address: formData.business_address,
                     established_year: formData.established_year,
                     monthly_revenue: formData.monthly_revenue,
-                    employee_count: formData.employee_count
+                    employee_count: formData.employee_count,
+                    certifications: formData.certifications ? [formData.certifications] : [],
+                    social_media: formData.social_media ? [formData.social_media] : [],
+                    marketplace: formData.marketplace ? [formData.marketplace] : [],
+                    website: formData.website ? [formData.website] : [],
                 }),
 
                 ...(selectedCategory === 'mahasiswa' && {
@@ -470,10 +476,6 @@ const PublicForm = () => {
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-3">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Nomor Pendaftaran:</span>
-                                                <span className="font-semibold">REG-{submittedData.submissionId}</span>
-                                            </div>
                                             <div className="flex justify-between">
                                                 <span className="text-gray-600">Nama Lengkap:</span>
                                                 <span className="font-semibold">{submittedData.full_name}</span>

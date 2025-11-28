@@ -27,28 +27,21 @@ const memberTypeConfigs = {
             category: 'Business Information',
             icon: Building,
             fields: [
-                { key: 'bussinessName', label: 'Business Name', icon: Building },
-                { key: 'business', label: 'Business Type', icon: Building },
-                { key: 'bussinessAddress', label: 'Business Address', icon: MapPin },
-                { key: 'bussinessForm', label: 'Business Form', icon: Building },
-                { key: 'establishedYear', label: 'Established Year', icon: Calendar },
-                { key: 'certifications', label: 'Certifications', icon: Award }
-            ]
-        },
-        {
-            category: 'Business Performance',
-            icon: DollarSign,
-            fields: [
+                { key: 'business_name', label: 'Business Name', icon: Building },
+                { key: 'business_type', label: 'Business Type', icon: Building },
+                { key: 'business_address', label: 'Business Address', icon: MapPin },
+                { key: 'business_form', label: 'Business Form', icon: Building },
+                { key: 'established_year', label: 'Established Year', icon: Calendar },
                 { key: 'monthly_revenue', label: 'Monthly Revenue', icon: DollarSign },
-                { key: 'total_employee', label: 'Total Employee', icon: Users },
-                { key: 'hasOrganizationStructur', label: 'Has Organization Structure', icon: CheckCircle }
+                { key: 'employee_count', label: 'Total Employee', icon: Users },
+                { key: 'certifications', label: 'Certifications', icon: Award }
             ]
         },
         {
             category: 'Digital Presence',
             icon: Globe,
             fields: [
-                { key: 'sosialMedia', label: 'Social Media', icon: Globe },
+                { key: 'social_media', label: 'Social Media', icon: Globe },
                 { key: 'marketplace', label: 'Marketplace', icon: Globe },
                 { key: 'website', label: 'Website', icon: Globe }
             ]

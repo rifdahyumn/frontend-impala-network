@@ -41,9 +41,6 @@ class ImpalaService {
 
     async createImpala(participantData) {
         try {
-            console.log('🚀 Sending to:', `${this.baseURL}/impala`);
-            console.log('📦 Data:', participantData);
-            
             const response = await fetch(`${this.baseURL}/impala`, {
                 method: 'POST',
                 headers: {
@@ -52,9 +49,7 @@ class ImpalaService {
                 body: JSON.stringify(participantData),
             });
 
-            // Get the error response body
             const errorText = await response.text();
-            console.log('❌ Error response:', errorText);
 
             if (!response.ok) {
                 let errorMessage = `HTTP ${response.status}: `;
@@ -68,11 +63,11 @@ class ImpalaService {
             }
 
             const result = JSON.parse(errorText); // Parse successful response
-            console.log('✅ Success:', result);
+            console.log('Success:', result);
             return result;
 
         } catch (error) {
-            console.error('❌ Service error:', error);
+            console.error('Service error:', error);
             throw error;
         }
     }

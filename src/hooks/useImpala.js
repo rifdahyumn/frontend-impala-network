@@ -17,10 +17,6 @@ export const useImpala = (initialFilters = {}) => {
         ...initialFilters
     })
 
-    useEffect(() => {
-        fetchImpala(1)
-    }, [])
-
     const fetchImpala = useCallback(async (page = 1, customFilters = null) => {
         try {
             setLoading(true)
@@ -50,9 +46,19 @@ export const useImpala = (initialFilters = {}) => {
         }
     }, [filters, pagination.limit])
 
+    const refreshData = useCallback(() => {
+        fetchImpala(pagination.page)
+    }, [fetchImpala, pagination.page])
 
+    const handlePageChange = useCallback((newPage) => {
+        fetchImpala(newPage)
+    }, [fetchImpala])
+
+    useEffect(() => {
+        fetchImpala(1)
+    }, [])
 
     return {
-        participant, loading, error, pagination, filters, fetchImpala: setPagination, refetch: () => fetchImpala(pagination.page)
+        participant, loading, error, pagination, filters, fetchImpala, refetch: () => fetchImpala(pagination.page), handlePageChange, refreshData
     }
 }
