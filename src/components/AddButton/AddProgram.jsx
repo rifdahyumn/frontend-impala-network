@@ -76,6 +76,27 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         }
     };
 
+    const formatCurrency = (value) => {
+        if (!value) return '';
+
+        const numericValue = value.replace(/\D/g, '')
+        if (numericValue === '') return '';
+
+        const formatted = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+        return `Rp. ${formatted}`
+    }
+
+    const parseCurrency = (formattedValue) => {
+        if (!formattedValue) return '';
+
+        const numericString = formattedValue
+            .replace('Rp.', '')
+            .replace(/\s/g, '')
+            .replace(/\./g, '')
+
+        return numericString
+    }
+
     const formSections = [
         {
             title: "Program Information",
@@ -276,6 +297,16 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
 
     useEffect(() => {
         if (isEditMode && editData) {
+            let formattedPrice = editData.price || '';
+
+            if (editData.price && !editData.price.includes('Rp. ')) {
+                const numericValue = editData.price.replace(/\D/g, '')
+                formattedPrice = formatCurrency(numericValue)
+            } else if (editData.price && editData.price.includes('Rp. ')) {
+                const numericValue = parseCurrency(editData.price)
+                formattedPrice = formatCurrency(numericValue)
+            }
+
             setFormData({
                 program_name: editData.program_name || '',
                 client: editData.client || '',
@@ -338,6 +369,12 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 [name]: value,
                 client: '' 
             }));
+        } else if (name === 'price') {
+            const formattedValue = formatCurrency(value)
+            setFormData(prev => ({
+                ...prev,
+                [name]: formattedValue
+            }))
         } else {
             setFormData(prev => ({
                 ...prev,
@@ -378,6 +415,8 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         setLoading(true)
 
         try {
+            const rawPrice = parseCurrency(formData.price)
+
             const programData = {
                 program_name: formData.program_name,
                 client: formData.client,
@@ -385,7 +424,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 status: formData.status || 'Active',
                 start_date: formData.start_date,
                 end_date: formData.end_date,
-                price: formData.price,
+                price: `Rp. ${rawPrice}`,
                 capacity: formData.capacity,
                 instructors: Array.isArray(formData.instructors) ? formData.instructors : [formData.instructors],
                 location: formData.location,
@@ -488,6 +527,54 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                     </p>
                 </div>
             );
+        }
+
+        if (field.type === 'price') {
+            return (
+                <div key={field.name || index} className="space-y-2">
+                    <Label htmlFor={field.name}>
+                        {field.label}
+                        {field.required && <span className="text-red-500 ml-1">*</span>}
+                    </Label>
+
+                    <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-semibold text-sm">
+                            Rp.
+                        </span>
+                        <Input 
+                            id={field.name}
+                            name={field.name}
+                            type='text'
+                            value={value}
+                            onChange={handleInputChange}
+                            placeholder={field.placeholder}
+                            required={field.required}
+                            className={`pl-12 ${error ? 'border-red-500' : ''} font-medium`}
+                            onkeyDown={(e) => {
+                                if (e.key === 'Backspace' || e.key === 'Delete') {
+                                    setTimeout(() => {
+                                        const input = e.target
+                                        const cursorPosition = input.selectionStart
+
+                                        if (input.value === 'Rp. ') {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                price: ''
+                                            }))
+                                        }
+                                    }, 0)
+                                }
+                            }}
+                        />
+                    </div>
+
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+
+                    <p className="text-xs text-gray-500">
+                        Contoh: Ketik <strong>250000000</strong> akan otomatis menjadi <strong>Rp. 250.000.000</strong>
+                    </p>
+                </div>
+            )
         }
 
         if (field.type === 'program_dropdown') {
