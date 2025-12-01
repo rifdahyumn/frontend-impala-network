@@ -25,20 +25,6 @@ const StatsCards = () => {
         TrendingDown: TrendingDown
     }
 
-    // const staticStats  = [
-    //     {
-    //         title: "Total Price",
-    //         value: "8,3",
-    //         subtitle: "& 400++",
-    //         percentage: "8,3%",
-    //         trend: "down",
-    //         period: "Last Month",
-    //         icon: 'BarChart3',
-    //         color: "purple",
-    //         description: "8,3% Last Month"
-    //     },
-    // ];
-
     const allStats = [
         clientStats || {
             title: "Total Client",
@@ -152,11 +138,11 @@ const StatsCards = () => {
                                 <div className={cn("p-2 rounded-lg", colorClasses.bg)}>
                                     <IconComponent className={cn("h-5 w-5", colorClasses.icon)} />
                                 </div>
-                                <div className="text-right">
+                                {/* <div className="text-right">
                                     <span className={cn("text-sm font-medium", colorClasses.text)}>
                                         +{stat.percentage}
                                     </span>
-                                </div>
+                                </div> */}
                             </div>
                             
 
@@ -165,11 +151,11 @@ const StatsCards = () => {
                                     <span className="text-2xl font-bold text-gray-900">
                                         {stat.value}
                                     </span>
-                                    {stat.subtitle && (
+                                    {/* {stat.subtitle && (
                                         <span className="text-sm text-gray-500">
                                             {stat.subtitle}
                                         </span>
-                                    )}
+                                    )} */}
                                 </div>
                                 <h3 className="text-sm font-medium text-gray-600 mt-1">
                                     {stat.title}

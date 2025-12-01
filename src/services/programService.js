@@ -126,6 +126,22 @@ class ProgramService {
         }
     }
 
+    async fetchProgramsStats() {
+       try {
+            const response = await fetch(`${this.baseURL}/program/stats`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            return await this.handleResponse(response)
+       } catch (error) {
+            console.error('Error fetching program stats:', error)
+                throw error
+       }
+    }
+
     async fetchPriceStats() {
         try {
             const response = await fetch(`${this.baseURL}/program/price-stats`, {

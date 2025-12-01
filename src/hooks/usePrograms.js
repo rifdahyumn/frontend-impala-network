@@ -1,6 +1,6 @@
 import toast from "react-hot-toast"
 import programService from "../services/programService"
-import { useCallback, useEffect, useState, useRef } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 export const usePrograms = (initialFilters = {}) => {
     const [programs, setPrograms] = useState([])
@@ -22,7 +22,7 @@ export const usePrograms = (initialFilters = {}) => {
         ...initialFilters
     })
 
-    const statsFetchedRef = useRef(false)
+    // const statsFetchedRef = useRef(false)
 
     const fetchPrograms = useCallback(async (page = 1, customFilters = null) => {
         try {
@@ -57,42 +57,13 @@ export const usePrograms = (initialFilters = {}) => {
         try {
             setStatsLoading(true)
             
-            const result = await programService.fetchPrograms({
-                page: 1,
-                limit: 1
-            })
+            const result = await programService.fetchProgramsStats()
 
-            const totalPrograms = result.metadata?.pagination?.total || 0
-            const previousMonthTotal = Math.max(0, totalPrograms - Math.floor(totalPrograms * 0.1))
-
-            let percentageChange = '0%'
-            let trend = 'up'
-            let increaseCount = 0
-
-            if (previousMonthTotal > 0) {
-                const change = ((totalPrograms - previousMonthTotal) / previousMonthTotal) * 100
-                percentageChange = `${Math.abs(change).toFixed(1)}%`
-                trend = change >= 0 ? 'up' : 'down'
-                increaseCount = Math.max(0, totalPrograms - previousMonthTotal)
+            if (result.success) {
+                setProgramStats(result.data)
             } else {
-                percentageChange = '100%'
-                trend = 'up'
-                increaseCount = totalPrograms
+                throw new Error(result.message || 'Failed to fetch program stats')
             }
-
-            const statsData = {
-                title: 'Total Program',
-                value: totalPrograms.toLocaleString(),
-                subtitle: `+ ${increaseCount}`,
-                percentage: percentageChange,
-                trend: trend,
-                period: 'Last month',
-                icon: 'Target',
-                color: 'green',
-                description: `${percentageChange} Last Month`
-            }
-
-            setProgramStats(statsData)
         } catch (error) {
             console.error('Error fetching program stats:', error)
             toast.error('Failed to load program stats')
@@ -101,13 +72,11 @@ export const usePrograms = (initialFilters = {}) => {
         }
     }, [])
 
-    // FIX: Add missing dependency array
     const fetchPriceStats = useCallback(async () => {
         try {
             setStatsLoading(true)
 
             const result = await programService.fetchPriceStats()
-            console.log('Price stats result:', result)
 
             if (result.success) {
                 setPriceStats(result.data)
@@ -132,9 +101,8 @@ export const usePrograms = (initialFilters = {}) => {
         } finally {
             setStatsLoading(false)
         }
-    }, []) // FIX: Added dependency array
+    }, [])
 
-    // FIX: Call both stats functions
     const fetchAllStats = useCallback(async () => {
         try {
             setStatsLoading(true)
@@ -149,7 +117,6 @@ export const usePrograms = (initialFilters = {}) => {
         }
     }, [fetchProgramsStats, fetchPriceStats])
 
-    // FIX: Use fetchAllStats instead of just fetchProgramsStats
     useEffect(() => {
         fetchAllStats()
     }, [fetchAllStats])
