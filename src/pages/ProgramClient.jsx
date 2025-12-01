@@ -4,11 +4,10 @@ import { Loader2, Plus, Users, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "../components/ui/button"
 import React, { useEffect, useState } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
-import FilterDropdown from '../components/SearchFilter/FilterDropdown';
+import FilterButton from '../components/SearchFilter/Filter'; // ⭐ Gunakan FilterButton yang baru
 import ExportButton from '../components/ActionButton/ExportButton';
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from '../components/Pagination/Pagination';
-import FilterButton from '../components/SearchFilter/Filter';
 import ClientContent from "../components/Content/ClientContent";
 import { toast } from 'react-hot-toast';
 import AddClient from "../components/AddButton/AddClient";
@@ -19,6 +18,11 @@ const ProgramClient = () => {
     const [editingClient, setEditingClient] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
+    
+    // ⭐⭐ STATE UNTUK SEARCH & FILTER
+    const [searchTerm, setSearchTerm] = useState("");
+    const [activeFilter, setActiveFilter] = useState(null);
+    const [filteredMembers, setFilteredMembers] = useState([]);
 
     const {
         members,
@@ -33,6 +37,74 @@ const ProgramClient = () => {
         deleteClient
     } = useClients();
 
+    // FILTER OPTIONS KHUSUS CLIENTS
+    const clientFilterOptions = [
+        { value: "active", label: "🟢 Active" },
+        { value: "inactive", label: "🔴 Inactive" },
+    ];
+
+    // FUNGSI UNTUK APPLY SEARCH & FILTER
+    const applyAllFilters = () => {
+        let result = [...members];
+        
+        // 1. Apply Search
+        if (searchTerm.trim()) {
+            result = result.filter(client =>
+                client.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                client.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                client.program_name?.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+        
+        // 2. Apply Filter
+        if (activeFilter) {
+            result = result.filter(client => {
+                switch(activeFilter) {
+                    case "active":
+                        return client.status?.toLowerCase() === "active";
+                    case "inactive":
+                        return client.status?.toLowerCase() === "inactive";
+                    default:
+                        return client.status?.toLowerCase() === activeFilter;
+                }
+            });
+        }
+        
+        setFilteredMembers(result);
+    };
+
+    // HANDLE SEARCH
+    const handleSearch = (term) => {
+        setSearchTerm(term);
+        setTimeout(applyAllFilters, 100);
+    };
+
+    // HANDLE FILTER CHANGE
+    const handleFilterChange = (filterValue) => {
+        setActiveFilter(filterValue);
+        setTimeout(applyAllFilters, 100);
+    };
+
+    // CLEAR ALL FILTERS
+    const clearAllFilters = () => {
+        setSearchTerm("");
+        setActiveFilter(null);
+        setFilteredMembers(members);
+    };
+
+    // APPLY FILTERS SETIAP MEMBERS BERUBAH
+    useEffect(() => {
+        if (members.length > 0) {
+            setFilteredMembers(members);
+            applyAllFilters();
+        }
+    }, [members]);
+
+    useEffect(() => {
+        applyAllFilters();
+    }, [searchTerm, activeFilter]);
+
     const handleAddClient = () => {
         setIsAddClientModalOpen(true);
     };
@@ -44,22 +116,22 @@ const ProgramClient = () => {
 
     const handleEditClient = async (clientId, clientData) => {
         try {
-            const updatedClient = await updateClient(clientId, clientData)
+            const updatedClient = await updateClient(clientId, clientData);
 
             if (selectedMember && selectedMember.id === clientId) {
                 setSelectedMember(prev => ({
                     ...prev,
                     ...clientData,
                     ...updatedClient
-                }))
+                }));
             }
 
-            setIsEditModalOpen(false)
-            setEditingClient(null)
-            toast.success('Client Updated successfully')
+            setIsEditModalOpen(false);
+            setEditingClient(null);
+            toast.success('Client Updated successfully');
         } catch {
-            console.error('Error updating', error)
-            toast.error(error.message || 'Failed to update client' )
+            console.error('Error updating', error);
+            toast.error(error.message || 'Failed to update client');
         }
     };
 
@@ -68,6 +140,8 @@ const ProgramClient = () => {
             await addClient(clientData);
             setIsAddClientModalOpen(false);
             toast.success('Client added successfully');
+            // Refresh data setelah add
+            fetchClients(pagination.page);
         } catch {
             // 
         }
@@ -83,6 +157,8 @@ const ProgramClient = () => {
         try {
             await deleteClient(clientId);
             setSelectedMember(null);
+            // Refresh data setelah delete
+            fetchClients(pagination.page);
         } catch {
             // 
         }
@@ -90,38 +166,15 @@ const ProgramClient = () => {
 
     useEffect(() => {
         if (selectedMember && members.length > 0) {
-            const currentSelected = members.find(member => member.id === selectedMember.id)
+            const currentSelected = members.find(member => member.id === selectedMember.id);
             if (currentSelected) {
-                setSelectedMember(currentSelected)
+                setSelectedMember(currentSelected);
             }
         }
-    }, [members, selectedMember?.id])
+    }, [members, selectedMember?.id]);
 
-    // const handleRefresh = () => {
-    //     fetchClients(pagination.page);
-    // };
-
-    // const handleSearch = (searchTerm) => {
-    //     setFilters({ ...filters, search: searchTerm });
-    // };
-
-    // const handleFilterChange = (newFilters) => {
-    //     setFilters({ ...filters, ...newFilters });
-    // };
-
-    // const handlePageChange = (page) => {
-    //     window.scrollTo({ top: 0, behavior: 'smooth' });
-    //     fetchClients(page);
-    // };
-
-    const tableConfig = {
-        headers: ['No', 'Full Name', 'Email', 'Phone', 'Company', 'Program Name', 'Status', 'Action'],
-        title: "Client Management",
-        addButton: "Add Client",
-        detailTitle: "Client Details"
-    };
-
-    const formattedMembers = members.map((client, index) => {
+    // ⭐⭐ FORMAT MEMBERS DARI filteredMembers
+    const formattedMembers = filteredMembers.map((client, index) => {
         const currentPage = pagination.page;
         const itemsPerPage = pagination.limit;
         const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
@@ -140,6 +193,13 @@ const ProgramClient = () => {
         };
     });
 
+    const tableConfig = {
+        headers: ['No', 'Full Name', 'Email', 'Phone', 'Company', 'Program Name', 'Status', 'Action'],
+        title: "Client Management",
+        addButton: "Add Client",
+        detailTitle: "Client Details"
+    };
+
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
             <div className='flex-1 p-6'>
@@ -157,11 +217,41 @@ const ProgramClient = () => {
                     </CardHeader>
                     <CardContent>
 
+                        {/* ⭐⭐ SEARCH & FILTER SECTION */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
-                            <div className='flex gap-2'>
-                                <SearchBar />
-                                <FilterDropdown />
-                                <FilterButton />
+                            <div className='flex gap-2 items-center'>
+                                <SearchBar 
+                                    onSearch={handleSearch}
+                                    placeholder="Search..."
+                                />
+                                
+                                <FilterButton 
+                                    onFilterChange={handleFilterChange}
+                                    filterOptions={clientFilterOptions}
+                                    activeFilter={activeFilter}
+                                    buttonText="Filter"
+                                />
+                                
+                                {/* CLEAR FILTERS BUTTON */}
+                                {(searchTerm || activeFilter) && (
+                                    <Button 
+                                        variant="ghost" 
+                                        onClick={clearAllFilters}
+                                        className="text-sm h-10"
+                                        size="sm"
+                                    >
+                                        Clear Filters
+                                    </Button>
+                                )}
+                                
+                                {/* ⭐⭐ ACTIVE FILTERS INDICATOR */}
+                                {(searchTerm || activeFilter) && (
+                                    <div className="text-sm text-gray-600 hidden sm:flex items-center gap-2">
+                                        <span className="hidden md:inline">
+                                            {filteredMembers.length} of {members.length} clients
+                                        </span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className='flex gap-2'>
@@ -175,6 +265,43 @@ const ProgramClient = () => {
                                 <ExportButton data={formattedMembers} />
                             </div>
                         </div>
+                        
+                        {/* ⭐⭐ ACTIVE FILTERS BADGES */}
+                        {(searchTerm || activeFilter) && (
+                            <div className="mb-4 flex flex-wrap items-center gap-2">
+                                <span className="text-sm text-gray-600">Active filters:</span>
+                                {searchTerm && (
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        Search: "{searchTerm}"
+                                        <button 
+                                            onClick={() => setSearchTerm("")}
+                                            className="text-blue-600 hover:text-blue-800"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                )}
+                                {activeFilter && (
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        Filter: {clientFilterOptions.find(f => f.value === activeFilter)?.label || activeFilter}
+                                        <button 
+                                            onClick={() => setActiveFilter(null)}
+                                            className="text-green-600 hover:text-green-800"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                )}
+                                <Button 
+                                    variant="ghost" 
+                                    onClick={clearAllFilters}
+                                    className="text-sm h-8"
+                                    size="sm"
+                                >
+                                    Clear All
+                                </Button>
+                            </div>
+                        )}
 
                         {loading && members.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4">
@@ -184,27 +311,40 @@ const ProgramClient = () => {
                                     <div className="bg-blue-600 h-2 rounded-full animate-pulse w-3/4"></div>
                                 </div>
                             </div>
-                        ) : members.length === 0 ? (
+                        ) : filteredMembers.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
                                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
                                     <Users className="w-10 h-10 text-gray-400" />
                                 </div>
                                 <div className="space-y-2">
-                                    <h3 className="text-lg font-semibold text-gray-700">No clients found</h3>
+                                    <h3 className="text-lg font-semibold text-gray-700">
+                                        {searchTerm || activeFilter ? "No clients found" : "No clients found"}
+                                    </h3>
                                     <p className="text-sm text-gray-500 max-w-md">
-                                        {filters.search || Object.values(filters).some(f => f) 
+                                        {searchTerm || activeFilter 
                                             ? "Try adjusting your search or filters to find what you're looking for."
                                             : "Get started by adding your first client to the system."
                                         }
                                     </p>
                                 </div>
-                                <Button 
-                                    className="flex items-center gap-2"
-                                    onClick={handleAddClient}
-                                >
-                                    <Plus className="h-4 w-4" />
-                                    Add Your First Client
-                                </Button>
+                                {(searchTerm || activeFilter) ? (
+                                    <Button 
+                                        className="flex items-center gap-2"
+                                        onClick={clearAllFilters}
+                                        variant="outline"
+                                    >
+                                        <RefreshCw className="h-4 w-4" />
+                                        Clear Filters
+                                    </Button>
+                                ) : (
+                                    <Button 
+                                        className="flex items-center gap-2"
+                                        onClick={handleAddClient}
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Add Your First Client
+                                    </Button>
+                                )}
                             </div>
                         ) : (
                             <>
@@ -219,14 +359,19 @@ const ProgramClient = () => {
                                     )}
                                     
                                     <MemberTable
-                                        members={formattedMembers}
-                                        onSelectMember={setSelectedMember}
-                                        headers={tableConfig.headers}
-                                        isLoading={loading}
+                                    members={formattedMembers}
+                                    onSelectMember={setSelectedMember}
+                                    headers={tableConfig.headers}
+                                    isLoading={loading}
                                     />
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
+                                    {/* ⭐⭐ SHOWING RESULTS */}
+                                    <div className="text-sm text-gray-600">
+                                        Showing {filteredMembers.length} of {members.length} clients
+                                        {(searchTerm || activeFilter) && " (filtered)"}
+                                    </div>
                                     
                                     <Pagination 
                                         currentPage={pagination.page}
