@@ -78,9 +78,7 @@ const Account = () => {
 
     const handleActivate = async (userId) => {
         try {
-            console.log('🔄 Activating user from parent:', userId);
             await activateUser(userId);
-            console.log('✅ Activate completed, auto-refresh triggered');
         } catch (error) {
             console.error('❌ Error activating user from parent:', error);
             throw error;
@@ -228,17 +226,12 @@ const Account = () => {
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-                                        Showing <span className="font-semibold">{formattedUsers.length}</span> of{' '}
-                                        <span className="font-semibold">
-                                            {pagination.total > 0 ? pagination.total : formattedUsers.length}
-                                        </span> program
-                                    </div>
                                     
                                     <Pagination 
                                         currentPage={pagination.page}
                                         totalPages={pagination.totalPages}
                                         totalItems={pagination.total}
+                                        itemsPerPage={pagination.limit}
                                         onPageChange={handlePageChange}
                                         disabled={loading}
                                     />

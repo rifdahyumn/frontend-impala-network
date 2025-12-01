@@ -62,7 +62,7 @@ class ImpalaService {
                 throw new Error(errorMessage);
             }
 
-            const result = JSON.parse(errorText); // Parse successful response
+            const result = JSON.parse(errorText);
             console.log('Success:', result);
             return result;
 

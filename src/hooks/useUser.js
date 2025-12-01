@@ -27,27 +27,21 @@ export const useUsers = (initialFilters = {}) => {
             const currentFilters = customFilters || filters;
             const currentPage = page || pagination.page;
 
-            console.log('Fetching users:', { page: currentPage, filters: currentFilters });
-
-            // ✅ PERBAIKI: Gunakan fetchUsers (bukan getAllUsers)
             const result = await userService.fetchUsers({
                 page: currentPage,
                 limit: pagination.limit,
                 ...currentFilters
             });
 
-            console.log('✅ Users fetched:', result.data?.length, 'users');
-
             setUsers(result.data || [])
-            
             setPagination(prev => ({
                 ...prev,
-                page: result.pagination?.page || currentPage,
-                total: result.pagination?.total || result.total || 0,
-                totalPages: result.pagination?.totalPages || Math.ceil((result.pagination?.total || result.total || 0) / pagination.limit),
+                page: result.metadata?.pagination?.page || currentPage,
+                total: result.metadata?.pagination?.total || result.total || 0,
+                totalPages: result.metadata?.pagination?.totalPages || Math.ceil((result.pagination?.total || result.total || 0) / pagination.limit),
             }))
         } catch (error) {
-            console.error('❌ Error fetching users:', error)
+            console.error('Error fetching users:', error)
             setError(error.message || 'Failed to fetch users');
             toast.error('Failed to load users')
         } finally {
@@ -55,7 +49,6 @@ export const useUsers = (initialFilters = {}) => {
         }
     }, [filters, pagination.limit, pagination.page])
 
-    // ... (rest of the hook remains the same) ...
     const refetchWithFilters = useCallback((newFilters) => {
         setFilters(prev => ({ ...prev, ...newFilters }));
     }, []);

@@ -23,12 +23,10 @@ const HeteroBanyumas = () => {
 
     const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroBanyumas, updateMemberHeteroBanyumas, deleteMemberHeteroBanyumas } = useHeteroBanyumas()
 
-    // ✅ TAMBAHKAN: Stats data calculation - hanya 2 cards
     const memberStats = useMemo(() => {
         const totalMembers = members.length;
         const activeMembers = members.filter(member => member.status === 'active').length;
         
-        // Calculate active percentage
         const activePercentage = totalMembers > 0 ? ((activeMembers / totalMembers) * 100).toFixed(1) : "0";
 
         return [
@@ -249,17 +247,12 @@ const HeteroBanyumas = () => {
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-                                        Showing <span className="font-semibold">{formattedMembers.length}</span> of{' '}
-                                        <span className="font-semibold">
-                                            {pagination.total > 0 ? pagination.total : formattedMembers.length}
-                                        </span> Member
-                                    </div>
                                     
                                     <Pagination 
                                         currentPage={pagination.page}
                                         totalPages={pagination.totalPages}
                                         totalItems={pagination.total}
+                                        itemsPerPage={pagination.limit}
                                         onPageChange={handlePageChange}
                                         disabled={loading}
                                     />

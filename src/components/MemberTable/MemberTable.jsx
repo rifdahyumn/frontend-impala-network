@@ -1,4 +1,3 @@
-// src/components/MemberTable/MemberTable.jsx
 import React from "react"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "../ui/table";
 import MemberTableRow from "./MemberTableRow";

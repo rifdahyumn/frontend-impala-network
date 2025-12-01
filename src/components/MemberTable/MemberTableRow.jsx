@@ -4,6 +4,21 @@ import { Badge } from "../ui/badge";
 import { format, isToday, isYesterday } from "date-fns";
 
 const MemberTableRow = ({ member, headers, onSelect }) => {
+    const formatCurrency = (value) => {
+        if (!value) return '-';
+        
+        if (value.includes('Rp.')) return value;
+        
+        const numericValue = value.toString().replace(/\D/g, '');
+        if (numericValue === '') return '-';
+        
+        const numberValue = parseInt(numericValue);
+        if (isNaN(numberValue)) return '-';
+        
+        const formatted = numberValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        return `Rp. ${formatted}`;
+    };
+
     const renderCellContent = (header, member) => {
 
         const fieldMap = {
@@ -30,7 +45,6 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Business Name': 'business_name',
             'Category': 'category',
             'Status': 'status',
-            // 'Deal': 'deal_size',
             'Gender': 'gender',
             'Email Verified': 'emailVerified',
             'Two Factor Enabled': 'twoFactorEnabled',
@@ -140,6 +154,9 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
                         {value}
                     </Badge>
                 );
+
+            case 'Price':
+                return formatCurrency(value);
 
             case 'Last Login': {
                 if (!value) return 'Never logged in';

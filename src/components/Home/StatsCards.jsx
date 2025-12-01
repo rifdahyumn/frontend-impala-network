@@ -1,55 +1,93 @@
 import React from "react";
 import { Card, CardContent } from "../ui/card";
-import { TrendingUp, Users, Target, FileText, BarChart3, TrendingDown } from 'lucide-react';
+import { TrendingUp, Users, Target, FileText, DollarSign, TrendingDown, Loader2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useClients } from "../../hooks/useClients";
+import { usePrograms } from "../../hooks/usePrograms";
+import { useImpala } from "../../hooks/useImpala";
 
 const StatsCards = () => {
-    const stats = [
-        {
+    const { clientStats, statsLoading: clientLoading } = useClients()
+    const { programStats, priceStats, statsLoading: programLoading } = usePrograms()
+    const { impalaStats, statsLoading: impalaLoading } = useImpala()
+
+    console.log('priceStats:', priceStats)
+    console.log('programStats:', programStats)
+    console.log('clientStats:', clientStats)
+    console.log('impalaStats:', impalaStats)
+
+    const iconMap = {
+        Users: Users,
+        Target: Target,
+        FileText: FileText,
+        DollarSign: DollarSign,
+        TrendingUp: TrendingUp,
+        TrendingDown: TrendingDown
+    }
+
+    // const staticStats  = [
+    //     {
+    //         title: "Total Price",
+    //         value: "8,3",
+    //         subtitle: "& 400++",
+    //         percentage: "8,3%",
+    //         trend: "down",
+    //         period: "Last Month",
+    //         icon: 'BarChart3',
+    //         color: "purple",
+    //         description: "8,3% Last Month"
+    //     },
+    // ];
+
+    const allStats = [
+        clientStats || {
             title: "Total Client",
-            value: "1539",
+            value: "0",
             subtitle: "+ 400++",
-            percentage: "7,8%",
+            percentage: "0%",
             trend: "up",
             period: "Last Month",
-            icon: Users,
+            icon: "Users",
             color: "blue",
-            description: "7,8% Last Month"
+            description: "0% Last Month"
         },
-        {
-            title: "Total Programs",
-            value: "400",
-            subtitle: "",
-            percentage: "5,7%",
+
+        programStats || {
+            title: "Total Program",
+            value: "0",
+            subtitle: "+ 400++",
+            percentage: "0%",
             trend: "up",
             period: "Last Month",
-            icon: Target,
+            icon: "Target",
             color: "green",
-            description: "5,7% Last Month"
+            description: "0% Last Month"
         },
-        {
+
+        impalaStats || {
             title: "Total Participant",
-            value: "105",
+            value: "0",
             subtitle: "& 400++",
             percentage: "6,3%",
             trend: "up",
             period: "Last Month",
-            icon: FileText,
+            icon: 'FileText',
             color: "orange",
             description: "6,3% Last Month"
         },
-        {
+        priceStats || {
             title: "Total Price",
-            value: "8,3",
+            value: "0",
             subtitle: "& 400++",
-            percentage: "8,3%",
-            trend: "down",
+            percentage: "0%",
+            trend: "up",
             period: "Last Month",
-            icon: BarChart3,
+            icon: 'DollarSign',
             color: "purple",
             description: "8,3% Last Month"
         },
-    ];
+        // ...staticStats
+    ]
 
     const getColorClasses = (color) => {
         const colors = {
@@ -79,10 +117,28 @@ const StatsCards = () => {
         return "text-gray-500"
     }
 
+    const isLoading = clientLoading || programLoading || impalaLoading;
+
+    if (isLoading) {
+        return (
+            <div className="grid grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map(i => (
+                    <Card key={i} className='bg-white border-gray-200'>
+                        <CardContent className='p-6'>
+                            <div className="flex items-center justify-center py-8">
+                                <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        )
+    }
+
     return (
         <div className="grid grid-cols-4 gap-6">
-            {stats.map((stat, index) => {
-                const Icon = stat.icon;
+            {allStats.map((stat, index) => {
+                const IconComponent = iconMap[stat.icon]
                 const colorClasses = getColorClasses(stat.color)
 
                 return (
@@ -94,7 +150,7 @@ const StatsCards = () => {
 
                             <div className="flex items-center justify-between mb-4">
                                 <div className={cn("p-2 rounded-lg", colorClasses.bg)}>
-                                    <Icon className={cn("h-5 w-5", colorClasses.icon)} />
+                                    <IconComponent className={cn("h-5 w-5", colorClasses.icon)} />
                                 </div>
                                 <div className="text-right">
                                     <span className={cn("text-sm font-medium", colorClasses.text)}>
@@ -109,6 +165,11 @@ const StatsCards = () => {
                                     <span className="text-2xl font-bold text-gray-900">
                                         {stat.value}
                                     </span>
+                                    {stat.subtitle && (
+                                        <span className="text-sm text-gray-500">
+                                            {stat.subtitle}
+                                        </span>
+                                    )}
                                 </div>
                                 <h3 className="text-sm font-medium text-gray-600 mt-1">
                                     {stat.title}

@@ -17,10 +17,6 @@ export const useHeteroSemarang = (initialFilters = {}) => {
         ...initialFilters
     })
 
-    useEffect(() => {
-        fetchMembers(1)
-    }, [])
-
     const fetchMembers = useCallback(async (page = 1, customFilters = null) => {
         try {
             setLoading(true)
@@ -37,9 +33,9 @@ export const useHeteroSemarang = (initialFilters = {}) => {
             setMembers(result.data || [])
             setPagination(prev => ({
                 ...prev,
-                page: result.meta?.pagination?.page || page,
-                total: result.meta?.pagination?.total || 0,
-                totalPages: result.meta?.pagination?.totalPages || 0,
+                page: result.metadata?.pagination?.page || page,
+                total: result.metadata?.pagination?.total || 0,
+                totalPages: result.metadata?.pagination?.totalPages || 0,
             }))
         } catch (error) {
             console.error('Error fetching members:', error)
@@ -52,10 +48,15 @@ export const useHeteroSemarang = (initialFilters = {}) => {
 
     const refetchWithFilters = useCallback((newFilters) => {
         setFilters(newFilters)
-    }, [])
+        fetchMembers(1, newFilters)
+    }, [fetchMembers])
 
     const changePage = useCallback((page) => {
         fetchMembers(page)
+    }, [fetchMembers])
+
+    useEffect(() => {
+        fetchMembers(1)
     }, [fetchMembers])
 
     const addMemberHeteroSemarang = async (memberData) => {

@@ -226,21 +226,32 @@ const Program = () => {
                                         onSelectMember={setSelectedProgram}
                                         headers={tableConfig.headers}
                                         isLoading={loading}
+                                        formatFields={{
+                                            price: (value) => {
+                                                if (!value) return '-';
+                                                if (value.includes('Rp.')) return value;
+                                                
+                                                const numericValue = value.toString().replace(/\D/g, '');
+                                                if (numericValue === '') return '-';
+                                                
+                                                const numberValue = parseInt(numericValue);
+                                                if (isNaN(numberValue)) return '-';
+                                                
+                                                const formatted = numberValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                                                return `Rp. ${formatted}`;
+                                            }
+                                        }}
+                                        
                                     />
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-                                        Showing <span className="font-semibold">{formattedPrograms.length}</span> of{' '}
-                                        <span className="font-semibold">
-                                            {pagination.total > 0 ? pagination.total : formattedPrograms.length}
-                                        </span> program
-                                    </div>
                                     
                                     <Pagination 
                                         currentPage={pagination.page}
                                         totalPages={pagination.totalPages}
                                         totalItems={pagination.total}
+                                        itemsPerPage={pagination.limit}
                                         onPageChange={handlePageChange}
                                         disabled={loading}
                                     />

@@ -15,12 +15,10 @@ import { useImpala } from "../hooks/useImpala";
 const ImpalaManagement = () => {
     const [selectedParticipant, setSelectedParticipant] = useState(null)
     const [lastRefresh, setLastRefresh] = useState(new Date())
-    const { participant, loading, error, refreshData, pagination, filters, setFilters, fetchImpala, addProgram, updateProgram, deleteProgram, handlePageChange } = useImpala();
+    const { participant, loading, error, refreshData, pagination, filters, fetchImpala, addProgram, updateProgram, deleteProgram, handlePageChange } = useImpala();
 
     const handleEdit = () => {
         if (selectedParticipant) {
-            console.log('Edit client:', selectedParticipant);
-            
             alert(`Edit client: ${selectedParticipant.fullName}`);
         }
     };

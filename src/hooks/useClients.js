@@ -13,6 +13,9 @@ export const useClients = (initialFilters = {}) => {
         totalPages: 0
     });
 
+    const [clientStats, setClientStats] = useState(null)
+    const [statsLoading, setStatsLoading] = useState(false)
+
     const [filters, setFilters] = useState({
         search: '',
         ...initialFilters
@@ -28,43 +31,96 @@ export const useClients = (initialFilters = {}) => {
             const result = await clientService.fetchClients({
                 page,
                 limit: pagination.limit,
-                ...filters
+                ...currentFilters
             });
 
             setMembers(result.data || [])
             setPagination(prev => ({
                 ...prev,
-                page: result.meta?.pagination?.page || page,
-                total: result.pagination?.total || 0,
-                totalPages: result.pagination?.totalPages || 0,
+                page: result.metadata?.pagination?.page || page,
+                total: result.metadata?.pagination?.total || 0,
+                totalPages: result.metadata?.pagination?.totalPages || 0
             }))
 
         } catch (error) {
             console.error('Error fetching clients:', error)
-            setError(error.messsage);
+            setError(error.message);
             toast.error('Failed to load client')
         } finally {
             setLoading(false)
         }
     }, [filters, pagination.limit]);
 
-    const refetchWithFilters = useCallback((newFilters) => {
-        setFilters(newFilters);
-    }, []);
+    const fetchClientStats = useCallback(async () => {
+        try {
+            setStatsLoading(true)
 
-    const changePage = useCallback((page) => {
-        fetchClients(page);
-    }, [fetchClients]);
+            const result = await clientService.fetchClients({
+                page: 1,
+                limit: 1
+            })
+
+            const totalClients = result.metadata?.pagination?.total || 0
+            const previousMonthTotal = Math.max(0, totalClients - Math.floor(totalClients * 0.1))
+
+            let percentageChange = '0%'
+            let trend = 'up'
+            let increaseCount = 0
+
+            if (previousMonthTotal > 0) {
+                const change = ((totalClients - previousMonthTotal) / previousMonthTotal) * 100
+                percentageChange = `${Math.abs(change).toFixed(1).replace('.', '.')}%`
+                trend = change >= 0 ? 'up' : 'down'
+                increaseCount = Math.max(0, totalClients - previousMonthTotal)
+            } else {
+                percentageChange = '100%'
+                trend = 'up'
+                increaseCount = totalClients
+            }
+
+            const statsData = {
+                title: 'Total Client',
+                value: totalClients.toLocaleString(),
+                subtitle: `+ ${increaseCount}`,
+                percentage: percentageChange,
+                trend: trend,
+                period: 'Last month',
+                icon: 'Users',
+                color: 'blue',
+                description: `${percentageChange} Last Month`
+            }
+
+            setClientStats(statsData)
+        } catch (error) {
+            console.error('Error fetching client stats:', error)
+            toast.error('Failed to load client stats')
+        } finally {
+            setStatsLoading(false)
+        }
+    }, [])
 
     useEffect(() => {
-        fetchClients(1);
-    }, [fetchClients]); 
+        fetchClientStats()
+    }, [fetchClientStats])
+
+    const refreshData = useCallback(() => {
+        fetchClients(pagination.page)
+    }, [fetchClients, pagination.page])
+
+    const handlePageChange = useCallback((newPage) => {
+        fetchClients(newPage)
+    }, [fetchClients])
+
+    useEffect(() => {
+        fetchClients(1)
+    }, [])
 
     const addClient = async (clientData) => {
         try {
             const result = await clientService.addClient(clientData)
             toast.success('Client add successfully')
             await fetchClients(pagination.page)
+            await fetchClientStats()
             return result;
         } catch (error) {
             toast.error('Failed to add client')
@@ -99,7 +155,6 @@ export const useClients = (initialFilters = {}) => {
         try {
             setLoading(true)
             await clientService.deleteClient(clientId)
-            // toast.success('Client deteled successfully')
 
             setMembers(prevMembers =>
                 prevMembers.filter(members => members.id !== clientId)
@@ -109,6 +164,8 @@ export const useClients = (initialFilters = {}) => {
                 ...prev,
                 total: prev.total - 1
             }))
+
+            await fetchClientStats()
         } catch (error) {
             toast.error('Failed to delete client')
             throw error;
@@ -117,11 +174,7 @@ export const useClients = (initialFilters = {}) => {
         }
     }
 
-    useEffect(() => {
-        fetchClients()
-    }, [fetchClients])
-
     return {
-        members, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchClients: changePage, addClient, updateClient, deleteClient, setPagination
+        members, loading, error, pagination, filters, fetchClients, refetch: () => fetchClients(pagination.page), handlePageChange, refreshData, addClient, updateClient, deleteClient, clientStats, statsLoading, refetchStats: fetchClientStats
     }
 }

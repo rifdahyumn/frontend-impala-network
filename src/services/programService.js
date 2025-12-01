@@ -125,6 +125,23 @@ class ProgramService {
             throw error
         }
     }
+
+    async fetchPriceStats() {
+        try {
+            const response = await fetch(`${this.baseURL}/program/price-stats`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            return await this.handleResponse(response)
+
+        } catch (error) {
+            console.error('Error fetching price stats:', error)
+            throw error
+        }
+    }
 }
 
 export default new ProgramService()

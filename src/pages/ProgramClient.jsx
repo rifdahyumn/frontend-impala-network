@@ -25,8 +25,8 @@ const ProgramClient = () => {
         loading,
         error,
         pagination,
+        handlePageChange,
         filters,
-        setFilters,
         fetchClients,
         addClient,
         updateClient,
@@ -83,7 +83,6 @@ const ProgramClient = () => {
         try {
             await deleteClient(clientId);
             setSelectedMember(null);
-            // toast.success('Client deleted successfully');
         } catch {
             // 
         }
@@ -98,22 +97,22 @@ const ProgramClient = () => {
         }
     }, [members, selectedMember?.id])
 
-    const handleRefresh = () => {
-        fetchClients(pagination.page);
-    };
+    // const handleRefresh = () => {
+    //     fetchClients(pagination.page);
+    // };
 
-    const handleSearch = (searchTerm) => {
-        setFilters({ ...filters, search: searchTerm });
-    };
+    // const handleSearch = (searchTerm) => {
+    //     setFilters({ ...filters, search: searchTerm });
+    // };
 
-    const handleFilterChange = (newFilters) => {
-        setFilters({ ...filters, ...newFilters });
-    };
+    // const handleFilterChange = (newFilters) => {
+    //     setFilters({ ...filters, ...newFilters });
+    // };
 
-    const handlePageChange = (page) => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        fetchClients(page);
-    };
+    // const handlePageChange = (page) => {
+    //     window.scrollTo({ top: 0, behavior: 'smooth' });
+    //     fetchClients(page);
+    // };
 
     const tableConfig = {
         headers: ['No', 'Full Name', 'Email', 'Phone', 'Company', 'Program Name', 'Status', 'Action'],
@@ -125,7 +124,6 @@ const ProgramClient = () => {
     const formattedMembers = members.map((client, index) => {
         const currentPage = pagination.page;
         const itemsPerPage = pagination.limit;
-        
         const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
         
         return {
@@ -135,7 +133,6 @@ const ProgramClient = () => {
             email: client.email,
             phone: client.phone,
             company: client.company,
-            // industry: client.industry,
             programName: client.program_name,
             status: client.status,
             action: 'Detail',
@@ -159,31 +156,11 @@ const ProgramClient = () => {
                         )}
                     </CardHeader>
                     <CardContent>
-                        {error && (
-                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
-                                <div className="flex items-start gap-3">
-                                    <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1">
-                                        <h3 className="text-sm font-semibold text-red-800">Failed to load clients</h3>
-                                        <p className="text-sm text-red-600 mt-1">{error}</p>
-                                    </div>
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        onClick={handleRefresh}
-                                        className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
-                                    >
-                                        <RefreshCw className="h-4 w-4" />
-                                        Retry
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
 
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2'>
-                                <SearchBar onSearch={handleSearch} />
-                                <FilterDropdown onFilterChange={handleFilterChange} />
+                                <SearchBar />
+                                <FilterDropdown />
                                 <FilterButton />
                             </div>
 
@@ -250,17 +227,12 @@ const ProgramClient = () => {
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-                                        Showing <span className="font-semibold">{formattedMembers.length}</span> of{' '}
-                                        <span className="font-semibold">
-                                            {pagination.total > 0 ? pagination.total : formattedMembers.length}
-                                        </span> program
-                                    </div>
                                     
                                     <Pagination 
                                         currentPage={pagination.page}
                                         totalPages={pagination.totalPages}
                                         totalItems={pagination.total}
+                                        itemsPerPage={pagination.limit}
                                         onPageChange={handlePageChange}
                                         disabled={loading}
                                     />
