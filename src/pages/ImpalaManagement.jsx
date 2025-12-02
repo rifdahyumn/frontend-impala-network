@@ -1,77 +1,84 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, AlertCircle, Tag, X } from "lucide-react";
+import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X } from "lucide-react";
 import { Button } from "../components/ui/button"
 import React, { useEffect, useState, useMemo } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
 import ExportButton from "../components/ActionButton/ExportButton";
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from "../components/Pagination/Pagination";
-import FilterButton from '../components/SearchFilter/Filter'; // ✅ DIPERBAIKI
 import ImpalaContent from '../components/Content/ImpalaContent';
 import { useImpala } from "../hooks/useImpala";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuGroup, 
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem
+} from "../components/ui/dropdown-menu";
 
 const ImpalaManagement = () => {
     const [selectedParticipant, setSelectedParticipant] = useState(null)
     
-    // ⭐⭐ STATE UNTUK FRONTEND FILTERING
+    // STATE UNTUK FRONTEND FILTERING
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [activeFilters, setActiveFilters] = useState({
+        gender: null, // 'male', 'female', atau null
+        category: null, // category atau null
+    });
     const [filteredParticipants, setFilteredParticipants] = useState([]);
+    const [availableCategories, setAvailableCategories] = useState([]);
 
     const { participant, loading, error, pagination, handlePageChange } = useImpala();
 
-    // ⭐⭐ EKSTRAK SEMUA CATEGORY UNIK DARI DATA PARTICIPANT
-    const availableCategories = useMemo(() => {
-        if (!participant.length) return [];
-        
-        // Ambil semua category dari data participant
-        const allCategories = participant
-            .map(p => p.category)
-            .filter(category => category && category.trim() !== "");
-        
-        // Hilangkan duplikat dan urutkan
-        const uniqueCategories = [...new Set(allCategories)].sort();
-        
-        // Format untuk filter options dengan emoji yang sesuai
-        return uniqueCategories.map(category => {
-            let emoji = "👤";
-            const lowerCategory = category.toLowerCase();
-            
-            if (lowerCategory.includes("mahasiswa")) emoji = "🎓";
-            else if (lowerCategory.includes("umkm")) emoji = "🏪";
-            else if (lowerCategory.includes("startup")) emoji = "🚀";
-            else if (lowerCategory.includes("corporate")) emoji = "🏢";
-            else if (lowerCategory.includes("student")) emoji = "📚";
-            else if (lowerCategory.includes("professional")) emoji = "💼";
-            
-            return {
-                value: category.toLowerCase(),
-                label: `${emoji} ${category}`,
-                original: category
-            };
-        });
-    }, [participant]);
-
-    // ⭐⭐ FILTER OPTIONS BERDASARKAN CATEGORY
-    const categoryFilterOptions = [
-        { value: "all", label: "👥 All Categories" },
-        ...availableCategories
+    // GENDER OPTIONS
+    const genderOptions = [
+        { value: 'laki-laki', label: '👨 Laki-laki' },
+        { value: 'Perempuan', label: '👩 Perempuan' },
     ];
 
-    // ⭐⭐ FUNGSI UNTUK APPLY SEARCH & FILTER
+    // EKSTRAK SEMUA CATEGORY UNIK DARI DATA PARTICIPANT
+    const extractCategories = useMemo(() => {
+        return (participants) => {
+            if (!participants.length) return [];
+            
+            // Ambil semua category dari data participant
+            const allCategories = participants
+                .map(p => p.category)
+                .filter(category => category && category.trim() !== "");
+            
+            // Hilangkan duplikat dan urutkan
+            const uniqueCategories = [...new Set(allCategories)].sort();
+            
+            // Format untuk filter options dengan emoji yang sesuai
+            return uniqueCategories.map(category => {
+                let emoji = "👤";
+                const lowerCategory = category.toLowerCase();
+                
+                if (lowerCategory.includes("mahasiswa")) emoji = "🎓";
+                else if (lowerCategory.includes("umkm")) emoji = "🏪";
+                else if (lowerCategory.includes("startup")) emoji = "🚀";
+                else if (lowerCategory.includes("corporate")) emoji = "🏢";
+                else if (lowerCategory.includes("student")) emoji = "📚";
+                else if (lowerCategory.includes("professional")) emoji = "💼";
+                
+                return {
+                    value: category.toLowerCase(),
+                    label: `${emoji} ${category}`,
+                    original: category
+                };
+            });
+        };
+    }, []);
+
+    // FUNGSI UNTUK APPLY SEARCH & FILTER
     const applyAllFilters = () => {
         let result = [...participant];
         
-        // 1. Apply Category Filter
-        if (selectedCategory && selectedCategory !== "all") {
-            result = result.filter(participant => {
-                const participantCategory = participant.category?.toLowerCase();
-                return participantCategory === selectedCategory;
-            });
-        }
-        
-        // 2. Apply Search
+        // 1. Apply Search
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase();
             result = result.filter(participant =>
@@ -83,29 +90,77 @@ const ImpalaManagement = () => {
             );
         }
         
+        // 2. Apply Gender Filter
+        if (activeFilters.gender) {
+            result = result.filter(participant => {
+                const participantGender = participant.gender?.toLowerCase();
+                return activeFilters.gender === 'all' || participantGender === activeFilters.gender;
+            });
+        }
+        
+        // 3. Apply Category Filter
+        if (activeFilters.category && activeFilters.category !== 'all') {
+            result = result.filter(participant => {
+                const participantCategory = participant.category;
+                if (!participantCategory) return false;
+                
+                return participantCategory.toLowerCase() === activeFilters.category.toLowerCase();
+            });
+        }
+        
         setFilteredParticipants(result);
     };
 
-    // ⭐⭐ HANDLE SEARCH
+    // HANDLE SEARCH
     const handleSearch = (term) => {
         setSearchTerm(term);
-        applyAllFilters();
     };
 
-    // ⭐⭐ HANDLE CATEGORY FILTER CHANGE
-    const handleCategoryFilterChange = (categoryValue) => {
-        setSelectedCategory(categoryValue);
-        applyAllFilters();
+    // HANDLE GENDER FILTER CHANGE
+    const handleGenderFilterChange = (gender) => {
+        setActiveFilters(prev => ({
+            ...prev,
+            gender: prev.gender === gender ? null : gender
+        }));
     };
 
-    // ⭐⭐ CLEAR ALL FILTERS
+    // HANDLE CATEGORY FILTER CHANGE
+    const handleCategoryFilterChange = (category) => {
+        setActiveFilters(prev => ({
+            ...prev,
+            category: prev.category === category ? null : category
+        }));
+    };
+
+    // CLEAR ALL FILTERS
     const clearAllFilters = () => {
         setSearchTerm("");
-        setSelectedCategory(null);
-        setFilteredParticipants(participant);
+        setActiveFilters({
+            gender: null,
+            category: null,
+        });
     };
 
-    // ⭐⭐ APPLY FILTERS SETIAP PARTICIPANT BERUBAH
+    // CLEAR SPECIFIC FILTER
+    const clearFilter = (filterType) => {
+        if (filterType === 'gender') {
+            setActiveFilters(prev => ({ ...prev, gender: null }));
+        } else if (filterType === 'category') {
+            setActiveFilters(prev => ({ ...prev, category: null }));
+        } else if (filterType === 'search') {
+            setSearchTerm("");
+        }
+    };
+
+    // INITIALIZE CATEGORIES
+    useEffect(() => {
+        if (participant.length > 0) {
+            const extractedCategories = extractCategories(participant);
+            setAvailableCategories(extractedCategories);
+        }
+    }, [participant, extractCategories]);
+
+    // APPLY FILTERS SETIAP PARTICIPANT BERUBAH
     useEffect(() => {
         if (participant.length > 0) {
             setFilteredParticipants(participant);
@@ -113,10 +168,10 @@ const ImpalaManagement = () => {
         }
     }, [participant]);
 
-    // ⭐⭐ APPLY FILTERS SETIAP SEARCH ATAU CATEGORY BERUBAH
+    // APPLY FILTERS SETIAP SEARCH ATAU FILTER BERUBAH
     useEffect(() => {
         applyAllFilters();
-    }, [searchTerm, selectedCategory]);
+    }, [searchTerm, activeFilters]);
 
     const handleEdit = () => {
         if (selectedParticipant) {
@@ -142,21 +197,47 @@ const ImpalaManagement = () => {
         }
     }, [participant, selectedParticipant?.id])
 
-    // ⭐⭐ FUNGSI UNTUK GET CATEGORY LABEL
+    // GET ACTIVE FILTERS COUNT - HANYA GENDER DAN CATEGORY
+    const getActiveFiltersCount = () => {
+        let count = 0;
+        // TIDAK MENGHITUNG SEARCH TERM
+        if (activeFilters.gender) count++;
+        if (activeFilters.category) count++;
+        return count;
+    };
+
+    // GET TOTAL ACTIVE CRITERIA (SEARCH + FILTERS) UNTUK DISPLAY
+    const getTotalActiveCriteria = () => {
+        let count = 0;
+        if (searchTerm) count++;
+        if (activeFilters.gender) count++;
+        if (activeFilters.category) count++;
+        return count;
+    };
+
+    // GET CATEGORY LABEL
     const getCategoryLabel = (categoryValue) => {
         if (!categoryValue || categoryValue === "all") return "All Categories";
         const category = availableCategories.find(c => c.value === categoryValue);
         return category ? category.original : categoryValue;
     };
 
+    // GET GENDER LABEL
+    const getGenderLabel = (genderValue) => {
+        if (!genderValue) return "";
+        if (genderValue === 'laki-laki') return '👨 Laki-laki';
+        if (genderValue === 'perempuan') return '👩 Perempuan';
+        return genderValue;
+    };
+
     const tableConfig = {
-        headers: ['No', 'Full Name', 'Email', 'Phone', 'Program Name', 'Category', 'Entity', 'Action'],
+        headers: ['No', 'Full Name', 'Email', 'Gender', 'Program Name', 'Category', 'Entity', 'Action'],
         title: "Impala Management",
         addButton: "Add Participant",
         detailTitle: "Participant Details"
     };
 
-    // ⭐⭐ FORMAT PARTICIPANT DARI filteredParticipants
+    // FORMAT PARTICIPANT DARI filteredParticipants
     const formattedParticipants = filteredParticipants.map((participant, index) => {
         const currentPage = pagination.page;
         const itemsPerPage = pagination.limit;
@@ -222,33 +303,96 @@ const ImpalaManagement = () => {
                                     placeholder="Search..."
                                 />
                                 
-                                {/* FILTER BY CATEGORY */}
-                                {availableCategories.length > 0 && (
-                                    <FilterButton 
-                                        onFilterChange={handleCategoryFilterChange}
-                                        filterOptions={categoryFilterOptions}
-                                        activeFilter={selectedCategory}
-                                        buttonText={
-                                            selectedCategory && selectedCategory !== "all" 
-                                                ? `Category: ${getCategoryLabel(selectedCategory)}`
-                                                : "Filter by Category"
-                                        }
-                                        color="green"
-                                    />
-                                )}
-                                
-                                {/* CLEAR FILTERS BUTTON */}
-                                {(searchTerm || selectedCategory) && (
-                                    <Button 
-                                        variant="ghost" 
-                                        onClick={clearAllFilters}
-                                        className="text-sm h-10 flex items-center gap-2"
-                                        size="sm"
-                                    >
-                                        <X className="h-3 w-3" />
-                                        Clear Filters
-                                    </Button>
-                                )}
+                                {/* FILTER DROPDOWN DENGAN WARNA AMBER */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button 
+                                            variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
+                                            className={`flex items-center gap-2 transition-all duration-200 ${
+                                                getActiveFiltersCount() > 0 
+                                                    ? "bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-amber-500" 
+                                                    : "text-gray-700 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 border-gray-300"
+                                            }`}
+                                        >
+                                            <Filter className={`h-4 w-4 ${
+                                                getActiveFiltersCount() > 0 ? "text-white" : "text-gray-500"
+                                            }`} />
+                                            Filter
+                                            {getActiveFiltersCount() > 0 && (
+                                                <span className="ml-1 bg-white text-amber-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                                    {getActiveFiltersCount()}
+                                                </span>
+                                            )}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-56 shadow-lg border border-gray-200">
+                                        <DropdownMenuLabel className="text-gray-700 font-semibold">Filter Options</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        
+                                        {/* GENDER FILTER */}
+                                        <DropdownMenuGroup>
+                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
+                                                Gender
+                                            </DropdownMenuLabel>
+                                            {genderOptions.map((option) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={option.value}
+                                                    checked={activeFilters.gender === option.value}
+                                                    onCheckedChange={() => handleGenderFilterChange(option.value)}
+                                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50"
+                                                >
+                                                    {option.label}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuGroup>
+                                        
+                                        <DropdownMenuSeparator />
+                                        
+                                        {/* CATEGORY FILTER */}
+                                        <DropdownMenuGroup>
+                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
+                                                Category
+                                            </DropdownMenuLabel>
+                                            <div className="max-h-48 overflow-y-auto">
+                                                {/* ALL CATEGORIES OPTION */}
+                                                <DropdownMenuCheckboxItem
+                                                    checked={activeFilters.category === 'all'}
+                                                    onCheckedChange={() => handleCategoryFilterChange('all')}
+                                                    className="cursor-pointer hover:bg-gray-50"
+                                                >
+                                                    👥 All Categories
+                                                </DropdownMenuCheckboxItem>
+                                                
+                                                {availableCategories.map((category) => (
+                                                    <DropdownMenuCheckboxItem
+                                                        key={category.value}
+                                                        checked={activeFilters.category?.toLowerCase() === category.value.toLowerCase()}
+                                                        onCheckedChange={() => handleCategoryFilterChange(category.value)}
+                                                        className="cursor-pointer hover:bg-gray-50"
+                                                    >
+                                                        {category.label}
+                                                    </DropdownMenuCheckboxItem>
+                                                ))}
+                                            </div>
+                                        </DropdownMenuGroup>
+                                        
+                                        <DropdownMenuSeparator />
+                                        
+                                        {/* CLEAR FILTERS - HANYA CLEAR GENDER & CATEGORY */}
+                                        <DropdownMenuItem 
+                                            onClick={() => {
+                                                setActiveFilters({
+                                                    gender: null,
+                                                    category: null,
+                                                });
+                                            }}
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer font-medium"
+                                        >
+                                            <X className="h-4 w-4 mr-2" />
+                                            Clear Filters
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
 
                             <div className='flex gap-2'>
@@ -260,52 +404,74 @@ const ImpalaManagement = () => {
                             </div>
                         </div>
                         
-                        {/* ⭐⭐ ACTIVE FILTERS BADGES */}
-                        {(searchTerm || selectedCategory) && (
+                        {/* ACTIVE FILTERS BADGES - TAMPILKAN JIKA ADA SEARCH ATAU FILTER */}
+                        {getTotalActiveCriteria() > 0 && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
-                                <span className="text-sm font-medium text-gray-700">Active filters:</span>
+                                <span className="text-sm text-gray-600">Active filters:</span>
+                                
+                                {/* SEARCH BADGE */}
                                 {searchTerm && (
-                                    <div className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2">
-                                        <Tag className="h-3 w-3" />
-                                        <span>Search: "{searchTerm}"</span>
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        <span>🔍 "{searchTerm}"</span>
                                         <button 
-                                            onClick={() => setSearchTerm("")}
+                                            onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"
-                                            title="Remove search"
                                         >
-                                            <X className="h-3 w-3" />
+                                            ×
                                         </button>
-                                    </div>
-                                )}
-                                {selectedCategory && selectedCategory !== "all" && (
-                                    <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2">
-                                        <Tag className="h-3 w-3" />
-                                        <span>Category: {getCategoryLabel(selectedCategory)}</span>
-                                        <button 
-                                            onClick={() => setSelectedCategory(null)}
-                                            className="text-green-600 hover:text-green-800 ml-1"
-                                            title="Remove category filter"
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* ⭐⭐ FILTER STATUS INFO - DIHAPUS BAGIAN "SHOWING ALL" */}
-                        {selectedCategory && selectedCategory !== "all" && (
-                            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                                <div className="flex items-center justify-between">
-                                    <div className="text-sm text-gray-600">
-                                        <span>
-                                            Showing <span className="font-semibold">{filteredParticipants.length}</span> participants
-                                        </span>
-                                    </div>
-                                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                                        {getCategoryLabel(selectedCategory)}
                                     </span>
-                                </div>
+                                )}
+                                
+                                {/* GENDER FILTER BADGE */}
+                                {activeFilters.gender && (
+                                    <span className="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        {getGenderLabel(activeFilters.gender)}
+                                        <button 
+                                            onClick={() => clearFilter('gender')}
+                                            className="text-pink-600 hover:text-pink-800 ml-1"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                )}
+                                
+                                {/* CATEGORY FILTER BADGE */}
+                                {activeFilters.category && activeFilters.category !== 'all' && (
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        <Tag className="w-3 h-3" />
+                                        {getCategoryLabel(activeFilters.category)}
+                                        <button 
+                                            onClick={() => clearFilter('category')}
+                                            className="text-green-600 hover:text-green-800 ml-1"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                )}
+                                
+                                {/* ALL CATEGORIES BADGE */}
+                                {activeFilters.category === 'all' && (
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        <Tag className="w-3 h-3" />
+                                        All Categories
+                                        <button 
+                                            onClick={() => clearFilter('category')}
+                                            className="text-blue-600 hover:text-blue-800 ml-1"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                )}
+                                
+                                {/* CLEAR ALL - CLEARS BOTH SEARCH AND FILTERS */}
+                                <Button 
+                                    variant="ghost" 
+                                    onClick={clearAllFilters}
+                                    className="text-sm h-8"
+                                    size="sm"
+                                >
+                                    Clear All
+                                </Button>
                             </div>
                         )}
 
@@ -327,14 +493,14 @@ const ImpalaManagement = () => {
                                         No participants found
                                     </h3>
                                     <p className="text-sm text-gray-500 max-w-md">
-                                        {searchTerm || selectedCategory 
-                                            ? "No participants match your current filters."
+                                        {getTotalActiveCriteria() > 0 
+                                            ? "No participants match your current filters. Try adjusting your criteria."
                                             : "Get started by adding your first participant."
                                         }
                                     </p>
                                 </div>
                                 <div className="flex gap-2">
-                                    {(searchTerm || selectedCategory) && (
+                                    {getTotalActiveCriteria() > 0 && (
                                         <Button 
                                             className="flex items-center gap-2"
                                             onClick={clearAllFilters}
@@ -373,7 +539,8 @@ const ImpalaManagement = () => {
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
                                     <div className="text-sm text-gray-600">
-                                        Showing {filteredParticipants.length} participants
+                                        Showing {filteredParticipants.length} of {participant.length} participants
+                                        {getTotalActiveCriteria() > 0 && " (filtered)"}
                                     </div>
                                     
                                     <Pagination 

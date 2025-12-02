@@ -5,14 +5,23 @@ import SearchBar from "../components/SearchFilter/SearchBar";
 import ExportButton from "../components/ActionButton/ExportButton";
 import MemberTable from "../components/MemberTable/MemberTable";
 import Pagination from "../components/Pagination/Pagination";
-import FilterButton from "../components/SearchFilter/Filter";
-import { Loader2, Plus, Users, UserCheck, AlertCircle, Tag, X, Building2 } from "lucide-react"
+import { Loader2, Plus, Users, UserCheck, AlertCircle, Tag, X, Building2, Filter, User } from "lucide-react"
 import { Button } from "../components/ui/button"
 import AddMemberSurakarta from "../components/AddButton/AddMemberSurakarta";
 import HeteroSoloContent from "../components/Content/HeteroSurakartaContent";
 import { useHeteroSolo } from "../hooks/useHeteroSolo";
 import toast from "react-hot-toast";
 import MemberStatsCards from "../MemberHetero/MemberStatsCard";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuGroup, 
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem
+} from "../components/ui/dropdown-menu";
 
 const HeteroSurakarta = () => {
     const [selectedMember, setSelectedMember] = useState(null)
@@ -22,8 +31,12 @@ const HeteroSurakarta = () => {
     
     // STATE UNTUK FRONTEND FILTERING
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedSpace, setSelectedSpace] = useState(null);
+    const [activeFilters, setActiveFilters] = useState({
+        gender: null, // 'male', 'female', atau null
+        space: null, // space atau null
+    });
     const [filteredMembers, setFilteredMembers] = useState([]);
+    const [availableSpaces, setAvailableSpaces] = useState([]);
 
     const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroSolo, updateMemberHeteroSolo, deleteMemberHeteroSolo } = useHeteroSolo()
 
@@ -47,74 +60,76 @@ const HeteroSurakarta = () => {
         { value: "outdoorspace", label: "🌳 Outdoor Space", original: "Outdoor Space" }
     ];
 
-    // EKSTRAK SPACE YANG ADA DI DATA + TAMBAHKAN YANG BELUM ADA
-    const availableSpaces = useMemo(() => {
-        if (!members.length) return allSpaceOptions;
-        
-        // Ambil semua space dari data member
-        const existingSpaces = members
-            .map(member => member.space)
-            .filter(space => space && space.trim() !== "");
-        
-        // Format space dari data
-        const dataSpaces = existingSpaces.map(space => {
-            const lowerSpace = space.toLowerCase();
-            const matchedOption = allSpaceOptions.find(opt => 
-                lowerSpace.includes(opt.value) || 
-                opt.value.includes(lowerSpace) ||
-                space.toLowerCase().includes(opt.value)
-            );
-            
-            if (matchedOption) {
-                return {
-                    value: matchedOption.value,
-                    label: matchedOption.label,
-                    original: matchedOption.original
-                };
-            }
-            
-            // Jika tidak ada yang cocok, buat baru
-            let emoji = "🏢";
-            if (lowerSpace.includes("maneka")) emoji = "🎨";
-            else if (lowerSpace.includes("rembug")) emoji = "🗣️";
-            else if (lowerSpace.includes("private")) emoji = "🚪";
-            else if (lowerSpace.includes("gatra")) emoji = "🏛️";
-            else if (lowerSpace.includes("gayeng")) emoji = "🎉";
-            else if (lowerSpace.includes("markspace")) emoji = "📍";
-            else if (lowerSpace.includes("foodlab")) emoji = "🍽️";
-            else if (lowerSpace.includes("abipraya")) emoji = "🎫";
-            else if (lowerSpace.includes("virtual")) emoji = "💻";
-            else if (lowerSpace.includes("outdoor")) emoji = "🌳";
-            else if (lowerSpace.includes("course")) emoji = "📚";
-            
-            return {
-                value: lowerSpace,
-                label: `${emoji} ${space}`,
-                original: space
-            };
-        });
-        
-        // Hilangkan duplikat berdasarkan value
-        const uniqueDataSpaces = [...new Map(dataSpaces.map(item => [item.value, item])).values()];
-        
-        // Gabungkan dengan allSpaceOptions, prioritaskan yang ada di data
-        const combinedSpaces = [...uniqueDataSpaces];
-        
-        // Tambahkan yang belum ada dari allSpaceOptions
-        allSpaceOptions.forEach(option => {
-            if (!combinedSpaces.some(s => s.value === option.value)) {
-                combinedSpaces.push(option);
-            }
-        });
-        
-        return combinedSpaces.sort((a, b) => a.original.localeCompare(b.original));
-    }, [members]);
-
-    // FILTER OPTIONS BERDASARKAN SPACE
-    const spaceFilterOptions = [
-        { value: "all", label: "🏢 All Spaces" },
-        ...availableSpaces
+    // GENDER OPTIONS
+    const genderOptions = [
+        { value: 'male', label: '👨 Male' },
+        { value: 'female', label: '👩 Female' },
     ];
+
+    // EKSTRAK SPACE YANG ADA DI DATA + TAMBAHKAN YANG BELUM ADA
+    const extractSpaces = useMemo(() => {
+        return (membersList) => {
+            if (!membersList.length) return allSpaceOptions;
+            
+            // Ambil semua space dari data member
+            const existingSpaces = membersList
+                .map(member => member.space)
+                .filter(space => space && space.trim() !== "");
+            
+            // Format space dari data
+            const dataSpaces = existingSpaces.map(space => {
+                const lowerSpace = space.toLowerCase();
+                const matchedOption = allSpaceOptions.find(opt => 
+                    lowerSpace.includes(opt.value) || 
+                    opt.value.includes(lowerSpace) ||
+                    space.toLowerCase().includes(opt.value)
+                );
+                
+                if (matchedOption) {
+                    return {
+                        value: matchedOption.value,
+                        label: matchedOption.label,
+                        original: matchedOption.original
+                    };
+                }
+                
+                // Jika tidak ada yang cocok, buat baru
+                let emoji = "🏢";
+                if (lowerSpace.includes("maneka")) emoji = "🎨";
+                else if (lowerSpace.includes("rembug")) emoji = "🗣️";
+                else if (lowerSpace.includes("private")) emoji = "🚪";
+                else if (lowerSpace.includes("gatra")) emoji = "🏛️";
+                else if (lowerSpace.includes("gayeng")) emoji = "🎉";
+                else if (lowerSpace.includes("markspace")) emoji = "📍";
+                else if (lowerSpace.includes("foodlab")) emoji = "🍽️";
+                else if (lowerSpace.includes("abipraya")) emoji = "🎫";
+                else if (lowerSpace.includes("virtual")) emoji = "💻";
+                else if (lowerSpace.includes("outdoor")) emoji = "🌳";
+                else if (lowerSpace.includes("course")) emoji = "📚";
+                
+                return {
+                    value: lowerSpace,
+                    label: `${emoji} ${space}`,
+                    original: space
+                };
+            });
+            
+            // Hilangkan duplikat berdasarkan value
+            const uniqueDataSpaces = [...new Map(dataSpaces.map(item => [item.value, item])).values()];
+            
+            // Gabungkan dengan allSpaceOptions, prioritaskan yang ada di data
+            const combinedSpaces = [...uniqueDataSpaces];
+            
+            // Tambahkan yang belum ada dari allSpaceOptions
+            allSpaceOptions.forEach(option => {
+                if (!combinedSpaces.some(s => s.value === option.value)) {
+                    combinedSpaces.push(option);
+                }
+            });
+            
+            return combinedSpaces.sort((a, b) => a.original.localeCompare(b.original));
+        };
+    }, []);
 
     // FUNGSI UNTUK GET SPACE LABEL
     const getSpaceLabel = (spaceValue) => {
@@ -128,22 +143,7 @@ const HeteroSurakarta = () => {
     const applyAllFilters = () => {
         let result = [...members];
         
-        // 1. Apply Space Filter
-        if (selectedSpace && selectedSpace !== "all") {
-            result = result.filter(member => {
-                const memberSpace = member.space?.toLowerCase();
-                if (!memberSpace) return false;
-                
-                // Cek kesamaan langsung
-                if (memberSpace === selectedSpace) return true;
-                
-                // Cek apakah mengandung atau dikandung
-                return memberSpace.includes(selectedSpace) || 
-                       selectedSpace.includes(memberSpace);
-            });
-        }
-        
-        // 2. Apply Search
+        // 1. Apply Search
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase();
             result = result.filter(member =>
@@ -155,6 +155,29 @@ const HeteroSurakarta = () => {
             );
         }
         
+        // 2. Apply Gender Filter
+        if (activeFilters.gender) {
+            result = result.filter(member => {
+                const memberGender = member.gender?.toLowerCase();
+                return activeFilters.gender === 'all' || memberGender === activeFilters.gender;
+            });
+        }
+        
+        // 3. Apply Space Filter
+        if (activeFilters.space && activeFilters.space !== 'all') {
+            result = result.filter(member => {
+                const memberSpace = member.space?.toLowerCase();
+                if (!memberSpace) return false;
+                
+                // Cek kesamaan langsung
+                if (memberSpace === activeFilters.space) return true;
+                
+                // Cek apakah mengandung atau dikandung
+                return memberSpace.includes(activeFilters.space) || 
+                       activeFilters.space.includes(memberSpace);
+            });
+        }
+        
         setFilteredMembers(result);
     };
 
@@ -162,23 +185,58 @@ const HeteroSurakarta = () => {
     const handleSearch = (term) => {
         setSearchTerm(term);
         setFilters({ ...filters, search: term });
-        applyAllFilters();
+    };
+
+    // HANDLE GENDER FILTER CHANGE
+    const handleGenderFilterChange = (gender) => {
+        setActiveFilters(prev => ({
+            ...prev,
+            gender: prev.gender === gender ? null : gender
+        }));
+        setFilters({ ...filters, gender: gender || '' });
     };
 
     // HANDLE SPACE FILTER CHANGE
-    const handleSpaceFilterChange = (spaceValue) => {
-        setSelectedSpace(spaceValue);
-        setFilters({ ...filters, space: spaceValue });
-        applyAllFilters();
+    const handleSpaceFilterChange = (space) => {
+        setActiveFilters(prev => ({
+            ...prev,
+            space: prev.space === space ? null : space
+        }));
+        setFilters({ ...filters, space: space || '' });
     };
 
     // CLEAR ALL FILTERS
     const clearAllFilters = () => {
         setSearchTerm("");
-        setSelectedSpace(null);
+        setActiveFilters({
+            gender: null,
+            space: null,
+        });
         setFilteredMembers(members);
-        setFilters({ search: "", space: "" });
+        setFilters({ search: "", gender: "", space: "" });
     };
+
+    // CLEAR SPECIFIC FILTER
+    const clearFilter = (filterType) => {
+        if (filterType === 'gender') {
+            setActiveFilters(prev => ({ ...prev, gender: null }));
+            setFilters({ ...filters, gender: '' });
+        } else if (filterType === 'space') {
+            setActiveFilters(prev => ({ ...prev, space: null }));
+            setFilters({ ...filters, space: '' });
+        } else if (filterType === 'search') {
+            setSearchTerm("");
+            setFilters({ ...filters, search: '' });
+        }
+    };
+
+    // INITIALIZE SPACES
+    useEffect(() => {
+        if (members.length > 0) {
+            const extractedSpaces = extractSpaces(members);
+            setAvailableSpaces(extractedSpaces);
+        }
+    }, [members, extractSpaces]);
 
     // APPLY FILTERS SETIAP MEMBERS BERUBAH
     useEffect(() => {
@@ -188,10 +246,10 @@ const HeteroSurakarta = () => {
         }
     }, [members]);
 
-    // APPLY FILTERS SETIAP SEARCH ATAU SPACE BERUBAH
+    // APPLY FILTERS SETIAP SEARCH ATAU FILTER BERUBAH
     useEffect(() => {
         applyAllFilters();
-    }, [searchTerm, selectedSpace]);
+    }, [searchTerm, activeFilters]);
 
     const memberStats = useMemo(() => {
         const totalMembers = filteredMembers.length;
@@ -203,7 +261,7 @@ const HeteroSurakarta = () => {
             {
                 title: "Total Members",
                 value: totalMembers.toString(),
-                subtitle: selectedSpace && selectedSpace !== "all" ? `in ${getSpaceLabel(selectedSpace)}` : "",
+                subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
                 percentage: `${totalMembers > 0 ? "12.5" : "0"}%`,
                 trend: totalMembers > 0 ? "up" : "neutral",
                 period: "Last Month",
@@ -214,7 +272,7 @@ const HeteroSurakarta = () => {
             {
                 title: "Active Members",
                 value: activeMembers.toString(),
-                subtitle: selectedSpace && selectedSpace !== "all" ? `in ${getSpaceLabel(selectedSpace)}` : "",
+                subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
                 percentage: `${activePercentage}%`,
                 trend: activeMembers > 0 ? "up" : "down",
                 period: "Last Month",
@@ -223,7 +281,7 @@ const HeteroSurakarta = () => {
                 description: `${activePercentage}% of total`
             }
         ];
-    }, [filteredMembers, selectedSpace, getSpaceLabel]);
+    }, [filteredMembers, activeFilters.space, getSpaceLabel]);
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
@@ -302,8 +360,34 @@ const HeteroSurakarta = () => {
         fetchMembers(page)
     }
 
+    // GET ACTIVE FILTERS COUNT - HANYA GENDER DAN SPACE
+    const getActiveFiltersCount = () => {
+        let count = 0;
+        // TIDAK MENGHITUNG SEARCH TERM
+        if (activeFilters.gender) count++;
+        if (activeFilters.space) count++;
+        return count;
+    };
+
+    // GET TOTAL ACTIVE CRITERIA (SEARCH + FILTERS) UNTUK DISPLAY
+    const getTotalActiveCriteria = () => {
+        let count = 0;
+        if (searchTerm) count++;
+        if (activeFilters.gender) count++;
+        if (activeFilters.space) count++;
+        return count;
+    };
+
+    // GET GENDER LABEL
+    const getGenderLabel = (genderValue) => {
+        if (!genderValue) return "";
+        if (genderValue === 'male') return '👨 Male';
+        if (genderValue === 'female') return '👩 Female';
+        return genderValue;
+    };
+
     const tableConfig = {
-        headers: ['No', 'Full Name', 'Email', 'Phone', 'Space', 'Company', 'Duration', 'Status', 'Action'],
+        headers: ['No', 'Full Name', 'Email', 'Gender', 'Space', 'Company', 'Duration', 'Status', 'Action'],
         title: 'Hetero Surakarta Management',
         addButton: "Add Member",
         detailTitle: "Member Details"
@@ -320,6 +404,7 @@ const HeteroSurakarta = () => {
             no: itemNumber,
             fullName: member.full_name,
             email: member.email,
+            gender: member.gender,
             phone: member.phone,
             space: member.space,
             company: member.company,
@@ -377,33 +462,96 @@ const HeteroSurakarta = () => {
                                     placeholder="Search..."
                                 />
                                 
-                                {/* FILTER BY SPACE */}
-                                {availableSpaces.length > 0 && (
-                                    <FilterButton 
-                                        onFilterChange={handleSpaceFilterChange}
-                                        filterOptions={spaceFilterOptions}
-                                        activeFilter={selectedSpace}
-                                        buttonText={
-                                            selectedSpace && selectedSpace !== "all" 
-                                                ? `Space: ${getSpaceLabel(selectedSpace)}`
-                                                : "Filter by Space"
-                                        }
-                                        color="orange"
-                                    />
-                                )}
-                                
-                                {/* CLEAR FILTERS BUTTON */}
-                                {(searchTerm || selectedSpace) && (
-                                    <Button 
-                                        variant="ghost" 
-                                        onClick={clearAllFilters}
-                                        className="text-sm h-10 flex items-center gap-2"
-                                        size="sm"
-                                    >
-                                        <X className="h-3 w-3" />
-                                        Clear Filters
-                                    </Button>
-                                )}
+                                {/* FILTER DROPDOWN DENGAN WARNA AMBER */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button 
+                                            variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
+                                            className={`flex items-center gap-2 transition-all duration-200 ${
+                                                getActiveFiltersCount() > 0 
+                                                    ? "bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-amber-500" 
+                                                    : "text-gray-700 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 border-gray-300"
+                                            }`}
+                                        >
+                                            <Filter className={`h-4 w-4 ${
+                                                getActiveFiltersCount() > 0 ? "text-white" : "text-gray-500"
+                                            }`} />
+                                            Filter
+                                            {getActiveFiltersCount() > 0 && (
+                                                <span className="ml-1 bg-white text-amber-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                                    {getActiveFiltersCount()}
+                                                </span>
+                                            )}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-56 shadow-lg border border-gray-200">
+                                        <DropdownMenuLabel className="text-gray-700 font-semibold">Filter Options</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        
+                                        {/* GENDER FILTER */}
+                                        <DropdownMenuGroup>
+                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
+                                                Gender
+                                            </DropdownMenuLabel>
+                                            {genderOptions.map((option) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={option.value}
+                                                    checked={activeFilters.gender === option.value}
+                                                    onCheckedChange={() => handleGenderFilterChange(option.value)}
+                                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50"
+                                                >
+                                                    {option.label}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuGroup>
+                                        
+                                        <DropdownMenuSeparator />
+                                        
+                                        {/* SPACE FILTER */}
+                                        <DropdownMenuGroup>
+                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
+                                                Space
+                                            </DropdownMenuLabel>
+                                            <div className="max-h-48 overflow-y-auto">
+                                                {/* ALL SPACES OPTION */}
+                                                <DropdownMenuCheckboxItem
+                                                    checked={activeFilters.space === 'all'}
+                                                    onCheckedChange={() => handleSpaceFilterChange('all')}
+                                                    className="cursor-pointer hover:bg-gray-50"
+                                                >
+                                                    🏢 All Spaces
+                                                </DropdownMenuCheckboxItem>
+                                                
+                                                {availableSpaces.map((space) => (
+                                                    <DropdownMenuCheckboxItem
+                                                        key={space.value}
+                                                        checked={activeFilters.space?.toLowerCase() === space.value.toLowerCase()}
+                                                        onCheckedChange={() => handleSpaceFilterChange(space.value)}
+                                                        className="cursor-pointer hover:bg-gray-50"
+                                                    >
+                                                        {space.label}
+                                                    </DropdownMenuCheckboxItem>
+                                                ))}
+                                            </div>
+                                        </DropdownMenuGroup>
+                                        
+                                        <DropdownMenuSeparator />
+                                        
+                                        {/* CLEAR FILTERS - HANYA CLEAR GENDER & SPACE */}
+                                        <DropdownMenuItem 
+                                            onClick={() => {
+                                                setActiveFilters({
+                                                    gender: null,
+                                                    space: null,
+                                                });
+                                            }}
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer font-medium"
+                                        >
+                                            <X className="h-4 w-4 mr-2" />
+                                            Clear Filters
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
 
                             <div className='flex gap-2'>
@@ -418,53 +566,74 @@ const HeteroSurakarta = () => {
                             </div>
                         </div>
                         
-                        {/* ACTIVE FILTERS BADGES */}
-                        {(searchTerm || selectedSpace) && (
+                        {/* ACTIVE FILTERS BADGES - TAMPILKAN JIKA ADA SEARCH ATAU FILTER */}
+                        {getTotalActiveCriteria() > 0 && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
-                                <span className="text-sm font-medium text-gray-700">Active filters:</span>
+                                <span className="text-sm text-gray-600">Active filters:</span>
+                                
+                                {/* SEARCH BADGE */}
                                 {searchTerm && (
-                                    <div className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2">
-                                        <Tag className="h-3 w-3" />
-                                        <span>Search: "{searchTerm}"</span>
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        <span>🔍 "{searchTerm}"</span>
                                         <button 
-                                            onClick={() => setSearchTerm("")}
+                                            onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"
-                                            title="Remove search"
                                         >
-                                            <X className="h-3 w-3" />
+                                            ×
                                         </button>
-                                    </div>
-                                )}
-                                {selectedSpace && selectedSpace !== "all" && (
-                                    <div className="bg-orange-50 border border-orange-200 text-orange-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2">
-                                        <Building2 className="h-3 w-3" />
-                                        <span>Space: {getSpaceLabel(selectedSpace)}</span>
-                                        <button 
-                                            onClick={() => setSelectedSpace(null)}
-                                            className="text-orange-600 hover:text-orange-800 ml-1"
-                                            title="Remove space filter"
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* FILTER STATUS INFO */}
-                        {selectedSpace && selectedSpace !== "all" && (
-                            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                                <div className="flex items-center justify-between">
-                                    <div className="text-sm text-gray-600">
-                                        <span>
-                                            Showing <span className="font-semibold">{filteredMembers.length}</span> members in <span className="font-semibold">{getSpaceLabel(selectedSpace)}</span>
-                                        </span>
-                                    </div>
-                                    <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm flex items-center gap-1">
-                                        <Building2 className="h-3 w-3" />
-                                        {getSpaceLabel(selectedSpace)}
                                     </span>
-                                </div>
+                                )}
+                                
+                                {/* GENDER FILTER BADGE */}
+                                {activeFilters.gender && (
+                                    <span className="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        {getGenderLabel(activeFilters.gender)}
+                                        <button 
+                                            onClick={() => clearFilter('gender')}
+                                            className="text-pink-600 hover:text-pink-800 ml-1"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                )}
+                                
+                                {/* SPACE FILTER BADGE */}
+                                {activeFilters.space && activeFilters.space !== 'all' && (
+                                    <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        <Building2 className="w-3 h-3" />
+                                        {getSpaceLabel(activeFilters.space)}
+                                        <button 
+                                            onClick={() => clearFilter('space')}
+                                            className="text-orange-600 hover:text-orange-800 ml-1"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                )}
+                                
+                                {/* ALL SPACES BADGE */}
+                                {activeFilters.space === 'all' && (
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        <Building2 className="w-3 h-3" />
+                                        All Spaces
+                                        <button 
+                                            onClick={() => clearFilter('space')}
+                                            className="text-blue-600 hover:text-blue-800 ml-1"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                )}
+                                
+                                {/* CLEAR ALL - CLEARS BOTH SEARCH AND FILTERS */}
+                                <Button 
+                                    variant="ghost" 
+                                    onClick={clearAllFilters}
+                                    className="text-sm h-8"
+                                    size="sm"
+                                >
+                                    Clear All
+                                </Button>
                             </div>
                         )}
 
@@ -486,14 +655,14 @@ const HeteroSurakarta = () => {
                                         No members found
                                     </h3>
                                     <p className="text-sm text-gray-500 max-w-md">
-                                        {searchTerm || selectedSpace 
-                                            ? `No members match your current filters${selectedSpace && selectedSpace !== "all" ? ` in ${getSpaceLabel(selectedSpace)}` : ""}.`
+                                        {getTotalActiveCriteria() > 0 
+                                            ? `No members match your current filters${activeFilters.space && activeFilters.space !== "all" ? ` in ${getSpaceLabel(activeFilters.space)}` : ""}.`
                                             : "Get started by adding your first member."
                                         }
                                     </p>
                                 </div>
                                 <div className="flex gap-2">
-                                    {(searchTerm || selectedSpace) && (
+                                    {getTotalActiveCriteria() > 0 && (
                                         <Button 
                                             className="flex items-center gap-2"
                                             onClick={clearAllFilters}
@@ -533,10 +702,11 @@ const HeteroSurakarta = () => {
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
                                     <div className="text-sm text-gray-600">
-                                        Showing {filteredMembers.length} members
-                                        {selectedSpace && selectedSpace !== "all" && (
+                                        Showing {filteredMembers.length} of {members.length} members
+                                        {getTotalActiveCriteria() > 0 && " (filtered)"}
+                                        {activeFilters.space && activeFilters.space !== 'all' && (
                                             <span className="ml-1 px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs">
-                                                in {getSpaceLabel(selectedSpace)}
+                                                in {getSpaceLabel(activeFilters.space)}
                                             </span>
                                         )}
                                     </div>

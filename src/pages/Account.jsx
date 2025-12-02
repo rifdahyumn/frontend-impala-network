@@ -1,17 +1,26 @@
 import AccountContent from "../components/Content/AccountContent";
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, UserCheck, AlertCircle, Tag, X, Briefcase } from "lucide-react";
+import { Plus, Loader2, Users, UserCheck, AlertCircle, Tag, X, Filter, Briefcase } from "lucide-react";
 import { Button } from "../components/ui/button"
 import React, { useState, useEffect, useMemo } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
 import ExportButton from '../components/ActionButton/ExportButton';
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from '../components/Pagination/Pagination';
-import FilterButton from '../components/SearchFilter/Filter';
 import AddUser from "../components/AddButton/AddUser";
 import { useUsers } from "../hooks/useUser";
 import toast from "react-hot-toast";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuGroup, 
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger // ⭐⭐ TAMBAHKAN INI
+} from "../components/ui/dropdown-menu";
 
 const Account = () => {
     const [selectedUser, setSelectedUser] = useState(null)
@@ -19,40 +28,39 @@ const Account = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     
-    // ⭐⭐ STATE UNTUK FRONTEND FILTERING
+    // ⭐⭐ STATE UNTUK FRONTEND FILTERING (disesuaikan dengan ImpalaManagement)
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedPosition, setSelectedPosition] = useState(null);
-    const [selectedRole, setSelectedRole] = useState(null);
-    const [selectedStatus, setSelectedStatus] = useState(null);
+    const [activeFilters, setActiveFilters] = useState({
+        position: null, // 'director', 'manager', atau null
+        role: null, // 'admin', 'user', 'superadmin', atau null
+    });
     const [filteredUsers, setFilteredUsers] = useState([]);
 
     const { users, loading, error, pagination, filters, setFilters, fetchUser, addUser, updateUser, deleteUser, activateUser } = useUsers()
 
-    // ⭐⭐ DAFTAR POSITION OPTIONS
+    // ⭐⭐ POSITION OPTIONS (disesuaikan dengan genderOptions di ImpalaManagement)
     const positionOptions = [
-        { value: "all", label: "👔 All Positions" },
-        { value: "managing director", label: "👑 Managing Director", original: "Managing Director" },
-        { value: "director", label: "🎯 Director", original: "Director" },
-        { value: "head manager", label: "📊 Head Manager", original: "Head Manager" },
-        { value: "finance", label: "💰 Finance", original: "Finance" },
-        { value: "legal", label: "⚖️ Legal", original: "Legal" },
-        { value: "talent manager", label: "👨‍💼 Talent Manager", original: "Talent Manager" },
-        { value: "ecosystem manager", label: "🌐 Ecosystem Manager", original: "Ecosystem Manager" },
-        { value: "strategic partnership executive", label: "🤝 Strategic Partnership Executive", original: "Strategic Partnership Executive" },
-        { value: "program manager", label: "📋 Program Manager", original: "Program Manager" },
-        { value: "space manager", label: "🏢 Space Manager", original: "Space Manager" },
-        { value: "creative", label: "🎨 Creative", original: "Creative" }
+        { value: 'managing director', label: '👑 Managing Director' },
+        { value: 'director', label: '🎯 Director' },
+        { value: 'head manager', label: '📊 Head Manager' },
+        { value: 'finance', label: '💰 Finance' },
+        { value: 'legal', label: '⚖️ Legal' },
+        { value: 'talent manager', label: '👨‍💼 Talent Manager' },
+        { value: 'ecosystem manager', label: '🌐 Ecosystem Manager' },
+        { value: 'strategic partnership executive', label: '🤝 Strategic Partnership Executive' },
+        { value: 'program manager', label: '📋 Program Manager' },
+        { value: 'space manager', label: '🏢 Space Manager' },
+        { value: 'creative', label: '🎨 Creative' }
     ];
 
-    // ⭐⭐ DAFTAR ROLE OPTIONS
+    // ⭐⭐ ROLE OPTIONS (disesuaikan dengan categoryOptions di ImpalaManagement)
     const roleOptions = [
-        { value: "all", label: "👥 All Roles" },
-        { value: "admin", label: "🔧 Admin", original: "Admin" },
-        { value: "user", label: "👤 User", original: "User" },
-        { value: "superadmin", label: "👑 Super Admin", original: "Super Admin" }
+        { value: 'admin', label: '🔧 Admin' },
+        { value: 'user', label: '👤 User' },
+        { value: 'superadmin', label: '👑 Super Admin' }
     ];
 
-    // ⭐⭐ DAFTAR STATUS OPTIONS
+    // ⭐⭐ DAFTAR STATUS OPTIONS (untuk statistik saja, bukan untuk filter button)
     const statusOptions = [
         { value: "all", label: "📊 All Status" },
         { value: "active", label: "🟢 Active", original: "Active" },
@@ -62,9 +70,16 @@ const Account = () => {
 
     // ⭐⭐ FUNGSI UNTUK GET LABEL
     const getLabel = (value, options) => {
-        if (!value || value === "all") return "All";
+        if (!value) return "";
         const option = options.find(opt => opt.value === value);
-        return option ? option.original : value;
+        return option ? option.label : value;
+    };
+
+    // ⭐⭐ FUNGSI UNTUK GET ORIGINAL LABEL
+    const getOriginalLabel = (value, options) => {
+        if (!value) return "";
+        const option = options.find(opt => opt.value === value);
+        return option ? option.original || option.label : value;
     };
 
     // ⭐⭐ STATISTIK USER
@@ -81,7 +96,7 @@ const Account = () => {
             {
                 title: "Total Users",
                 value: totalUsers.toString(),
-                subtitle: selectedPosition && selectedPosition !== "all" ? `${getLabel(selectedPosition, positionOptions)}` : "",
+                subtitle: activeFilters.position ? `${getOriginalLabel(activeFilters.position, positionOptions)}` : "",
                 percentage: `${totalUsers > 0 ? "8.5" : "0"}%`,
                 trend: totalUsers > 0 ? "up" : "neutral",
                 period: "Last Month",
@@ -92,7 +107,7 @@ const Account = () => {
             {
                 title: "Active Users",
                 value: activeUsers.toString(),
-                subtitle: selectedStatus && selectedStatus !== "all" ? `${getLabel(selectedStatus, statusOptions)}` : "",
+                subtitle: "",
                 percentage: `${activePercentage}%`,
                 trend: activeUsers > 0 ? "up" : "down",
                 period: "Last Month",
@@ -103,7 +118,7 @@ const Account = () => {
             {
                 title: "Admin Users",
                 value: adminUsers.toString(),
-                subtitle: selectedRole && selectedRole !== "all" ? `${getLabel(selectedRole, roleOptions)}` : "",
+                subtitle: activeFilters.role ? `${getOriginalLabel(activeFilters.role, roleOptions)}` : "",
                 percentage: `${adminPercentage}%`,
                 trend: adminUsers > 0 ? "up" : "down",
                 period: "Last Month",
@@ -112,45 +127,13 @@ const Account = () => {
                 description: `${adminUsers} admin(s), ${superAdminUsers} super admin(s)`
             }
         ];
-    }, [filteredUsers, selectedPosition, selectedRole, selectedStatus]);
+    }, [filteredUsers, activeFilters.position, activeFilters.role]);
 
     // ⭐⭐ FUNGSI UNTUK APPLY SEARCH & FILTER
     const applyAllFilters = () => {
         let result = [...users];
         
-        // 1. Apply Position Filter
-        if (selectedPosition && selectedPosition !== "all") {
-            result = result.filter(user => {
-                const userPosition = user.position?.toLowerCase();
-                if (!userPosition) return false;
-                
-                return userPosition === selectedPosition || 
-                       userPosition.includes(selectedPosition) || 
-                       selectedPosition.includes(userPosition);
-            });
-        }
-        
-        // 2. Apply Role Filter
-        if (selectedRole && selectedRole !== "all") {
-            result = result.filter(user => {
-                const userRole = user.role?.toLowerCase();
-                if (!userRole) return false;
-                
-                return userRole === selectedRole;
-            });
-        }
-        
-        // 3. Apply Status Filter
-        if (selectedStatus && selectedStatus !== "all") {
-            result = result.filter(user => {
-                const userStatus = user.status?.toLowerCase();
-                if (!userStatus) return false;
-                
-                return userStatus === selectedStatus;
-            });
-        }
-        
-        // 4. Apply Search
+        // 1. Apply Search
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase();
             result = result.filter(user =>
@@ -162,6 +145,28 @@ const Account = () => {
             );
         }
         
+        // 2. Apply Position Filter
+        if (activeFilters.position) {
+            result = result.filter(user => {
+                const userPosition = user.position?.toLowerCase();
+                if (!userPosition) return false;
+                
+                return userPosition === activeFilters.position ||
+                       userPosition.includes(activeFilters.position) ||
+                       activeFilters.position.includes(userPosition);
+            });
+        }
+        
+        // 3. Apply Role Filter
+        if (activeFilters.role) {
+            result = result.filter(user => {
+                const userRole = user.role?.toLowerCase();
+                if (!userRole) return false;
+                
+                return userRole === activeFilters.role;
+            });
+        }
+        
         setFilteredUsers(result);
     };
 
@@ -169,38 +174,49 @@ const Account = () => {
     const handleSearch = (term) => {
         setSearchTerm(term);
         setFilters({ ...filters, search: term });
-        applyAllFilters();
     };
 
     // ⭐⭐ HANDLE POSITION FILTER CHANGE
-    const handlePositionFilterChange = (positionValue) => {
-        setSelectedPosition(positionValue);
-        setFilters({ ...filters, position: positionValue });
-        applyAllFilters();
+    const handlePositionFilterChange = (position) => {
+        setActiveFilters(prev => ({
+            ...prev,
+            position: prev.position === position ? null : position
+        }));
+        setFilters({ ...filters, position: position });
     };
 
     // ⭐⭐ HANDLE ROLE FILTER CHANGE
-    const handleRoleFilterChange = (roleValue) => {
-        setSelectedRole(roleValue);
-        setFilters({ ...filters, role: roleValue });
-        applyAllFilters();
-    };
-
-    // ⭐⭐ HANDLE STATUS FILTER CHANGE
-    const handleStatusFilterChange = (statusValue) => {
-        setSelectedStatus(statusValue);
-        setFilters({ ...filters, status: statusValue });
-        applyAllFilters();
+    const handleRoleFilterChange = (role) => {
+        setActiveFilters(prev => ({
+            ...prev,
+            role: prev.role === role ? null : role
+        }));
+        setFilters({ ...filters, role: role });
     };
 
     // ⭐⭐ CLEAR ALL FILTERS
     const clearAllFilters = () => {
         setSearchTerm("");
-        setSelectedPosition(null);
-        setSelectedRole(null);
-        setSelectedStatus(null);
-        setFilteredUsers(users);
+        setActiveFilters({
+            position: null,
+            role: null,
+        });
         setFilters({ search: "", position: "", role: "", status: "" });
+        setFilteredUsers(users);
+    };
+
+    // ⭐⭐ CLEAR SPECIFIC FILTER
+    const clearFilter = (filterType) => {
+        if (filterType === 'position') {
+            setActiveFilters(prev => ({ ...prev, position: null }));
+            setFilters({ ...filters, position: "" });
+        } else if (filterType === 'role') {
+            setActiveFilters(prev => ({ ...prev, role: null }));
+            setFilters({ ...filters, role: "" });
+        } else if (filterType === 'search') {
+            setSearchTerm("");
+            setFilters({ ...filters, search: "" });
+        }
     };
 
     // ⭐⭐ APPLY FILTERS SETIAP USERS BERUBAH
@@ -211,10 +227,10 @@ const Account = () => {
         }
     }, [users]);
 
-    // ⭐⭐ APPLY FILTERS SETIAP FILTER BERUBAH
+    // ⭐⭐ APPLY FILTERS SETIAP SEARCH ATAU FILTER BERUBAH
     useEffect(() => {
         applyAllFilters();
-    }, [searchTerm, selectedPosition, selectedRole, selectedStatus]);
+    }, [searchTerm, activeFilters]);
 
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
@@ -302,6 +318,23 @@ const Account = () => {
         fetchUser(page);
     };
 
+    // ⭐⭐ GET ACTIVE FILTERS COUNT - HANYA POSITION DAN ROLE
+    const getActiveFiltersCount = () => {
+        let count = 0;
+        if (activeFilters.position) count++;
+        if (activeFilters.role) count++;
+        return count;
+    };
+
+    // ⭐⭐ GET TOTAL ACTIVE CRITERIA (SEARCH + FILTERS) UNTUK DISPLAY
+    const getTotalActiveCriteria = () => {
+        let count = 0;
+        if (searchTerm) count++;
+        if (activeFilters.position) count++;
+        if (activeFilters.role) count++;
+        return count;
+    };
+
     const tableConfig = {
         headers: ['No', 'Employee ID', 'Full Name', 'Email', 'Position', 'Role', 'Status', 'Last Login', 'Action'],
         title: 'User Account Management',
@@ -333,15 +366,7 @@ const Account = () => {
         }
     })
 
-    // ⭐⭐ HITUNG JUMLAH ACTIVE FILTERS
-    const activeFiltersCount = [
-        searchTerm, 
-        selectedPosition && selectedPosition !== "all", 
-        selectedRole && selectedRole !== "all", 
-        selectedStatus && selectedStatus !== "all"
-    ].filter(Boolean).length;
-
-    // ⭐⭐ KOMPONEN STATS CARDS (inline karena komponen eksternal tidak ada)
+    // ⭐⭐ KOMPONEN STATS CARDS
     const UserStatsCards = ({ statsData }) => {
         return (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -414,7 +439,7 @@ const Account = () => {
                             </div>
                         )}
 
-                        {/* ⭐⭐ SEARCH & FILTER SECTION */}
+                        {/* ⭐⭐ SEARCH & FILTER SECTION - DIUBAH SEPERTI IMPALAMANAGEMENT */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2 items-center'>
                                 <SearchBar 
@@ -422,57 +447,97 @@ const Account = () => {
                                     placeholder="Search..."
                                 />
                                 
-                                {/* ⭐⭐ FILTER BY POSITION */}
-                                <FilterButton 
-                                    onFilterChange={handlePositionFilterChange}
-                                    filterOptions={positionOptions}
-                                    activeFilter={selectedPosition}
-                                    buttonText={
-                                        selectedPosition && selectedPosition !== "all" 
-                                            ? `Position: ${getLabel(selectedPosition, positionOptions)}`
-                                            : "Filter by Position"
-                                    }
-                                    color="blue"
-                                />
-                                
-                                {/* ⭐⭐ FILTER BY ROLE */}
-                                <FilterButton 
-                                    onFilterChange={handleRoleFilterChange}
-                                    filterOptions={roleOptions}
-                                    activeFilter={selectedRole}
-                                    buttonText={
-                                        selectedRole && selectedRole !== "all" 
-                                            ? `Role: ${getLabel(selectedRole, roleOptions)}`
-                                            : "Filter by Role"
-                                    }
-                                    color="purple"
-                                />
-                                
-                                {/* ⭐⭐ FILTER BY STATUS */}
-                                <FilterButton 
-                                    onFilterChange={handleStatusFilterChange}
-                                    filterOptions={statusOptions}
-                                    activeFilter={selectedStatus}
-                                    buttonText={
-                                        selectedStatus && selectedStatus !== "all" 
-                                            ? `Status: ${getLabel(selectedStatus, statusOptions)}`
-                                            : "Filter by Status"
-                                    }
-                                    color="green"
-                                />
-                                
-                                {/* CLEAR FILTERS BUTTON */}
-                                {activeFiltersCount > 0 && (
-                                    <Button 
-                                        variant="ghost" 
-                                        onClick={clearAllFilters}
-                                        className="text-sm h-10 flex items-center gap-2"
-                                        size="sm"
-                                    >
-                                        <X className="h-3 w-3" />
-                                        Clear Filters ({activeFiltersCount})
-                                    </Button>
-                                )}
+                                {/* ⭐⭐ FILTER DROPDOWN DENGAN WARNA AMBER - SEPERTI IMPALAMANAGEMENT */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button 
+                                            variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
+                                            className={`flex items-center gap-2 transition-all duration-200 ${
+                                                getActiveFiltersCount() > 0 
+                                                    ? "bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-amber-500" 
+                                                    : "text-gray-700 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 border-gray-300"
+                                            }`}
+                                        >
+                                            <Filter className={`h-4 w-4 ${
+                                                getActiveFiltersCount() > 0 ? "text-white" : "text-gray-500"
+                                            }`} />
+                                            Filter
+                                            {getActiveFiltersCount() > 0 && (
+                                                <span className="ml-1 bg-white text-amber-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                                    {getActiveFiltersCount()}
+                                                </span>
+                                            )}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-56 shadow-lg border border-gray-200">
+                                        <DropdownMenuLabel className="text-gray-700 font-semibold">Filter Options</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        
+                                        {/* ⭐⭐ POSITION FILTER (SEPERTI GENDER DI IMPALAMANAGEMENT) */}
+                                        <DropdownMenuGroup>
+                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
+                                                Position
+                                            </DropdownMenuLabel>
+                                            {positionOptions.map((option) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={option.value}
+                                                    checked={activeFilters.position === option.value}
+                                                    onCheckedChange={() => handlePositionFilterChange(option.value)}
+                                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50"
+                                                >
+                                                    {option.label}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuGroup>
+                                        
+                                        <DropdownMenuSeparator />
+                                        
+                                        {/* ⭐⭐ ROLE FILTER (SEPERTI CATEGORY DI IMPALAMANAGEMENT) */}
+                                        <DropdownMenuGroup>
+                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
+                                                Role
+                                            </DropdownMenuLabel>
+                                            <div className="max-h-48 overflow-y-auto">
+                                                {/* ALL ROLES OPTION */}
+                                                <DropdownMenuCheckboxItem
+                                                    checked={activeFilters.role === 'all'}
+                                                    onCheckedChange={() => handleRoleFilterChange('all')}
+                                                    className="cursor-pointer hover:bg-gray-50"
+                                                >
+                                                    👥 All Roles
+                                                </DropdownMenuCheckboxItem>
+                                                
+                                                {roleOptions.map((role) => (
+                                                    <DropdownMenuCheckboxItem
+                                                        key={role.value}
+                                                        checked={activeFilters.role?.toLowerCase() === role.value.toLowerCase()}
+                                                        onCheckedChange={() => handleRoleFilterChange(role.value)}
+                                                        className="cursor-pointer hover:bg-gray-50"
+                                                    >
+                                                        {role.label}
+                                                    </DropdownMenuCheckboxItem>
+                                                ))}
+                                            </div>
+                                        </DropdownMenuGroup>
+                                        
+                                        <DropdownMenuSeparator />
+                                        
+                                        {/* CLEAR FILTERS - HANYA CLEAR POSITION & ROLE */}
+                                        <DropdownMenuItem 
+                                            onClick={() => {
+                                                setActiveFilters({
+                                                    position: null,
+                                                    role: null,
+                                                });
+                                                setFilters({ ...filters, position: "", role: "" });
+                                            }}
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer font-medium"
+                                        >
+                                            <X className="h-4 w-4 mr-2" />
+                                            Clear Filters
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
 
                             <div className='flex gap-2'>
@@ -487,102 +552,95 @@ const Account = () => {
                             </div>
                         </div>
                         
-                        {/* ⭐⭐ ACTIVE FILTERS BADGES */}
-                        {activeFiltersCount > 0 && (
+                        {/* ⭐⭐ ACTIVE FILTERS BADGES - TAMPILKAN JIKA ADA SEARCH ATAU FILTER */}
+                        {getTotalActiveCriteria() > 0 && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
-                                <span className="text-sm font-medium text-gray-700">Active filters:</span>
+                                <span className="text-sm text-gray-600">Active filters:</span>
+                                
+                                {/* SEARCH BADGE */}
                                 {searchTerm && (
-                                    <div className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2">
-                                        <Tag className="h-3 w-3" />
-                                        <span>Search: "{searchTerm}"</span>
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        <span>🔍 "{searchTerm}"</span>
                                         <button 
-                                            onClick={() => setSearchTerm("")}
+                                            onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"
-                                            title="Remove search"
                                         >
-                                            <X className="h-3 w-3" />
+                                            ×
                                         </button>
-                                    </div>
+                                    </span>
                                 )}
-                                {selectedPosition && selectedPosition !== "all" && (
-                                    <div className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2">
-                                        <Briefcase className="h-3 w-3" />
-                                        <span>Position: {getLabel(selectedPosition, positionOptions)}</span>
+                                
+                                {/* POSITION FILTER BADGE */}
+                                {activeFilters.position && (
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        <Briefcase className="w-3 h-3" />
+                                        {getOriginalLabel(activeFilters.position, positionOptions)}
                                         <button 
-                                            onClick={() => setSelectedPosition(null)}
+                                            onClick={() => clearFilter('position')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"
-                                            title="Remove position filter"
                                         >
-                                            <X className="h-3 w-3" />
+                                            ×
                                         </button>
-                                    </div>
+                                    </span>
                                 )}
-                                {selectedRole && selectedRole !== "all" && (
-                                    <div className="bg-purple-50 border border-purple-200 text-purple-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2">
-                                        <Users className="h-3 w-3" />
-                                        <span>Role: {getLabel(selectedRole, roleOptions)}</span>
+                                
+                                {/* ROLE FILTER BADGE */}
+                                {activeFilters.role && activeFilters.role !== 'all' && (
+                                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        <Users className="w-3 h-3" />
+                                        {getOriginalLabel(activeFilters.role, roleOptions)}
                                         <button 
-                                            onClick={() => setSelectedRole(null)}
+                                            onClick={() => clearFilter('role')}
                                             className="text-purple-600 hover:text-purple-800 ml-1"
-                                            title="Remove role filter"
                                         >
-                                            <X className="h-3 w-3" />
+                                            ×
                                         </button>
-                                    </div>
+                                    </span>
                                 )}
-                                {selectedStatus && selectedStatus !== "all" && (
-                                    <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2">
-                                        <UserCheck className="h-3 w-3" />
-                                        <span>Status: {getLabel(selectedStatus, statusOptions)}</span>
+                                
+                                {/* ALL ROLES BADGE */}
+                                {activeFilters.role === 'all' && (
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        <Users className="w-3 h-3" />
+                                        All Roles
                                         <button 
-                                            onClick={() => setSelectedStatus(null)}
-                                            className="text-green-600 hover:text-green-800 ml-1"
-                                            title="Remove status filter"
+                                            onClick={() => clearFilter('role')}
+                                            className="text-blue-600 hover:text-blue-800 ml-1"
                                         >
-                                            <X className="h-3 w-3" />
+                                            ×
                                         </button>
-                                    </div>
+                                    </span>
                                 )}
+                                
+                                {/* CLEAR ALL - CLEARS BOTH SEARCH AND FILTERS */}
+                                <Button 
+                                    variant="ghost" 
+                                    onClick={clearAllFilters}
+                                    className="text-sm h-8"
+                                    size="sm"
+                                >
+                                    Clear All
+                                </Button>
                             </div>
                         )}
 
-                        {/* ⭐⭐ FILTER STATUS INFO */}
-                        {activeFiltersCount > 0 && (
+                        {/* ⭐⭐ FILTER STATUS INFO (DIHAPUS ATAU DISEDERHANAKAN) */}
+                        {getTotalActiveCriteria() > 0 && (
                             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                                 <div className="flex items-center justify-between">
                                     <div className="text-sm text-gray-600">
                                         <span>
                                             Showing <span className="font-semibold">{filteredUsers.length}</span> users
-                                            {selectedPosition && selectedPosition !== "all" && (
-                                                <span> in <span className="font-semibold">{getLabel(selectedPosition, positionOptions)}</span></span>
+                                            {activeFilters.position && (
+                                                <span> in <span className="font-semibold">{getOriginalLabel(activeFilters.position, positionOptions)}</span> position</span>
                                             )}
-                                            {selectedRole && selectedRole !== "all" && (
-                                                <span> with role <span className="font-semibold">{getLabel(selectedRole, roleOptions)}</span></span>
+                                            {activeFilters.role && activeFilters.role !== 'all' && (
+                                                <span> with role <span className="font-semibold">{getOriginalLabel(activeFilters.role, roleOptions)}</span></span>
                                             )}
-                                            {selectedStatus && selectedStatus !== "all" && (
-                                                <span> with status <span className="font-semibold">{getLabel(selectedStatus, statusOptions)}</span></span>
+                                            {activeFilters.role === 'all' && (
+                                                <span> in all roles</span>
                                             )}
                                         </span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        {selectedPosition && selectedPosition !== "all" && (
-                                            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center gap-1">
-                                                <Briefcase className="h-3 w-3" />
-                                                {getLabel(selectedPosition, positionOptions)}
-                                            </span>
-                                        )}
-                                        {selectedRole && selectedRole !== "all" && (
-                                            <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm flex items-center gap-1">
-                                                <Users className="h-3 w-3" />
-                                                {getLabel(selectedRole, roleOptions)}
-                                            </span>
-                                        )}
-                                        {selectedStatus && selectedStatus !== "all" && (
-                                            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm flex items-center gap-1">
-                                                <UserCheck className="h-3 w-3" />
-                                                {getLabel(selectedStatus, statusOptions)}
-                                            </span>
-                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -606,14 +664,14 @@ const Account = () => {
                                         No users found
                                     </h3>
                                     <p className="text-sm text-gray-500 max-w-md">
-                                        {activeFiltersCount > 0
-                                            ? "No users match your current filters. Try adjusting your search or filters."
+                                        {getTotalActiveCriteria() > 0 
+                                            ? "No users match your current filters. Try adjusting your criteria."
                                             : "Get started by adding your first user."
                                         }
                                     </p>
                                 </div>
                                 <div className="flex gap-2">
-                                    {activeFiltersCount > 0 && (
+                                    {getTotalActiveCriteria() > 0 && (
                                         <Button 
                                             className="flex items-center gap-2"
                                             onClick={clearAllFilters}
@@ -653,12 +711,8 @@ const Account = () => {
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
                                     <div className="text-sm text-gray-600">
-                                        Showing {filteredUsers.length} users
-                                        {activeFiltersCount > 0 && (
-                                            <span className="ml-2 text-xs text-gray-500">
-                                                ({activeFiltersCount} filter{activeFiltersCount > 1 ? 's' : ''} applied)
-                                            </span>
-                                        )}
+                                        Showing {filteredUsers.length} of {users.length} users
+                                        {getTotalActiveCriteria() > 0 && " (filtered)"}
                                     </div>
                                     
                                     <Pagination 
@@ -687,22 +741,22 @@ const Account = () => {
                         fetchUser(pagination.page);
                         setSelectedUser(null);
                     }}
-                    
                 />
-             {/* Add User Modal */}
-             <AddUser 
-                isAddUserModalOpen={isAddUserModalOpen || isEditModalOpen} 
-                setIsAddUserModalOpen={(open) => {
-                    if (!open) {
-                        setIsAddUserModalOpen(false)
-                        setIsEditModalOpen(false)
-                        setEditingUser(null)
-                    }
-                }}
-                onAddUser={handleAddUserSuccess}
-                editData={editingUser}
-                onEditUser={handleEditUser}
-             />
+                
+                {/* Add User Modal */}
+                <AddUser 
+                    isAddUserModalOpen={isAddUserModalOpen || isEditModalOpen} 
+                    setIsAddUserModalOpen={(open) => {
+                        if (!open) {
+                            setIsAddUserModalOpen(false)
+                            setIsEditModalOpen(false)
+                            setEditingUser(null)
+                        }
+                    }}
+                    onAddUser={handleAddUserSuccess}
+                    editData={editingUser}
+                    onEditUser={handleEditUser}
+                />
             </div>
         </div>
     )

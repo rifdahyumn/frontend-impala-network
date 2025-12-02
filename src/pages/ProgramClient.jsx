@@ -1,10 +1,9 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Loader2, Plus, Users, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, Plus, Users, RefreshCw, Briefcase, Filter, X } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
-import FilterButton from '../components/SearchFilter/Filter';
 import ExportButton from '../components/ActionButton/ExportButton';
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from '../components/Pagination/Pagination';
@@ -12,6 +11,16 @@ import ClientContent from "../components/Content/ClientContent";
 import { toast } from 'react-hot-toast';
 import AddClient from "../components/AddButton/AddClient";
 import { useClients } from '../hooks/useClients';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuGroup, 
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem
+} from "../components/ui/dropdown-menu";
 
 const ProgramClient = () => {
     const [selectedMember, setSelectedMember] = useState(null);
@@ -21,8 +30,12 @@ const ProgramClient = () => {
     
     // STATE UNTUK SEARCH & FILTER
     const [searchTerm, setSearchTerm] = useState("");
-    const [activeFilter, setActiveFilter] = useState(null);
+    const [activeFilters, setActiveFilters] = useState({
+        status: null, // 'active', 'inactive', atau null
+        businessType: null, // business type atau null
+    });
     const [filteredMembers, setFilteredMembers] = useState([]);
+    const [availableBusinessTypes, setAvailableBusinessTypes] = useState([]);
 
     const {
         members,
@@ -30,44 +43,93 @@ const ProgramClient = () => {
         error,
         pagination,
         handlePageChange,
-        filters,
         fetchClients,
         addClient,
         updateClient,
         deleteClient
     } = useClients();
 
-    // FILTER OPTIONS KHUSUS CLIENTS
-    const clientFilterOptions = [
-        { value: "active", label: "🟢 Active" },
-        { value: "inactive", label: "🔴 Inactive" },
+    // FUNGSI UNTUK MENGAMBIL BUSINESS TYPES YANG UNIK
+    const extractBusinessTypes = useMemo(() => {
+        return (clients) => {
+            const types = new Set();
+            clients.forEach(client => {
+                if (client.business) {
+                    // Jika business adalah string, tambahkan langsung
+                    if (typeof client.business === 'string') {
+                        const cleanType = client.business.trim();
+                        if (cleanType) {
+                            types.add(cleanType);
+                        }
+                    }
+                    // Jika business adalah array (multiple types)
+                    else if (Array.isArray(client.business)) {
+                        client.business.forEach(type => {
+                            if (type && typeof type === 'string') {
+                                const cleanType = type.trim();
+                                if (cleanType) {
+                                    types.add(cleanType);
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+            
+            // Konversi ke array dan urutkan
+            return Array.from(types).sort();
+        };
+    }, []);
+
+    // STATUS OPTIONS
+    const statusOptions = [
+        { value: 'active', label: '🟢 Active', color: 'text-green-600 bg-green-50' },
+        { value: 'inactive', label: '🔴 Inactive', color: 'text-red-600 bg-red-50' },
     ];
 
-    // FUNGSI UNTUK APPLY SEARCH & FILTER
+    // FUNGSI UNTUK APPLY SEMUA FILTER
     const applyAllFilters = () => {
         let result = [...members];
         
         // 1. Apply Search
         if (searchTerm.trim()) {
+            const searchLower = searchTerm.toLowerCase();
             result = result.filter(client =>
-                client.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                client.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                client.program_name?.toLowerCase().includes(searchTerm.toLowerCase())
+                (client.full_name?.toLowerCase().includes(searchLower)) ||
+                (client.email?.toLowerCase().includes(searchLower)) ||
+                (client.company?.toLowerCase().includes(searchLower)) ||
+                (client.program_name?.toLowerCase().includes(searchLower)) ||
+                (client.business?.toLowerCase().includes(searchLower))
             );
         }
         
-        // 2. Apply Filter
-        if (activeFilter) {
+        // 2. Apply Status Filter
+        if (activeFilters.status) {
             result = result.filter(client => {
-                switch(activeFilter) {
-                    case "active":
-                        return client.status?.toLowerCase() === "active";
-                    case "inactive":
-                        return client.status?.toLowerCase() === "inactive";
-                    default:
-                        return client.status?.toLowerCase() === activeFilter;
+                const clientStatus = client.status?.toLowerCase();
+                return activeFilters.status === 'all' || clientStatus === activeFilters.status;
+            });
+        }
+        
+        // 3. Apply Business Type Filter
+        if (activeFilters.businessType && activeFilters.businessType !== 'all') {
+            result = result.filter(client => {
+                const clientBusiness = client.business;
+                if (!clientBusiness) return false;
+                
+                // Jika business adalah string
+                if (typeof clientBusiness === 'string') {
+                    return clientBusiness.toLowerCase() === activeFilters.businessType.toLowerCase();
                 }
+                
+                // Jika business adalah array
+                if (Array.isArray(clientBusiness)) {
+                    return clientBusiness.some(business => 
+                        business?.toLowerCase() === activeFilters.businessType.toLowerCase()
+                    );
+                }
+                
+                return false;
             });
         }
         
@@ -77,33 +139,58 @@ const ProgramClient = () => {
     // HANDLE SEARCH
     const handleSearch = (term) => {
         setSearchTerm(term);
-        setTimeout(applyAllFilters, 100);
     };
 
-    // HANDLE FILTER CHANGE
-    const handleFilterChange = (filterValue) => {
-        setActiveFilter(filterValue);
-        setTimeout(applyAllFilters, 100);
+    // HANDLE STATUS FILTER CHANGE
+    const handleStatusFilterChange = (status) => {
+        setActiveFilters(prev => ({
+            ...prev,
+            status: prev.status === status ? null : status
+        }));
+    };
+
+    // HANDLE BUSINESS TYPE FILTER CHANGE
+    const handleBusinessTypeFilterChange = (businessType) => {
+        setActiveFilters(prev => ({
+            ...prev,
+            businessType: prev.businessType === businessType ? null : businessType
+        }));
     };
 
     // CLEAR ALL FILTERS
     const clearAllFilters = () => {
         setSearchTerm("");
-        setActiveFilter(null);
-        setFilteredMembers(members);
+        setActiveFilters({
+            status: null,
+            businessType: null,
+        });
     };
 
-    // APPLY FILTERS SETIAP MEMBERS BERUBAH
+    // CLEAR SPECIFIC FILTER
+    const clearFilter = (filterType) => {
+        if (filterType === 'status') {
+            setActiveFilters(prev => ({ ...prev, status: null }));
+        } else if (filterType === 'businessType') {
+            setActiveFilters(prev => ({ ...prev, businessType: null }));
+        } else if (filterType === 'search') {
+            setSearchTerm("");
+        }
+    };
+
+    // INITIALIZE BUSINESS TYPES
     useEffect(() => {
         if (members.length > 0) {
-            setFilteredMembers(members);
+            const extractedTypes = extractBusinessTypes(members);
+            setAvailableBusinessTypes(extractedTypes);
+        }
+    }, [members, extractBusinessTypes]);
+
+    // APPLY FILTERS SETIAP KALI ADA PERUBAHAN
+    useEffect(() => {
+        if (members.length > 0) {
             applyAllFilters();
         }
-    }, [members]);
-
-    useEffect(() => {
-        applyAllFilters();
-    }, [searchTerm, activeFilter]);
+    }, [searchTerm, activeFilters, members]);
 
     const handleAddClient = () => {
         setIsAddClientModalOpen(true);
@@ -140,7 +227,6 @@ const ProgramClient = () => {
             await addClient(clientData);
             setIsAddClientModalOpen(false);
             toast.success('Client added successfully');
-            // Refresh data setelah add
             fetchClients(pagination.page);
         } catch {
             // 
@@ -157,7 +243,6 @@ const ProgramClient = () => {
         try {
             await deleteClient(clientId);
             setSelectedMember(null);
-            // Refresh data setelah delete
             fetchClients(pagination.page);
         } catch {
             // 
@@ -173,6 +258,39 @@ const ProgramClient = () => {
         }
     }, [members, selectedMember?.id]);
 
+    // GET ACTIVE FILTERS COUNT - HANYA STATUS DAN BUSINESS TYPE
+    const getActiveFiltersCount = () => {
+        let count = 0;
+        // TIDAK MENGHITUNG SEARCH TERM
+        if (activeFilters.status) count++;
+        if (activeFilters.businessType) count++;
+        return count;
+    };
+
+    // GET TOTAL ACTIVE CRITERIA (SEARCH + FILTERS) UNTUK DISPLAY
+    const getTotalActiveCriteria = () => {
+        let count = 0;
+        if (searchTerm) count++;
+        if (activeFilters.status) count++;
+        if (activeFilters.businessType) count++;
+        return count;
+    };
+
+    // GET BUSINESS TYPE DISPLAY NAME
+    const getBusinessDisplayName = (businessValue) => {
+        if (!businessValue) return '-';
+        
+        if (typeof businessValue === 'string') {
+            return businessValue;
+        }
+        
+        if (Array.isArray(businessValue)) {
+            return businessValue.join(', ');
+        }
+        
+        return String(businessValue);
+    };
+
     const formattedMembers = filteredMembers.map((client, index) => {
         const currentPage = pagination.page;
         const itemsPerPage = pagination.limit;
@@ -185,6 +303,7 @@ const ProgramClient = () => {
             email: client.email,
             phone: client.phone,
             company: client.company,
+            business: getBusinessDisplayName(client.business),
             programName: client.program_name,
             status: client.status,
             action: 'Detail',
@@ -193,7 +312,7 @@ const ProgramClient = () => {
     });
 
     const tableConfig = {
-        headers: ['No', 'Full Name', 'Email', 'Phone', 'Company', 'Program Name', 'Status', 'Action'],
+        headers: ['No', 'Full Name', 'Email', 'Phone', 'Company', 'Business Type', 'Program Name', 'Status', 'Action'],
         title: "Client Management",
         addButton: "Add Client",
         detailTitle: "Client Details"
@@ -216,41 +335,106 @@ const ProgramClient = () => {
                     </CardHeader>
                     <CardContent>
 
-                        {/*SEARCH & FILTER SECTION */}
+                        {/* SEARCH & FILTER SECTION */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2 items-center'>
                                 <SearchBar 
                                     onSearch={handleSearch}
                                     placeholder="Search..."
+                                    value={searchTerm}
                                 />
                                 
-                                <FilterButton 
-                                    onFilterChange={handleFilterChange}
-                                    filterOptions={clientFilterOptions}
-                                    activeFilter={activeFilter}
-                                    buttonText="Filter"
-                                />
-                                
-                                {/* CLEAR FILTERS BUTTON */}
-                                {(searchTerm || activeFilter) && (
-                                    <Button 
-                                        variant="ghost" 
-                                        onClick={clearAllFilters}
-                                        className="text-sm h-10"
-                                        size="sm"
-                                    >
-                                        Clear Filters
-                                    </Button>
-                                )}
-                                
-                                {/* ACTIVE FILTERS INDICATOR */}
-                                {(searchTerm || activeFilter) && (
-                                    <div className="text-sm text-gray-600 hidden sm:flex items-center gap-2">
-                                        <span className="hidden md:inline">
-                                            {filteredMembers.length} of {members.length} clients
-                                        </span>
-                                    </div>
-                                )}
+                                {/* FILTER DROPDOWN - HANYA AKTIF JIKA ADA STATUS/BUSINESS TYPE FILTER */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button 
+                                            variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
+                                            className={`flex items-center gap-2 transition-all duration-200 ${
+                                                getActiveFiltersCount() > 0 
+                                                    ? "bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-amber-500" 
+                                                    : "text-gray-700 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 border-gray-300"
+                                            }`}
+                                        >
+                                            <Filter className={`h-4 w-4 ${
+                                                getActiveFiltersCount() > 0 ? "text-white" : "text-gray-500"
+                                            }`} />
+                                            Filter
+                                            {getActiveFiltersCount() > 0 && (
+                                                <span className="ml-1 bg-white text-amber-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                                    {getActiveFiltersCount()}
+                                                </span>
+                                            )}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-56 shadow-lg border border-gray-200">
+                                        <DropdownMenuLabel className="text-gray-700 font-semibold">Filter Options</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        
+                                        {/* STATUS FILTER */}
+                                        <DropdownMenuGroup>
+                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
+                                                Status
+                                            </DropdownMenuLabel>
+                                            {statusOptions.map((option) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={option.value}
+                                                    checked={activeFilters.status === option.value}
+                                                    onCheckedChange={() => handleStatusFilterChange(option.value)}
+                                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50"
+                                                >
+                                                    {option.label}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuGroup>
+                                        
+                                        <DropdownMenuSeparator />
+                                        
+                                        {/* BUSINESS TYPE FILTER */}
+                                        <DropdownMenuGroup>
+                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
+                                                Business Type
+                                            </DropdownMenuLabel>
+                                            <div className="max-h-48 overflow-y-auto">
+                                                {/* ALL BUSINESS TYPES OPTION */}
+                                                <DropdownMenuCheckboxItem
+                                                    checked={activeFilters.businessType === 'all'}
+                                                    onCheckedChange={() => handleBusinessTypeFilterChange('all')}
+                                                    className="cursor-pointer hover:bg-gray-50"
+                                                >
+                                                    📊 All Business Types
+                                                </DropdownMenuCheckboxItem>
+                                                
+                                                {availableBusinessTypes.map((type) => (
+                                                    <DropdownMenuCheckboxItem
+                                                        key={type}
+                                                        checked={activeFilters.businessType?.toLowerCase() === type.toLowerCase()}
+                                                        onCheckedChange={() => handleBusinessTypeFilterChange(type)}
+                                                        className="cursor-pointer hover:bg-gray-50"
+                                                    >
+                                                        <span className="mr-2">🏢</span>
+                                                        {type}
+                                                    </DropdownMenuCheckboxItem>
+                                                ))}
+                                            </div>
+                                        </DropdownMenuGroup>
+                                        
+                                        <DropdownMenuSeparator />
+                                        
+                                        {/* CLEAR FILTERS - HANYA CLEAR STATUS & BUSINESS TYPE */}
+                                        <DropdownMenuItem 
+                                            onClick={() => {
+                                                setActiveFilters({
+                                                    status: null,
+                                                    businessType: null,
+                                                });
+                                            }}
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer font-medium"
+                                        >
+                                            <X className="h-4 w-4 mr-2" />
+                                            Clear Filters
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
 
                             <div className='flex gap-2'>
@@ -265,32 +449,66 @@ const ProgramClient = () => {
                             </div>
                         </div>
                         
-                        {/* ACTIVE FILTERS BADGES */}
-                        {(searchTerm || activeFilter) && (
+                        {/* ACTIVE FILTERS BADGES - TAMPILKAN JIKA ADA SEARCH ATAU FILTER */}
+                        {getTotalActiveCriteria() > 0 && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
                                 <span className="text-sm text-gray-600">Active filters:</span>
+                                
+                                {/* SEARCH BADGE */}
                                 {searchTerm && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        Search: "{searchTerm}"
+                                        <span>🔍 "{searchTerm}"</span>
                                         <button 
-                                            onClick={() => setSearchTerm("")}
-                                            className="text-blue-600 hover:text-blue-800"
+                                            onClick={() => clearFilter('search')}
+                                            className="text-blue-600 hover:text-blue-800 ml-1"
                                         >
                                             ×
                                         </button>
                                     </span>
                                 )}
-                                {activeFilter && (
+                                
+                                {/* STATUS FILTER BADGE */}
+                                {activeFilters.status && (
                                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        Filter: {clientFilterOptions.find(f => f.value === activeFilter)?.label || activeFilter}
+                                        {activeFilters.status === 'active' ? '🟢 Active' : '🔴 Inactive'}
                                         <button 
-                                            onClick={() => setActiveFilter(null)}
-                                            className="text-green-600 hover:text-green-800"
+                                            onClick={() => clearFilter('status')}
+                                            className="text-green-600 hover:text-green-800 ml-1"
                                         >
                                             ×
                                         </button>
                                     </span>
                                 )}
+                                
+                                {/* BUSINESS TYPE FILTER BADGE */}
+                                {activeFilters.businessType && activeFilters.businessType !== 'all' && (
+                                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        <Briefcase className="w-3 h-3" />
+                                        {activeFilters.businessType}
+                                        <button 
+                                            onClick={() => clearFilter('businessType')}
+                                            className="text-purple-600 hover:text-purple-800 ml-1"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                )}
+                                
+                                {/* ALL BUSINESS TYPES BADGE */}
+                                {activeFilters.businessType === 'all' && (
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        <Briefcase className="w-3 h-3" />
+                                        All Business Types
+                                        <button 
+                                            onClick={() => clearFilter('businessType')}
+                                            className="text-blue-600 hover:text-blue-800 ml-1"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                )}
+                                
+                                {/* CLEAR ALL - CLEARS BOTH SEARCH AND FILTERS */}
                                 <Button 
                                     variant="ghost" 
                                     onClick={clearAllFilters}
@@ -317,16 +535,16 @@ const ProgramClient = () => {
                                 </div>
                                 <div className="space-y-2">
                                     <h3 className="text-lg font-semibold text-gray-700">
-                                        {searchTerm || activeFilter ? "No clients found" : "No clients found"}
+                                        No clients found
                                     </h3>
                                     <p className="text-sm text-gray-500 max-w-md">
-                                        {searchTerm || activeFilter 
-                                            ? "Try adjusting your search or filters to find what you're looking for."
+                                        {getTotalActiveCriteria() > 0 
+                                            ? "No clients match your current filters. Try adjusting your criteria."
                                             : "Get started by adding your first client to the system."
                                         }
                                     </p>
                                 </div>
-                                {(searchTerm || activeFilter) ? (
+                                {getTotalActiveCriteria() > 0 ? (
                                     <Button 
                                         className="flex items-center gap-2"
                                         onClick={clearAllFilters}
@@ -369,7 +587,7 @@ const ProgramClient = () => {
                                     {/* SHOWING RESULTS */}
                                     <div className="text-sm text-gray-600">
                                         Showing {filteredMembers.length} of {members.length} clients
-                                        {(searchTerm || activeFilter) && " (filtered)"}
+                                        {getTotalActiveCriteria() > 0 && " (filtered)"}
                                     </div>
                                     
                                     <Pagination 
