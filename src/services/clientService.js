@@ -101,6 +101,22 @@ class ClientService {
             throw error
         }
     }
+
+    async fetchClientStats() {
+        try {
+            const response = await fetch(`${this.baseURL}/client/stats`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            return await this.handleResponse(response)
+        } catch (error) {
+            console.error('Error fetching client stats:', error)
+            throw error
+        }
+    }
 }
 
 export default new ClientService();

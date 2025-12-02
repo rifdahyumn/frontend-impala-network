@@ -55,45 +55,28 @@ export const useClients = (initialFilters = {}) => {
         try {
             setStatsLoading(true)
 
-            const result = await clientService.fetchClients({
-                page: 1,
-                limit: 1
-            })
+            const result = await clientService.fetchClientStats()
 
-            const totalClients = result.metadata?.pagination?.total || 0
-            const previousMonthTotal = Math.max(0, totalClients - Math.floor(totalClients * 0.1))
-
-            let percentageChange = '0%'
-            let trend = 'up'
-            let increaseCount = 0
-
-            if (previousMonthTotal > 0) {
-                const change = ((totalClients - previousMonthTotal) / previousMonthTotal) * 100
-                percentageChange = `${Math.abs(change).toFixed(1).replace('.', '.')}%`
-                trend = change >= 0 ? 'up' : 'down'
-                increaseCount = Math.max(0, totalClients - previousMonthTotal)
+            if (result.success) {
+                setClientStats(result.data)
             } else {
-                percentageChange = '100%'
-                trend = 'up'
-                increaseCount = totalClients
+                throw new Error(result.message || 'Failed to fetch client stats')
             }
-
-            const statsData = {
-                title: 'Total Client',
-                value: totalClients.toLocaleString(),
-                subtitle: `+ ${increaseCount}`,
-                percentage: percentageChange,
-                trend: trend,
-                period: 'Last month',
-                icon: 'Users',
-                color: 'blue',
-                description: `${percentageChange} Last Month`
-            }
-
-            setClientStats(statsData)
         } catch (error) {
             console.error('Error fetching client stats:', error)
             toast.error('Failed to load client stats')
+
+            setClientStats({
+                title: "Total Client",
+                value: "0",
+                subtitle: "+ 0",
+                percentage: "0%",
+                trend: "up",
+                period: "Last Month",
+                icon: "Users",
+                color: "blue",
+                description: "0% Last Month"
+            })
         } finally {
             setStatsLoading(false)
         }

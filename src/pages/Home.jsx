@@ -8,7 +8,7 @@ const Home = () => {
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100 overflow-x-hidden'>
             <div className='flex-1 p-6 overflow-x-hidden'>
-                <StatsCards />
+                {/* <StatsCards /> */}
                 <Analytics />
                 <YearlyComparison />
                 <MemberGrowthDetails />
