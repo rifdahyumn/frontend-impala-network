@@ -193,7 +193,7 @@ const ImpalaManagement = () => {
                         )}
                     </CardHeader>
                     <CardContent>
-                        {/* ⭐⭐ ERROR MESSAGE */}
+                        {/*ERROR MESSAGE */}
                         {error && (
                             <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
                                 <div className="flex items-start gap-3">
@@ -214,7 +214,7 @@ const ImpalaManagement = () => {
                             </div>
                         )}
 
-                        {/* ⭐⭐ SEARCH & FILTER SECTION */}
+                        {/* SEARCH & FILTER SECTION */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2 items-center'>
                                 <SearchBar 
@@ -222,7 +222,7 @@ const ImpalaManagement = () => {
                                     placeholder="Search..."
                                 />
                                 
-                                {/* ⭐⭐ FILTER BY CATEGORY */}
+                                {/* FILTER BY CATEGORY */}
                                 {availableCategories.length > 0 && (
                                     <FilterButton 
                                         onFilterChange={handleCategoryFilterChange}

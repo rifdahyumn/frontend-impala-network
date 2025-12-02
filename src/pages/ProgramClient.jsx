@@ -4,7 +4,7 @@ import { Loader2, Plus, Users, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "../components/ui/button"
 import React, { useEffect, useState } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
-import FilterButton from '../components/SearchFilter/Filter'; // ⭐ Gunakan FilterButton yang baru
+import FilterButton from '../components/SearchFilter/Filter';
 import ExportButton from '../components/ActionButton/ExportButton';
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from '../components/Pagination/Pagination';
@@ -19,7 +19,7 @@ const ProgramClient = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
     
-    // ⭐⭐ STATE UNTUK SEARCH & FILTER
+    // STATE UNTUK SEARCH & FILTER
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilter, setActiveFilter] = useState(null);
     const [filteredMembers, setFilteredMembers] = useState([]);
@@ -173,7 +173,6 @@ const ProgramClient = () => {
         }
     }, [members, selectedMember?.id]);
 
-    // ⭐⭐ FORMAT MEMBERS DARI filteredMembers
     const formattedMembers = filteredMembers.map((client, index) => {
         const currentPage = pagination.page;
         const itemsPerPage = pagination.limit;
@@ -217,7 +216,7 @@ const ProgramClient = () => {
                     </CardHeader>
                     <CardContent>
 
-                        {/* ⭐⭐ SEARCH & FILTER SECTION */}
+                        {/*SEARCH & FILTER SECTION */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2 items-center'>
                                 <SearchBar 
@@ -244,7 +243,7 @@ const ProgramClient = () => {
                                     </Button>
                                 )}
                                 
-                                {/* ⭐⭐ ACTIVE FILTERS INDICATOR */}
+                                {/* ACTIVE FILTERS INDICATOR */}
                                 {(searchTerm || activeFilter) && (
                                     <div className="text-sm text-gray-600 hidden sm:flex items-center gap-2">
                                         <span className="hidden md:inline">
@@ -266,7 +265,7 @@ const ProgramClient = () => {
                             </div>
                         </div>
                         
-                        {/* ⭐⭐ ACTIVE FILTERS BADGES */}
+                        {/* ACTIVE FILTERS BADGES */}
                         {(searchTerm || activeFilter) && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
                                 <span className="text-sm text-gray-600">Active filters:</span>
@@ -367,7 +366,7 @@ const ProgramClient = () => {
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    {/* ⭐⭐ SHOWING RESULTS */}
+                                    {/* SHOWING RESULTS */}
                                     <div className="text-sm text-gray-600">
                                         Showing {filteredMembers.length} of {members.length} clients
                                         {(searchTerm || activeFilter) && " (filtered)"}
