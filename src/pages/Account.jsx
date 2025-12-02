@@ -419,7 +419,7 @@ const Account = () => {
                             <div className='flex gap-2 items-center'>
                                 <SearchBar 
                                     onSearch={handleSearch}
-                                    placeholder="Search users by name, email, employee ID..."
+                                    placeholder="Search..."
                                 />
                                 
                                 {/* ⭐⭐ FILTER BY POSITION */}
