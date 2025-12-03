@@ -8,9 +8,9 @@ import { usePrograms } from "../../hooks/usePrograms";
 import { useImpala } from "../../hooks/useImpala";
 
 const StatsCards = ({ 
-    selectedMetric, // Tambahkan props untuk menerima metric yang dipilih
-    onMetricSelect, // Tambahkan props untuk handle klik
-    interactive = false // Mode interaktif untuk Analytics
+    selectedMetric,
+    onMetricSelect,
+    interactive = false 
 }) => {
     const { clientStats, statsLoading: clientLoading } = useClients()
     const { programStats, priceStats, statsLoading: programLoading } = usePrograms()
@@ -25,10 +25,9 @@ const StatsCards = ({
         TrendingDown: TrendingDown
     }
 
-    // Array stats dengan mapping ke keys yang sesuai dengan Analytics
     const allStats = [
         {
-            key: 'clients', // Tambahkan key untuk mapping
+            key: 'clients',
             data: clientStats || {
                 title: "Total Client",
                 value: "0",
@@ -171,7 +170,7 @@ const StatsCards = ({
                             "bg-white hover:shadow-md transition-shadow",
                             colorClasses.border,
                             interactive && "cursor-pointer transition-all duration-200",
-                            isSelected && "ring-2 ring-offset-2 ring-blue-500 shadow-lg border-blue-300"
+                            isSelected && "ring-2 ring-offset-2 ring-amber-400 shadow-lg border-amber-300"
                         )}
                         onClick={() => handleCardClick(key)}
                     >
@@ -206,7 +205,7 @@ const StatsCards = ({
                                 
                                 {/* Indicator untuk card yang dipilih */}
                                 {isSelected && (
-                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                    <div className="w-2 h-2 rounded-full bg-amber-400"></div>
                                 )}
                             </div>
                         </CardContent>
@@ -217,8 +216,6 @@ const StatsCards = ({
     )
 }
 
-// Export default dengan komponen yang bisa digunakan di mana saja
 export default StatsCards
 
-// Export juga sebagai StatsCards untuk Analytics
 export { StatsCards as AnalyticsStatsCards }

@@ -1,8 +1,51 @@
 export const calculateMonthlyData = (data, year, metric) => {
-    if (!data || data.length === 0) {
-        return getFallbackData(metric, year)
+    const extractArray = (input) => {
+        if (!input) return [];
+        if (Array.isArray(input)) return input;
+        if (input.data && Array.isArray(input.data)) return input.data;
+        if (input.participant && Array.isArray(input.participant)) return input.participant;
+        if (input.participants && Array.isArray(input.participants)) return input.participants;
+        
+        if (typeof input === 'object') {
+            for (const value of Object.values(input)) {
+                if (Array.isArray(value)) return value;
+            }
+        }
+        return [];
+    };
+    
+    const dataArray = extractArray(data);
+    
+    if (!dataArray || dataArray.length === 0) {
+        return getFallbackData(metric, year);
     }
-
+    
+    const parseDateUniversal = (dateStr) => {
+        if (!dateStr) return null;
+        
+        try {
+            let date = new Date(dateStr);
+            
+            if (!isNaN(date.getTime())) {
+                return date;
+            }
+            
+            if (dateStr.includes(' ')) {
+                const isoStr = dateStr.replace(' ', 'T') + 'Z';
+                date = new Date(isoStr);
+                
+                if (!isNaN(date.getTime())) {
+                    return date;
+                }
+            }
+            
+            return null;
+            
+        } catch (error) {
+            return null;
+        }
+    };
+    
     const months = Array(12).fill().map((_, i) => ({
         month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i],
         [`new${capitalizeFirst(metric)}`]: 0,
@@ -10,95 +53,78 @@ export const calculateMonthlyData = (data, year, metric) => {
         revenue: 0,
         cumulativeRevenue: 0,
         programsCount: 0
-    }))
+    }));
 
-    let runningTotal = 0
+    let runningTotal = 0;
+    let itemsProcessed = 0;
 
-    const yearData = data
-        .filter(item => {
-            if (!item.created_at) return false
-            const itemDate = new Date(item.created_at)
-            return itemDate.getFullYear().toString() === year
-        })
-        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-
-    yearData.forEach(item => {
-        if (item.created_at) {
-            const date = new Date(item.created_at)
-            const monthIndex = date.getMonth()
-
-            if (monthIndex >= 0 && monthIndex < 12) {
-                if (metric === 'revenue' && item.price) {
-                    const price = parsePrice(item.price)
-                    if (price > 0) {
-                        months[monthIndex].revenue += price
-                        months[monthIndex].programsCount++
-                    }
-                } else {
-                    const key = `new${capitalizeFirst(metric)}`
-                    months[monthIndex][key]++
+    dataArray.forEach(item => {
+        if (!item?.created_at) return;
+        
+        try {
+        
+            const date = parseDateUniversal(item.created_at);
+            
+            if (!date || isNaN(date.getTime())) return;
+            
+            const itemYear = date.getUTCFullYear().toString();
+            const monthIndex = date.getUTCMonth();
+            
+            if (itemYear !== year || monthIndex < 0 || monthIndex > 11) return;
+            
+            itemsProcessed++;
+            
+            if (metric === 'revenue' && item.price) {
+                const price = parsePrice(item.price);
+                if (price > 0) {
+                    months[monthIndex].revenue += price;
+                    months[monthIndex].programsCount++;
                 }
+            } else {
+                const key = `new${capitalizeFirst(metric)}`;
+                months[monthIndex][key]++;
             }
+        } catch (error) {
+            // Skip error
         }
-    })
+    });
+    
 
     for (let i = 0; i < 12; i++) {
-        if (metric === 'revenue') {
-            runningTotal += months[i].revenue
-            months[i].cumulativeRevenue = runningTotal
-        } else {
-            const newKey = `new${capitalizeFirst(metric)}`
-            const totalKey = `total${capitalizeFirst(metric)}`
-            runningTotal += months[i][newKey]
-            months[i][totalKey] = runningTotal
+        const newKey = `new${capitalizeFirst(metric)}`;
+        const totalKey = `total${capitalizeFirst(metric)}`;
+        
+        runningTotal += months[i][newKey];
+        months[i][totalKey] = runningTotal;
+        
+        if (months[i][newKey] > 0) {
+            console.log(`${months[i].month}: ${months[i][newKey]} new ${metric}`);
         }
     }
-
-    return months
-}
+    
+    return months;
+};
 
 export const calculateSummary = (monthlyData, metric, totalCount) => {
     if (!monthlyData) return {}
 
-    const summary = {
-        total: totalCount || 0,
-        thisYearTotal: monthlyData.reduce((sum, month) => {
-            if (metric === 'revenue') return sum + month.revenue
-            const key = `new${capitalizeFirst(metric)}`
-            return sum + month[key]
-        }, 0)
-    }
-
-    const recentMonths = monthlyData.filter(m => {
-        if (metric === 'revenue') return m.revenue > 0
+    const newThisYear = monthlyData.reduce((sum, month) => {
+        if (metric === 'revenue') return sum + month.revenue
         const key = `new${capitalizeFirst(metric)}`
-        return m[key] > 0
-    })
+        return sum + (month[key] || 0)
+    }, 0)
 
-    if (recentMonths.length >= 2) {
-        const lastMonth = recentMonths[recentMonths.length - 1]
-        const prevMonth = recentMonths[recentMonths.length - 2]
+    const cumulativeEndOfYear = monthlyData.length >= 12 ? 
+        (metric === 'revenue' ? 
+            monthlyData[11].cumulativeRevenue : 
+            monthlyData[11][`total${capitalizeFirst(metric)}`]
+        ) : 0
 
-        let lastValue, prevValue
-        if (metric === 'revenue') {
-            lastValue = lastMonth.revenue
-            prevValue = prevMonth.revenue
-        } else {
-            const key = `new ${capitalizeFirst(metric)}`
-            lastValue = lastMonth[key]
-            prevValue = prevMonth[key]
-        }
-
-        if (prevValue > 0) {
-            summary.growth = ((lastValue - prevValue) / prevValue * 100).toFixed(1)
-        }
-    }
-
-    if (metric === 'revenue') {
-        const monthWithRevenue = monthlyData.filter(m => m.revenue > 0)
-        summary.average = monthWithRevenue.length > 0
-            ? summary.thisYearTotal / monthWithRevenue.length
-            : 0
+    const summary = {
+        total: totalCount || 0, 
+        thisYearTotal: newThisYear, 
+        cumulativeTotal: cumulativeEndOfYear, 
+        monthlyData: monthlyData 
     }
 
     return summary

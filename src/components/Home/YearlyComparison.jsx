@@ -1,60 +1,87 @@
-import { Arrow, Item } from "@radix-ui/react-select";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { TrendingUp, Users, Target, ArrowUp, Award } from 'lucide-react';
+import { Package, Users, Users2, ArrowUp, Award, DollarSign, TrendingUp } from 'lucide-react';
+import { METRICS_CONFIG } from "../../utils/constants";
 
-const YearlyComparison = () => {
+const YearlyComparison = ({ analyticsData, selectedYear }) => {
     const comparisonData = [
         {
-            title: "Total Members (2024)",
-            value: "1.593",
-            change: "+155",
-            changeText: "from 2023",
+            id: 'clients',
+            title: "Total Clients",
+            value: analyticsData?.clients?.summary?.total || '0',
+            change: analyticsData?.clients?.summary?.growth || '0',
+            changeText: "from last month",
             icon: Users,
-            color: "blue",
-            trend: "up",
+            color: METRICS_CONFIG.clients.color || "#3B82F6",
             details: [
-                { year: "2025", value: "1,593", growth: "+12.8%" },
-                { year: "2024", value: "1,593", growth: "+12.8%" },
-                { year: "2023", value: "1,593", growth: "+12.8%" },
+                { label: 'This Year', value: analyticsData?.clients?.summary?.thisYearTotal?.toLocaleString('id-ID') || '0' },
+                { label: "Cumulative", value: analyticsData?.clients?.summary?.cumulativeTotal?.toLocaleString('id-ID') || "0" },
+                { label: "Monthly Avg", value: Math.round((analyticsData?.clients?.summary?.thisYearTotal || 0) / 12).toLocaleString('id-ID') || "0" },
             ]
         },
         {
-            title: "Average Growth Rate",
-            value: "12.8%",
-            change: "Highest",
-            changeText: "in 5 years",
-            icon: TrendingUp,
-            color: "green",
-            trend: "up",
+            id: 'programs',
+            title: "Total Programs",
+            value: analyticsData?.programs?.summary?.total || "0",
+            change: analyticsData?.programs?.summary?.growth || "0",
+            changeText: "from last month",
+            icon: Package,
+            color: METRICS_CONFIG.programs.color || "#10B981",
             details: [
-                { year: "2025", rate: "12.8%", status: "Highest" },
-                { year: "2024", rate: "12.8%", status: "Good" },
-                { year: "2023", rate: "12.8%", status: "Average" },
+                { label: "This Year", value: analyticsData?.programs?.summary?.thisYearTotal?.toLocaleString('id-ID') || "0" },
+                { label: "Cumulative", value: analyticsData?.programs?.summary?.cumulativeTotal?.toLocaleString('id-ID') || "0" },
+                { label: "Monthly Avg", value: Math.round((analyticsData?.programs?.summary?.thisYearTotal || 0) / 12).toLocaleString('id-ID') || "0" },
             ]
         },
         {
-            title: "Year-End Projection",
-            value: "1,792",
-            change: "256",
-            changeText: "Based on current trend",
-            icon: Target,
-            color: "purple",
-            trend: "up",
+            id: 'participants',
+            title: "Total Participants",
+            value: analyticsData?.participants?.summary?.total || "0",
+            change: analyticsData?.participants?.summary?.growth || "0",
+            changeText: "from last month",
+            icon: Users2,
+            color: METRICS_CONFIG.participants.color || "#8B5CF6",
             details: [
-                { metrics: "Projected Growth", value: "+256 members" },
-                { metrics: "Monthly Average", value: "+256 members" },
-                { metrics: "Confidence Level", value: "High" },
+                { label: "This Year", value: analyticsData?.participants?.summary?.thisYearTotal?.toLocaleString('id-ID') || "0" },
+                { label: "Cumulative", value: analyticsData?.participants?.summary?.cumulativeTotal?.toLocaleString('id-ID') || "0" },
+                { label: "Monthly Avg", value: Math.round((analyticsData?.participants?.summary?.thisYearTotal || 0) / 12).toLocaleString('id-ID') || "0" },
+            ]
+        },
+        {
+            id: 'revenue',
+            title: "Total Revenue",
+            value: analyticsData?.revenue?.summary?.total ? `Rp ${analyticsData.revenue.summary.total.toLocaleString('id-ID')}` : "Rp 0",
+            change: analyticsData?.revenue?.summary?.growth || "0",
+            changeText: "from last month",
+            icon: DollarSign,
+            color: METRICS_CONFIG.revenue.color || "#F59E0B",
+            details: [
+                { label: "This Year", value: analyticsData?.revenue?.summary?.thisYearTotal ? `Rp ${analyticsData.revenue.summary.thisYearTotal.toLocaleString('id-ID')}` : "Rp 0" },
+                { label: "Cumulative", value: analyticsData?.revenue?.summary?.cumulativeTotal ? `Rp ${analyticsData.revenue.summary.cumulativeTotal.toLocaleString('id-ID')}` : "Rp 0" },
+                { label: "Monthly Avg", value: analyticsData?.revenue?.summary?.average ? `Rp ${Math.round(analyticsData.revenue.summary.average).toLocaleString('id-ID')}` : "Rp 0" },
             ]
         }
     ];
 
-    const getColorClasses = (color) => {
-        const colors = {
-            blue: { bg: 'bg-blue-50', text: "text-blue-600", border: "border-blue-200", light: "bg-blue-500/10" },
-            green: { bg: 'bg-green-50', text: "text-green-600", border: "border-green-200", light: "bg-green-500/10" },
-            purple: { bg: 'bg-purple-50', text: "text-purple-600", border: "border-purple-200", light: "bg-purple-500/10" }
-        };
-        return colors[color] || colors.blue
+    const getTrendIcon = (change) => {
+        const changeNum = parseFloat(change)
+        if (isNaN(changeNum)) return null
+
+        if (changeNum > 0) {
+            return (
+                <div className="flex items-center gap-1 text-sm font-medium text-green-600">
+                    <TrendingUp className="w-3 h-3" />
+                    {change}%
+                </div>
+            )
+        } else if (changeNum < 0) {
+            return (
+                <div className="flex items-center gap-1 text-sm font-medium text-red-600">
+                    <TrendingUp className="w-3 h-3" />
+                    {Math.abs(change)}%
+                </div>
+            )
+        }
+        return <span className="text-sm text-gray-500">0%</span>
     };
 
     return (
@@ -62,110 +89,58 @@ const YearlyComparison = () => {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 mb-2" >
                     <Award className="w-5 h-5 text-blue-600" />
-                    Yearly Comparison
+                    Yearly Comparison - {selectedYear}
                 </CardTitle>
                 <div className="h-px bg-amber-400 mt-4" />
             </CardHeader>
 
             <CardContent>
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-4 gap-6">
                     {comparisonData.map((item, index) => {
                         const Icon = item.icon;
-                        const colorClasses = getColorClasses(item.color)
 
                         return (
                             <div
                                 key={index}
-                                className={`border-l-4 ${colorClasses.border} p-4 rounded-r-lg ${colorClasses.light}`}
+                                className='border-l-4 p-4 rounded-r-lg'
+                                style={{
+                                    borderLeftColor: item.color,
+                                    backgroundColor: `${item.color}10`
+                                }}
                             >
                                 <div className="flex items-start justify-between mb-3">
                                     <div className="flex items-center gap-2">
-                                        <div className={`p-2 rounded-lg ${colorClasses.bg}`}>
-                                            <Icon className={`h-4 w-4 ${colorClasses.text}`} />
+                                        <div 
+                                            className='p-2 rounded-lg'
+                                            style={{ backgroundColor: `${item.color}20` }}
+                                        >
+                                            <Icon 
+                                                className='h-4 w-4'
+                                                style={{ color: item.color }} 
+                                            />
                                         </div>
-                                        <h3>{item.title}</h3>
+                                        <h3 className="font-medium text-gray-700">{item.title}</h3>
                                     </div>
                                 </div>
 
                                 <div className="mb-2">
                                     <div className="flex items-baseline gap-2 ">
                                         <span className="text-2xl font-bold text-gray-900">{item.value}</span>
-                                        <div className="flex items-center gap-1 text-sm font-medium text-green-600">
-                                            <ArrowUp className="w-3 h-3" />
-                                            {item.change}
-                                        </div>
+                                        {getTrendIcon(item.change)}
                                     </div>
-                                    <p>{item.changeText}</p>
+                                    <p className="text-sm text-gray-500">{item.changeText}</p>
                                 </div>
 
                                 <div className="mt-4 space-y-2">
-                                    {item.title.includes('Total Members') && (
-                                        <>
-                                            {item.details.map((detail, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="flex justify-between items-center text-xs"
-                                                >
-                                                    <span className="text-gray-600">{detail.year}</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-medium">{detail.value}</span>
-                                                        <span className={`px-1 rounded ${
-                                                            detail.growth?.includes('+')
-                                                                ? 'bg-green-100 text-green-700'
-                                                                : 'bg-green-100 text-gray-700'
-                                                        }`}>
-                                                            {detail.growth}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </>
-                                    )}
-
-                                    {item.title.includes("Growth Rate") && (
-                                        <>
-                                            {item.details.map((detail, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="flex justify-between items-center text-xs"
-                                                >
-                                                    <span className="text-gray-600">{detail.year}</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`font-medium ${
-                                                            detail.status === 'Highest' ? 'text-green-600' : 'text-gray-700'
-                                                        }`}>
-                                                            {detail.rate}
-                                                        </span>
-                                                        {detail.status === 'Highest' && (
-                                                            <span className=" bg-green-100 text-green-700 px-1 rounded text-xs">Best</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </>
-                                    )}
-
-                                    {item.title.includes('Year-End Projection') && (
-                                        <>
-                                            {item.details.map((detail, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="flex justify-between items-center text-xs"
-                                                >
-                                                    <span className="text-gray-600">{detail.metrics}</span>
-                                                    <span className={`font-medium ${
-                                                        detail.value.includes('+')
-                                                            ? 'text-green-600'
-                                                            : detail.value === 'High'
-                                                                ?'text-blue-600'
-                                                                : 'text-gray-700'
-                                                    }`}>
-                                                        {detail.value}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </>
-                                    )}
+                                    {item.details.map((detail, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="flex justify-between items-center text-xs"
+                                        >
+                                            <span className="text-gray-600">{detail.label}</span>
+                                            <span className="text-gray-900 font-medium">{detail.value}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )

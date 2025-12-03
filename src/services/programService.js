@@ -8,16 +8,6 @@ class ProgramService {
 
     async handleResponse(response) {
 
-        // if(!response.ok) {
-        //     try {
-        //         const errorResult = await response.text()
-        //         throw new Error(errorResult.message || errorResult.error || `HTTP error! status: ${response.status}`);
-        //     } catch (error) {
-        //         const errorText = await response.text();
-        //         throw new Error(errorText || `HTTP error! status: ${response.status}`);
-        //     }
-        // }
-
         const result = await response.json()
 
         return result
@@ -155,6 +145,33 @@ class ProgramService {
 
         } catch (error) {
             console.error('Error fetching price stats:', error)
+            throw error
+        }
+    }
+
+    async fetchAllProgramForAnalytics(params = {}) {
+        try {
+            const { search = '', sort = 'created_at:asc' } = params
+
+            const queryParams = new URLSearchParams({
+                page: '1',
+                limit: '1000',
+                sort,
+                ...(search && { search })
+            })
+
+            const response = await fetch(`${this.baseURL}/program?${queryParams}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            const result = await this.handleResponse(response)
+            return result
+
+        } catch (error) {
+            console.error('Error fetching all programs for analytics', error)
             throw error
         }
     }

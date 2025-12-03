@@ -17,6 +17,9 @@ import { DataTable } from "./DataTable";
 import { calculateMonthlyData, calculateSummary } from "../../utils/analyticsCalculator";
 import { METRICS_CONFIG } from "../../utils/constants";
 import StatsCards  from "../Home/StatsCards";
+import programService from "../../services/programService";
+import clientService from "../../services/clientService";
+import impalaService from "../../services/impalaService";
 
 ChartJS.register(
     CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler 
@@ -34,6 +37,32 @@ const Analytics = () => {
     const { programs, refetch: refetchPrograms } = usePrograms();
     const { participant: participants, refetch: refetchParticipants } = useImpala();
 
+    const [allPrograms, setAllPrograms] = useState([])
+    const [allClients, setAllClients] = useState([])
+    const [allParticipant, setAllParticipant] = useState([])
+    const [loadingRawData, setLoadingRawData] = useState(true)
+
+    const fetchAllDataForAnalytics = useCallback(async () => {
+        try {
+            setLoadingRawData(true)
+
+            const [programResult, clientResult, participantResult] = await Promise.all([
+                programService.fetchAllProgramForAnalytics()
+            ])
+
+            setAllPrograms(programResult.data || [])
+        } catch (error) {
+            console.error('Error fetching all data for analytics:', error);
+            toast.error('Failed to load analytics data');
+        } finally {
+             setLoadingRawData(false);
+        }
+    }, [])
+
+    useEffect(() => {
+        fetchAllDataForAnalytics()
+    }, [fetchAllDataForAnalytics])
+
     const fetchAnalyticsData = useCallback(async () => {
         try {
             setLoading(true);
@@ -42,18 +71,33 @@ const Analytics = () => {
             let totalCount;
             
             switch (selectedMetric) {
-                case 'clients':
-                    dataSource = clients || [];
-                    totalCount = clients?.length || 0;
+                case 'clients':{
+                    const clientResult = await clientService.fetchClients({
+                        page: 1,
+                        limit: 1000
+                    })
+                    dataSource = clientResult.data || []
+                    totalCount = clientResult.data?.length || 0
+                    break
+                }
+
+                case 'programs': {
+                    dataSource = allPrograms || [];
+                    totalCount = allPrograms.length || 0;
                     break;
-                case 'programs':
-                    dataSource = programs || [];
-                    totalCount = programs?.length || 0;
+                }
+
+                case 'participants':{
+                    const participantResult = await impalaService.fetchImpala({
+                        page: 1,
+                        limit: 1000
+                    });
+
+                    dataSource = participantResult.data || [];
+                    totalCount = dataSource.length;
                     break;
-                case 'participants':
-                    dataSource = participants || [];
-                    totalCount = participants?.length || 0;
-                    break;
+                }
+
                 case 'revenue':
                     dataSource = programs || [];
                     totalCount = programs?.length || 0;
@@ -107,7 +151,7 @@ const Analytics = () => {
         } finally {
             setLoading(false);
         }
-    }, [selectedMetric, selectedYear, clients, programs, participants]);
+    }, [selectedMetric, selectedYear, allPrograms]);
 
     const handleExport = () => {
         const chartElement = document.querySelector('canvas');
@@ -174,6 +218,10 @@ const Analytics = () => {
                                                 <span>Average: Rp {Math.round(analyticsData.summary.average).toLocaleString('id-ID')}</span>
                                             </>
                                         )}
+                                        {console.log('UI - Summary:', analyticsData?.summary)}
+    {console.log('UI - Monthly data newPrograms sum:', 
+        analyticsData?.monthlyData?.reduce((sum, m) => sum + (m.newPrograms || 0), 0)
+    )}
                                     </div>
                                 )}
                             </div>
