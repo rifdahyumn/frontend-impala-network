@@ -155,7 +155,7 @@ class ProgramService {
 
             const queryParams = new URLSearchParams({
                 page: '1',
-                limit: '1000',
+                limit: '5000', // ✅ Increase to 5000
                 sort,
                 ...(search && { search })
             })
@@ -168,6 +168,12 @@ class ProgramService {
             })
 
             const result = await this.handleResponse(response)
+            
+            console.log('fetchAllProgramForAnalytics:', {
+                dataCount: result.data?.length || 0,
+                totalCount: result.metadata?.pagination?.total || 0
+            })
+            
             return result
 
         } catch (error) {

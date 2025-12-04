@@ -1,7 +1,6 @@
-// src/components/Home/StatsCards.jsx (Versi yang Diperbarui)
 import React from "react";
 import { Card, CardContent } from "../ui/card";
-import { TrendingUp, Users, Target, FileText, DollarSign, TrendingDown, Loader2 } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, TrendingDown, Loader2, Package, Users2, FileText, Target } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useClients } from "../../hooks/useClients";
 import { usePrograms } from "../../hooks/usePrograms";
@@ -18,8 +17,10 @@ const StatsCards = ({
 
     const iconMap = {
         Users: Users,
-        Target: Target,
-        FileText: FileText,
+        Package: Package,
+        FileText: Users2,
+        Target: Package,
+        Users2: Users2,
         DollarSign: DollarSign,
         TrendingUp: TrendingUp,
         TrendingDown: TrendingDown
@@ -63,7 +64,7 @@ const StatsCards = ({
                 percentage: "6,3%",
                 trend: "up",
                 period: "Last Month",
-                icon: 'FileText',
+                icon: "Users2",
                 color: "orange",
                 description: "6,3% Last Month"
             }
@@ -77,7 +78,7 @@ const StatsCards = ({
                 percentage: "0%",
                 trend: "up",
                 period: "Last Month",
-                icon: 'DollarSign',
+                icon: "DollarSign",
                 color: "purple",
                 description: "8,3% Last Month"
             }
@@ -159,7 +160,12 @@ const StatsCards = ({
     return (
         <div className={`grid grid-cols-4 gap-6 ${interactive ? 'mb-6' : ''}`}>
             {allStats.map(({ key, data: stat }) => {
-                const IconComponent = iconMap[stat.icon]
+                console.log(`=== DEBUG CARD ${key} ===`);
+    console.log('stat.icon:', stat.icon);
+    console.log('iconMap keys:', Object.keys(iconMap));
+    console.log('iconMap[stat.icon]:', iconMap[stat.icon]);
+    console.log('stat.icon in iconMap?', stat.icon in iconMap);
+                const IconComponent = iconMap[stat.icon] || Users;
                 const colorClasses = getColorClasses(stat.color)
                 const isSelected = interactive && selectedMetric === key
 
@@ -203,7 +209,6 @@ const StatsCards = ({
                                     </span>
                                 </div>
                                 
-                                {/* Indicator untuk card yang dipilih */}
                                 {isSelected && (
                                     <div className="w-2 h-2 rounded-full bg-amber-400"></div>
                                 )}
