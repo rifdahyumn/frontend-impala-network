@@ -21,18 +21,24 @@ class ClientService {
         return result
     }
 
+    // 🔴 MODIFIKASI: Tambahkan parameter filter baru
     async fetchClients(params = {}) {
         try {
             const {
                 page = 1,
                 limit = 10,
-                search = ''
+                search = '',
+                status = '',
+                businessType = ''
             } = params
 
+            // 🔴 MODIFIKASI: Tambahkan filter parameters
             const queryParams = new URLSearchParams({
                 page: page.toString(),
                 limit: limit.toString(),
                 ...(search && { search }),
+                ...(status && { status }), // 🔴 TAMBAHKAN
+                ...(businessType && { business_type: businessType }), // 🔴 TAMBAHKAN
             })
 
             const response = await fetch(`${this.baseURL}/client?${queryParams}`, {

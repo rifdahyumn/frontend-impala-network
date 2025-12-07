@@ -37,7 +37,7 @@ const ImpalaManagement = () => {
     // GENDER OPTIONS
     const genderOptions = [
         { value: 'laki-laki', label: '👨 Laki-laki' },
-        { value: 'Perempuan', label: '👩 Perempuan' },
+        { value: 'perempuan', label: '👩 Perempuan' },
     ];
 
     // EKSTRAK SEMUA CATEGORY UNIK DARI DATA PARTICIPANT
@@ -86,7 +86,8 @@ const ImpalaManagement = () => {
                 participant.email?.toLowerCase().includes(term) ||
                 participant.category?.toLowerCase().includes(term) ||
                 participant.program_name?.toLowerCase().includes(term) ||
-                participant.business?.toLowerCase().includes(term)
+                participant.business?.toLowerCase().includes(term) ||
+                participant.gender?.toLowerCase().includes(term)
             );
         }
         
@@ -114,6 +115,13 @@ const ImpalaManagement = () => {
     // HANDLE SEARCH
     const handleSearch = (term) => {
         setSearchTerm(term);
+        const lowerTerm = term.toLowerCase();
+    if (lowerTerm === 'perempuan' || lowerTerm === 'laki-laki') {
+        setActiveFilters(prev => ({
+            ...prev,
+            gender: lowerTerm
+        }));
+    }
     };
 
     // HANDLE GENDER FILTER CHANGE
@@ -155,9 +163,15 @@ const ImpalaManagement = () => {
     // INITIALIZE CATEGORIES
     useEffect(() => {
         if (participant.length > 0) {
-            const extractedCategories = extractCategories(participant);
-            setAvailableCategories(extractedCategories);
-        }
+            const normalizedParticipants = participant.map(p => ({
+            ...p,
+            gender: p.gender ? p.gender.toLowerCase().trim() : p.gender
+        }));
+        
+        const extractedCategories = extractCategories(normalizedParticipants);
+        setAvailableCategories(extractedCategories);
+        setFilteredParticipants(normalizedParticipants);
+    }
     }, [participant, extractCategories]);
 
     // APPLY FILTERS SETIAP PARTICIPANT BERUBAH
@@ -225,8 +239,8 @@ const ImpalaManagement = () => {
     // GET GENDER LABEL
     const getGenderLabel = (genderValue) => {
         if (!genderValue) return "";
-        if (genderValue === 'laki-laki') return '👨 Laki-laki';
-        if (genderValue === 'perempuan') return '👩 Perempuan';
+        if (genderValue.toLowerCase() === 'laki-laki') return '👨 Laki-laki';
+        if (genderValue.toLowerCase() === 'perempuan') return '👩 Perempuan';
         return genderValue;
     };
 
@@ -337,7 +351,7 @@ const ImpalaManagement = () => {
                                             {genderOptions.map((option) => (
                                                 <DropdownMenuCheckboxItem
                                                     key={option.value}
-                                                    checked={activeFilters.gender === option.value}
+                                                    checked={activeFilters.gender?.toLowerCase() === option.value.toLowerCase()}
                                                     onCheckedChange={() => handleGenderFilterChange(option.value)}
                                                     className="flex items-center gap-2 cursor-pointer hover:bg-gray-50"
                                                 >

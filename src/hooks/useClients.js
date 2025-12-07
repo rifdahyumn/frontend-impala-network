@@ -16,47 +16,104 @@ export const useClients = (initialFilters = {}) => {
     const [clientStats, setClientStats] = useState(null)
     const [statsLoading, setStatsLoading] = useState(false)
 
+    // Tambahkan state untuk filter
     const [filters, setFilters] = useState({
         search: '',
+        status: '',
+        businessType: '',
         ...initialFilters
     });
 
+    // 🔴 MODIFIKASI: Fungsi fetch dengan filter yang dikirim ke server
     const fetchClients = useCallback(async (page = 1, customFilters = null) => {
         try {
             setLoading(true)
             setError(null)
 
+            // Gunakan customFilters jika ada, jika tidak gunakan filters state
             const currentFilters = customFilters || filters;
 
-            const result = await clientService.fetchClients({
+            // Siapkan parameter untuk API
+            const params = {
                 page,
                 limit: pagination.limit,
-                ...currentFilters
+                search: currentFilters.search || undefined,
+                status: currentFilters.status || undefined,
+                businessType: currentFilters.businessType || undefined
+            };
+
+            // 🔴 DEBUG: Log parameter yang dikirim
+        console.log('📤 Sending filters to server:', {
+            page,
+            limit: pagination.limit,
+            filters: currentFilters,
+            params
+        });
+
+            // Hapus parameter yang undefined
+            Object.keys(params).forEach(key => {
+                if (params[key] === undefined || params[key] === '') {
+                    delete params[key];
+                }
             });
 
+            console.log('📤 Cleaned params:', params);
+
+            // Kirim request ke server dengan filter
+            const result = await clientService.fetchClients(params);
+
+            console.log('📥 Received from server:', {
+            dataCount: result.data?.length,
+            pagination: result.metadata?.pagination
+        });
+
+
             setMembers(result.data || [])
-            setPagination(prev => ({
-                ...prev,
+            setPagination({
                 page: result.metadata?.pagination?.page || page,
+                limit: pagination.limit,
                 total: result.metadata?.pagination?.total || 0,
                 totalPages: result.metadata?.pagination?.totalPages || 0
-            }))
+            })
 
         } catch (error) {
             console.error('Error fetching clients:', error)
             setError(error.message);
-            toast.error('Failed to load client')
+            toast.error('Failed to load clients')
         } finally {
             setLoading(false)
         }
     }, [filters, pagination.limit]);
 
+    // 🔴 MODIFIKASI: Fungsi khusus untuk update filter dan fetch
+    const updateFiltersAndFetch = useCallback(async (newFilters) => {
+        // Update state filters
+        setFilters(prev => ({
+            ...prev,
+            ...newFilters
+        }));
+        
+        // Fetch data dengan filter baru, reset ke halaman 1
+        await fetchClients(1, { ...filters, ...newFilters });
+    }, [filters, fetchClients]);
+
+    // 🔴 MODIFIKASI: Fungsi clear filter
+    const clearFilters = useCallback(async () => {
+        const clearedFilters = {
+            search: '',
+            status: '',
+            businessType: ''
+        };
+        
+        setFilters(clearedFilters);
+        await fetchClients(1, clearedFilters);
+    }, [fetchClients]);
+
     const fetchClientStats = useCallback(async () => {
         try {
             setStatsLoading(true)
-
             const result = await clientService.fetchClientStats()
-
+            
             if (result.success) {
                 setClientStats(result.data)
             } else {
@@ -65,7 +122,6 @@ export const useClients = (initialFilters = {}) => {
         } catch (error) {
             console.error('Error fetching client stats:', error)
             toast.error('Failed to load client stats')
-
             setClientStats({
                 title: "Total Client",
                 value: "0",
@@ -101,7 +157,7 @@ export const useClients = (initialFilters = {}) => {
     const addClient = async (clientData) => {
         try {
             const result = await clientService.addClient(clientData)
-            toast.success('Client add successfully')
+            toast.success('Client added successfully')
             await fetchClients(pagination.page)
             await fetchClientStats()
             return result;
@@ -158,6 +214,22 @@ export const useClients = (initialFilters = {}) => {
     }
 
     return {
-        members, loading, error, pagination, filters, fetchClients, refetch: () => fetchClients(pagination.page), handlePageChange, refreshData, addClient, updateClient, deleteClient, clientStats, statsLoading, refetchStats: fetchClientStats
+        members, 
+        loading, 
+        error, 
+        pagination, 
+        filters, // 🔴 EKSPOS filters state
+        fetchClients,
+        updateFiltersAndFetch, // 🔴 FUNGSI BARU
+        clearFilters, // 🔴 FUNGSI BARU
+        refetch: () => fetchClients(pagination.page), 
+        handlePageChange, 
+        refreshData, 
+        addClient, 
+        updateClient, 
+        deleteClient, 
+        clientStats, 
+        statsLoading, 
+        refetchStats: fetchClientStats
     }
 }

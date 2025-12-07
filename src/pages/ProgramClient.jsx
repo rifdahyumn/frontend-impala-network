@@ -1,12 +1,12 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Loader2, Plus, Users, RefreshCw, Briefcase, Filter, X } from "lucide-react";
+import { Loader2, Plus, Users, RefreshCw, Briefcase, Filter, X, AlertCircle } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
 import ExportButton from '../components/ActionButton/ExportButton';
 import MemberTable from '../components/MemberTable/MemberTable';
-import Pagination from '../components/Pagination/Pagination';
+import Pagination from '../components/Pagination/Pagination'; // PERBAIKAN: Hapus tanda kutip ekstra
 import ClientContent from "../components/Content/ClientContent";
 import { toast } from 'react-hot-toast';
 import AddClient from "../components/AddButton/AddClient";
@@ -28,11 +28,11 @@ const ProgramClient = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
     
-    // STATE UNTUK SEARCH & FILTER
+    // STATE UNTUK FRONTEND FILTERING
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilters, setActiveFilters] = useState({
-        status: null, // 'active', 'inactive', atau null
-        businessType: null, // business type atau null
+        status: null,
+        businessType: null,
     });
     const [filteredMembers, setFilteredMembers] = useState([]);
     const [availableBusinessTypes, setAvailableBusinessTypes] = useState([]);
@@ -42,42 +42,47 @@ const ProgramClient = () => {
         loading,
         error,
         pagination,
-        handlePageChange,
+        filters,
+        setFilters,
         fetchClients,
         addClient,
         updateClient,
         deleteClient
     } = useClients();
 
+    // EKSTRAK SEMUA STATUS UNIK DARI DATA CLIENT
+    const availableStatuses = useMemo(() => {
+        if (!members.length) return [];
+        
+        const allStatuses = members
+            .map(client => client.status)
+            .filter(status => status && status.trim() !== "");
+        
+        const uniqueStatuses = [...new Set(allStatuses)].sort();
+        
+        return uniqueStatuses.map(status => ({
+            value: status.toLowerCase(),
+            label: status === 'active' ? '🟢 Active' : status === 'inactive' ? '🔴 Inactive' : `📌 ${status}`,
+            original: status
+        }));
+    }, [members]);
+
     // FUNGSI UNTUK MENGAMBIL BUSINESS TYPES YANG UNIK
     const extractBusinessTypes = useMemo(() => {
         return (clients) => {
-            const types = new Set();
-            clients.forEach(client => {
-                if (client.business) {
-                    // Jika business adalah string, tambahkan langsung
-                    if (typeof client.business === 'string') {
-                        const cleanType = client.business.trim();
-                        if (cleanType) {
-                            types.add(cleanType);
-                        }
-                    }
-                    // Jika business adalah array (multiple types)
-                    else if (Array.isArray(client.business)) {
-                        client.business.forEach(type => {
-                            if (type && typeof type === 'string') {
-                                const cleanType = type.trim();
-                                if (cleanType) {
-                                    types.add(cleanType);
-                                }
-                            }
-                        });
-                    }
-                }
-            });
+            if (!clients.length) return [];
             
-            // Konversi ke array dan urutkan
-            return Array.from(types).sort();
+            const allBusinessTypes = clients
+                .map(client => client.business)
+                .filter(business => business && business.trim() !== "");
+            
+            const uniqueBusinessTypes = [...new Set(allBusinessTypes)].sort();
+            
+            return uniqueBusinessTypes.map(businessType => ({
+                value: businessType.toLowerCase(),
+                label: `🏢 ${businessType}`,
+                original: businessType
+            }));
         };
     }, []);
 
@@ -87,19 +92,25 @@ const ProgramClient = () => {
         { value: 'inactive', label: '🔴 Inactive', color: 'text-red-600 bg-red-50' },
     ];
 
-    // FUNGSI UNTUK APPLY SEMUA FILTER
-    const applyAllFilters = () => {
+    // FUNGSI UNTUK APPLY SEMUA FILTER - DIOPTIMASI DENGAN useCallback
+    const applyAllFilters = useCallback(() => {
+        if (!members.length) {
+            setFilteredMembers([]);
+            return;
+        }
+        
         let result = [...members];
         
         // 1. Apply Search
         if (searchTerm.trim()) {
-            const searchLower = searchTerm.toLowerCase();
+            const term = searchTerm.toLowerCase();
             result = result.filter(client =>
-                (client.full_name?.toLowerCase().includes(searchLower)) ||
-                (client.email?.toLowerCase().includes(searchLower)) ||
-                (client.company?.toLowerCase().includes(searchLower)) ||
-                (client.program_name?.toLowerCase().includes(searchLower)) ||
-                (client.business?.toLowerCase().includes(searchLower))
+                client.full_name?.toLowerCase().includes(term) ||
+                client.email?.toLowerCase().includes(term) ||
+                client.company?.toLowerCase().includes(term) ||
+                client.business?.toLowerCase().includes(term) ||
+                client.program_name?.toLowerCase().includes(term) ||
+                client.status?.toLowerCase().includes(term)
             );
         }
         
@@ -114,68 +125,64 @@ const ProgramClient = () => {
         // 3. Apply Business Type Filter
         if (activeFilters.businessType && activeFilters.businessType !== 'all') {
             result = result.filter(client => {
-                const clientBusiness = client.business;
-                if (!clientBusiness) return false;
+                const clientBusinessType = client.business;
+                if (!clientBusinessType) return false;
                 
-                // Jika business adalah string
-                if (typeof clientBusiness === 'string') {
-                    return clientBusiness.toLowerCase() === activeFilters.businessType.toLowerCase();
-                }
-                
-                // Jika business adalah array
-                if (Array.isArray(clientBusiness)) {
-                    return clientBusiness.some(business => 
-                        business?.toLowerCase() === activeFilters.businessType.toLowerCase()
-                    );
-                }
-                
-                return false;
+                return clientBusinessType.toLowerCase() === activeFilters.businessType.toLowerCase();
             });
         }
         
         setFilteredMembers(result);
-    };
+    }, [members, searchTerm, activeFilters]);
 
     // HANDLE SEARCH
-    const handleSearch = (term) => {
+    const handleSearch = useCallback((term) => {
         setSearchTerm(term);
-    };
+        setFilters(prev => ({ ...prev, search: term }));
+    }, [setFilters]);
 
     // HANDLE STATUS FILTER CHANGE
-    const handleStatusFilterChange = (status) => {
+    const handleStatusFilterChange = useCallback((status) => {
         setActiveFilters(prev => ({
             ...prev,
             status: prev.status === status ? null : status
         }));
-    };
+        setFilters(prev => ({ ...prev, status: status || '' }));
+    }, [setFilters]);
 
     // HANDLE BUSINESS TYPE FILTER CHANGE
-    const handleBusinessTypeFilterChange = (businessType) => {
+    const handleBusinessTypeFilterChange = useCallback((businessType) => {
         setActiveFilters(prev => ({
             ...prev,
             businessType: prev.businessType === businessType ? null : businessType
         }));
-    };
+        setFilters(prev => ({ ...prev, businessType: businessType || '' }));
+    }, [setFilters]);
 
     // CLEAR ALL FILTERS
-    const clearAllFilters = () => {
+    const clearAllFilters = useCallback(() => {
         setSearchTerm("");
         setActiveFilters({
             status: null,
             businessType: null,
         });
-    };
+        setFilters({ search: "", status: "", businessType: "" });
+        applyAllFilters();
+    }, [setFilters, applyAllFilters]);
 
     // CLEAR SPECIFIC FILTER
-    const clearFilter = (filterType) => {
+    const clearFilter = useCallback((filterType) => {
         if (filterType === 'status') {
             setActiveFilters(prev => ({ ...prev, status: null }));
+            setFilters(prev => ({ ...prev, status: '' }));
         } else if (filterType === 'businessType') {
             setActiveFilters(prev => ({ ...prev, businessType: null }));
+            setFilters(prev => ({ ...prev, businessType: '' }));
         } else if (filterType === 'search') {
             setSearchTerm("");
+            setFilters(prev => ({ ...prev, search: '' }));
         }
-    };
+    }, [setFilters]);
 
     // INITIALIZE BUSINESS TYPES
     useEffect(() => {
@@ -185,23 +192,21 @@ const ProgramClient = () => {
         }
     }, [members, extractBusinessTypes]);
 
-    // APPLY FILTERS SETIAP KALI ADA PERUBAHAN
+    // APPLY FILTERS SETIAP SEARCH ATAU FILTER BERUBAH
     useEffect(() => {
-        if (members.length > 0) {
-            applyAllFilters();
-        }
-    }, [searchTerm, activeFilters, members]);
+        applyAllFilters();
+    }, [searchTerm, activeFilters, members, applyAllFilters]);
 
-    const handleAddClient = () => {
+    const handleAddClient = useCallback(() => {
         setIsAddClientModalOpen(true);
-    };
+    }, []);
 
-    const handleOpenEditModal = (client) => {
+    const handleOpenEditModal = useCallback((client) => {
         setEditingClient(client);
         setIsEditModalOpen(true);
-    };
+    }, []);
 
-    const handleEditClient = async (clientId, clientData) => {
+    const handleEditClient = useCallback(async (clientId, clientData) => {
         try {
             const updatedClient = await updateClient(clientId, clientData);
 
@@ -216,24 +221,26 @@ const ProgramClient = () => {
             setIsEditModalOpen(false);
             setEditingClient(null);
             toast.success('Client Updated successfully');
-        } catch {
+            fetchClients(pagination.page);
+        } catch (error) {
             console.error('Error updating', error);
             toast.error(error.message || 'Failed to update client');
         }
-    };
+    }, [updateClient, selectedMember, fetchClients, pagination.page]);
 
-    const handleAddNewClient = async (clientData) => {
+    const handleAddNewClient = useCallback(async (clientData) => {
         try {
             await addClient(clientData);
             setIsAddClientModalOpen(false);
             toast.success('Client added successfully');
             fetchClients(pagination.page);
-        } catch {
-            // 
+        } catch (error) {
+            console.error('Error adding client', error);
+            toast.error(error.message || 'Failed to add client');
         }
-    };
+    }, [addClient, fetchClients, pagination.page]);
 
-    const handleDeleteClient = async (clientId) => {
+    const handleDeleteClient = useCallback(async (clientId) => {
         if (!selectedMember) return;
 
         if (!window.confirm(`Are you sure want to delete ${selectedMember.full_name}? This action cannot be undone.`)) {
@@ -243,11 +250,13 @@ const ProgramClient = () => {
         try {
             await deleteClient(clientId);
             setSelectedMember(null);
+            toast.success('Client deleted successfully');
             fetchClients(pagination.page);
-        } catch {
-            // 
+        } catch (error) {
+            console.error('Error deleting client', error);
+            toast.error(error.message || 'Failed to delete client');
         }
-    };
+    }, [selectedMember, deleteClient, fetchClients, pagination.page]);
 
     useEffect(() => {
         if (selectedMember && members.length > 0) {
@@ -258,26 +267,50 @@ const ProgramClient = () => {
         }
     }, [members, selectedMember?.id]);
 
+    const handleRefresh = useCallback(() => {
+        fetchClients(pagination.page);
+        clearAllFilters();
+    }, [fetchClients, pagination.page, clearAllFilters]);
+
+    const handlePageChange = useCallback((page) => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        fetchClients(page);
+    }, [fetchClients]);
+
     // GET ACTIVE FILTERS COUNT - HANYA STATUS DAN BUSINESS TYPE
-    const getActiveFiltersCount = () => {
+    const getActiveFiltersCount = useCallback(() => {
         let count = 0;
-        // TIDAK MENGHITUNG SEARCH TERM
         if (activeFilters.status) count++;
         if (activeFilters.businessType) count++;
         return count;
-    };
+    }, [activeFilters]);
 
     // GET TOTAL ACTIVE CRITERIA (SEARCH + FILTERS) UNTUK DISPLAY
-    const getTotalActiveCriteria = () => {
+    const getTotalActiveCriteria = useCallback(() => {
         let count = 0;
         if (searchTerm) count++;
         if (activeFilters.status) count++;
         if (activeFilters.businessType) count++;
         return count;
-    };
+    }, [searchTerm, activeFilters]);
+
+    // GET BUSINESS TYPE LABEL
+    const getBusinessTypeLabel = useCallback((businessTypeValue) => {
+        if (!businessTypeValue || businessTypeValue === "all") return "All Business Types";
+        const businessType = availableBusinessTypes.find(b => b.value === businessTypeValue);
+        return businessType ? businessType.original : businessTypeValue;
+    }, [availableBusinessTypes]);
+
+    // GET STATUS LABEL
+    const getStatusLabel = useCallback((statusValue) => {
+        if (!statusValue) return "";
+        if (statusValue === 'active') return '🟢 Active';
+        if (statusValue === 'inactive') return '🔴 Inactive';
+        return statusValue;
+    }, []);
 
     // GET BUSINESS TYPE DISPLAY NAME
-    const getBusinessDisplayName = (businessValue) => {
+    const getBusinessDisplayName = useCallback((businessValue) => {
         if (!businessValue) return '-';
         
         if (typeof businessValue === 'string') {
@@ -289,34 +322,37 @@ const ProgramClient = () => {
         }
         
         return String(businessValue);
-    };
+    }, []);
 
-    const formattedMembers = filteredMembers.map((client, index) => {
-        const currentPage = pagination.page;
-        const itemsPerPage = pagination.limit;
-        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
-        
-        return {
-            id: client.id,
-            no: itemNumber,
-            fullName: client.full_name,
-            email: client.email,
-            phone: client.phone,
-            company: client.company,
-            business: getBusinessDisplayName(client.business),
-            programName: client.program_name,
-            status: client.status,
-            action: 'Detail',
-            ...client
-        };
-    });
+    // FORMAT MEMBERS DARI filteredMembers - DIOPTIMASI DENGAN useMemo
+    const formattedMembers = useMemo(() => {
+        return filteredMembers.map((client, index) => {
+            const currentPage = pagination.page;
+            const itemsPerPage = pagination.limit;
+            const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
+            
+            return {
+                id: client.id,
+                no: itemNumber,
+                fullName: client.full_name,
+                email: client.email,
+                phone: client.phone,
+                company: client.company,
+                business: getBusinessDisplayName(client.business),
+                programName: client.program_name,
+                status: client.status,
+                action: 'Detail',
+                ...client
+            };
+        });
+    }, [filteredMembers, pagination.page, pagination.limit, getBusinessDisplayName]);
 
-    const tableConfig = {
+    const tableConfig = useMemo(() => ({
         headers: ['No', 'Full Name', 'Email', 'Phone', 'Company', 'Business Type', 'Program Name', 'Status', 'Action'],
         title: "Client Management",
         addButton: "Add Client",
         detailTitle: "Client Details"
-    };
+    }), []);
 
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
@@ -334,6 +370,26 @@ const ProgramClient = () => {
                         )}
                     </CardHeader>
                     <CardContent>
+                        {error && (
+                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
+                                <div className="flex items-start gap-3">
+                                    <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <h3 className="text-sm font-semibold text-red-800">Failed to load clients</h3>
+                                        <p className="text-sm text-red-600 mt-1">{error}</p>
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={handleRefresh}
+                                        className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
+                                    >
+                                        <RefreshCw className="h-4 w-4" />
+                                        Retry
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
 
                         {/* SEARCH & FILTER SECTION */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
@@ -341,10 +397,9 @@ const ProgramClient = () => {
                                 <SearchBar 
                                     onSearch={handleSearch}
                                     placeholder="Search..."
-                                    value={searchTerm}
                                 />
                                 
-                                {/* FILTER DROPDOWN - HANYA AKTIF JIKA ADA STATUS/BUSINESS TYPE FILTER */}
+                                {/* FILTER DROPDOWN DENGAN WARNA AMBER */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button 
@@ -404,15 +459,15 @@ const ProgramClient = () => {
                                                     📊 All Business Types
                                                 </DropdownMenuCheckboxItem>
                                                 
-                                                {availableBusinessTypes.map((type) => (
+                                                {availableBusinessTypes.map((businessType) => (
                                                     <DropdownMenuCheckboxItem
-                                                        key={type}
-                                                        checked={activeFilters.businessType?.toLowerCase() === type.toLowerCase()}
-                                                        onCheckedChange={() => handleBusinessTypeFilterChange(type)}
+                                                        key={businessType.value}
+                                                        checked={activeFilters.businessType?.toLowerCase() === businessType.value.toLowerCase()}
+                                                        onCheckedChange={() => handleBusinessTypeFilterChange(businessType.value)}
                                                         className="cursor-pointer hover:bg-gray-50"
                                                     >
                                                         <span className="mr-2">🏢</span>
-                                                        {type}
+                                                        {businessType.original}
                                                     </DropdownMenuCheckboxItem>
                                                 ))}
                                             </div>
@@ -423,10 +478,11 @@ const ProgramClient = () => {
                                         {/* CLEAR FILTERS - HANYA CLEAR STATUS & BUSINESS TYPE */}
                                         <DropdownMenuItem 
                                             onClick={() => {
-                                                setActiveFilters({
+                                                setActiveFilters(prev => ({
+                                                    ...prev,
                                                     status: null,
                                                     businessType: null,
-                                                });
+                                                }));
                                             }}
                                             className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer font-medium"
                                         >
@@ -470,7 +526,7 @@ const ProgramClient = () => {
                                 {/* STATUS FILTER BADGE */}
                                 {activeFilters.status && (
                                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        {activeFilters.status === 'active' ? '🟢 Active' : '🔴 Inactive'}
+                                        {getStatusLabel(activeFilters.status)}
                                         <button 
                                             onClick={() => clearFilter('status')}
                                             className="text-green-600 hover:text-green-800 ml-1"
@@ -484,7 +540,7 @@ const ProgramClient = () => {
                                 {activeFilters.businessType && activeFilters.businessType !== 'all' && (
                                     <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Briefcase className="w-3 h-3" />
-                                        {activeFilters.businessType}
+                                        {getBusinessTypeLabel(activeFilters.businessType)}
                                         <button 
                                             onClick={() => clearFilter('businessType')}
                                             className="text-purple-600 hover:text-purple-800 ml-1"
@@ -576,15 +632,14 @@ const ProgramClient = () => {
                                     )}
                                     
                                     <MemberTable
-                                    members={formattedMembers}
-                                    onSelectMember={setSelectedMember}
-                                    headers={tableConfig.headers}
-                                    isLoading={loading}
+                                        members={formattedMembers}
+                                        onSelectMember={setSelectedMember}
+                                        headers={tableConfig.headers}
+                                        isLoading={loading}
                                     />
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    {/* SHOWING RESULTS */}
                                     <div className="text-sm text-gray-600">
                                         Showing {filteredMembers.length} of {members.length} clients
                                         {getTotalActiveCriteria() > 0 && " (filtered)"}
