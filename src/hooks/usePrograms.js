@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 
 export const usePrograms = (initialFilters = {}) => {
     const [programs, setPrograms] = useState([])
+    const [allPrograms, setAllPrograms] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [pagination, setPagination] = useState({
@@ -15,14 +16,28 @@ export const usePrograms = (initialFilters = {}) => {
 
     const [programStats, setProgramStats] = useState(null)
     const [priceStats, setPriceStats] = useState(null)
-    const [statsLoading, setStatsLoading] = useState(false) // Renamed for consistency
+    const [statsLoading, setStatsLoading] = useState(false)
 
     const [filters, setFilters] = useState({
         search: '',
         ...initialFilters
     })
 
-    // const statsFetchedRef = useRef(false)
+    const fetchAllPrograms = useCallback(async () => {
+        try {
+            const result = await programService.fetchAllProgramForAnalytics()
+            
+            if (result.data) {
+                setAllPrograms(result.data || [])
+                
+            } else {
+                console.error('No data in fetchAllProgramForAnalytics response')
+            }
+        } catch (error) {
+            console.error('Error fetching all programs:', error)
+            toast.error('Failed to load all programs for analytics')
+        }
+    }, [])
 
     const fetchPrograms = useCallback(async (page = 1, customFilters = null) => {
         try {
@@ -46,7 +61,7 @@ export const usePrograms = (initialFilters = {}) => {
             }))
         } catch (error) {
             console.error('Error fetching programs:', error)
-            setError(error.message); // FIX: typo messsage -> message
+            setError(error.message)
             toast.error('Failed to load programs')
         } finally {
             setLoading(false)
@@ -118,8 +133,26 @@ export const usePrograms = (initialFilters = {}) => {
     }, [fetchProgramsStats, fetchPriceStats])
 
     useEffect(() => {
-        fetchAllStats()
-    }, [fetchAllStats])
+        const initializeData = async () => {
+            try {
+                setLoading(true)
+                
+                await Promise.all([
+                    fetchPrograms(1),
+                    fetchAllPrograms(),
+                    fetchAllStats()
+                ])
+                
+            } catch (error) {
+                console.error('Error initializing program data:', error)
+                toast.error('Failed to initialize program data')
+            } finally {
+                setLoading(false)
+            }
+        }
+        
+        initializeData()
+    }, [])
 
     const refetchWithFilters = useCallback((newFilters) => {
         setFilters(newFilters);
@@ -130,18 +163,30 @@ export const usePrograms = (initialFilters = {}) => {
         fetchPrograms(page);
     }, [fetchPrograms]);
 
-    useEffect(() => {
-        fetchPrograms(1);
-    }, [fetchPrograms]); 
+    const refreshAllData = useCallback(async () => {
+        try {
+            setLoading(true)
+            await Promise.all([
+                fetchPrograms(pagination.page),
+                fetchAllPrograms(),
+                fetchAllStats()
+            ])
+            toast.success('All program data refreshed')
+        } catch (error) {
+            toast.error('Failed to refresh data', error)
+        } finally {
+            setLoading(false)
+        }
+    }, [fetchPrograms, pagination.page, fetchAllPrograms, fetchAllStats])
 
     const addProgram = async (programData) => {
         try {
             const result = await programService.addProgram(programData)
-            toast.success('Program added successfully') // FIX: typo
+            toast.success('Program added successfully')
 
-            // Refetch both programs and stats
             await Promise.all([
                 fetchPrograms(pagination.page),
+                fetchAllPrograms(),
                 fetchAllStats()
             ])
             return result;
@@ -155,7 +200,7 @@ export const usePrograms = (initialFilters = {}) => {
         try {
             setLoading(true)
             const result = await programService.updateProgram(programId, programData)
-            toast.success("Program updated successfully") // FIX: typo
+            toast.success("Program updated successfully")
 
             setPrograms(prevPrograms => 
                 prevPrograms.map(program => 
@@ -165,7 +210,14 @@ export const usePrograms = (initialFilters = {}) => {
                 )
             );
 
-            // Refetch price stats if price changed
+            setAllPrograms(prevAll => 
+                prevAll.map(program => 
+                    program.id === programId
+                        ? { ...program, ...programData, ...result.data || result }
+                        : program
+                )
+            );
+
             if (programData.price !== undefined) {
                 await fetchPriceStats()
             }
@@ -183,10 +235,14 @@ export const usePrograms = (initialFilters = {}) => {
         try {
             setLoading(true)
             await programService.deleteProgram(programId)
-            toast.success('Program deleted successfully') // FIX: typo
+            toast.success('Program deleted successfully')
 
             setPrograms(prevPrograms =>
                 prevPrograms.filter(program => program.id !== programId)
+            )
+
+            setAllPrograms(prevAll =>
+                prevAll.filter(program => program.id !== programId)
             )
 
             setPagination(prev => ({
@@ -194,7 +250,6 @@ export const usePrograms = (initialFilters = {}) => {
                 total: prev.total - 1
             }))
 
-            // Refetch stats after deletion
             await fetchAllStats()
         } catch (error) {
             toast.error('Failed to delete program')
@@ -206,6 +261,7 @@ export const usePrograms = (initialFilters = {}) => {
 
     return {
         programs, 
+        allPrograms,   
         loading, 
         error, 
         pagination, 
@@ -216,11 +272,13 @@ export const usePrograms = (initialFilters = {}) => {
         updateProgram, 
         deleteProgram, 
         setPagination, 
-        refetch: () => fetchPrograms(pagination.page), 
+        refetch: () => fetchPrograms(pagination.page),
+        refreshAllData,
         programStats, 
-        priceStats, // Make sure this is exported
-        statsLoading, // Use consistent name
+        priceStats,
+        statsLoading,
         refetchStats: fetchAllStats,
-        fetchPriceStats // Export individual function if needed
+        fetchPriceStats,
+        fetchAllPrograms
     }
 }

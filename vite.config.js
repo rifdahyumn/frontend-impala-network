@@ -6,5 +6,15 @@ export default defineConfig({
   plugins: [react()],
   define: {
     'process.env': {}
+  },
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000', // Backend port
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   }
 })
