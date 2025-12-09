@@ -58,7 +58,7 @@ const StatsCards = ({
         {
             key: 'participants',
             data: impalaStats || {
-                title: "Total Participant",
+                title: "Total Beneficiaries",
                 value: "0",
                 subtitle: "& 400++",
                 percentage: "6,3%",

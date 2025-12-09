@@ -1,4 +1,4 @@
-import { User, Mail, Phone, Calendar, GraduationCap, MapPin, Building, Award, DollarSign, Users, CheckCircle, Globe, School, Briefcase, Users as UsersIcon } from "lucide-react";
+import { User, Mail, Phone, Calendar, Clock, GraduationCap, MapPin, Building, Award, DollarSign, Users, CheckCircle, Globe, School, Briefcase, Users as UsersIcon } from "lucide-react";
 
 const memberTypeConfigs = {
     umkm: [
@@ -11,6 +11,7 @@ const memberTypeConfigs = {
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
                 { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
+                { key: 'age', label: 'Age', icon: Clock },
                 { key: 'program_name', label: 'Program Name', icon: Award },
                 { key: 'reason_join_program', label: 'Reason Join Program', icon: Award }
             ]
@@ -59,6 +60,7 @@ const memberTypeConfigs = {
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
                 { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
+                { key: 'age', label: 'Age', icon: Clock },
                 { key: 'program_name', label: 'Program Name', icon: Award },
                 { key: 'reason_join_program', label: 'Reason Join Program', icon: Award }
             ]
@@ -96,6 +98,7 @@ const memberTypeConfigs = {
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
                 { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
+                { key: 'age', label: 'Age', icon: Clock },
                 { key: 'program_name', label: 'Program Name', icon: Award },
                 { key: 'reason_join_program', label: 'Reason Join Program', icon: Award }
             ]
@@ -132,6 +135,7 @@ const memberTypeConfigs = {
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
                 { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
+                { key: 'age', label: 'Age', icon: Clock },
                 { key: 'program_name', label: 'Program Name', icon: Award },
                 { key: 'reason_join_program', label: 'Reason Join Program', icon: Award }
             ]
@@ -156,6 +160,32 @@ const memberTypeConfigs = {
                 { key: 'community_role', label: 'Peran Dalam Komunitas', icon: Users },
             ]
         }
+    ],
+
+    umum: [
+        {
+            category: 'Personal Information',
+            icon: User,
+            fields: [
+                { key: 'full_name', label: 'Full Name', icon: User },
+                { key: 'email', label: 'Email', icon: Mail },
+                { key: 'phone', label: 'Phone', icon: Phone },
+                { key: 'gender', label: 'Gender', icon: User },
+                { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
+                { key: 'age', label: 'Age', icon: Clock },
+                { key: 'program_name', label: 'Program Name', icon: Award },
+                { key: 'reason_join_program', label: 'Reason Join Program', icon: Award }
+            ]
+        },
+        {
+            category: 'Personal Address',
+            icon: MapPin,
+            fields: [
+                { key: 'address', label: 'Address', icon: MapPin },
+                { key: 'city', label: 'City', icon: MapPin },
+                { key: 'province', label: 'Province', icon: MapPin }
+            ]
+        },
     ]
 };
 

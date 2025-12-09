@@ -43,7 +43,7 @@ export const getDefaultFormConfig = () => ({
                 name: 'nik', 
                 label: 'NIK (Nomor Induk Kependudukan)', 
                 required: true,
-                placeholder: 'Masukkan NIK 17 digit',
+                placeholder: 'Masukkan NIK 16 digit',
                 locked: true
             },
             {
@@ -414,6 +414,24 @@ export const getDefaultFormConfig = () => ({
                     locked: true
                 }
             ]
+        },
+        umum: {
+            id: "umum", 
+            name: "Umum",
+            description: "Umum",
+            icon: "👤",
+            locked: true,
+            fields: [
+                {
+                    id: 'areas_interest',
+                    type: 'select',
+                    name: 'areas_interest',
+                    label: 'Bidang Minat',
+                    required: false,
+                    options: ['Teknologi & Informatika', 'Bisnis & Manajemen', 'Keuangan & Akuntansi', 'Desain & Kreatif', 'Ilmu Sosial & Humaniora', 'Sains & Teknik', 'Kesehatan', 'Pendidikan', 'Bahasa & Komunikasi', 'Hukum & Administrasi Publik'],
+                    locked: true
+                },
+            ]
         }
     }
 });
@@ -432,5 +450,6 @@ export const CATEGORIES = {
     UMKM: 'umkm',
     MAHASISWA: 'mahasiswa',
     PROFESIONAL: 'profesional',
-    KOMUNITAS: 'komunitas'
+    KOMUNITAS: 'komunitas',
+    UMUM: 'umum'
 };
