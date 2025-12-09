@@ -1,14 +1,16 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X } from "lucide-react";
+import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X, RefreshCw, CheckSquare } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
-import ExportButton from "../components/ActionButton/ExportButton";
+// HAPUS Import ExportButton
+// import ExportButton from "../components/ActionButton/ExportButton";
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from "../components/Pagination/Pagination";
 import ImpalaContent from '../components/Content/ImpalaContent';
 import { useImpala } from "../hooks/useImpala";
+import { toast } from 'react-hot-toast';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -21,40 +23,165 @@ import {
 } from "../components/ui/dropdown-menu";
 
 const ImpalaManagement = () => {
-    const [selectedParticipant, setSelectedParticipant] = useState(null)
+    const [selectedParticipant, setSelectedParticipant] = useState(null);
     
-    // STATE UNTUK FRONTEND FILTERING
-    const [searchTerm, setSearchTerm] = useState("");
-    const [activeFilters, setActiveFilters] = useState({
-        gender: null, // 'male', 'female', atau null
-        category: null, // category atau null
+    // 🔴 DIUBAH: State filter yang disederhanakan sama seperti ProgramClient.jsx
+    const [localFilters, setLocalFilters] = useState({
+        search: '',
+        gender: '',
+        category: '',
     });
-    const [filteredParticipants, setFilteredParticipants] = useState([]);
+    
     const [availableCategories, setAvailableCategories] = useState([]);
+    
+    // 🔴 DIUBAH: Pastikan hook mengembalikan exportParticipants
+    const { 
+        participant, 
+        loading, 
+        error, 
+        pagination, 
+        handlePageChange,
+        searchParticipants,
+        toggleShowAllOnSearch,
+        clearFilters: hookClearFilters,
+        clearSearch: hookClearSearch,
+        updateFiltersAndFetch,
+        getDisplayText,
+        isShowAllMode,
+        resetToPaginationMode,
+        refreshData,
+        exportParticipants // 🔴 TAMBAHKAN: Pastikan ini ada di hook
+    } = useImpala();
 
-    const { participant, loading, error, pagination, handlePageChange } = useImpala();
+    // 🔴 DIUBAH: Get state dari hook
+    const { showAllOnSearch } = useImpala();
+    const isInShowAllMode = isShowAllMode();
 
     // GENDER OPTIONS
     const genderOptions = [
-        { value: 'laki-laki', label: '👨 Laki-laki' },
-        { value: 'perempuan', label: '👩 Perempuan' },
+        { value: 'Laki-laki', label: '👨 Laki-laki' },
+        { value: 'Perempuan', label: '👩 Perempuan' },
     ];
 
-    // EKSTRAK SEMUA CATEGORY UNIK DARI DATA PARTICIPANT
-    const extractCategories = useMemo(() => {
-        return (participants) => {
-            if (!participants.length) return [];
+    // 🔴 DIUBAH: Apply filters dengan state lokal
+    const applyFilters = useCallback(async () => {
+        await updateFiltersAndFetch(localFilters, showAllOnSearch);
+    }, [localFilters, showAllOnSearch, updateFiltersAndFetch]);
+
+    // 🔴 DIUBAH: Apply search dengan state lokal
+    const applySearch = useCallback(async () => {
+        await searchParticipants(localFilters.search, showAllOnSearch);
+    }, [localFilters.search, showAllOnSearch, searchParticipants]);
+
+    // 🔴 DIUBAH: Handle search dengan debounce
+    const handleSearch = useCallback((term) => {
+        setLocalFilters(prev => ({ ...prev, search: term }));
+    }, []);
+
+    // 🔴 DIUBAH: Apply search ketika search term berubah (dengan debounce effect)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (localFilters.search !== '') {
+                applySearch();
+            }
+        }, 500); // Debounce 500ms
+        
+        return () => clearTimeout(timer);
+    }, [localFilters.search, applySearch]);
+
+    // 🔴 DIUBAH: Apply filters ketika filter berubah
+    useEffect(() => {
+        if (localFilters.gender !== '' || localFilters.category !== '') {
+            const timer = setTimeout(() => {
+                applyFilters();
+            }, 300);
             
-            // Ambil semua category dari data participant
-            const allCategories = participants
+            return () => clearTimeout(timer);
+        }
+    }, [localFilters.gender, localFilters.category, applyFilters]);
+
+    // 🔴 DIUBAH: Handle gender filter change yang lebih sederhana
+    const handleGenderFilterChange = useCallback((gender) => {
+        setLocalFilters(prev => ({
+            ...prev,
+            gender: prev.gender === gender ? '' : gender
+        }));
+    }, []);
+
+    // 🔴 DIUBAH: Handle category filter change yang lebih sederhana
+    const handleCategoryFilterChange = useCallback((category) => {
+        setLocalFilters(prev => ({
+            ...prev,
+            category: prev.category === category ? '' : category
+        }));
+    }, []);
+
+    // 🔴 DIUBAH: Clear all filters yang lebih sederhana
+    const clearAllFilters = useCallback(async () => {
+        // Reset state lokal
+        setLocalFilters({
+            search: '',
+            gender: '',
+            category: '',
+        });
+        
+        // Panggil hook untuk clear semua
+        await hookClearFilters();
+    }, [hookClearFilters]);
+
+    // 🔴 DIUBAH: Clear specific filter
+    const clearFilter = useCallback((filterType) => {
+        if (filterType === 'search') {
+            setLocalFilters(prev => ({ ...prev, search: '' }));
+            hookClearSearch();
+            return;
+        }
+        
+        setLocalFilters(prev => ({ ...prev, [filterType]: '' }));
+    }, [hookClearSearch]);
+
+    // 🔴 MODIFIKASI: Toggle show all on search
+    const handleToggleShowAll = useCallback(async (checked) => {
+        await toggleShowAllOnSearch(checked);
+        
+        // Re-apply filters dengan mode baru
+        if (localFilters.search || localFilters.gender || localFilters.category) {
+            await applyFilters();
+        }
+    }, [toggleShowAllOnSearch, localFilters, applyFilters]);
+
+    // 🔴 MODIFIKASI: Reset to pagination mode
+    const handleResetToPagination = useCallback(async () => {
+        await resetToPaginationMode();
+    }, [resetToPaginationMode]);
+
+    // 🔴 TAMBAHKAN: Handle export seperti di Program.jsx
+    const handleExport = useCallback(async () => {
+        try {
+            // Gunakan filter yang sedang aktif
+            const currentFilters = {
+                search: localFilters.search,
+                gender: localFilters.gender,
+                category: localFilters.category
+            };
+            
+            await exportParticipants('csv', currentFilters);
+        } catch (error) {
+            console.error('Export failed:', error);
+            toast.error('Failed to export participants');
+        }
+    }, [localFilters, exportParticipants]);
+
+    // EKSTRAK SEMUA CATEGORY UNIK DARI DATA PARTICIPANT
+    useEffect(() => {
+        if (participant.length > 0) {
+            const allCategories = participant
                 .map(p => p.category)
                 .filter(category => category && category.trim() !== "");
             
-            // Hilangkan duplikat dan urutkan
             const uniqueCategories = [...new Set(allCategories)].sort();
             
-            // Format untuk filter options dengan emoji yang sesuai
-            return uniqueCategories.map(category => {
+            const formattedCategories = uniqueCategories.map(category => {
                 let emoji = "👤";
                 const lowerCategory = category.toLowerCase();
                 
@@ -71,121 +198,10 @@ const ImpalaManagement = () => {
                     original: category
                 };
             });
-        };
-    }, []);
-
-    // FUNGSI UNTUK APPLY SEARCH & FILTER
-    const applyAllFilters = () => {
-        let result = [...participant];
-        
-        // 1. Apply Search
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase();
-            result = result.filter(participant =>
-                participant.full_name?.toLowerCase().includes(term) ||
-                participant.email?.toLowerCase().includes(term) ||
-                participant.category?.toLowerCase().includes(term) ||
-                participant.program_name?.toLowerCase().includes(term) ||
-                participant.business?.toLowerCase().includes(term) ||
-                participant.gender?.toLowerCase().includes(term)
-            );
-        }
-        
-        // 2. Apply Gender Filter
-        if (activeFilters.gender) {
-            result = result.filter(participant => {
-                const participantGender = participant.gender?.toLowerCase();
-                return activeFilters.gender === 'all' || participantGender === activeFilters.gender;
-            });
-        }
-        
-        // 3. Apply Category Filter
-        if (activeFilters.category && activeFilters.category !== 'all') {
-            result = result.filter(participant => {
-                const participantCategory = participant.category;
-                if (!participantCategory) return false;
-                
-                return participantCategory.toLowerCase() === activeFilters.category.toLowerCase();
-            });
-        }
-        
-        setFilteredParticipants(result);
-    };
-
-    // HANDLE SEARCH
-    const handleSearch = (term) => {
-        setSearchTerm(term);
-        const lowerTerm = term.toLowerCase();
-    if (lowerTerm === 'perempuan' || lowerTerm === 'laki-laki') {
-        setActiveFilters(prev => ({
-            ...prev,
-            gender: lowerTerm
-        }));
-    }
-    };
-
-    // HANDLE GENDER FILTER CHANGE
-    const handleGenderFilterChange = (gender) => {
-        setActiveFilters(prev => ({
-            ...prev,
-            gender: prev.gender === gender ? null : gender
-        }));
-    };
-
-    // HANDLE CATEGORY FILTER CHANGE
-    const handleCategoryFilterChange = (category) => {
-        setActiveFilters(prev => ({
-            ...prev,
-            category: prev.category === category ? null : category
-        }));
-    };
-
-    // CLEAR ALL FILTERS
-    const clearAllFilters = () => {
-        setSearchTerm("");
-        setActiveFilters({
-            gender: null,
-            category: null,
-        });
-    };
-
-    // CLEAR SPECIFIC FILTER
-    const clearFilter = (filterType) => {
-        if (filterType === 'gender') {
-            setActiveFilters(prev => ({ ...prev, gender: null }));
-        } else if (filterType === 'category') {
-            setActiveFilters(prev => ({ ...prev, category: null }));
-        } else if (filterType === 'search') {
-            setSearchTerm("");
-        }
-    };
-
-    // INITIALIZE CATEGORIES
-    useEffect(() => {
-        if (participant.length > 0) {
-            const normalizedParticipants = participant.map(p => ({
-            ...p,
-            gender: p.gender ? p.gender.toLowerCase().trim() : p.gender
-        }));
-        
-        const extractedCategories = extractCategories(normalizedParticipants);
-        setAvailableCategories(extractedCategories);
-        setFilteredParticipants(normalizedParticipants);
-    }
-    }, [participant, extractCategories]);
-
-    // APPLY FILTERS SETIAP PARTICIPANT BERUBAH
-    useEffect(() => {
-        if (participant.length > 0) {
-            setFilteredParticipants(participant);
-            applyAllFilters();
+            
+            setAvailableCategories(formattedCategories);
         }
     }, [participant]);
-
-    // APPLY FILTERS SETIAP SEARCH ATAU FILTER BERUBAH
-    useEffect(() => {
-        applyAllFilters();
-    }, [searchTerm, activeFilters]);
 
     const handleEdit = () => {
         if (selectedParticipant) {
@@ -209,40 +225,50 @@ const ImpalaManagement = () => {
                 setSelectedParticipant(currentSelected)
             }
         }
-    }, [participant, selectedParticipant?.id])
+    }, [participant, selectedParticipant?.id]);
 
-    // GET ACTIVE FILTERS COUNT - HANYA GENDER DAN CATEGORY
-    const getActiveFiltersCount = () => {
+    const handleRefresh = useCallback(() => {
+        refreshData();
+        clearAllFilters();
+    }, [refreshData, clearAllFilters]);
+
+    // 🔴 DIUBAH: Handle page change
+    const handlePageChangeModified = useCallback((page) => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        handlePageChange(page);
+    }, [handlePageChange]);
+
+    // GET ACTIVE FILTERS COUNT
+    const getActiveFiltersCount = useCallback(() => {
         let count = 0;
-        // TIDAK MENGHITUNG SEARCH TERM
-        if (activeFilters.gender) count++;
-        if (activeFilters.category) count++;
+        if (localFilters.gender) count++;
+        if (localFilters.category) count++;
         return count;
-    };
+    }, [localFilters]);
 
     // GET TOTAL ACTIVE CRITERIA (SEARCH + FILTERS) UNTUK DISPLAY
-    const getTotalActiveCriteria = () => {
+    const getTotalActiveCriteria = useCallback(() => {
         let count = 0;
-        if (searchTerm) count++;
-        if (activeFilters.gender) count++;
-        if (activeFilters.category) count++;
+        if (localFilters.search) count++;
+        if (localFilters.gender) count++;
+        if (localFilters.category) count++;
         return count;
-    };
+    }, [localFilters]);
 
     // GET CATEGORY LABEL
-    const getCategoryLabel = (categoryValue) => {
+    const getCategoryLabel = useCallback((categoryValue) => {
         if (!categoryValue || categoryValue === "all") return "All Categories";
         const category = availableCategories.find(c => c.value === categoryValue);
         return category ? category.original : categoryValue;
-    };
+    }, [availableCategories]);
 
     // GET GENDER LABEL
-    const getGenderLabel = (genderValue) => {
+    const getGenderLabel = useCallback((genderValue) => {
         if (!genderValue) return "";
-        if (genderValue.toLowerCase() === 'laki-laki') return '👨 Laki-laki';
-        if (genderValue.toLowerCase() === 'perempuan') return '👩 Perempuan';
+        if (genderValue.toLowerCase() === 'Laki-laki') return '👨 Laki-laki';
+        if (genderValue.toLowerCase() === 'Perempuan') return '👩 Perempuan';
         return genderValue;
-    };
+    }, []);
 
     const tableConfig = {
         headers: ['No', 'Full Name', 'Email', 'Gender', 'Program Name', 'Category', 'Entity', 'Action'],
@@ -251,26 +277,40 @@ const ImpalaManagement = () => {
         detailTitle: "Participant Details"
     };
 
-    // FORMAT PARTICIPANT DARI filteredParticipants
-    const formattedParticipants = filteredParticipants.map((participant, index) => {
-        const currentPage = pagination.page;
-        const itemsPerPage = pagination.limit;
-        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
+    // 🔴 DIUBAH: Format participants - PERBAIKAN UTAMA: ganti `business` dengan `entity`
+    const formattedParticipants = useMemo(() => {
+        return participant.map((participant, index) => {
+            const currentPage = pagination.page;
+            const itemsPerPage = pagination.limit;
+            
+            const itemNumber = isInShowAllMode 
+                ? index + 1
+                : (currentPage - 1) * itemsPerPage + index + 1;
 
-        return {
-            id: participant.id,
-            no: itemNumber,
-            full_name: participant.full_name,
-            email: participant.email,
-            category: participant.category,
-            program_name: participant.program_name,
-            phone: participant.phone,
-            business: participant.business,
-            gender: participant.gender,
-            action: 'Detail',
-            ...participant
-        };
-    });
+            return {
+                id: participant.id,
+                no: itemNumber,
+                full_name: participant.full_name,
+                email: participant.email,
+                category: participant.category,
+                program_name: participant.program_name,
+                phone: participant.phone,
+                // 🔴 PERBAIKAN: Ganti business dengan entity
+                entity: participant.entity || participant.business, // Fallback ke business jika entity tidak ada
+                gender: participant.gender,
+                action: 'Detail',
+                // 🔴 PERBAIKAN: Tambahkan properti asli untuk akses mudah
+                ...participant
+            };
+        });
+    }, [participant, pagination.page, pagination.limit, isInShowAllMode]);
+
+    // 🔴 PERBAIKAN: Tambahkan properti business ke entity untuk kompatibilitas
+    useEffect(() => {
+        if (participant.length > 0 && participant.some(p => p.business && !p.entity)) {
+            console.warn("Some participants have 'business' field instead of 'entity'. Consider updating your database schema.");
+        }
+    }, [participant]);
 
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
@@ -288,7 +328,7 @@ const ImpalaManagement = () => {
                         )}
                     </CardHeader>
                     <CardContent>
-                        {/*ERROR MESSAGE */}
+                        {/* ERROR MESSAGE */}
                         {error && (
                             <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
                                 <div className="flex items-start gap-3">
@@ -300,10 +340,11 @@ const ImpalaManagement = () => {
                                     <Button 
                                         variant="outline" 
                                         size="sm" 
-                                        onClick={() => window.location.reload()}
+                                        onClick={handleRefresh}
                                         className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
                                     >
-                                        Reload Page
+                                        <RefreshCw className="h-4 w-4" />
+                                        Retry
                                     </Button>
                                 </div>
                             </div>
@@ -311,11 +352,39 @@ const ImpalaManagement = () => {
 
                         {/* SEARCH & FILTER SECTION */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
-                            <div className='flex gap-2 items-center'>
+                            <div className='flex gap-2 items-center flex-wrap'>
                                 <SearchBar 
                                     onSearch={handleSearch}
-                                    placeholder="Search..."
+                                    placeholder="Search participants..."
+                                    value={localFilters.search}
+                                    onChange={(e) => setLocalFilters(prev => ({ ...prev, search: e.target.value }))}
                                 />
+                                
+                                {/* 🔴 MODIFIKASI: Toggle Show All on Search */}
+                                {localFilters.search.trim() !== '' && (
+                                    <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={showAllOnSearch}
+                                                onChange={(e) => handleToggleShowAll(e.target.checked)}
+                                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                            />
+                                            <span className="text-sm font-medium text-blue-700">
+                                                Show all results
+                                            </span>
+                                        </label>
+                                        
+                                        {isInShowAllMode && (
+                                            <button
+                                                onClick={handleResetToPagination}
+                                                className="text-xs text-blue-600 hover:text-blue-800 underline ml-2"
+                                            >
+                                                Switch to pages
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                                 
                                 {/* FILTER DROPDOWN DENGAN WARNA AMBER */}
                                 <DropdownMenu>
@@ -351,7 +420,7 @@ const ImpalaManagement = () => {
                                             {genderOptions.map((option) => (
                                                 <DropdownMenuCheckboxItem
                                                     key={option.value}
-                                                    checked={activeFilters.gender?.toLowerCase() === option.value.toLowerCase()}
+                                                    checked={localFilters.gender?.toLowerCase() === option.value.toLowerCase()}
                                                     onCheckedChange={() => handleGenderFilterChange(option.value)}
                                                     className="flex items-center gap-2 cursor-pointer hover:bg-gray-50"
                                                 >
@@ -370,7 +439,7 @@ const ImpalaManagement = () => {
                                             <div className="max-h-48 overflow-y-auto">
                                                 {/* ALL CATEGORIES OPTION */}
                                                 <DropdownMenuCheckboxItem
-                                                    checked={activeFilters.category === 'all'}
+                                                    checked={localFilters.category === 'all'}
                                                     onCheckedChange={() => handleCategoryFilterChange('all')}
                                                     className="cursor-pointer hover:bg-gray-50"
                                                 >
@@ -380,7 +449,7 @@ const ImpalaManagement = () => {
                                                 {availableCategories.map((category) => (
                                                     <DropdownMenuCheckboxItem
                                                         key={category.value}
-                                                        checked={activeFilters.category?.toLowerCase() === category.value.toLowerCase()}
+                                                        checked={localFilters.category?.toLowerCase() === category.value.toLowerCase()}
                                                         onCheckedChange={() => handleCategoryFilterChange(category.value)}
                                                         className="cursor-pointer hover:bg-gray-50"
                                                     >
@@ -392,13 +461,14 @@ const ImpalaManagement = () => {
                                         
                                         <DropdownMenuSeparator />
                                         
-                                        {/* CLEAR FILTERS - HANYA CLEAR GENDER & CATEGORY */}
+                                        {/* CLEAR FILTERS */}
                                         <DropdownMenuItem 
                                             onClick={() => {
-                                                setActiveFilters({
-                                                    gender: null,
-                                                    category: null,
-                                                });
+                                                setLocalFilters(prev => ({
+                                                    ...prev,
+                                                    gender: '',
+                                                    category: ''
+                                                }));
                                             }}
                                             className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer font-medium"
                                         >
@@ -414,19 +484,57 @@ const ImpalaManagement = () => {
                                     <Plus className="h-4 w-4" />
                                     {tableConfig.addButton}
                                 </Button>
-                                <ExportButton data={formattedParticipants} />
+                                {/* 🔴 MODIFIKASI: Ganti ExportButton dengan Button seperti di Program.jsx */}
+                                <Button 
+                                    onClick={handleExport}
+                                    variant="outline"
+                                    className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
+                                    disabled={loading}
+                                >
+                                    {loading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            Export {isInShowAllMode ? 'All' : ''}
+                                        </>
+                                    )}
+                                </Button>
                             </div>
                         </div>
                         
-                        {/* ACTIVE FILTERS BADGES - TAMPILKAN JIKA ADA SEARCH ATAU FILTER */}
+                        {/* 🔴 MODIFIKASI: Show All Mode Indicator */}
+                        {isInShowAllMode && (
+                            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <CheckSquare className="h-5 w-5 text-blue-600" />
+                                        <p className="text-sm text-blue-700">
+                                            <strong>All search results are shown in one page.</strong> 
+                                            {localFilters.search && ` Search term: "${localFilters.search}"`}
+                                        </p>
+                                    </div>
+                                    <button 
+                                        onClick={handleResetToPagination}
+                                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                                    >
+                                        Switch to paginated view
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* ACTIVE FILTERS BADGES */}
                         {getTotalActiveCriteria() > 0 && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
                                 <span className="text-sm text-gray-600">Active filters:</span>
                                 
                                 {/* SEARCH BADGE */}
-                                {searchTerm && (
+                                {localFilters.search && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        <span>🔍 "{searchTerm}"</span>
+                                        <span>🔍 "{localFilters.search}"</span>
                                         <button 
                                             onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"
@@ -437,9 +545,9 @@ const ImpalaManagement = () => {
                                 )}
                                 
                                 {/* GENDER FILTER BADGE */}
-                                {activeFilters.gender && (
+                                {localFilters.gender && (
                                     <span className="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        {getGenderLabel(activeFilters.gender)}
+                                        {getGenderLabel(localFilters.gender)}
                                         <button 
                                             onClick={() => clearFilter('gender')}
                                             className="text-pink-600 hover:text-pink-800 ml-1"
@@ -450,10 +558,10 @@ const ImpalaManagement = () => {
                                 )}
                                 
                                 {/* CATEGORY FILTER BADGE */}
-                                {activeFilters.category && activeFilters.category !== 'all' && (
+                                {localFilters.category && localFilters.category !== 'all' && (
                                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Tag className="w-3 h-3" />
-                                        {getCategoryLabel(activeFilters.category)}
+                                        {getCategoryLabel(localFilters.category)}
                                         <button 
                                             onClick={() => clearFilter('category')}
                                             className="text-green-600 hover:text-green-800 ml-1"
@@ -464,7 +572,7 @@ const ImpalaManagement = () => {
                                 )}
                                 
                                 {/* ALL CATEGORIES BADGE */}
-                                {activeFilters.category === 'all' && (
+                                {localFilters.category === 'all' && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Tag className="w-3 h-3" />
                                         All Categories
@@ -477,7 +585,7 @@ const ImpalaManagement = () => {
                                     </span>
                                 )}
                                 
-                                {/* CLEAR ALL - CLEARS BOTH SEARCH AND FILTERS */}
+                                {/* CLEAR ALL */}
                                 <Button 
                                     variant="ghost" 
                                     onClick={clearAllFilters}
@@ -497,7 +605,7 @@ const ImpalaManagement = () => {
                                     <div className="bg-blue-600 h-2 rounded-full animate-pulse w-3/4"></div>
                                 </div>
                             </div>
-                        ) : filteredParticipants.length === 0 ? (
+                        ) : participant.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
                                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
                                     <Users className="w-10 h-10 text-gray-400" />
@@ -520,6 +628,7 @@ const ImpalaManagement = () => {
                                             onClick={clearAllFilters}
                                             variant="outline"
                                         >
+                                            <RefreshCw className="h-4 w-4" />
                                             Clear Filters
                                         </Button>
                                     )}
@@ -552,19 +661,28 @@ const ImpalaManagement = () => {
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
+                                    {/* 🔴 MODIFIKASI: Gunakan getDisplayText dari hook */}
                                     <div className="text-sm text-gray-600">
-                                        Showing {filteredParticipants.length} of {participant.length} participants
-                                        {getTotalActiveCriteria() > 0 && " (filtered)"}
+                                        {getDisplayText ? getDisplayText() : `Showing ${participant.length} of ${pagination.total} participants`}
+                                        {getTotalActiveCriteria() > 0 && !isInShowAllMode && " (filtered)"}
                                     </div>
                                     
-                                    <Pagination 
-                                        currentPage={pagination.page}
-                                        totalPages={pagination.totalPages}
-                                        totalItems={pagination.total}
-                                        itemsPerPage={pagination.limit}
-                                        onPageChange={handlePageChange}
-                                        disabled={loading}
-                                    />
+                                    {/* 🔴 MODIFIKASI: Conditional rendering pagination */}
+                                    {!isInShowAllMode && pagination.totalPages > 1 ? (
+                                        <Pagination 
+                                            currentPage={pagination.page}
+                                            totalPages={pagination.totalPages}
+                                            totalItems={pagination.total}
+                                            itemsPerPage={pagination.limit}
+                                            onPageChange={handlePageChangeModified}
+                                            disabled={loading}
+                                        />
+                                    ) : isInShowAllMode ? (
+                                        <div className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full flex items-center gap-2">
+                                            <CheckSquare className="h-4 w-4" />
+                                            All results shown in one page
+                                        </div>
+                                    ) : null}
                                 </div>
                             </>
                         )}

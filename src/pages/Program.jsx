@@ -1,10 +1,9 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, RefreshCw, AlertCircle, Tag, Filter, X } from "lucide-react";
+import { Plus, Loader2, Users, RefreshCw, AlertCircle, Tag, Filter, X, CheckSquare } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
-import ExportButton from "../components/ActionButton/ExportButton";
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from "../components/Pagination/Pagination";
 import ProgramContent from "../components/Content/ProgramClient";
@@ -28,52 +27,52 @@ const Program = () => {
     const [editingProgram, setEditingProgram] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     
-    // STATE UNTUK FRONTEND FILTERING
+    // 🔴 PERBAIKAN: Hapus state untuk frontend filtering dan gunakan hook sepenuhnya
+    const {
+        programs,
+        loading,
+        error,
+        pagination,
+        filters,
+        showAllOnSearch,
+        updateFiltersAndFetch,
+        searchPrograms,
+        toggleShowAllOnSearch,
+        clearFilters,
+        clearSearch,
+        exportPrograms,
+        getDisplayText,
+        isShowAllMode,
+        resetToPaginationMode,
+        fetchPrograms: hookFetchPrograms,
+        addProgram,
+        updateProgram,
+        deleteProgram,
+        refreshData
+    } = usePrograms();
+
+    // 🔴 PERBAIKAN: State lokal hanya untuk UI control
     const [searchTerm, setSearchTerm] = useState("");
-    const [activeFilters, setActiveFilters] = useState({
-        status: null, // 'active', 'inactive', atau null
-        category: null, // category atau null
-    });
-    const [filteredPrograms, setFilteredPrograms] = useState([]);
     const [availableCategories, setAvailableCategories] = useState([]);
 
-    const { programs, loading, error, pagination, filters, setFilters, fetchProgram, addProgram, updateProgram, deleteProgram } = usePrograms();
-
-    // EKSTRAK SEMUA STATUS UNIK DARI DATA PROGRAM
-    const availableStatuses = useMemo(() => {
-        if (!programs.length) return [];
-        
-        const allStatuses = programs
-            .map(program => program.status)
-            .filter(status => status && status.trim() !== "");
-        
-        const uniqueStatuses = [...new Set(allStatuses)].sort();
-        
-        return uniqueStatuses.map(status => ({
-            value: status.toLowerCase(),
-            label: status === 'active' ? '🟢 Active' : status === 'inactive' ? '🔴 Inactive' : `📌 ${status}`,
-            original: status
-        }));
-    }, [programs]);
-
     // EKSTRAK SEMUA CATEGORY UNIK DARI DATA PROGRAM
-    const extractCategories = useMemo(() => {
-        return (programsList) => {
-            if (!programsList.length) return [];
-            
-            const allCategories = programsList
+    useEffect(() => {
+        if (programs.length > 0) {
+            const allCategories = programs
                 .map(program => program.category)
                 .filter(category => category && category.trim() !== "");
             
             const uniqueCategories = [...new Set(allCategories)].sort();
             
-            return uniqueCategories.map(category => ({
+            const formattedCategories = uniqueCategories.map(category => ({
                 value: category.toLowerCase(),
                 label: `🏷️ ${category}`,
                 original: category
             }));
-        };
-    }, []);
+            
+            setAvailableCategories(formattedCategories);
+        }
+    }, [programs]);
 
     // STATUS OPTIONS
     const statusOptions = [
@@ -81,111 +80,61 @@ const Program = () => {
         { value: 'inactive', label: '🔴 Inactive', color: 'text-red-600 bg-red-50' },
     ];
 
-    // FUNGSI UNTUK APPLY SEMUA FILTER
-    const applyAllFilters = () => {
-        let result = [...programs];
-        
-        // 1. Apply Search
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase();
-            result = result.filter(program =>
-                program.program_name?.toLowerCase().includes(term) ||
-                program.category?.toLowerCase().includes(term) ||
-                program.status?.toLowerCase().includes(term) ||
-                (program.client && program.client.toLowerCase().includes(term))
-            );
-        }
-        
-        // 2. Apply Status Filter
-        if (activeFilters.status) {
-            result = result.filter(program => {
-                const programStatus = program.status?.toLowerCase();
-                return activeFilters.status === 'all' || programStatus === activeFilters.status;
-            });
-        }
-        
-        // 3. Apply Category Filter
-        if (activeFilters.category && activeFilters.category !== 'all') {
-            result = result.filter(program => {
-                const programCategory = program.category;
-                if (!programCategory) return false;
-                
-                return programCategory.toLowerCase() === activeFilters.category.toLowerCase();
-            });
-        }
-        
-        setFilteredPrograms(result);
-    };
-
-    // HANDLE SEARCH
-    const handleSearch = (term) => {
+    // 🔴 PERBAIKAN: Handle search dengan backend filtering
+    const handleSearch = useCallback((term) => {
         setSearchTerm(term);
-        setFilters({ ...filters, search: term });
-    };
+        searchPrograms(term, showAllOnSearch);
+    }, [searchPrograms, showAllOnSearch]);
 
-    // HANDLE STATUS FILTER CHANGE
-    const handleStatusFilterChange = (status) => {
-        setActiveFilters(prev => ({
-            ...prev,
-            status: prev.status === status ? null : status
-        }));
-        setFilters({ ...filters, status: status || '' });
-    };
+    // 🔴 PERBAIKAN: Handle status filter change dengan backend
+    const handleStatusFilterChange = useCallback((status) => {
+        const newStatus = filters.status === status ? '' : status;
+        updateFiltersAndFetch({ status: newStatus });
+    }, [filters.status, updateFiltersAndFetch]);
 
-    // HANDLE CATEGORY FILTER CHANGE
-    const handleCategoryFilterChange = (category) => {
-        setActiveFilters(prev => ({
-            ...prev,
-            category: prev.category === category ? null : category
-        }));
-        setFilters({ ...filters, category: category || '' });
-    };
+    // 🔴 PERBAIKAN: Handle category filter change dengan backend
+    const handleCategoryFilterChange = useCallback((category) => {
+        const newCategory = filters.category === category ? '' : category;
+        updateFiltersAndFetch({ category: newCategory });
+    }, [filters.category, updateFiltersAndFetch]);
 
-    // CLEAR ALL FILTERS
-    const clearAllFilters = () => {
+    // 🔴 PERBAIKAN: Clear all filters menggunakan fungsi dari hook
+    const handleClearAllFilters = useCallback(() => {
         setSearchTerm("");
-        setActiveFilters({
-            status: null,
-            category: null,
-        });
-        setFilteredPrograms(programs);
-        setFilters({ search: "", status: "", category: "" });
-    };
+        clearFilters();
+    }, [clearFilters]);
 
-    // CLEAR SPECIFIC FILTER
-    const clearFilter = (filterType) => {
-        if (filterType === 'status') {
-            setActiveFilters(prev => ({ ...prev, status: null }));
-            setFilters({ ...filters, status: '' });
-        } else if (filterType === 'category') {
-            setActiveFilters(prev => ({ ...prev, category: null }));
-            setFilters({ ...filters, category: '' });
-        } else if (filterType === 'search') {
+    // 🔴 PERBAIKAN: Clear specific filter
+    const clearFilter = useCallback((filterType) => {
+        if (filterType === 'search') {
             setSearchTerm("");
-            setFilters({ ...filters, search: '' });
+            clearSearch();
+        } else if (filterType === 'status') {
+            updateFiltersAndFetch({ status: '' });
+        } else if (filterType === 'category') {
+            updateFiltersAndFetch({ category: '' });
         }
-    };
+    }, [clearSearch, updateFiltersAndFetch]);
 
-    // INITIALIZE CATEGORIES
-    useEffect(() => {
-        if (programs.length > 0) {
-            const extractedCategories = extractCategories(programs);
-            setAvailableCategories(extractedCategories);
+    // 🔴 PERBAIKAN: Toggle show all on search
+    const handleToggleShowAll = useCallback((checked) => {
+        toggleShowAllOnSearch(checked);
+    }, [toggleShowAllOnSearch]);
+
+    // 🔴 PERBAIKAN: Reset to pagination mode
+    const handleResetToPagination = useCallback(() => {
+        resetToPaginationMode();
+    }, [resetToPaginationMode]);
+
+    // 🔴 PERBAIKAN: Handle export
+    const handleExport = useCallback(async () => {
+        try {
+            await exportPrograms('csv');
+        } catch (error) {
+            console.error('Export failed:', error);
+            toast.error('Failed to export programs');
         }
-    }, [programs, extractCategories]);
-
-    // APPLY FILTERS SETIAP PROGRAMS BERUBAH
-    useEffect(() => {
-        if (programs.length > 0) {
-            setFilteredPrograms(programs);
-            applyAllFilters();
-        }
-    }, [programs]);
-
-    // APPLY FILTERS SETIAP SEARCH ATAU FILTER BERUBAH
-    useEffect(() => {
-        applyAllFilters();
-    }, [searchTerm, activeFilters]);
+    }, [exportPrograms]);
 
     const handleAddProgram = () => {
         setIsAddProgramModalOpen(true);
@@ -211,10 +160,9 @@ const Program = () => {
             setIsEditModalOpen(false)
             setEditingProgram(null)
             toast.success('Program Updated successfully')
-            fetchProgram(pagination.page);
-        } catch {
+        } catch (error) {
             console.error('Error updating', error)
-            toast.error(error.message || 'Failed to update program' )
+            toast.error(error.message || 'Failed to update program')
         }
     };
 
@@ -223,9 +171,9 @@ const Program = () => {
             await addProgram(programData);
             setIsAddProgramModalOpen(false);
             toast.success('Program added successfully');
-            fetchProgram(pagination.page);
-        } catch {
-            // 
+        } catch (error) {
+            console.error('Error adding program:', error);
+            toast.error(error.message || 'Failed to add program');
         }
     };
 
@@ -239,15 +187,16 @@ const Program = () => {
         try {
             await deleteProgram(programId);
             setSelectedProgram(null);
-            fetchProgram(pagination.page);
-        } catch {
-            // 
+            toast.success('Program deleted successfully');
+        } catch (error) {
+            console.error('Error deleting program:', error);
+            toast.error(error.message || 'Failed to delete program');
         }
     };
 
     useEffect(() => {
         if (selectedProgram && programs.length > 0) {
-            const currentSelected = programs.find(member => member.id === selectedProgram.id)
+            const currentSelected = programs.find(program => program.id === selectedProgram.id)
             if (currentSelected) {
                 setSelectedProgram(currentSelected)
             }
@@ -255,47 +204,46 @@ const Program = () => {
     }, [programs, selectedProgram?.id])
 
     const handleRefresh = () => {
-        fetchProgram(pagination.page);
-        clearAllFilters();
+        refreshData();
+        handleClearAllFilters();
     };
 
     const handlePageChange = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        fetchProgram(page);
+        hookFetchPrograms(page);
     };
 
-    // GET ACTIVE FILTERS COUNT - HANYA STATUS DAN CATEGORY
-    const getActiveFiltersCount = () => {
+    // 🔴 PERBAIKAN: Get active filters count sebagai value bukan function
+    const getActiveFiltersCount = useMemo(() => {
         let count = 0;
-        // TIDAK MENGHITUNG SEARCH TERM
-        if (activeFilters.status) count++;
-        if (activeFilters.category) count++;
+        if (filters.status) count++;
+        if (filters.category) count++;
         return count;
-    };
+    }, [filters]);
 
-    // GET TOTAL ACTIVE CRITERIA (SEARCH + FILTERS) UNTUK DISPLAY
-    const getTotalActiveCriteria = () => {
+    // 🔴 PERBAIKAN: Get total active criteria termasuk search sebagai value
+    const getTotalActiveCriteria = useMemo(() => {
         let count = 0;
-        if (searchTerm) count++;
-        if (activeFilters.status) count++;
-        if (activeFilters.category) count++;
+        if (filters.search) count++;
+        if (filters.status) count++;
+        if (filters.category) count++;
         return count;
-    };
+    }, [filters]);
 
     // GET CATEGORY LABEL
-    const getCategoryLabel = (categoryValue) => {
+    const getCategoryLabel = useCallback((categoryValue) => {
         if (!categoryValue || categoryValue === "all") return "All Categories";
-        const category = availableCategories.find(c => c.value === categoryValue);
+        const category = availableCategories.find(c => c.value === categoryValue.toLowerCase());
         return category ? category.original : categoryValue;
-    };
+    }, [availableCategories]);
 
     // GET STATUS LABEL
-    const getStatusLabel = (statusValue) => {
+    const getStatusLabel = useCallback((statusValue) => {
         if (!statusValue) return "";
         if (statusValue === 'active') return '🟢 Active';
         if (statusValue === 'inactive') return '🔴 Inactive';
-        return statusValue;
-    };
+        return statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
+    }, []);
     
     const tableConfig = {
         headers: ['No', 'Program Name', 'Client', 'Category', 'Status', 'Duration', 'Price', 'Action'],
@@ -304,26 +252,29 @@ const Program = () => {
         detailTitle: "Program Details"
     };
 
-    // FORMAT PROGRAM DARI filteredPrograms
-    const formattedPrograms = filteredPrograms.map((program, index) => {
-        const currentPage = pagination.page;
-        const itemsPerPage = pagination.limit;
-        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
-        
-        return {
-            id: program.id,
-            no: itemNumber,
-            program_name: program.program_name,
-            category: program.category,
-            status: program.status,
-            duration: program.duration,
-            start_date: program.start_date,
-            end_date: program.end_date,
-            price: program.price,
-            action: 'Detail',
-            ...program
-        };
-    });
+    // 🔴 PERBAIKAN: Format program untuk table - gunakan data dari backend yang sudah difilter
+    const formattedPrograms = useMemo(() => {
+        return programs.map((program, index) => {
+            const itemNumber = isShowAllMode() 
+                ? index + 1
+                : (pagination.page - 1) * pagination.limit + index + 1;
+            
+            return {
+                id: program.id,
+                no: itemNumber,
+                program_name: program.program_name,
+                category: program.category,
+                status: program.status,
+                duration: program.duration,
+                start_date: program.start_date,
+                end_date: program.end_date,
+                price: program.price,
+                client: program.client,
+                action: 'Detail',
+                ...program
+            };
+        });
+    }, [programs, pagination.page, pagination.limit, isShowAllMode]);
 
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
@@ -339,6 +290,7 @@ const Program = () => {
                             </div>
                         )}
                     </CardHeader>
+                    
                     <CardContent>
                         {error && (
                             <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
@@ -363,30 +315,62 @@ const Program = () => {
 
                         {/* SEARCH & FILTER SECTION */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
-                            <div className='flex gap-2 items-center'>
+                            <div className='flex gap-2 items-center flex-wrap'>
                                 <SearchBar 
                                     onSearch={handleSearch}
-                                    placeholder="Search..."
+                                    placeholder="Search programs..."
+                                    value={filters.search || searchTerm}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        setSearchTerm(value);
+                                        // Search akan dipanggil via debounce di hook
+                                    }}
                                 />
+                                
+                                {/* 🔴 PERBAIKAN: Toggle Show All on Search */}
+                                {filters.search && filters.search.trim() !== '' && (
+                                    <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={showAllOnSearch}
+                                                onChange={(e) => handleToggleShowAll(e.target.checked)}
+                                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                            />
+                                            <span className="text-sm font-medium text-blue-700">
+                                                Show all results
+                                            </span>
+                                        </label>
+                                        
+                                        {isShowAllMode() && (
+                                            <button
+                                                onClick={handleResetToPagination}
+                                                className="text-xs text-blue-600 hover:text-blue-800 underline ml-2"
+                                            >
+                                                Switch to pages
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                                 
                                 {/* FILTER DROPDOWN DENGAN WARNA AMBER */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button 
-                                            variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
+                                            variant={getActiveFiltersCount > 0 ? "default" : "outline"}
                                             className={`flex items-center gap-2 transition-all duration-200 ${
-                                                getActiveFiltersCount() > 0 
+                                                getActiveFiltersCount > 0 
                                                     ? "bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-amber-500" 
                                                     : "text-gray-700 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 border-gray-300"
                                             }`}
                                         >
                                             <Filter className={`h-4 w-4 ${
-                                                getActiveFiltersCount() > 0 ? "text-white" : "text-gray-500"
+                                                getActiveFiltersCount > 0 ? "text-white" : "text-gray-500"
                                             }`} />
                                             Filter
-                                            {getActiveFiltersCount() > 0 && (
+                                            {getActiveFiltersCount > 0 && (
                                                 <span className="ml-1 bg-white text-amber-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                                                    {getActiveFiltersCount()}
+                                                    {getActiveFiltersCount}
                                                 </span>
                                             )}
                                         </Button>
@@ -403,7 +387,7 @@ const Program = () => {
                                             {statusOptions.map((option) => (
                                                 <DropdownMenuCheckboxItem
                                                     key={option.value}
-                                                    checked={activeFilters.status === option.value}
+                                                    checked={filters.status === option.value}
                                                     onCheckedChange={() => handleStatusFilterChange(option.value)}
                                                     className="flex items-center gap-2 cursor-pointer hover:bg-gray-50"
                                                 >
@@ -422,7 +406,7 @@ const Program = () => {
                                             <div className="max-h-48 overflow-y-auto">
                                                 {/* ALL CATEGORIES OPTION */}
                                                 <DropdownMenuCheckboxItem
-                                                    checked={activeFilters.category === 'all'}
+                                                    checked={filters.category === 'all'}
                                                     onCheckedChange={() => handleCategoryFilterChange('all')}
                                                     className="cursor-pointer hover:bg-gray-50"
                                                 >
@@ -432,7 +416,7 @@ const Program = () => {
                                                 {availableCategories.map((category) => (
                                                     <DropdownMenuCheckboxItem
                                                         key={category.value}
-                                                        checked={activeFilters.category?.toLowerCase() === category.value.toLowerCase()}
+                                                        checked={filters.category?.toLowerCase() === category.value.toLowerCase()}
                                                         onCheckedChange={() => handleCategoryFilterChange(category.value)}
                                                         className="cursor-pointer hover:bg-gray-50"
                                                     >
@@ -445,12 +429,12 @@ const Program = () => {
                                         
                                         <DropdownMenuSeparator />
                                         
-                                        {/* CLEAR FILTERS - HANYA CLEAR STATUS & CATEGORY */}
+                                        {/* CLEAR FILTERS */}
                                         <DropdownMenuItem 
                                             onClick={() => {
-                                                setActiveFilters({
-                                                    status: null,
-                                                    category: null,
+                                                updateFiltersAndFetch({ 
+                                                    status: '', 
+                                                    category: '' 
                                                 });
                                             }}
                                             className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer font-medium"
@@ -470,19 +454,56 @@ const Program = () => {
                                     <Plus className="h-4 w-4" />
                                     {tableConfig.addButton}
                                 </Button>
-                                <ExportButton data={formattedPrograms} />
+                                <Button 
+                                    onClick={handleExport}
+                                    variant="outline"
+                                    className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
+                                    disabled={loading}
+                                >
+                                    {loading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            Export {isShowAllMode() ? 'All' : ''}
+                                        </>
+                                    )}
+                                </Button>
                             </div>
                         </div>
                         
-                        {/* ACTIVE FILTERS BADGES - TAMPILKAN JIKA ADA SEARCH ATAU FILTER */}
-                        {getTotalActiveCriteria() > 0 && (
+                        {/* 🔴 PERBAIKAN: Show All Mode Indicator */}
+                        {isShowAllMode() && (
+                            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <CheckSquare className="h-5 w-5 text-blue-600" />
+                                        <p className="text-sm text-blue-700">
+                                            <strong>All search results are shown in one page.</strong> 
+                                            {filters.search && ` Search term: "${filters.search}"`}
+                                        </p>
+                                    </div>
+                                    <button 
+                                        onClick={handleResetToPagination}
+                                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                                    >
+                                        Switch to paginated view
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* ACTIVE FILTERS BADGES */}
+                        {getTotalActiveCriteria > 0 && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
                                 <span className="text-sm text-gray-600">Active filters:</span>
                                 
                                 {/* SEARCH BADGE */}
-                                {searchTerm && (
+                                {filters.search && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        <span>🔍 "{searchTerm}"</span>
+                                        <span>🔍 "{filters.search}"</span>
                                         <button 
                                             onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"
@@ -493,9 +514,9 @@ const Program = () => {
                                 )}
                                 
                                 {/* STATUS FILTER BADGE */}
-                                {activeFilters.status && (
+                                {filters.status && (
                                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        {getStatusLabel(activeFilters.status)}
+                                        {getStatusLabel(filters.status)}
                                         <button 
                                             onClick={() => clearFilter('status')}
                                             className="text-green-600 hover:text-green-800 ml-1"
@@ -506,10 +527,10 @@ const Program = () => {
                                 )}
                                 
                                 {/* CATEGORY FILTER BADGE */}
-                                {activeFilters.category && activeFilters.category !== 'all' && (
+                                {filters.category && filters.category !== 'all' && (
                                     <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Tag className="w-3 h-3" />
-                                        {getCategoryLabel(activeFilters.category)}
+                                        {getCategoryLabel(filters.category)}
                                         <button 
                                             onClick={() => clearFilter('category')}
                                             className="text-purple-600 hover:text-purple-800 ml-1"
@@ -520,7 +541,7 @@ const Program = () => {
                                 )}
                                 
                                 {/* ALL CATEGORIES BADGE */}
-                                {activeFilters.category === 'all' && (
+                                {filters.category === 'all' && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Tag className="w-3 h-3" />
                                         All Categories
@@ -533,10 +554,10 @@ const Program = () => {
                                     </span>
                                 )}
                                 
-                                {/* CLEAR ALL - CLEARS BOTH SEARCH AND FILTERS */}
+                                {/* CLEAR ALL */}
                                 <Button 
                                     variant="ghost" 
-                                    onClick={clearAllFilters}
+                                    onClick={handleClearAllFilters}
                                     className="text-sm h-8"
                                     size="sm"
                                 >
@@ -553,7 +574,7 @@ const Program = () => {
                                     <div className="bg-blue-600 h-2 rounded-full animate-pulse w-3/4"></div>
                                 </div>
                             </div>
-                        ) : filteredPrograms.length === 0 ? (
+                        ) : programs.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
                                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
                                     <Users className="w-10 h-10 text-gray-400" />
@@ -563,16 +584,16 @@ const Program = () => {
                                         No programs found
                                     </h3>
                                     <p className="text-sm text-gray-500 max-w-md">
-                                        {getTotalActiveCriteria() > 0 
+                                        {getTotalActiveCriteria > 0 
                                             ? "No programs match your current filters. Try adjusting your criteria."
                                             : "Get started by adding your first program."
                                         }
                                     </p>
                                 </div>
-                                {getTotalActiveCriteria() > 0 ? (
+                                {getTotalActiveCriteria > 0 ? (
                                     <Button 
                                         className="flex items-center gap-2"
-                                        onClick={clearAllFilters}
+                                        onClick={handleClearAllFilters}
                                         variant="outline"
                                     >
                                         <RefreshCw className="h-4 w-4" />
@@ -624,19 +645,28 @@ const Program = () => {
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
+                                    {/* 🔴 PERBAIKAN: Gunakan getDisplayText dari hook */}
                                     <div className="text-sm text-gray-600">
-                                        Showing {filteredPrograms.length} of {programs.length} programs
-                                        {getTotalActiveCriteria() > 0 && " (filtered)"}
+                                        {getDisplayText()}
+                                        {getTotalActiveCriteria > 0 && !isShowAllMode() && " (filtered)"}
                                     </div>
                                     
-                                    <Pagination 
-                                        currentPage={pagination.page}
-                                        totalPages={pagination.totalPages}
-                                        totalItems={pagination.total}
-                                        itemsPerPage={pagination.limit}
-                                        onPageChange={handlePageChange}
-                                        disabled={loading}
-                                    />
+                                    {/* 🔴 PERBAIKAN: Conditional rendering pagination */}
+                                    {!isShowAllMode() && pagination.totalPages > 1 ? (
+                                        <Pagination 
+                                            currentPage={pagination.page}
+                                            totalPages={pagination.totalPages}
+                                            totalItems={pagination.total}
+                                            itemsPerPage={pagination.limit}
+                                            onPageChange={handlePageChange}
+                                            disabled={loading}
+                                        />
+                                    ) : isShowAllMode() ? (
+                                        <div className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full flex items-center gap-2">
+                                            <CheckSquare className="h-4 w-4" />
+                                            All results shown in one page
+                                        </div>
+                                    ) : null}
                                 </div>
                             </>
                         )}
@@ -649,9 +679,9 @@ const Program = () => {
                     onEdit={handleEditProgram}
                     onDelete={handleDeleteProgram}
                     detailTitle={tableConfig.detailTitle}
-                    onClientUpdated={() => fetchProgram(pagination.page)}
+                    onClientUpdated={() => hookFetchPrograms(pagination.page)}
                     onClientDeleted={() => {
-                        fetchProgram(pagination.page);
+                        hookFetchPrograms(pagination.page);
                         setSelectedProgram(null);
                     }}
                 />
