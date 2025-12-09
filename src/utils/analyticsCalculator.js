@@ -48,8 +48,8 @@ export const calculateMonthlyData = (data, year, metric) => {
         revenue: 0,
         cumulativeRevenue: 0,
         programsCount: 0,
-        growth: 0, // ✅ Tambahkan field untuk growth
-        growthPercentage: '0%' // ✅ Tambahkan field untuk growth percentage
+        growth: 0,
+        growthPercentage: '0%'
     }));
 
     // Proses data
@@ -108,7 +108,6 @@ export const calculateMonthlyData = (data, year, metric) => {
         months[i].totalParticipants = runningTotalParticipants;
         months[i].cumulativeRevenue = runningCumulativeRevenue;
         
-        // ✅ Hitung growth dari bulan sebelumnya
         if (i > 0) {
             let previousValue, currentValue;
             
@@ -223,11 +222,10 @@ export const calculateSummary = (monthlyData, metric, totalCount) => {
             ? `${averageGrowth.toFixed(1)}%` 
             : '0%';
     
-    // Hitung growth dari tahun sebelumnya (jika ada data)
     let yearOverYearGrowth = '0%';
     if (monthlyData.length >= 12) {
         let totalThisYear = 0;
-        let totalPrevYear = 0; // Ini seharusnya dihitung dari data tahun sebelumnya
+        let totalPrevYear = 0; 
         
         // Untuk sekarang, kita hitung growth dari awal vs akhir tahun
         const firstMonthValue = getMonthValue(monthlyData[0], metric);

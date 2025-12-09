@@ -1,2 +1,2 @@
-export { default } from './YearlyComparison';
-export { default as YearlyComparisonCard } from './YearlyComparisonCard';
+export { default } from './QuarterlyComparison';
+export { default as YearlyComparisonCard } from './QuarterlyComparisonCard';

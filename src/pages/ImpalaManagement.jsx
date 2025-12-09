@@ -668,7 +668,7 @@ const ImpalaManagement = () => {
                                     </div>
                                     
                                     {/* 🔴 MODIFIKASI: Conditional rendering pagination */}
-                                    {!isInShowAllMode && pagination.totalPages > 1 ? (
+                                    
                                         <Pagination 
                                             currentPage={pagination.page}
                                             totalPages={pagination.totalPages}
@@ -677,12 +677,7 @@ const ImpalaManagement = () => {
                                             onPageChange={handlePageChangeModified}
                                             disabled={loading}
                                         />
-                                    ) : isInShowAllMode ? (
-                                        <div className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full flex items-center gap-2">
-                                            <CheckSquare className="h-4 w-4" />
-                                            All results shown in one page
-                                        </div>
-                                    ) : null}
+                                    )
                                 </div>
                             </>
                         )}

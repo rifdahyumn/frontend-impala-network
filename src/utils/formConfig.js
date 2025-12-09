@@ -43,7 +43,7 @@ export const getDefaultFormConfig = () => ({
                 name: 'nik', 
                 label: 'NIK (Nomor Induk Kependudukan)', 
                 required: true,
-                placeholder: 'Masukkan NIK 17 digit',
+                placeholder: 'Masukkan NIK 16 digit',
                 locked: true
             },
             {

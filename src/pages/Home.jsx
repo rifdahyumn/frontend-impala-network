@@ -1,4 +1,4 @@
-import YearlyComparison from "../components/Home/YearlyComparison";
+import YearlyComparison from "../components/Home/QuarterlyComparison";
 import Analytics from "../components/Analytics/Analytics";
 import StatsCards from "../components/Home/StatsCards";
 import Header from "../components/Layout/Header";

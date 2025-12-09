@@ -10,7 +10,8 @@ class AnalyticsService {
         try {
             const {
                 years = 'auto',
-                includeMonthly = false
+                includeMonthly = false,
+                includeQuarterly = true // Default true untuk quarterly
             } = options
 
             const queryParams = new URLSearchParams()
@@ -23,6 +24,11 @@ class AnalyticsService {
 
             if (includeMonthly) {
                 queryParams.append('includeMonthly', 'true')
+            }
+            
+            // TAMBAHKAN PARAMETER INI
+            if (includeQuarterly) {
+                queryParams.append('includeQuarterly', 'true')
             }
 
             const response = await fetch(`${this.baseURL}/analytics/yearly-comparison?${queryParams}`, {
@@ -43,10 +49,20 @@ class AnalyticsService {
                 throw new Error(result.error || 'Failed to fetch yearly comparison')
             }
 
-            return this.formatYearlyComparisonForFrontend(result.data, result.years)
+            // DEBUG: Lihat struktur data dari backend
+            console.log('Backend response:', {
+                success: result.success,
+                message: result.message,
+                years: result.years,
+                dataStructure: result.data ? Object.keys(result.data) : 'no data',
+                firstYearData: result.data ? result.data[result.years[0]] : null
+            });
+
+            // Format data sesuai dengan struktur backend
+            return this.formatBackendResponse(result.data, result.years)
         } catch (error) {
             console.error('Error fetching yearly comparison:', error);
-            return this.getMockYearlyComparisonData();
+            return this.getMockYearlyComparisonDataWithQuarterly();
         }
     }
 
@@ -303,6 +319,108 @@ class AnalyticsService {
             rawData: item
         }))
     }
+
+    formatBackendResponse(apiData, years) {
+    const formatted = {};
+    
+    if (!apiData || typeof apiData !== 'object') {
+        console.error('Invalid API data format:', apiData);
+        return this.getMockYearlyComparisonDataWithQuarterly();
+    }
+    
+    // Iterasi melalui setiap tahun dari response backend
+    Object.keys(apiData).forEach(yearKey => {
+        const year = parseInt(yearKey);
+        const yearData = apiData[yearKey];
+        
+        if (!yearData) {
+            console.warn(`No data for year ${year}`);
+            formatted[year] = this.getEmptyYearData();
+            return;
+        }
+        
+        // Format data sesuai dengan struktur dari backend controller Anda
+        formatted[year] = {
+            clients: {
+                total: yearData.clients?.total || 0,
+                count: yearData.clients?.count || 0,
+                average: yearData.clients?.average || 0,
+                growth: yearData.clients?.growth || {
+                    percentage: '0%',
+                    value: 0,
+                    isPositive: false,
+                    comparedTo: null
+                }
+            },
+            programs: {
+                total: yearData.programs?.total || 0,
+                count: yearData.programs?.count || 0,
+                average: yearData.programs?.average || 0,
+                growth: yearData.programs?.growth || {
+                    percentage: '0%',
+                    value: 0,
+                    isPositive: false,
+                    comparedTo: null
+                }
+            },
+            participants: {
+                total: yearData.participants?.total || 0,
+                count: yearData.participants?.count || 0,
+                average: yearData.participants?.average || 0,
+                growth: yearData.participants?.growth || {
+                    percentage: '0%',
+                    value: 0,
+                    isPositive: false,
+                    comparedTo: null
+                }
+            },
+            revenue: {
+                total: yearData.revenue?.total || 0,
+                count: yearData.revenue?.count || 0,
+                average: yearData.revenue?.average || 0,
+                growth: yearData.revenue?.growth || {
+                    percentage: '0%',
+                    value: 0,
+                    isPositive: false,
+                    comparedTo: null
+                }
+            },
+            // Data quarterly langsung dari backend
+            quarterly: yearData.quarterly || {
+                clients: { q1: { total: 0, count: 0, average: 0 }, q2: { total: 0, count: 0, average: 0 }, q3: { total: 0, count: 0, average: 0 }, q4: { total: 0, count: 0, average: 0 } },
+                programs: { q1: { total: 0, count: 0, average: 0 }, q2: { total: 0, count: 0, average: 0 }, q3: { total: 0, count: 0, average: 0 }, q4: { total: 0, count: 0, average: 0 } },
+                participants: { q1: { total: 0, count: 0, average: 0 }, q2: { total: 0, count: 0, average: 0 }, q3: { total: 0, count: 0, average: 0 }, q4: { total: 0, count: 0, average: 0 } },
+                revenue: { q1: { total: 0, count: 0, average: 0 }, q2: { total: 0, count: 0, average: 0 }, q3: { total: 0, count: 0, average: 0 }, q4: { total: 0, count: 0, average: 0 } }
+            }
+        };
+    });
+    
+    // Pastikan semua tahun yang diminta ada dalam response
+    years.forEach(year => {
+        if (!formatted[year]) {
+            formatted[year] = this.getEmptyYearData();
+        }
+    });
+    
+    return formatted;
 }
+
+getEmptyYearData() {
+    return {
+        clients: { total: 0, count: 0, average: 0, growth: { percentage: '0%', value: 0, isPositive: false, comparedTo: null } },
+        programs: { total: 0, count: 0, average: 0, growth: { percentage: '0%', value: 0, isPositive: false, comparedTo: null } },
+        participants: { total: 0, count: 0, average: 0, growth: { percentage: '0%', value: 0, isPositive: false, comparedTo: null } },
+        revenue: { total: 0, count: 0, average: 0, growth: { percentage: '0%', value: 0, isPositive: false, comparedTo: null } },
+        quarterly: {
+            clients: { q1: { total: 0, count: 0, average: 0 }, q2: { total: 0, count: 0, average: 0 }, q3: { total: 0, count: 0, average: 0 }, q4: { total: 0, count: 0, average: 0 } },
+            programs: { q1: { total: 0, count: 0, average: 0 }, q2: { total: 0, count: 0, average: 0 }, q3: { total: 0, count: 0, average: 0 }, q4: { total: 0, count: 0, average: 0 } },
+            participants: { q1: { total: 0, count: 0, average: 0 }, q2: { total: 0, count: 0, average: 0 }, q3: { total: 0, count: 0, average: 0 }, q4: { total: 0, count: 0, average: 0 } },
+            revenue: { q1: { total: 0, count: 0, average: 0 }, q2: { total: 0, count: 0, average: 0 }, q3: { total: 0, count: 0, average: 0 }, q4: { total: 0, count: 0, average: 0 } }
+        }
+    };
+}
+}
+
+
 
 export default new AnalyticsService()

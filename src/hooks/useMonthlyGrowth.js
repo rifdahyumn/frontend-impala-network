@@ -12,7 +12,6 @@ export const useMonthlyGrowth = (initialMetric = 'clients', initialYear = null) 
     const [error, setError] = useState(null)
     const [metadata, setMetadata] = useState({})
 
-    // Inisialisasi tahun yang tersedia
     useEffect(() => {
         const years = AnalyticsService.getAvailableYears()
         setAvailableYears(years)
@@ -22,7 +21,6 @@ export const useMonthlyGrowth = (initialMetric = 'clients', initialYear = null) 
         }
     }, [initialYear])
 
-    // Fetch data function
     const fetchData = useCallback(async () => {
         setLoading(true)
         setError(null)
@@ -30,7 +28,6 @@ export const useMonthlyGrowth = (initialMetric = 'clients', initialYear = null) 
         try {
             const result = await AnalyticsService.fetchMonthlyGrowthData(selectedMetric, selectedYear)
             
-            // Format data untuk frontend
             const formatted = AnalyticsService.formatMonthlyGrowthForFrontend(result.data, selectedMetric)
             
             setGrowthData(formatted)
@@ -55,12 +52,10 @@ export const useMonthlyGrowth = (initialMetric = 'clients', initialYear = null) 
         }
     }, [selectedMetric, selectedYear])
 
-    // Fetch data ketika metric atau year berubah
     useEffect(() => {
         fetchData()
     }, [fetchData])
 
-    // Helper untuk change year
     const handleYearChange = useCallback((change) => {
         setSelectedYear(prev => {
             const newYear = prev + change
@@ -73,7 +68,6 @@ export const useMonthlyGrowth = (initialMetric = 'clients', initialYear = null) 
         })
     }, [availableYears])
 
-    // Helper untuk set year langsung
     const handleSetYear = useCallback((year) => {
         const currentYear = new Date().getFullYear()
         const minYear = availableYears[0] || currentYear - 4
@@ -83,18 +77,15 @@ export const useMonthlyGrowth = (initialMetric = 'clients', initialYear = null) 
         }
     }, [availableYears])
 
-    // Refresh data
     const refreshData = useCallback(() => {
         fetchData()
     }, [fetchData])
 
-    // Format number berdasarkan metric
     const formatNumber = useCallback((number) => {
         return AnalyticsService.formatNumber(number, selectedMetric)
     }, [selectedMetric])
 
     return {
-        // State
         selectedMetric,
         selectedYear,
         availableYears,
@@ -102,17 +93,11 @@ export const useMonthlyGrowth = (initialMetric = 'clients', initialYear = null) 
         loading,
         error,
         metadata,
-        
-        // Actions
         setSelectedMetric,
         setSelectedYear: handleSetYear,
         handleYearChange,
         refreshData,
-        
-        // Helpers
         formatNumber,
-        
-        // Metadata
         dataCount: growthData.length,
         hasData: growthData.length > 0,
         isFallback: metadata?.isFallback || false
