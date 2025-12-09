@@ -192,54 +192,59 @@ const PublicForm = () => {
                 category: selectedCategory === 'umkm' ? 'UMKM' : 
                          selectedCategory === 'mahasiswa' ? 'Mahasiswa' :
                          selectedCategory === 'profesional' ? 'Profesional' :
-                         selectedCategory === 'komunitas' ? 'Komunitas' : selectedCategory,
-
-                // Category-specific fields
-                ...(selectedCategory === 'umkm' && {
-                    business_name: formData.business_name,
-                    business_type: formData.business_type,
-                    business_form: formData.business_form,
-                    business_address: formData.business_address,
-                    established_year: formData.established_year,
-                    monthly_revenue: formData.monthly_revenue,
-                    employee_count: formData.employee_count,
-                    certifications: formData.certifications ? [formData.certifications] : [],
-                    social_media: formData.social_media ? [formData.social_media] : [],
-                    marketplace: formData.marketplace ? [formData.marketplace] : [],
-                    website: formData.website ? [formData.website] : [],
-                }),
-
-                ...(selectedCategory === 'mahasiswa' && {
-                    institution: formData.institution,
-                    major: formData.major,
-                    enrollment_year: formData.enrollment_year,
-                    career_interest: formData.career_interest,
-                    semester: formData.semester,
-                    core_competency: formData.core_competency ? [formData.core_competency] : []
-                }),
-
-                ...(selectedCategory === 'profesional' && {
-                    workplace: formData.workplace,
-                    position: formData.position,
-                    work_duration: formData.work_duration,
-                    industry_sector: formData.industry_sector,
-                    skills: formData.skills
-                }),
-
-                ...(selectedCategory === 'komunitas' && {
-                    community_name: formData.community_name,
-                    community_role: formData.community_role,
-                    member_count: formData.member_count,
-                    focus_area: formData.focus_area,
-                    operational_area: formData.operational_area
-                })
+                         selectedCategory === 'komunitas' ? 'Komunitas' : 
+                         selectedCategory === 'umum' ? 'Umum' : selectedCategory,
             };
+
+            // Add category-specific fields
+            if (selectedCategory === 'umkm') {
+                submissionData.business_name = formData.business_name;
+                submissionData.business_type = formData.business_type;
+                submissionData.business_form = formData.business_form;
+                submissionData.business_address = formData.business_address;
+                submissionData.established_year = formData.established_year;
+                submissionData.monthly_revenue = formData.monthly_revenue;
+                submissionData.employee_count = formData.employee_count;
+                submissionData.certifications = formData.certifications ? [formData.certifications] : [];
+                submissionData.social_media = formData.social_media ? [formData.social_media] : [];
+                submissionData.marketplace = formData.marketplace ? [formData.marketplace] : [];
+                submissionData.website = formData.website ? [formData.website] : [];
+            }
+
+            if (selectedCategory === 'mahasiswa') {
+                submissionData.institution = formData.institution;
+                submissionData.major = formData.major;
+                submissionData.enrollment_year = formData.enrollment_year;
+                submissionData.career_interest = formData.career_interest;
+                submissionData.semester = formData.semester;
+                submissionData.core_competency = formData.core_competency ? [formData.core_competency] : [];
+            }
+
+            if (selectedCategory === 'profesional') {
+                submissionData.workplace = formData.workplace;
+                submissionData.position = formData.position;
+                submissionData.work_duration = formData.work_duration;
+                submissionData.industry_sector = formData.industry_sector;
+                submissionData.skills = formData.skills;
+            }
+
+            if (selectedCategory === 'komunitas') {
+                submissionData.community_name = formData.community_name;
+                submissionData.community_role = formData.community_role;
+                submissionData.member_count = formData.member_count;
+                submissionData.focus_area = formData.focus_area;
+                submissionData.operational_area = formData.operational_area;
+            }
+
+            if (selectedCategory === 'umum') {
+                submissionData.areas_interest = formData.areas_interest;
+            }
 
             const cleanData = Object.fromEntries(
                 Object.entries(submissionData).filter(([_, value]) => value != null && value !== '')
             );
 
-            const response = await impalaService.createImpala(cleanData)
+            const response = await impalaService.createImpala(cleanData);
 
             if (response.success) {
                 // Simpan data yang berhasil dikirim untuk ditampilkan di success page
@@ -275,20 +280,32 @@ const PublicForm = () => {
     const handleShare = async () => {
         const waGroupLink = "https://chat.whatsapp.com/your-actual-group-link";
 
-        window.open(waGroupLink, '_blank')
+        window.open(waGroupLink, '_blank');
 
         toast({
             title: 'Group Whatsapp Dibuka',
             description: 'Bergabung dengan group WhatsApp Program',
             variant: 'default'
-        })
+        });
+    };
+
+    const getCategoryIcon = (categoryId) => {
+        const icons = {
+            'umkm': '🏢',
+            'mahasiswa': '🎓',
+            'profesional': '💼',
+            'komunitas': '👥',
+            'umum': '👤'
+        };
+        return icons[categoryId] || '📝';
     };
 
     const categoryOptions = [
-        { id: 'umkm', name: 'UMKM', description: 'Pelaku Usaha / UMKM / Wirausaha / StartUp', icon: '🏢' },
-        { id: 'mahasiswa', name: 'Mahasiswa', description: 'Pelajar/Mahasiswa Aktif', icon: '🎓' },
-        { id: 'profesional', name: 'Profesional', description: '(Karyawan Swasta / ASN / BUMN / Profesional)', icon: '💼' },
-        { id: 'komunitas', name: 'Komunitas', description: 'Organisasi/Komunitas', icon: '👥' }
+        { id: 'umkm', name: 'UMKM', description: 'Pelaku Usaha / UMKM / Wirausaha / StartUp' },
+        { id: 'mahasiswa', name: 'Mahasiswa', description: 'Pelajar/Mahasiswa Aktif' },
+        { id: 'profesional', name: 'Profesional', description: '(Karyawan Swasta / ASN / BUMN / Profesional)' },
+        { id: 'komunitas', name: 'Komunitas', description: 'Organisasi/Komunitas' },
+        { id: 'umum', name: 'Umum', description: 'Umum' },
     ];
 
     if (isLoading) {
@@ -311,6 +328,10 @@ const PublicForm = () => {
                 <div className="text-center">
                     <h1 className="text-2xl font-bold text-gray-800 mb-2">Formulir Tidak Ditemukan</h1>
                     <p className="text-gray-600 mb-4">Formulir dengan slug "{slug}" tidak tersedia.</p>
+                    <Button onClick={() => navigate('/')} className="flex items-center gap-2">
+                        <Home className="h-4 w-4" />
+                        Kembali ke Beranda
+                    </Button>
                 </div>
             </div>
         );
@@ -388,7 +409,7 @@ const PublicForm = () => {
                                                         onClick={() => handleCategorySelect(cat.id)}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <span className="text-2xl">{cat.icon}</span>
+                                                            <span className="text-2xl">{getCategoryIcon(cat.id)}</span>
                                                             <div>
                                                                 <h4 className="font-semibold text-gray-800">{cat.name}</h4>
                                                                 <p className="text-sm text-gray-600">{cat.description}</p>
@@ -403,7 +424,7 @@ const PublicForm = () => {
                                         {selectedCategory && categoryFields.length > 0 && (
                                             <div className="space-y-6 mb-8">
                                                 <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                                                    🏢 Informasi {categoryOptions.find(cat => cat.id === selectedCategory)?.name}
+                                                    Informasi {categoryOptions.find(cat => cat.id === selectedCategory)?.name}
                                                 </h3>
                                                 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -463,49 +484,51 @@ const PublicForm = () => {
                                 </motion.div>
                                 <h1 className="text-3xl font-bold mb-2">Pendaftaran Berhasil! 🎉</h1>
                                 <p className="text-green-100 text-lg">
-                                    Terima kasih telah mendaftar program <strong>{submittedData.programName}</strong>
+                                    Terima kasih telah mendaftar program <strong>{submittedData?.programName || 'Program'}</strong>
                                 </p>
                             </div>
 
                             <div className="p-8">
                                 {/* Registration Summary */}
-                                <div className="bg-gray-50 rounded-xl p-6 mb-6">
-                                    <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                        <UserCheck className="h-5 w-5 text-green-600" />
-                                        Ringkasan Pendaftaran
-                                    </h3>
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Nama Lengkap:</span>
-                                                <span className="font-semibold">{submittedData.full_name}</span>
+                                {submittedData && (
+                                    <div className="bg-gray-50 rounded-xl p-6 mb-6">
+                                        <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                            <UserCheck className="h-5 w-5 text-green-600" />
+                                            Ringkasan Pendaftaran
+                                        </h3>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Nama Lengkap:</span>
+                                                    <span className="font-semibold">{submittedData.full_name}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Email:</span>
+                                                    <span className="font-semibold">{submittedData.email}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Kategori:</span>
+                                                    <span className="font-semibold">{submittedData.category}</span>
+                                                </div>
                                             </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Email:</span>
-                                                <span className="font-semibold">{submittedData.email}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Kategori:</span>
-                                                <span className="font-semibold">{submittedData.category}</span>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Tanggal Pendaftaran:</span>
-                                                <span className="font-semibold">{submittedData.submittedAt}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Program:</span>
-                                                <span className="font-semibold">{submittedData.programName}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Status:</span>
-                                                <span className="font-semibold text-green-600">Terkonfirmasi</span>
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Tanggal Pendaftaran:</span>
+                                                    <span className="font-semibold">{submittedData.submittedAt}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Program:</span>
+                                                    <span className="font-semibold">{submittedData.programName}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Status:</span>
+                                                    <span className="font-semibold text-green-600">Terkonfirmasi</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Action Buttons */}
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -516,6 +539,14 @@ const PublicForm = () => {
                                     >
                                         <MessageCircle className="h-4 w-4" />
                                         Gabung Grup WhatsApp
+                                    </Button>
+                                    <Button
+                                        onClick={() => navigate('/')}
+                                        variant="outline"
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Home className="h-4 w-4" />
+                                        Kembali ke Beranda
                                     </Button>
                                 </div>
 
