@@ -28,6 +28,45 @@ const PublicForm = () => {
     const [loadError, setLoadError] = useState(null);
     const [hasTimeout, setHasTimeout] = useState(false);
 
+    // ===== UPDATE TAB BROWSER TITLE =====
+    useEffect(() => {
+        if (template) {
+            let tabTitle = 'Impala Network';
+            
+            if (template.program_name) {
+                tabTitle = `${template.program_name} | Impala Network`;
+            } 
+            else if (template.form_config && template.form_config.title) {
+                const fullTitle = template.form_config.title;
+                if (fullTitle.includes('Program ')) {
+                    const parts = fullTitle.split('Program ');
+                    if (parts.length > 1) {
+                        tabTitle = `${parts[1]} | Impala Network`;
+                    } else {
+                        tabTitle = `${fullTitle} | Impala Network`;
+                    }
+                } else {
+                    tabTitle = `${fullTitle} | Impala Network`;
+                }
+            }
+            
+            document.title = tabTitle;
+        } else {
+            document.title = 'Impala Network';
+        }
+        
+        return () => {
+            document.title = 'Impala Network';
+        };
+    }, [template]);
+
+    // ===== UPDATE TITLE PADA SUCCESS PAGE =====
+    useEffect(() => {
+        if (submissionSuccess && submittedData) {
+            document.title = `Pendaftaran Berhasil - ${submittedData.programName} | Impala Network`;
+        }
+    }, [submissionSuccess, submittedData]);
+
     // ===== LOAD FORM DENGAN TIMEOUT HANDLING =====
     useEffect(() => {
         let isMounted = true;
