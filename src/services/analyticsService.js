@@ -11,7 +11,7 @@ class AnalyticsService {
             const {
                 years = 'auto',
                 includeMonthly = false,
-                includeQuarterly = true // Default true untuk quarterly
+                includeQuarterly = true
             } = options
 
             const queryParams = new URLSearchParams()
@@ -26,7 +26,6 @@ class AnalyticsService {
                 queryParams.append('includeMonthly', 'true')
             }
             
-            // TAMBAHKAN PARAMETER INI
             if (includeQuarterly) {
                 queryParams.append('includeQuarterly', 'true')
             }
@@ -49,16 +48,6 @@ class AnalyticsService {
                 throw new Error(result.error || 'Failed to fetch yearly comparison')
             }
 
-            // DEBUG: Lihat struktur data dari backend
-            console.log('Backend response:', {
-                success: result.success,
-                message: result.message,
-                years: result.years,
-                dataStructure: result.data ? Object.keys(result.data) : 'no data',
-                firstYearData: result.data ? result.data[result.years[0]] : null
-            });
-
-            // Format data sesuai dengan struktur backend
             return this.formatBackendResponse(result.data, result.years)
         } catch (error) {
             console.error('Error fetching yearly comparison:', error);
@@ -328,7 +317,6 @@ class AnalyticsService {
         return this.getMockYearlyComparisonDataWithQuarterly();
     }
     
-    // Iterasi melalui setiap tahun dari response backend
     Object.keys(apiData).forEach(yearKey => {
         const year = parseInt(yearKey);
         const yearData = apiData[yearKey];
@@ -339,7 +327,6 @@ class AnalyticsService {
             return;
         }
         
-        // Format data sesuai dengan struktur dari backend controller Anda
         formatted[year] = {
             clients: {
                 total: yearData.clients?.total || 0,
@@ -385,7 +372,6 @@ class AnalyticsService {
                     comparedTo: null
                 }
             },
-            // Data quarterly langsung dari backend
             quarterly: yearData.quarterly || {
                 clients: { q1: { total: 0, count: 0, average: 0 }, q2: { total: 0, count: 0, average: 0 }, q3: { total: 0, count: 0, average: 0 }, q4: { total: 0, count: 0, average: 0 } },
                 programs: { q1: { total: 0, count: 0, average: 0 }, q2: { total: 0, count: 0, average: 0 }, q3: { total: 0, count: 0, average: 0 }, q4: { total: 0, count: 0, average: 0 } },
@@ -395,7 +381,6 @@ class AnalyticsService {
         };
     });
     
-    // Pastikan semua tahun yang diminta ada dalam response
     years.forEach(year => {
         if (!formatted[year]) {
             formatted[year] = this.getEmptyYearData();

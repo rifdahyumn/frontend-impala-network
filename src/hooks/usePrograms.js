@@ -21,8 +21,9 @@ export const usePrograms = (initialFilters = {}) => {
     const [priceStats, setPriceStats] = useState(null)
     const [statsLoading, setStatsLoading] = useState(false)
     const [showAllOnSearch, setShowAllOnSearch] = useState(false)
+    const [allPrograms, setAllPrograms] = useState([])
+    const [allProgramsLoading, setAllProgramsLoading] = useState(false)
 
-    // 🔴 PERBAIKAN: Gunakan ref untuk semua data yang tidak perlu UI update
     const filtersRef = useRef({
         search: '',
         status: '',
@@ -31,10 +32,9 @@ export const usePrograms = (initialFilters = {}) => {
         ...initialFilters
     })
     
-    const abortControllerRef = useRef(null) // 🔴 Untuk cancel request
-    const lastRequestIdRef = useRef(0) // 🔴 Track request terakhir
+    const abortControllerRef = useRef(null)
+    const lastRequestIdRef = useRef(0)
     
-    // 🔴 PERBAIKAN: State filters untuk UI saja
     const [filters, setFilters] = useState({
         search: filtersRef.current.search,
         status: filtersRef.current.status,
@@ -42,35 +42,40 @@ export const usePrograms = (initialFilters = {}) => {
         client: filtersRef.current.client
     })
 
-    // 🔴 PERBAIKAN: fetchPrograms dengan request cancellation
+    const fetchAllPrograms = useCallback(async () => {
+        try {
+            setAllProgramsLoading(true)
+            
+            const result = await programService.fetchAllPrograms()
+            
+            setAllPrograms(result.data || [])
+            return result.data || []
+            
+        } catch (error) {
+            console.error('Error fetching all programs:', error)
+            setAllPrograms([])
+            return []
+        } finally {
+            setAllProgramsLoading(false)
+        }
+    }, [])
+
     const fetchPrograms = useCallback(async (page = 1, customFilters = null, showAll = false, requestId = null) => {
         try {
-            // 🔴 Cancel request sebelumnya jika ada
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort()
             }
             
-            // Buat AbortController baru
             abortControllerRef.current = new AbortController()
             
-            // 🔴 Generate request ID
             const currentRequestId = requestId || Date.now()
             lastRequestIdRef.current = currentRequestId
             
             setLoading(true)
             setError(null)
 
-            // Gunakan customFilters jika ada, jika tidak gunakan ref
             const currentFilters = customFilters || filtersRef.current
 
-            console.log('📤 usePrograms - Fetching with filters:', {
-                page,
-                filters: currentFilters,
-                showAll,
-                requestId: currentRequestId
-            })
-
-            // Siapkan parameter untuk API
             const params = {
                 page,
                 limit: pagination.limit,
@@ -81,23 +86,12 @@ export const usePrograms = (initialFilters = {}) => {
                 ...(currentFilters.search && showAll && { showAllOnSearch: 'true' })
             }
 
-            console.log('📤 usePrograms - API params:', params)
-
-            // 🔴 PERBAIKAN: Gunakan AbortController
             const result = await programService.fetchPrograms(params)
 
-            // 🔴 CEK: Jika ini bukan request terbaru, ignore
             if (currentRequestId !== lastRequestIdRef.current) {
-                console.log('🔄 Ignoring stale request:', currentRequestId)
                 return
             }
 
-            console.log('📥 usePrograms - API response:', {
-                dataCount: result.data?.length,
-                pagination: result.metadata?.pagination
-            })
-
-            // 🔴 PERBAIKAN: Update semua state dalam satu batch
             setPrograms(result.data || [])
             
             const paginationData = result.metadata?.pagination || {}
@@ -111,7 +105,6 @@ export const usePrograms = (initialFilters = {}) => {
                 searchTerm: currentFilters.search || ''
             }))
 
-            // Update showAllOnSearch state
             if (currentFilters.search && paginationData.showingAllResults) {
                 setShowAllOnSearch(true)
             } else if (!currentFilters.search) {
@@ -119,13 +112,11 @@ export const usePrograms = (initialFilters = {}) => {
             }
 
         } catch (error) {
-            // 🔴 PERBAIKAN: AbortError adalah expected, jangan tampilkan error
             if (error.name === 'AbortError') {
-                console.log('🔄 Request cancelled')
                 return
             }
             
-            console.error('❌ Error fetching programs:', error)
+            console.error(' Error fetching programs:', error)
             setError(error.message)
             toast.error('Failed to load programs')
         } finally {
@@ -133,41 +124,32 @@ export const usePrograms = (initialFilters = {}) => {
         }
     }, [pagination.limit])
 
-    // 🔴 PERBAIKAN: Debounce dengan waktu yang lebih optimal
     const debouncedFetchRef = useRef(
         debounce((page, customFilters, showAll) => {
             const requestId = Date.now()
             fetchPrograms(page, customFilters, showAll, requestId)
-        }, 500) // 🔴 PERBAIKAN: 500ms untuk filter changes
+        }, 500)
     )
 
-    // 🔴 PERBAIKAN: Cleanup saat unmount
     useEffect(() => {
         return () => {
-            // Cancel semua pending requests
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort()
             }
             
-            // Cancel debounced calls
             if (debouncedFetchRef.current) {
                 debouncedFetchRef.current.cancel()
             }
         }
     }, [])
 
-    // 🔴 PERBAIKAN: updateFiltersAndFetch dengan optimized updates
     const updateFiltersAndFetch = useCallback((newFilters, showAll = false) => {
-        console.log('🔄 updateFiltersAndFetch called with:', { newFilters, showAll })
-        
-        // 🔴 PERBAIKAN: Update ref dulu
         const updatedFilters = {
             ...filtersRef.current,
             ...newFilters
         }
         filtersRef.current = updatedFilters
         
-        // 🔴 PERBAIKAN: Batch UI updates
         setFilters(prev => ({
             search: updatedFilters.search,
             status: updatedFilters.status,
@@ -175,23 +157,18 @@ export const usePrograms = (initialFilters = {}) => {
             client: updatedFilters.client
         }))
         
-        // Handle showAllOnSearch reset jika search dihapus
         if (!newFilters.search && showAllOnSearch) {
             setShowAllOnSearch(false)
         }
         
-        // Gunakan debounced fetch
         if (debouncedFetchRef.current) {
             debouncedFetchRef.current(1, updatedFilters, showAll)
         }
     }, [showAllOnSearch])
 
-    // 🔴 PERBAIKAN: Toggle show all on search
     const toggleShowAllOnSearch = useCallback((value) => {
-        console.log('🔄 toggleShowAllOnSearch:', value)
         setShowAllOnSearch(value)
         
-        // Jika ada search term, refresh dengan setting baru
         if (filtersRef.current.search) {
             if (debouncedFetchRef.current) {
                 debouncedFetchRef.current(1, filtersRef.current, value)
@@ -199,9 +176,7 @@ export const usePrograms = (initialFilters = {}) => {
         }
     }, [])
 
-    // 🔴 PERBAIKAN: Clear filter
     const clearFilters = useCallback(() => {
-        console.log('🔄 clearFilters')
         
         const clearedFilters = {
             search: '',
@@ -212,17 +187,13 @@ export const usePrograms = (initialFilters = {}) => {
         
         filtersRef.current = clearedFilters
         
-        // 🔴 PERBAIKAN: Batch updates
         setFilters(clearedFilters)
         setShowAllOnSearch(false)
         
-        // Gunakan fetch langsung tanpa debounce untuk clear
         fetchPrograms(1, clearedFilters, false)
     }, [fetchPrograms])
 
-    // 🔴 PERBAIKAN: Clear search only
     const clearSearch = useCallback(() => {
-        console.log('🔄 clearSearch')
         
         const updatedFilters = {
             ...filtersRef.current,
@@ -231,7 +202,6 @@ export const usePrograms = (initialFilters = {}) => {
         
         filtersRef.current = updatedFilters
         
-        // 🔴 PERBAIKAN: Batch updates
         setFilters(prev => ({
             ...prev,
             search: ''
@@ -241,9 +211,7 @@ export const usePrograms = (initialFilters = {}) => {
         fetchPrograms(1, updatedFilters, false)
     }, [fetchPrograms])
 
-    // 🔴 PERBAIKAN: Search dengan mode show all
     const searchPrograms = useCallback((searchTerm, showAll = false) => {
-        console.log('🔍 searchPrograms:', { searchTerm, showAll })
         
         const searchFilters = {
             ...filtersRef.current,
@@ -252,43 +220,47 @@ export const usePrograms = (initialFilters = {}) => {
         
         filtersRef.current = searchFilters
         
-        // 🔴 PERBAIKAN: Update UI state
         setFilters(prev => ({
             ...prev,
             search: searchTerm
         }))
         
-        // Set showAllOnSearch state
         if (searchTerm) {
             setShowAllOnSearch(showAll)
         } else {
             setShowAllOnSearch(false)
         }
         
-        // Gunakan debounced fetch untuk search
         if (debouncedFetchRef.current) {
             debouncedFetchRef.current(1, searchFilters, showAll)
         }
     }, [])
 
-    // 🔴 PERBAIKAN: Fungsi refresh data
     const refreshData = useCallback(() => {
-        console.log('🔄 refreshData')
         fetchPrograms(pagination.page, filtersRef.current, showAllOnSearch)
     }, [fetchPrograms, pagination.page, showAllOnSearch])
 
-    // 🔴 PERBAIKAN: Fungsi handle page change
+    const refreshAllData = useCallback(async () => {
+        try {
+            await fetchPrograms(pagination.page, filtersRef.current, showAllOnSearch);
+            await fetchAllPrograms();
+            // await fetchAllStats();
+
+            return true;
+        } catch (error) {
+            console.error('Error refreshing all data:', error);
+            toast.error('Failed to refresh data');
+            throw error;
+        }
+    }, [fetchPrograms, pagination.page, filtersRef, showAllOnSearch, fetchAllPrograms])
+
     const handlePageChange = useCallback((newPage) => {
-        console.log('📄 handlePageChange:', newPage)
         fetchPrograms(newPage, filtersRef.current, showAllOnSearch)
     }, [fetchPrograms, showAllOnSearch])
 
-    // 🔴 PERBAIKAN: Reset to pagination mode
     const resetToPaginationMode = useCallback(() => {
-        console.log('🔄 resetToPaginationMode')
         setShowAllOnSearch(false)
-        
-        // Refresh data dengan mode pagination
+
         if (filtersRef.current.search) {
             if (debouncedFetchRef.current) {
                 debouncedFetchRef.current(1, filtersRef.current, false)
@@ -296,13 +268,11 @@ export const usePrograms = (initialFilters = {}) => {
         }
     }, [])
 
-    // 🔴 PERBAIKAN: Effect untuk fetch data awal - HANYA SEKALI
     useEffect(() => {
-        console.log('🚀 Initial mount - fetching programs')
         fetchPrograms(1, filtersRef.current, false)
-    }, []) // 🔴 HANYA SEKALI
+        fetchAllPrograms()
+    }, [])
 
-    // 🔴 PERBAIKAN: Stats functions
     const fetchProgramsStats = useCallback(async () => {
         try {
             setStatsLoading(true)
@@ -368,20 +338,12 @@ export const usePrograms = (initialFilters = {}) => {
     }, [fetchProgramsStats, fetchPriceStats])
 
     useEffect(() => {
-        console.log('📊 Initial mount - fetching program stats')
         fetchAllStats()
     }, [fetchAllStats])
 
-    // 🔴 PERBAIKAN: Export data
     const exportPrograms = useCallback(async (format = 'csv') => {
         try {
             setLoading(true)
-            
-            console.log('📤 Exporting programs with filters:', {
-                filters: filtersRef.current,
-                showAllOnSearch,
-                format
-            })
 
             let dataToExport
             
@@ -435,13 +397,11 @@ export const usePrograms = (initialFilters = {}) => {
         }
     }, [programs, pagination.showingAllResults, showAllOnSearch])
 
-    // 🔴 PERBAIKAN: CRUD functions dengan optimized updates
     const addProgram = async (programData) => {
         try {
             const result = await programService.addProgram(programData)
             toast.success('Program added successfully')
 
-            // 🔴 PERBAIKAN: Refresh data tanpa loading state berlebihan
             await fetchPrograms(pagination.page, filtersRef.current, showAllOnSearch)
             await fetchAllStats()
             
@@ -458,7 +418,6 @@ export const usePrograms = (initialFilters = {}) => {
             const result = await programService.updateProgram(programId, programData)
             toast.success("Program updated successfully")
 
-            // 🔴 PERBAIKAN: Optimistic update untuk mengurangi re-render
             setPrograms(prevPrograms => 
                 prevPrograms.map(program => 
                     program.id === programId
@@ -467,7 +426,6 @@ export const usePrograms = (initialFilters = {}) => {
                 )
             );
 
-            // Refetch price stats if price changed
             if (programData.price !== undefined) {
                 await fetchPriceStats()
             }
@@ -487,7 +445,6 @@ export const usePrograms = (initialFilters = {}) => {
             await programService.deleteProgram(programId)
             toast.success('Program deleted successfully')
 
-            // 🔴 PERBAIKAN: Optimistic update
             setPrograms(prevPrograms =>
                 prevPrograms.filter(program => program.id !== programId)
             )
@@ -506,7 +463,6 @@ export const usePrograms = (initialFilters = {}) => {
         }
     }
 
-    // 🔴 PERBAIKAN: Helper functions
     const getDisplayText = useCallback(() => {
         if (pagination.showingAllResults && filtersRef.current.search) {
             return `Showing all ${programs.length} results for "${filtersRef.current.search}"`
@@ -520,7 +476,6 @@ export const usePrograms = (initialFilters = {}) => {
     }, [pagination, programs.length])
 
     const refetch = useCallback(() => {
-        console.log('🔄 Refetching current data')
         fetchPrograms(pagination.page, filtersRef.current, showAllOnSearch)
     }, [fetchPrograms, pagination.page, showAllOnSearch])
 
@@ -528,23 +483,19 @@ export const usePrograms = (initialFilters = {}) => {
         return pagination.showingAllResults || false
     }, [pagination.showingAllResults])
 
-    // 🔴 FUNGSI BARU: Get available filters
     const getAvailableFilters = useCallback(() => {
         return programService.extractAvailableFilters(programs)
     }, [programs])
 
-    // 🔴 FUNGSI BARU: Get suggestions
     const getSearchSuggestions = useCallback(async (searchTerm, limit = 5) => {
         return await programService.getSearchSuggestions(searchTerm, limit)
     }, [])
 
-    // 🔴 FUNGSI BARU: Get distinct values for filter
     const getDistinctFilterValues = useCallback(async (field) => {
         return await programService.getDistinctFilterValues(field)
     }, [])
 
     return {
-        // State
         programs, 
         loading, 
         error, 
@@ -554,44 +505,32 @@ export const usePrograms = (initialFilters = {}) => {
         programStats, 
         priceStats,
         statsLoading,
-        
-        // Fetch Functions
         fetchPrograms: handlePageChange,
         updateFiltersAndFetch,
         clearFilters,
         clearSearch,
         searchPrograms,
-        
-        // Show All Mode Functions
         toggleShowAllOnSearch,
         isShowAllMode,
         resetToPaginationMode,
-        
-        // Display Functions
         getDisplayText,
-        
-        // Pagination Functions
         refetch, 
         handlePageChange, 
         refreshData,
-        
-        // CRUD Functions
         addProgram, 
         updateProgram, 
         deleteProgram,
-        
-        // Export Functions
         exportPrograms,
-        
-        // Stats Functions
         refetchStats: fetchAllStats,
         fetchProgramsStats,
         fetchPriceStats,
         fetchAllStats,
-        
-        // 🔴 NEW: Filter utility functions
         getAvailableFilters,
         getSearchSuggestions,
-        getDistinctFilterValues
+        getDistinctFilterValues,
+        allPrograms,
+        allProgramsLoading,
+        fetchAllPrograms,
+        refreshAllData
     }
 }

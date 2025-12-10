@@ -21,7 +21,6 @@ class ProgramService {
         return result;
     }
 
-    // 🔴 DIUBAH: Tambahkan parameter filter dan showAllOnSearch
     async fetchPrograms(params = {}) {
         try {
             const {
@@ -33,7 +32,6 @@ class ProgramService {
                 showAllOnSearch = false
             } = params;
 
-            // 🔴 DIUBAH: Build query params seperti clientService
             const queryParams = new URLSearchParams({
                 page: page.toString(),
                 ...(limit > 0 && { limit: limit.toString() }),
@@ -43,22 +41,9 @@ class ProgramService {
                 ...(showAllOnSearch && { showAllOnSearch: 'true' })
             });
 
-            // 🔴 DIUBAH: Jika limit = 0 (show all), hapus limit parameter
             if (limit === 0) {
                 queryParams.delete('limit');
             }
-
-            // 🔴 DEBUG: Log query parameters
-            console.log('📡 ProgramService - Request URL:', `${this.baseURL}/program?${queryParams}`);
-            console.log('📡 ProgramService - Request Params:', {
-                page,
-                limit,
-                search,
-                status,
-                category,
-                showAllOnSearch,
-                queryString: queryParams.toString()
-            });
 
             const response = await fetch(`${this.baseURL}/program?${queryParams}`, {
                 method: 'GET',
@@ -69,7 +54,6 @@ class ProgramService {
 
             const result = await this.handleResponse(response);
 
-            // 🔴 DIUBAH: Tambahkan metadata jika tidak ada
             if (!result.metadata) {
                 result.metadata = {
                     pagination: {
@@ -83,13 +67,6 @@ class ProgramService {
                 };
             }
 
-            // 🔴 DEBUG: Log response
-            console.log('📡 ProgramService - Response:', {
-                dataCount: result.data?.length,
-                pagination: result.metadata?.pagination,
-                showingAllResults: result.metadata?.pagination?.showingAllResults
-            });
-
             return result;
 
         } catch (error) {
@@ -98,25 +75,17 @@ class ProgramService {
         }
     }
 
-    // 🔴 FUNGSI BARU: fetchAllPrograms untuk get all data dengan filter
     async fetchAllPrograms(filters = {}) {
         try {
-            // 🔴 DIUBAH: Gunakan fetchPrograms dengan limit 0 untuk mengambil semua data
             const params = {
                 ...filters,
                 page: 1,
-                limit: 0, // 🔴 Limit 0 = get all data
+                limit: 0, 
                 showAllOnSearch: true
             };
 
-            console.log('📡 ProgramService - Fetch All Programs:', { params });
 
             const result = await this.fetchPrograms(params);
-
-            console.log('📡 ProgramService - All Programs Response:', {
-                totalCount: result.data?.length,
-                filtersApplied: filters.search || filters.status || filters.category
-            });
 
             return result;
 
@@ -126,7 +95,6 @@ class ProgramService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Helper untuk build URL dengan filter
     buildProgramQueryUrl(params = {}) {
         const {
             page = 1,
@@ -149,10 +117,8 @@ class ProgramService {
         return `${this.baseURL}/program?${queryParams}`;
     }
 
-    // 🔴 DIUBAH: addProgram dengan error handling yang lebih baik
     async addProgram(programData) {
         try {
-            // 🔴 VALIDASI: Pastikan data yang diperlukan ada
             if (!programData.program_name) {
                 throw new Error('Program name is required');
             }
@@ -173,10 +139,8 @@ class ProgramService {
         }
     }
 
-    // 🔴 DIUBAH: updateProgram dengan validasi
     async updateProgram(programId, programData) {
         try {
-            // 🔴 VALIDASI: Pastikan programId valid
             if (!programId) {
                 throw new Error('Program ID is required');
             }
@@ -197,10 +161,8 @@ class ProgramService {
         }
     }
 
-    // 🔴 DIUBAH: deleteProgram dengan validasi
     async deleteProgram(programId) {
         try {
-            // 🔴 VALIDASI: Pastikan programId valid
             if (!programId) {
                 throw new Error('Program ID is required');
             }
@@ -219,7 +181,6 @@ class ProgramService {
         }
     }
 
-    // 🔴 DIUBAH: getProgramNamesFromClients
     async getProgramNamesFromClients(search = '') {
         try {
             const queryParams = new URLSearchParams()
@@ -275,7 +236,6 @@ class ProgramService {
         }
     }
 
-    // 🔴 DIUBAH: fetchAllProgramForAnalytics dengan parameter filter
     async fetchAllProgramForAnalytics(params = {}) {
         try {
             const { 
@@ -285,19 +245,12 @@ class ProgramService {
                 sort = 'created_at:asc' 
             } = params;
 
-            // 🔴 DIUBAH: Gunakan fetchAllPrograms untuk konsistensi
             const result = await this.fetchAllPrograms({
                 search,
                 status,
                 category,
                 sort
             });
-            
-            console.log('fetchAllProgramForAnalytics:', {
-                dataCount: result.data?.length || 0,
-                totalCount: result.metadata?.pagination?.total || 0,
-                filters: { search, status, category }
-            })
             
             return result
 
@@ -307,12 +260,8 @@ class ProgramService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Export programs dengan format yang berbeda
     async exportPrograms(filters = {}, format = 'csv') {
         try {
-            console.log('📡 ProgramService - Exporting programs:', { filters, format });
-
-            // Gunakan fetchAllPrograms untuk mendapatkan semua data dengan filter
             const result = await this.fetchAllPrograms(filters);
             
             if (!result.data || result.data.length === 0) {
@@ -322,7 +271,6 @@ class ProgramService {
             if (format.toLowerCase() === 'csv') {
                 const csvContent = this.convertToCSV(result.data);
                 
-                // 🔴 Helper untuk download file
                 this.downloadFile(csvContent, `programs_export_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
                 
                 return {
@@ -331,7 +279,6 @@ class ProgramService {
                     data: result.data
                 };
             } else if (format.toLowerCase() === 'json') {
-                // 🔴 Helper untuk download JSON file
                 const jsonContent = JSON.stringify(result.data, null, 2);
                 this.downloadFile(jsonContent, `programs_export_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
                 
@@ -349,30 +296,22 @@ class ProgramService {
             throw error;
         }
     }
-
-    // 🔴 FUNGSI BARU: Helper untuk konversi ke CSV
     convertToCSV(data) {
         if (!data || data.length === 0) return '';
 
-        // 🔴 Tentukan headers berdasarkan data pertama
         const headers = Object.keys(data[0] || {});
         
-        // 🔴 Siapkan rows
         const csvRows = [
-            headers.join(','), // Header row
+            headers.join(','),
             ...data.map(row => 
                 headers.map(header => {
                     const value = row[header];
                     
-                    // 🔴 Handle berbagai tipe data
                     if (value === null || value === undefined) {
                         return '';
                     }
                     
-                    // 🔴 Escape quotes dan convert ke string
                     const stringValue = String(value).replace(/"/g, '""');
-                    
-                    // 🔴 Wrap dalam quotes jika mengandung comma, newline, atau quotes
                     if (stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('"')) {
                         return `"${stringValue}"`;
                     }
@@ -385,7 +324,6 @@ class ProgramService {
         return csvRows.join('\n');
     }
 
-    // 🔴 FUNGSI BARU: Helper untuk download file
     downloadFile(content, filename, mimeType) {
         try {
             const blob = new Blob([content], { type: mimeType });
@@ -400,22 +338,17 @@ class ProgramService {
             link.click();
             document.body.removeChild(link);
             
-            // 🔴 Cleanup
             window.URL.revokeObjectURL(url);
-            
-            console.log('📡 ProgramService - File downloaded:', filename);
         } catch (error) {
             console.error('Error downloading file:', error);
             throw error;
         }
     }
 
-    // 🔴 FUNGSI BARU: Cek apakah sedang dalam mode show all
     isShowAllMode(paginationData) {
         return paginationData?.showingAllResults || paginationData?.isShowAllMode || false;
     }
 
-    // 🔴 FUNGSI BARU: Hitung display info
     calculateDisplayInfo(paginationData, dataLength = 0) {
         if (!paginationData) {
             return {
@@ -459,13 +392,12 @@ class ProgramService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Get filtered programs count
     async getFilteredCount(filters = {}) {
         try {
             const result = await this.fetchPrograms({
                 ...filters,
                 page: 1,
-                limit: 1 // Hanya perlu count, ambil 1 item saja
+                limit: 1
             });
 
             return result.metadata?.pagination?.total || 0;
@@ -475,11 +407,9 @@ class ProgramService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Validate filter parameters
     validateFilters(filters = {}) {
         const validFilters = {};
         
-        // 🔴 Hanya ambil filter yang valid
         if (filters.search && typeof filters.search === 'string' && filters.search.trim()) {
             validFilters.search = filters.search.trim();
         }
@@ -495,7 +425,6 @@ class ProgramService {
         return validFilters;
     }
 
-    // 🔴 FUNGSI BARU: Batch operations untuk programs
     async batchUpdate(programsData) {
         try {
             if (!Array.isArray(programsData) || programsData.length === 0) {
@@ -523,7 +452,6 @@ class ProgramService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Search suggestions untuk programs
     async getSearchSuggestions(searchTerm, limit = 5) {
         try {
             if (!searchTerm || searchTerm.length < 2) {
@@ -536,7 +464,6 @@ class ProgramService {
                 page: 1
             });
 
-            // 🔴 Extract suggestions dari hasil
             const suggestions = (result.data || []).map(program => ({
                 id: program.id,
                 name: program.program_name,
@@ -552,7 +479,6 @@ class ProgramService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Get available filters from data
     extractAvailableFilters(programs) {
         if (!programs || !Array.isArray(programs)) {
             return {
@@ -585,7 +511,6 @@ class ProgramService {
         };
     }
 
-    // 🔴 FUNGSI BARU: Quick search untuk autocomplete
     async quickSearch(query, field = 'program_name') {
         try {
             if (!query || query.length < 2) {
@@ -610,7 +535,6 @@ class ProgramService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Get programs by status
     async getProgramsByStatus(status, limit = 50) {
         try {
             const result = await this.fetchPrograms({
@@ -626,7 +550,6 @@ class ProgramService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Get programs by category
     async getProgramsByCategory(category, limit = 50) {
         try {
             const result = await this.fetchPrograms({
@@ -642,10 +565,8 @@ class ProgramService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Get distinct values untuk filter
     async getDistinctFilterValues(field) {
         try {
-            // Ambil cukup data untuk mendapatkan distinct values
             const result = await this.fetchAllPrograms({});
             
             if (!result.data || result.data.length === 0) {

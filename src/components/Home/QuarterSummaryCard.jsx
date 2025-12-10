@@ -73,7 +73,6 @@ const QuarterSummaryCard = ({ quarter, data }) => {
         return num.toLocaleString('id-ID');
     };
 
-    // Fallback jika data tidak lengkap
     const safeData = {
         revenue: data.revenue || { value: 0, trend: 0 },
         customers: data.customers || { value: 0, trend: 0 },

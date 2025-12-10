@@ -160,11 +160,6 @@ const StatsCards = ({
     return (
         <div className={`grid grid-cols-4 gap-6 ${interactive ? 'mb-6' : ''}`}>
             {allStats.map(({ key, data: stat }) => {
-                console.log(`=== DEBUG CARD ${key} ===`);
-    console.log('stat.icon:', stat.icon);
-    console.log('iconMap keys:', Object.keys(iconMap));
-    console.log('iconMap[stat.icon]:', iconMap[stat.icon]);
-    console.log('stat.icon in iconMap?', stat.icon in iconMap);
                 const IconComponent = iconMap[stat.icon] || Users;
                 const colorClasses = getColorClasses(stat.color)
                 const isSelected = interactive && selectedMetric === key

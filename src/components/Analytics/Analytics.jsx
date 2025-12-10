@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import toast from "react-hot-toast";
@@ -6,7 +7,7 @@ import { Chart as ChartJS, BarElement, CategoryScale, Filler, Legend, LinearScal
 import { Controls } from "./Controls";
 import { ChartRenderer } from "./ChartRenderer";
 import { calculateMonthlyData, calculateSummary } from "../../utils/analyticsCalculator";
-import { METRICS_CONFIG } from "../../utils/constants";
+import { METRICS_CONFIG, formatNumber } from "../../utils/constants";
 import StatsCards from "../Home/StatsCards";
 import clientService from "../../services/clientService";
 import impalaService from "../../services/impalaService";
@@ -23,14 +24,14 @@ const Analytics = () => {
     const [selectedMetric, setSelectedMetric] = useState('clients');
     const [selectedDataType, setSelectedDataType] = useState('growth');
     
-    const { allPrograms, refreshAllData,  } = usePrograms();
+    const { allPrograms, refreshAllData, allProgramsLoading } = usePrograms();
 
     const fetchAnalyticsData = useCallback(async () => {
         try {
             setLoading(true);
             
             let dataSource;
-            let totalCount;
+            let totalCount = 0;
             
             switch (selectedMetric) {
                 case 'clients': {
@@ -62,10 +63,22 @@ const Analytics = () => {
                 case 'revenue': {
                     dataSource = allPrograms || [];
                     totalCount = allPrograms?.length || 0;
+                    break;
                 }
             }
             
+            if (dataSource && dataSource.length > 0) {
+                const dates = dataSource.slice(0, 5).map(item => ({
+                    raw: item.created_at,
+                    parsed: new Date(item.created_at),
+                    year: new Date(item.created_at).getFullYear()
+                }));
+            } else {
+                console.warn('⚠️ No data source found!');
+            }
+            
             const monthlyData = calculateMonthlyData(dataSource, selectedYear, selectedMetric);
+            
             const summary = calculateSummary(monthlyData, selectedMetric, totalCount);
             
             setAnalyticsData({
@@ -74,33 +87,28 @@ const Analytics = () => {
                 metric: selectedMetric,
                 year: selectedYear
             });
-            
             toast.success(`Analytics data loaded for ${METRICS_CONFIG[selectedMetric]?.label || selectedMetric}`);
             
         } catch (error) {
             console.error('Error fetching analytics:', error);
             toast.error('Failed to load analytics data');
             
-            const mockMonthlyData = Array(12).fill().map((_, i) => ({
-                month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i],
-                newClients: 0,
-                totalClients: 0,
-                newPrograms: 0,
-                totalPrograms: 0,
-                newParticipants: 0,
-                totalParticipants: 0,
-                revenue: selectedMetric === 'revenue' ? (i + 1) * 1000000 : 0,
-                cumulativeRevenue: selectedMetric === 'revenue' ? ((i + 1) * (i + 2) / 2) * 1000000 : 0,
-                programsCount: 0
-            }));
-            
             setAnalyticsData({
-                monthlyData: mockMonthlyData,
+                monthlyData: [],
                 summary: {
                     total: 0,
                     thisYearTotal: 0,
-                    growth: '0',
-                    average: 0
+                    cumulativeTotal: 0,
+                    average: 0,
+                    growth: '0%',
+                    monthlyAverageGrowth: '0%',
+                    quarterlyData: {
+                        q1: { total: 0, average: 0, growth: 0, growthPercentage: '0%', months: ['Jan', 'Feb', 'Mar'], monthData: [] },
+                        q2: { total: 0, average: 0, growth: 0, growthPercentage: '0%', months: ['Apr', 'May', 'Jun'], monthData: [] },
+                        q3: { total: 0, average: 0, growth: 0, growthPercentage: '0%', months: ['Jul', 'Aug', 'Sep'], monthData: [] },
+                        q4: { total: 0, average: 0, growth: 0, growthPercentage: '0%', months: ['Oct', 'Nov', 'Dec'], monthData: [] }
+                    },
+                    monthlyData: []
                 },
                 metric: selectedMetric,
                 year: selectedYear
@@ -110,12 +118,22 @@ const Analytics = () => {
         }
     }, [selectedMetric, selectedYear, allPrograms]);
 
+    const handleDataTypeChange = (type) => {
+        console.log('Data type changed to:', type);
+        setSelectedDataType(type);
+    };
+
+    const handleMetricSelect = (metric) => {
+        console.log('Metric changed to:', metric);
+        setSelectedMetric(metric);
+    };
+
     const handleExport = () => {
         const chartElement = document.querySelector('canvas');
         if (chartElement) {
             const image = chartElement.toDataURL('image/png');
             const link = document.createElement('a');
-            link.download = `${selectedMetric}-analytics-${selectedYear}.png`;
+            link.download = `${selectedMetric}-${selectedDataType}-${selectedYear}.png`;
             link.href = image;
             link.click();
             toast.success('Chart exported successfully');
@@ -143,19 +161,13 @@ const Analytics = () => {
     }, [fetchAnalyticsData]);
 
     const currentMetric = METRICS_CONFIG[selectedMetric] || { label: selectedMetric, color: '#3b82f6' };
+    const isQuarterView = selectedDataType && ['q1', 'q2', 'q3', 'q4'].includes(selectedDataType);
 
     return (
-        <div className="space-y-6 py-6 -mt-10">
-            <div className="hidden">
-                <p>All programs: {allPrograms?.length || 0}</p>
-                <p>Selected metric: {selectedMetric}</p>
-                <p>Selected year: {selectedYear}</p>
-                <p>Loading: {loading.toString()}</p>
-            </div>
-
+        <div className="space-y-6 py-6 -mt-4">
             <StatsCards 
                 selectedMetric={selectedMetric}
-                onMetricSelect={setSelectedMetric}
+                onMetricSelect={handleMetricSelect}
                 interactive={true}
             />
 
@@ -170,13 +182,24 @@ const Analytics = () => {
                                         style={{ backgroundColor: currentMetric.color }}
                                     />
                                     {currentMetric.label} Analytics - {selectedYear}
+                                    
                                 </CardTitle>
                                 {analyticsData?.summary && (
                                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                                        <span>Total: {analyticsData.summary.total?.toLocaleString('id-ID') || '0'}</span>
+                                        <span>Total: {formatNumber(analyticsData.summary.total, selectedMetric)}</span>
                                         <span>•</span>
-                                        <span>This Year: {analyticsData.summary.thisYearTotal?.toLocaleString('id-ID') || '0'}</span>
-                                        
+                                        <span>This Year: {formatNumber(analyticsData.summary.thisYearTotal, selectedMetric)}</span>
+                                        {isQuarterView && analyticsData.summary.quarterlyData && (
+                                            <>
+                                                <span>•</span>
+                                                <span className="font-medium">
+                                                    Quarter Total: {formatNumber(
+                                                        analyticsData.summary.quarterlyData[selectedDataType]?.total || 0, 
+                                                        selectedMetric
+                                                    )}
+                                                </span>
+                                            </>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -190,7 +213,7 @@ const Analytics = () => {
                         chartType={chartType}
                         onChartTypeChange={setChartType}
                         selectedDataType={selectedDataType}
-                        onDataTypeChange={setSelectedDataType}
+                        onDataTypeChange={handleDataTypeChange}
                         selectedMetric={selectedMetric}
                         loading={loading}
                         onExport={handleExport}

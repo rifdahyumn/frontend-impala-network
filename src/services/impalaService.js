@@ -405,7 +405,6 @@ class ImpalaService {
         return validFilters;
     }
 
-    // 🔴 FUNGSI BARU: Fetch participant stats
     async fetchImpalaStats() {
         try {
             const response = await fetch(`${this.baseURL}/impala/stats`, {
@@ -419,7 +418,6 @@ class ImpalaService {
         } catch (error) {
             console.error('Error fetching impala stats:', error);
             
-            // 🔴 FALLBACK: Return default stats jika API error
             return {
                 success: true,
                 data: {
@@ -437,7 +435,6 @@ class ImpalaService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Search suggestions
     async getSearchSuggestions(searchTerm, limit = 5) {
         try {
             if (!searchTerm || searchTerm.length < 2) {
@@ -450,7 +447,6 @@ class ImpalaService {
                 page: 1
             });
 
-            // 🔴 Extract suggestions dari hasil
             const suggestions = (result.data || []).map(participant => ({
                 id: participant.id,
                 name: participant.full_name,
