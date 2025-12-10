@@ -98,7 +98,8 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Event Space':'eventSpace',
             'Private Office':'privateOffice',
             'Additional Information':'add_information',
-            'Space': 'space'
+            'Space': 'space',
+            'Area Interest': 'areas_interest'
         }
 
         const field = fieldMap[header];
