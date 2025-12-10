@@ -1,17 +1,45 @@
 // src/components/FormBuilder/FormPreview.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import FormField from './fields/FormField';
 
 const FormPreview = ({ formConfig, onBack }) => {
     const [formData, setFormData] = useState({});
     const [currentStep, setCurrentStep] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState(null);
+    const [showDisabilityField, setShowDisabilityField] = useState(false);
+
+    // ===== EFEX UNTUK MENANGANI PERUBAHAN FIELD DISABILITAS =====
+    useEffect(() => {
+        // Update showDisabilityField berdasarkan pilihan user
+        if (formData.is_disability === 'Ya') {
+            setShowDisabilityField(true);
+        } else {
+            setShowDisabilityField(false);
+            // Hapus nilai disability_type jika user memilih "Tidak"
+            if (formData.disability_type) {
+                setFormData(prev => ({
+                    ...prev,
+                    disability_type: ''
+                }));
+            }
+        }
+    }, [formData.is_disability]);
 
     const handleInputChange = (fieldName, value) => {
-        setFormData(prev => ({
-            ...prev,
-            [fieldName]: value
-        }));
+        // Jika field is_disability berubah, langsung update formData
+        if (fieldName === 'is_disability') {
+            setFormData(prev => ({
+                ...prev,
+                [fieldName]: value,
+                // Jika memilih "Tidak", reset disability_type
+                ...(value !== 'Ya' && { disability_type: '' })
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [fieldName]: value
+            }));
+        }
     };
 
     const handleCategorySelect = (categoryId) => {
@@ -40,8 +68,80 @@ const FormPreview = ({ formConfig, onBack }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('Form Data Submitted:', formData);
+        
+        // Simpan data dengan format yang benar
+        const submissionData = {
+            ...formData,
+            // Pastikan disability_type hanya ada jika is_disability = 'Ya'
+            disability_type: formData.is_disability === 'Ya' ? formData.disability_type || '' : '',
+            category: selectedCategory
+        };
+        
+        console.log('Form Data Submitted:', submissionData);
         alert('Form berhasil disubmit! (Ini hanya preview)');
+    };
+
+    // ===== FUNGSI UNTUK MENDAPATKAN DISABILITY FIELD CONFIG =====
+    const getDisabilityTypeField = () => {
+        return formConfig?.sections?.personalInfo?.fields?.find(f => f.id === 'disability_type');
+    };
+
+    // ===== RENDER DISABILITY TYPE FIELD =====
+    const renderDisabilityTypeField = () => {
+        if (!showDisabilityField) return null;
+        
+        const disabilityField = getDisabilityTypeField();
+        if (!disabilityField) return null;
+        
+        return (
+            <div key="disability_type" className="mt-2 ml-4 pl-4 border-l-2 border-blue-200 animate-fadeIn">
+                <FormField 
+                    field={disabilityField}
+                    value={formData[disabilityField.name] || ''}
+                    onChange={(value) => handleInputChange(disabilityField.name, value)}
+                    isEditing={false}
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Contoh: Tuna netra, Tuna rungu, Disabilitas fisik, dll.
+                </p>
+            </div>
+        );
+    };
+
+    // ===== FUNGSI UNTUK MENGELOMPOKKAN FIELDS PERSONAL INFO =====
+    const getPersonalInfoFields = () => {
+        if (!formConfig?.sections?.personalInfo?.fields) return [];
+        
+        const fields = [];
+        const allFields = formConfig.sections.personalInfo.fields;
+        
+        allFields.forEach(field => {
+            // Field pribadi utama (sebelum disability section)
+            if (field.id === 'education' || !fields.some(f => f.id === 'is_disability')) {
+                fields.push(field);
+                
+                // Setelah education, kita akan menambahkan is_disability
+                if (field.id === 'education') {
+                    const disabilityField = allFields.find(f => f.id === 'is_disability');
+                    if (disabilityField) {
+                        fields.push(disabilityField);
+                    }
+                }
+            } 
+            // Field disability_type akan dihandle secara terpisah
+            else if (field.id === 'disability_type') {
+                // Tidak ditambahkan ke array, akan dihandle secara conditional
+                return;
+            }
+            // Field setelah disability section
+            else if (field.id === 'address' || fields.some(f => f.id === 'is_disability')) {
+                if (field.id !== 'is_disability') {
+                    fields.push(field);
+                }
+            }
+        });
+        
+        return fields;
     };
 
     if (!formConfig) {
@@ -62,13 +162,13 @@ const FormPreview = ({ formConfig, onBack }) => {
         );
     }
 
+    const personalInfoFields = getPersonalInfoFields();
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
             <div className="container mx-auto px-4 max-w-3xl">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    {/* HAPUS: Button kembali dari header */}
-                    
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">
                         {formConfig.programName 
                             ? `Formulir Pendaftaran ${formConfig.programName}`
@@ -125,20 +225,31 @@ const FormPreview = ({ formConfig, onBack }) => {
                                         📝 Informasi Pribadi
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    
-                                        {formConfig.sections.personalInfo.fields.map((field) => (
-                                            <div key={field.id} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
+                                        {personalInfoFields.map((field) => (
+                                            <div 
+                                                key={field.id} 
+                                                className={
+                                                    field.type === 'textarea' || field.id === 'disability_type' 
+                                                        ? 'md:col-span-2' 
+                                                        : ''
+                                                }
+                                            >
                                                 <FormField 
                                                     field={field}
                                                     value={formData[field.name] || ''}
                                                     onChange={(value) => handleInputChange(field.name, value)}
                                                     isEditing={false}
                                                 />
+                                                {/* Render disability_type field setelah is_disability jika dipilih "Ya" */}
+                                                {field.id === 'is_disability' && (
+                                                    <div className="md:col-span-2">
+                                                        {renderDisabilityTypeField()}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
                                     <div className="flex justify-end">
-                                       
                                         <button 
                                             onClick={nextStep}
                                             type="button"
@@ -179,7 +290,6 @@ const FormPreview = ({ formConfig, onBack }) => {
                                         >
                                             ← Kembali ke Data Personal
                                         </button>
-                                          
                                     </div>
                                 </div>
                             )}
@@ -192,7 +302,6 @@ const FormPreview = ({ formConfig, onBack }) => {
                                         Informasi {formConfig.categories[selectedCategory]?.name}
                                     </h3>
                                     
-                                
                                     {formConfig.categories[selectedCategory] && (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                             {formConfig.categories[selectedCategory].fields.map((field) => (
@@ -215,6 +324,18 @@ const FormPreview = ({ formConfig, onBack }) => {
                                                 Saya menyetujui syarat dan ketentuan program {formConfig.programName || 'Impala Management'}.
                                             </label>
                                         </div>
+                                    </div>
+
+                                    {/* Data Review (optional, untuk debugging) */}
+                                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 hidden">
+                                        <h4 className="font-medium text-gray-700 mb-2">Data yang akan dikirim:</h4>
+                                        <pre className="text-xs text-gray-600 overflow-auto">
+                                            {JSON.stringify({
+                                                ...formData,
+                                                disability_type: showDisabilityField ? formData.disability_type : '(tidak diisi)',
+                                                category: selectedCategory
+                                            }, null, 2)}
+                                        </pre>
                                     </div>
 
                                     <div className="flex justify-between">
