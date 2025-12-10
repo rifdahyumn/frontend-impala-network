@@ -27,7 +27,6 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
         [quarterlyData, selectedQuarter]
     );
     
-    // Quarter totals (optimized)
     const quarterTotals = useMemo(() => {
         if (preCalculated?.quarterTotals) {
             return preCalculated.quarterTotals;
@@ -40,19 +39,16 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
         return totals;
     }, [preCalculated, quarterlyData]);
     
-    // Max quarter value (optimized)
     const maxQuarterValue = useMemo(() => 
         preCalculated?.maxValue || Math.max(...Object.values(quarterTotals)),
         [preCalculated, quarterTotals]
     );
     
-    // Latest value
     const latestValue = useMemo(() => 
         selectedQuarterData?.total || 0,
         [selectedQuarterData]
     );
     
-    // Format numbers (memoized)
     const formatNumber = useCallback((num) => {
         if (metric.id === 'revenue') {
             return formatRevenue(num);
@@ -65,15 +61,15 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
         
         if (amount >= 1000000000) {
             const billions = amount / 1000000000;
-            return `Rp ${billions % 1 === 0 ? billions.toFixed(0) : billions.toFixed(1)} Miliar`;
+            return `Rp ${billions % 1 === 0 ? billions.toFixed(0) : billions.toFixed(1)} B`;
         } 
         if (amount >= 1000000) {
             const millions = amount / 1000000;
-            return `Rp ${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1)} Juta`;
+            return `Rp ${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1)} M`;
         }
         if (amount >= 1000) {
             const thousands = amount / 1000;
-            return `Rp ${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1)} Ribu`;
+            return `Rp ${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1)} K`;
         }
         
         return `Rp ${amount.toLocaleString('id-ID')}`;
@@ -94,7 +90,6 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
         return count.toLocaleString('id-ID');
     }, []);
     
-    // Growth calculations (memoized)
     const quarterOverQuarterGrowth = useMemo(() => {
         if (!quarterlyData) return { percentage: '0%', isPositive: false };
         
@@ -145,15 +140,12 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
         };
     }, [years, latestYear, quarterlyData, selectedQuarter, yearlyData, metric.id]);
     
-    // Check if selected quarter has data
     const hasDataInSelectedQuarter = latestValue > 0;
     
-    // Event handlers
     const handleQuarterSelect = useCallback((quarter) => {
         setSelectedQuarter(quarter);
     }, []);
     
-    // Memoized quarter buttons
     const quarterButtons = useMemo(() => 
         allQuarters.map(quarter => ({
             quarter,
@@ -178,7 +170,6 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
                 </div>
             </div>
             
-            {/* Quarter Selector */}
             <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                     <div className="text-xs text-gray-500 font-medium">Select Quarter:</div>
@@ -196,15 +187,11 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
                             }`}
                         >
                             <div>{label}</div>
-                            <div className={`text-xs ${isSelected ? 'text-blue-100' : 'text-gray-500'}`}>
-                                {formatNumber(value)}
-                            </div>
                         </button>
                     ))}
                 </div>
             </div>
             
-            {/* Selected Quarter Details */}
             <SelectedQuarterDetails 
                 quarterLabels={quarterLabels}
                 selectedQuarter={selectedQuarter}
@@ -215,7 +202,6 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
                 yearOverYearGrowth={yearOverYearGrowth}
             />
             
-            {/* Quarter Breakdown */}
             <QuarterBreakdown 
                 allQuarters={allQuarters}
                 quarterTotals={quarterTotals}
@@ -226,7 +212,6 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
                 metric={metric}
             />
             
-            {/* Year Comparison */}
             <YearComparison 
                 years={years}
                 yearlyData={yearlyData}
@@ -260,7 +245,7 @@ const SelectedQuarterDetails = memo(({
             <div className="text-right">
                 <div className="text-xs text-gray-500">Total</div>
                 <div className={`text-2xl font-bold ${hasDataInSelectedQuarter ? 'text-gray-900' : 'text-gray-400'}`}>
-                    {hasDataInSelectedQuarter ? formatNumber(latestValue) : 'No Data'}
+                    {hasDataInSelectedQuarter ? formatNumber(latestValue) : '0'}
                 </div>
             </div>
         </div>
@@ -338,7 +323,7 @@ const QuarterBreakdown = memo(({
                                     </div>
                                 ) : (
                                     <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                        <div className="text-[10px] text-gray-400">No Data</div>
+                                        <div className="text-[10px] text-gray-400">0</div>
                                     </div>
                                 )}
                             </div>

@@ -58,7 +58,7 @@ export const useQuarterlyData = (selectedYear, refreshTrigger) => {
                     const data = await analyticsService.fetchYearlyComparison({ 
                         years: 'auto',
                         includeQuarterly: true,
-                        cache: true // Asumsi service mendukung cache
+                        cache: true
                     });
                     
                     const dataYears = Object.keys(data)
@@ -66,11 +66,9 @@ export const useQuarterlyData = (selectedYear, refreshTrigger) => {
                         .filter(y => !isNaN(y))
                         .sort((a, b) => a - b);
                     
-                    // Set state
                     setYearlyData(data);
                     setYears(dataYears);
                     
-                    // Simpan ke cache
                     setCachedData({
                         data,
                         years: dataYears
@@ -80,7 +78,6 @@ export const useQuarterlyData = (selectedYear, refreshTrigger) => {
                     console.error('Error fetching quarterly data:', err);
                     setError(err.message || 'Failed to fetch data');
                     
-                    // Fallback ke mock data hanya jika cache kosong
                     if (!getCachedData()) {
                         const currentYear = new Date().getFullYear();
                         const yearList = [currentYear - 2, currentYear - 1, currentYear];
@@ -89,7 +86,6 @@ export const useQuarterlyData = (selectedYear, refreshTrigger) => {
                         setYearlyData(mockData);
                         setYears(yearList);
                         
-                        // Cache mock data juga
                         setCachedData({
                             data: mockData,
                             years: yearList
@@ -99,19 +95,18 @@ export const useQuarterlyData = (selectedYear, refreshTrigger) => {
                     setLoading(false);
                     fetchRef.current = null;
                 }
-            }, 300); // Debounce 300ms
+            }, 300);
         } catch (err) {
             setLoading(false);
             setError(err.message);
         }
     }, [getCachedData, setCachedData]);
     
-    // Effect untuk fetch data
+
     useEffect(() => {
         fetchYearlyData();
     }, [fetchYearlyData]);
     
-    // Pre-calculated data dengan useMemo yang lebih ringan
     const preCalculatedData = useMemo(() => {
         if (!yearlyData || !years.length) return null;
         

@@ -1,26 +1,37 @@
-
-import { METRICS_CONFIG } from "./constants";
+// utils/chartConfig.js
+import { METRICS_CONFIG, getQuarterLabel, getMonthsInQuarter } from "./constants";
 
 export const getChartOptions = (metric, dataType) => {
     const config = METRICS_CONFIG[metric]
+    const isQuarterView = dataType && ['q1', 'q2', 'q3', 'q4'].includes(dataType)
 
     return {
         responsive: true,
         interaction: { mode: 'index', intersect: false },
         scales: {
-            x: { grid: { display: false } },
+            x: { 
+                grid: { display: false },
+                ticks: {
+                    maxRotation: isQuarterView ? 0 : 45,
+                    minRotation: 0
+                }
+            },
             y: {
                 beginAtZero: true,
                 title: {
                     display: true,
                     text: metric === 'revenue' ? 'Amount (in Millions)' : 'Count'
                 },
-                grid: { color: 'rgba(0, 0, 0, 0.05' },
+                grid: { color: 'rgba(0, 0, 0, 0.05)' },
                 ticks: {
                     callback: function(value) {
                         if (metric === 'revenue') {
-                            return 'Rp ' + value + 'M'
+                            if (value >= 1000) return 'IDR ' + (value / 1000).toFixed(1) + 'B'
+                            if (value >= 1) return 'IDR ' + value + 'M'
+                            return 'IDR ' + value
                         }
+                        
+                        if (value >= 1000) return (value / 1000).toFixed(1) + 'K'
                         return value
                     }
                 }
@@ -29,10 +40,15 @@ export const getChartOptions = (metric, dataType) => {
         plugins: {
             legend: {
                 position: 'top',
-                labels: { color: '#374151', font: { size: 12 } }
+                labels: { 
+                    color: '#374151', 
+                    font: { size: 12 },
+                    padding: 20,
+                    usePointStyle: true 
+                }
             },
             tooltip: {
-                backgroundColor: 'rbga(0, 0, 0, 0.8)',
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
                 titleColor: 'white',
                 bodyColor: 'white',
                 borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -44,37 +60,23 @@ export const getChartOptions = (metric, dataType) => {
                         let label = context.dataset.label || ''
                         if (label) label += ': '
                         if (metric === 'revenue') {
-                            label += 'Rp. ' + (context.parsed.y * 1000000).toLocaleString('id-ID')
+                            label += 'IDR ' + (context.parsed.y * 1000000).toLocaleString('id-ID')
                         } else {
                             label += context.parsed.y.toLocaleString('id-ID')
                         }
                         return label
+                    },
+                    title: function(tooltipItems) {
+                        if (isQuarterView) {
+                            return `Month: ${tooltipItems[0].label}`
+                        }
+                        return tooltipItems[0].label
                     }
                 }
             }
         },
         maintainAspectRatio: false
     }
-}
-
-export const getPieChartOptions = {
-    responsive: true,
-    plugins: {
-        legend : {
-            position: 'right',
-            label: { color: '#374151', font: { size: 11 } }
-        },
-        tooltip: {
-            callbacks: {
-                label: function(context) {
-                    const label = context.label || ''
-                    const value = context.parsed
-                    return `${label}: Rp ${(value * 1000000).toLocaleString('id-ID')}`
-                }
-            }
-        }
-    },
-    maintainAspectRatio: false
 }
 
 export const getBarOptions = (baseOptions) => ({
@@ -87,14 +89,24 @@ export const getBarOptions = (baseOptions) => ({
 });
 
 export const prepareChartData = (monthlyData, metric, dataType, chartType) => {
-    if (!monthlyData) return { label: [], datasets: [] }
+    if (!monthlyData) return { labels: [], datasets: [] }
 
     const config = METRICS_CONFIG[metric]
+    const isQuarterView = dataType && ['q1', 'q2', 'q3', 'q4'].includes(dataType)
+
+    if (isQuarterView) {
+        return prepareQuarterChartData(monthlyData, config, dataType, chartType, metric)
+    }
+
+    return prepareMonthlyChartData(monthlyData, config, dataType, chartType, metric)
+}
+
+const prepareMonthlyChartData = (monthlyData, config, dataType, chartType, metric) => {
     const dataKey = dataType === 'growth' ? config.dataKey : config.cumulativeKey
     const label = dataType === 'growth' ? config.datasetLabel : config.cumulativeLabel
 
     const data = monthlyData.map(data => {
-        const value = data[dataKey]
+        const value = data[dataKey] || 0
         return metric === 'revenue' ? value / 1000000 : value
     })
 
@@ -104,30 +116,125 @@ export const prepareChartData = (monthlyData, metric, dataType, chartType) => {
             label,
             data,
             borderColor: config.color,
-            backgroundColor: `${config.color}20`,
+            backgroundColor: chartType === 'bar' ? config.color : `${config.color}20`,
             fill: chartType === 'area',
             tension: 0.4,
-            borderWidth: 2 
+            borderWidth: 2
         }]
     }
 }
 
-export const preparePieChartData = (monthlyData, metric) => {
-    if (!monthlyData || metric !== 'revenue') return null
+const prepareQuarterChartData = (monthlyData, config, quarter, chartType, metric) => {
+    const quarterMonths = getMonthsInQuarter(quarter)
 
-    const monthsWithRevenue = monthlyData.filter(m => m.revenue > 0)
+    const filteredData = monthlyData.filter(month => 
+        quarterMonths.includes(month.month)
+    )
+
+    if (filteredData.length === 0) {
+        const data = quarterMonths.map(() => 0);
+        return {
+            labels: quarterMonths,
+            datasets: [
+                {
+                    label: config.datasetLabel,
+                    data,
+                    borderColor: config.color,
+                    backgroundColor: chartType === 'bar' ? config.color : `${config.color}20`,
+                    fill: chartType === 'area',
+                    tension: 0.4,
+                    borderWidth: 2
+                }
+            ]
+        }
+    }
+
+    const labels = filteredData.map(month => month.month)
+    const dataKey = config.dataKey;
+    const data = filteredData.map(month => {
+        const value = month[dataKey] || 0;
+        return metric === 'revenue' ? value / 1000000 : value;
+    });
 
     return {
-        labels: monthsWithRevenue.map(data => data.month),
-        datasets: [{
-            data: monthsWithRevenue.map(data => data.revenue / 1000000),
-            backgroundColor: [
-                '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#f5f3ff',
-                '#d8b4fe', '#c084fc', '#a855f7', '#9333ea', '#7c3aed',
-                '#6d28d9', '#5b21b6'
-            ],
-            borderWidth: 1,
-            borderColor: '#ffffff'
-        }]
+        labels,
+        datasets: [
+            {
+                label: config.datasetLabel,
+                data,
+                borderColor: config.color,
+                backgroundColor: chartType === 'bar' ? config.color : `${config.color}20`,
+                fill: chartType === 'area',
+                tension: 0.4,
+                borderWidth: 2
+            }
+        ]
     }
+}
+
+export const getQuarterSummaryData = (monthlyData, metric) => {
+    if (!monthlyData) return null
+    
+    const quarters = ['q1', 'q2', 'q3', 'q4']
+    const quarterData = {}
+    
+    quarters.forEach(quarter => {
+        const quarterMonths = getMonthsInQuarter(quarter)
+        const filteredData = monthlyData.filter(month => 
+            quarterMonths.includes(month.month)
+        )
+        
+        if (filteredData.length === 0) {
+            quarterData[quarter] = {
+                label: quarter.toUpperCase(),
+                fullLabel: getQuarterLabel(quarter),
+                total: 0,
+                average: 0,
+                growth: 0,
+                growthPercentage: '0%',
+                months: quarterMonths,
+                monthData: []
+            }
+            return
+        }
+        
+        let total = 0
+        const dataKey = getDataKeyForMetric(metric)
+        
+        filteredData.forEach(month => {
+            total += month[dataKey] || 0
+        })
+        
+        let growth = 0
+        if (filteredData.length >= 2) {
+            const firstMonthValue = filteredData[0][dataKey] || 0
+            const lastMonthValue = filteredData[filteredData.length - 1][dataKey] || 0
+            
+            if (firstMonthValue > 0) {
+                growth = ((lastMonthValue - firstMonthValue) / firstMonthValue) * 100
+            } else if (lastMonthValue > 0) {
+                growth = 100
+            }
+        } else if (filteredData.length === 1 && filteredData[0][dataKey] > 0) {
+            growth = 100
+        }
+        
+        quarterData[quarter] = {
+            label: quarter.toUpperCase(),
+            fullLabel: getQuarterLabel(quarter),
+            total: total,
+            average: total / filteredData.length,
+            growth: growth,
+            growthPercentage: `${growth >= 0 ? '+' : ''}${Math.abs(growth).toFixed(1)}%`,
+            months: quarterMonths,
+            monthData: filteredData
+        }
+    })
+    
+    return quarterData
+}
+
+const getDataKeyForMetric = (metric) => {
+    const config = METRICS_CONFIG[metric]
+    return config?.dataKey || 'newClients'
 }

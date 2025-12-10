@@ -80,7 +80,7 @@ const MemberGrowthDetails = () => {
     const MetricIcon = currentMetric.icon
 
     return (
-        <div className="space-y-6 py-6">
+        <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 
                 

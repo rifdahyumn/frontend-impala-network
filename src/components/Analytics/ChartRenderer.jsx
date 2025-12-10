@@ -1,5 +1,5 @@
-import { Bar, Line, Pie } from "react-chartjs-2"
-import { getBarOptions, getChartOptions, getPieChartOptions, prepareChartData, preparePieChartData } from "../../utils/chartConfig"
+import { Bar, Line } from "react-chartjs-2"
+import { getBarOptions, getChartOptions, prepareChartData } from "../../utils/chartConfig"
 import { Loader2 } from "lucide-react"
 
 export const ChartRenderer = ({
@@ -20,11 +20,15 @@ export const ChartRenderer = ({
         )
     }
 
-    if (metric === 'revenue' && chartType === 'pie') {
-        const pieData = preparePieChartData(monthlyData, metric)
-        if (!pieData) return null
-
-        return <Pie data={pieData} options={getPieChartOptions} height={400} />
+    if (!monthlyData || monthlyData.length === 0) {
+        return (
+            <div className="h-80 flex items-center justify-center">
+                <div className="text-center">
+                    <h3 className="text-lg font-semibold text-gray-700">No Data Available</h3>
+                    <p className="text-gray-500 mt-2">No data found for the selected period.</p>
+                </div>
+            </div>
+        )
     }
 
     const chartData = prepareChartData(monthlyData, metric, dataType, chartType)
@@ -33,18 +37,26 @@ export const ChartRenderer = ({
 
     const commonProps = {
         data: chartData,
-        options,
+        options: options,
         height: 400
     }
 
-    switch (chartType) {
-        case 'line':
-            return <Line {...commonProps} />
-        case 'bar':
-            return <Bar {...commonProps} />
-        case 'area':
-            return <Line {...commonProps} />
-        default:
-            return <Line {...commonProps} />
+    const renderChart = () => {
+        switch (chartType) {
+            case 'line':
+                return <Line {...commonProps} />
+            case 'bar':
+                return <Bar {...commonProps} />
+            case 'area':
+                return <Line {...commonProps} />
+            default:
+                return <Line {...commonProps} />
+        }
     }
+
+    return (
+        <div className="h-full">
+            {renderChart()}
+        </div>
+    )
 }
