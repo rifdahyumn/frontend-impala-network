@@ -1,11 +1,29 @@
 // src/components/FormBuilder/PublicFormPreview.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import FormField from './fields/FormField';
 
-const PublicFormPreview = ({ fields, category, onBack }) => {
+const PublicFormPreview = ({ fields, category, onBack, formConfig }) => {
     const [formData, setFormData] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // ===== UPDATE DOCUMENT TITLE BASED ON FORM CONFIG =====
+    useEffect(() => {
+        if (formConfig && formConfig.title) {
+            // Gunakan title dari formConfig yang sudah ada
+            document.title = `${formConfig.title} | Impala Network`;
+        } else if (category) {
+            // Fallback ke category name
+            document.title = `Pendaftaran Program ${category.name} | Impala Network`;
+        } else {
+            document.title = 'Form Pendaftaran | Impala Network';
+        }
+        
+        // Cleanup: kembalikan title default saat komponen unmount
+        return () => {
+            document.title = 'Impala Network';
+        };
+    }, [formConfig, category]);
 
     const handleInputChange = (fieldName, value) => {
         setFormData(prev => ({
@@ -48,6 +66,28 @@ const PublicFormPreview = ({ fields, category, onBack }) => {
         }
     };
 
+    // ===== FUNGSI UNTUK MENDAPATKAN JUDUL FORM =====
+    const getFormTitle = () => {
+        if (formConfig && formConfig.title) {
+            return formConfig.title;
+        }
+        return 'Pendaftaran Program Impala';
+    };
+
+    const getFormSubtitle = () => {
+        if (formConfig && formConfig.title) {
+            return `Isi data diri Anda dengan lengkap dan benar`;
+        }
+        return `Form pendaftaran untuk peserta program Impala Management - ${category?.name || ''}`;
+    };
+
+    const getFormHeaderTitle = () => {
+        if (formConfig && formConfig.title) {
+            return `Form ${formConfig.title}`;
+        }
+        return `Form Pendaftaran ${category?.name || 'Program'}`;
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
             <div className="container mx-auto px-4 max-w-2xl">
@@ -61,10 +101,12 @@ const PublicFormPreview = ({ fields, category, onBack }) => {
                 {/* Header */}
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                        Pendaftaran Program Impala
+                        {/* ===== JUDUL UTAMA DARI FORM CONFIG ===== */}
+                        {getFormTitle()}
                     </h1>
                     <p className="text-gray-600">
-                        Form pendaftaran untuk peserta program Impala Management - {category.name}
+                        {/* ===== SUBTITLE ===== */}
+                        {getFormSubtitle()}
                     </p>
                 </div>
 
@@ -73,7 +115,8 @@ const PublicFormPreview = ({ fields, category, onBack }) => {
                     {/* Form Header */}
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
                         <h2 className="text-xl font-semibold text-center">
-                            Form Pendaftaran {category.name}
+                            {/* ===== JUDUL HEADER FORM ===== */}
+                            {getFormHeaderTitle()}
                         </h2>
                     </div>
 

@@ -22,6 +22,48 @@ const PublicForm = () => {
     const [submittedData, setSubmittedData] = useState(null);
     const { toast } = useToast();
 
+    // ===== UPDATE TAB BROWSER TITLE =====
+    useEffect(() => {
+        if (template) {
+            let tabTitle = 'Impala Network';
+            
+            // Prioritaskan program_name langsung dari template
+            if (template.program_name) {
+                tabTitle = `${template.program_name} | Impala Network`;
+            } 
+            // Fallback ke form_config.title
+            else if (template.form_config && template.form_config.title) {
+                const fullTitle = template.form_config.title;
+                // Coba ekstrak hanya nama programnya
+                if (fullTitle.includes('Program ')) {
+                    const parts = fullTitle.split('Program ');
+                    if (parts.length > 1) {
+                        tabTitle = `${parts[1]} | Impala Network`;
+                    } else {
+                        tabTitle = `${fullTitle} | Impala Network`;
+                    }
+                } else {
+                    tabTitle = `${fullTitle} | Impala Network`;
+                }
+            }
+            
+            document.title = tabTitle;
+        } else {
+            document.title = 'Impala Network';
+        }
+        
+        return () => {
+            document.title = 'Impala Network';
+        };
+    }, [template]);
+
+    // ===== UPDATE TITLE PADA SUCCESS PAGE =====
+    useEffect(() => {
+        if (submissionSuccess && submittedData) {
+            document.title = `Pendaftaran Berhasil - ${submittedData.programName} | Impala Network`;
+        }
+    }, [submissionSuccess, submittedData]);
+
     useEffect(() => {
         const loadFormFromAPI = async () => {
             try {
@@ -39,6 +81,11 @@ const PublicForm = () => {
                     setTemplate(templateData);
                     setFormConfig(templateData.form_config);
                     
+                    // Update tab browser title setelah form loaded
+                    if (templateData.program_name) {
+                        document.title = `${templateData.program_name} | Impala Network`;
+                    }
+                    
                     toast({
                         title: "Form Dimuat",
                         description: `Form "${templateData.program_name}" berhasil dimuat`,
@@ -49,7 +96,7 @@ const PublicForm = () => {
                 }
             } catch (error) {
                 console.error('Error loading form from API:', error);
-                
+                document.title = 'Form Tidak Ditemukan | Impala Network';
                 toast({
                     title: "Form Tidak Ditemukan",
                     description: `Form dengan slug "${slug}" tidak tersedia. Pastikan form sudah dipublish.`,
@@ -63,23 +110,7 @@ const PublicForm = () => {
         loadFormFromAPI();
     }, [slug, toast]);
 
-    const getProgramName = () => {
-        if (template) {
-            return template.program_name;
-        }
-        
-        if (formConfig?.programName) {
-            return formConfig.programName;
-        }
-        
-        return 'Loading...';
-    };
-
-    const getFormTitle = () => {
-        const programName = getProgramName();
-        return `Pendaftaran Program ${programName}`;
-    };
-
+    // ===== FUNGSI RENDER DYNAMIC FIELDS =====
     const renderDynamicFields = () => {
         if (!formConfig) return { personalFields: [], categoryFields: [] };
 
@@ -124,6 +155,38 @@ const PublicForm = () => {
         }
     };
 
+    const getProgramName = () => {
+        if (template) {
+            return template.program_name;
+        }
+        
+        if (formConfig?.programName) {
+            return formConfig.programName;
+        }
+        
+        return 'Loading...';
+    };
+
+    const getFormTitle = () => {
+        // JUDUL HALAMAN TETAP LENGKAP
+        if (formConfig && formConfig.title) {
+            return formConfig.title; // "Pendaftaran Program [Nama Program]"
+        }
+        
+        const programName = getProgramName();
+        return `Pendaftaran Program ${programName}`;
+    };
+
+    const getFormHeaderTitle = () => {
+        // HEADER FORM TETAP LENGKAP
+        if (formConfig && formConfig.title) {
+            return `Form ${formConfig.title}`;
+        }
+        
+        const programName = getProgramName();
+        return `Form Pendaftaran Program ${programName}`;
+    };
+
     const handleInputChange = (fieldName, value) => {
         setFormData(prev => ({
             ...prev,
@@ -162,7 +225,6 @@ const PublicForm = () => {
                 return;
             }
 
-            // Validasi kategori harus dipilih
             if (!selectedCategory) {
                 toast({
                     title: "Kategori Belum Dipilih",
@@ -187,8 +249,6 @@ const PublicForm = () => {
                 province: formData.province,
                 postal_code: formData.postal_code,
                 reason_join_program: formData.reason_join_program,
-
-                // Convert untuk database - lowercase ID ke display name
                 category: selectedCategory === 'umkm' ? 'UMKM' : 
                          selectedCategory === 'mahasiswa' ? 'Mahasiswa' :
                          selectedCategory === 'profesional' ? 'Profesional' :
@@ -247,7 +307,6 @@ const PublicForm = () => {
             const response = await impalaService.createImpala(cleanData);
 
             if (response.success) {
-                // Simpan data yang berhasil dikirim untuk ditampilkan di success page
                 setSubmittedData({
                     ...cleanData,
                     submissionId: response.data.id,
@@ -279,9 +338,7 @@ const PublicForm = () => {
 
     const handleShare = async () => {
         const waGroupLink = "https://chat.whatsapp.com/your-actual-group-link";
-
         window.open(waGroupLink, '_blank');
-
         toast({
             title: 'Group Whatsapp Dibuka',
             description: 'Bergabung dengan group WhatsApp Program',
@@ -338,6 +395,7 @@ const PublicForm = () => {
     }
 
     const formTitle = getFormTitle();
+    const formHeaderTitle = getFormHeaderTitle();
     const { personalFields, categoryFields } = renderDynamicFields();
 
     return (
@@ -346,7 +404,6 @@ const PublicForm = () => {
                 
                 <AnimatePresence mode="wait">
                     {!submissionSuccess ? (
-                        // FORM SECTION
                         <motion.div
                             key="form"
                             initial={{ opacity: 0, y: 20 }}
@@ -366,13 +423,13 @@ const PublicForm = () => {
                             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 text-center">
                                     <h2 className="text-xl font-semibold">
-                                        Form {formTitle}
+                                        {formHeaderTitle}
                                     </h2>
                                 </div>
 
                                 <div className="p-6">
                                     <form onSubmit={handleSubmit}>
-                                        {/* Informasi Pribadi - Selalu Tampil */}
+                                        {/* Informasi Pribadi */}
                                         <div className="space-y-6 mb-8">
                                             <h3 className="text-xl font-semibold text-gray-800 mb-4">
                                                 Informasi Pribadi
@@ -420,7 +477,7 @@ const PublicForm = () => {
                                             </div>
                                         </div>
 
-                                        {/* Informasi Kategori - Hanya Tampil jika Kategori Dipilih */}
+                                        {/* Informasi Kategori */}
                                         {selectedCategory && categoryFields.length > 0 && (
                                             <div className="space-y-6 mb-8">
                                                 <h3 className="text-xl font-semibold text-gray-800 mb-4">
@@ -464,7 +521,6 @@ const PublicForm = () => {
                             </div>
                         </motion.div>
                     ) : (
-                        // SUCCESS SECTION
                         <motion.div
                             key="success"
                             initial={{ opacity: 0, scale: 0.9 }}
