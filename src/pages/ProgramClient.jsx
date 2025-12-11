@@ -1,8 +1,10 @@
+// hapus bagian "Format Info
+
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Loader2, Plus, Users, RefreshCw, Briefcase, Filter, X, AlertCircle, CheckSquare } from "lucide-react";
+import { Loader2, Plus, Users, RefreshCw, Briefcase, Filter, X, AlertCircle, CheckSquare, Download, Upload, FileText, FileSpreadsheet } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'; // 🔴 TAMBAHKAN useRef
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from '../components/Pagination/Pagination';
@@ -20,12 +22,35 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem
 } from "../components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import { Label } from "../components/ui/label";
+import { Input } from "../components/ui/input";
 
 const ProgramClient = () => {
     const [selectedMember, setSelectedMember] = useState(null);
     const [editingClient, setEditingClient] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
+<<<<<<< HEAD
+=======
+    
+    // 🔴 TAMBAH: State untuk modal import
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [importFile, setImportFile] = useState(null);
+    const [isImporting, setIsImporting] = useState(false);
+    
+    // 🔴 TAMBAH: Ref untuk upload input
+    const fileInputRef = useRef(null);
+    
+    // 🔴 TAMBAHKAN: State untuk visual feedback
+>>>>>>> 3bd0e4369f9447aeaa86a594817d10377a4abb0e
     const [highlightDetail, setHighlightDetail] = useState(false);
     const clientDetailRef = useRef(null);
     const [localFilters, setLocalFilters] = useState({
@@ -88,6 +113,176 @@ const ProgramClient = () => {
         await searchClients(localFilters.search, showAllOnSearch);
     }, [localFilters.search, showAllOnSearch, searchClients]);
 
+<<<<<<< HEAD
+=======
+    // 🔴 TAMBAH: Fungsi untuk download template CSV
+    const handleDownloadTemplate = useCallback(() => {
+        try {
+            // Template data untuk import client
+            const templateData = [
+                {
+                    'full_name': 'Contoh: John Doe',
+                    'email': 'Contoh: john@example.com',
+                    'phone': 'Contoh: 081234567890',
+                    'company': 'Contoh: PT. Contoh Indonesia',
+                    'business': 'Contoh: Technology',
+                    'program_name': 'Contoh: Program Premium',
+                    'status': 'Contoh: active',
+                    'address': 'Contoh: Jl. Contoh No. 123',
+                    'notes': 'Contoh: Catatan tambahan'
+                },
+            ];
+            
+            // Convert to CSV
+            const headers = Object.keys(templateData[0]);
+            const csvContent = [
+                headers.join(','),
+                ...templateData.map(row => 
+                    headers.map(header => 
+                        `"${row[header] || ''}"`
+                    ).join(',')
+                )
+            ].join('\n');
+            
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `client_import_template_${new Date().getTime()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            toast.success('Template CSV berhasil didownload');
+        } catch (error) {
+            console.error('Download template error:', error);
+            toast.error('Gagal mendownload template');
+        }
+    }, []);
+
+    // 🔴 TAMBAH: Fungsi untuk handle file upload
+    const handleFileUpload = useCallback((event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        // Validasi file type
+        if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+            toast.error('Hanya file CSV yang diperbolehkan');
+            return;
+        }
+        
+        // Validasi file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('File terlalu besar. Maksimal 5MB');
+            return;
+        }
+        
+        setImportFile(file);
+    }, []);
+
+    // 🔴 TAMBAH: Fungsi untuk import CSV
+    const handleImportCSV = useCallback(async () => {
+        if (!importFile) {
+            toast.error('Pilih file CSV terlebih dahulu');
+            return;
+        }
+        
+        setIsImporting(true);
+        
+        try {
+            // Read CSV file
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const csvText = e.target.result;
+                    const rows = csvText.split('\n');
+                    const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                    
+                    // Parse CSV data
+                    const importedClients = [];
+                    for (let i = 1; i < rows.length; i++) {
+                        if (!rows[i].trim()) continue;
+                        
+                        const values = rows[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                        const client = {};
+                        
+                        headers.forEach((header, index) => {
+                            client[header] = values[index] || '';
+                        });
+                        
+                        // Skip contoh data
+                        if (client.full_name?.includes('Contoh:')) continue;
+                        if (client.email?.includes('Contoh:')) continue;
+                        
+                        // Validasi data minimal
+                        if (client.full_name && client.email) {
+                            importedClients.push(client);
+                        }
+                    }
+                    
+                    if (importedClients.length === 0) {
+                        toast.error('Tidak ada data valid yang ditemukan dalam file');
+                        return;
+                    }
+                    
+                    // Simulasi import data (ganti dengan API call sebenarnya)
+                    console.log('Data yang akan diimport:', importedClients);
+                    
+                    // Contoh: Simpan ke localStorage untuk demo
+                    // Dalam implementasi real, kirim ke API
+                    const existingClients = JSON.parse(localStorage.getItem('clients') || '[]');
+                    const newClients = [
+                        ...existingClients,
+                        ...importedClients.map((client, index) => ({
+                            id: Date.now() + index,
+                            ...client,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        }))
+                    ];
+                    localStorage.setItem('clients', JSON.stringify(newClients));
+                    
+                    // Reset form
+                    setImportFile(null);
+                    if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                    }
+                    
+                    // Close modal
+                    setIsImportModalOpen(false);
+                    
+                    // Refresh data
+                    await refreshData();
+                    
+                    toast.success(`Berhasil mengimport ${importedClients.length} client`);
+                } catch (parseError) {
+                    console.error('Parse error:', parseError);
+                    toast.error('Format file CSV tidak valid');
+                }
+            };
+            
+            reader.readAsText(importFile);
+        } catch (error) {
+            console.error('Import error:', error);
+            toast.error('Gagal mengimport data');
+        } finally {
+            setIsImporting(false);
+        }
+    }, [importFile, refreshData]);
+
+    // 🔴 TAMBAH: Fungsi untuk open import modal
+    const handleOpenImportModal = useCallback(() => {
+        setImportFile(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+        setIsImportModalOpen(true);
+    }, []);
+
+    // EKSTRAK SEMUA STATUS UNIK DARI DATA CLIENT
+>>>>>>> 3bd0e4369f9447aeaa86a594817d10377a4abb0e
     const availableStatuses = useMemo(() => {
         if (!members.length) return [];
         
@@ -380,9 +575,9 @@ const ProgramClient = () => {
 
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
-            <div className='flex-1 p-6'>
+            <div className='flex-1 p-6 max-w-screen-2xl mx-auto w-full'>
                 <Header />
-                <Card className='mb-6'>
+                <Card className='mb-6 max-w-none'>
                     <CardHeader>
                         <CardTitle className='text-xl'>{tableConfig.title}</CardTitle>
 
@@ -415,6 +610,19 @@ const ProgramClient = () => {
                             </div>
                         )}
 
+<<<<<<< HEAD
+                        {/* SEARCH & FILTER SECTION */}
+                        <div className='flex flex-col lg:flex-row gap-4 mb-6 justify-between'>
+                            <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
+                                <div className="w-full sm:w-auto min-w-[250px]">
+                                    <SearchBar 
+                                        onSearch={handleSearch}
+                                        placeholder="Search clients..."
+                                        value={localFilters.search}
+                                        onChange={(e) => setLocalFilters(prev => ({ ...prev, search: e.target.value }))}
+                                    />
+                                </div>
+=======
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2 items-center flex-wrap'>
                                 <SearchBar 
@@ -423,6 +631,7 @@ const ProgramClient = () => {
                                     value={localFilters.search}
                                     onChange={(e) => setLocalFilters(prev => ({ ...prev, search: e.target.value }))}
                                 />
+>>>>>>> 1002082e40aea3e28c042d0afa99f70e6e982a1d
                                 
                                 {localFilters.search.trim() !== '' && (
                                     <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
@@ -537,27 +746,59 @@ const ProgramClient = () => {
                                 </DropdownMenu>
                             </div>
 
-                            <div className='flex gap-2'>
+                            <div className='flex flex-wrap gap-2'>
                                 <Button 
                                     onClick={handleAddClient} 
-                                    className='flex items-center gap-2'
+                                    className='flex items-center gap-2 whitespace-nowrap'
                                 >
                                     <Plus className="h-4 w-4" />
                                     {tableConfig.addButton}
                                 </Button>
+<<<<<<< HEAD
+=======
+                                
+                                {/* 🔴 TAMBAH: Import Button dengan Dropdown */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50 whitespace-nowrap"
+                                        >
+                                            <Upload className="h-4 w-4" />
+                                            Import
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-48">
+                                        <DropdownMenuItem 
+                                            onClick={handleDownloadTemplate}
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <Download className="h-4 w-4" />
+                                            Download Template
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem 
+                                            onClick={handleOpenImportModal}
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <FileSpreadsheet className="h-4 w-4" />
+                                            Upload File
+                                        </DropdownMenuItem>
+                                </DropdownMenuContent>
+                                </DropdownMenu>
+                                
+                                {/* 🔴 MODIFIKASI: ExportButton */}
+>>>>>>> 3bd0e4369f9447aeaa86a594817d10377a4abb0e
                                 <Button 
                                     onClick={handleExport}
                                     variant="outline"
-                                    className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
+                                    className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
                                     disabled={loading}
                                 >
                                     {loading ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
                                     ) : (
                                         <>
-                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
+                                            <Download className="h-4 w-4" />
                                             Export {isInShowAllMode ? 'All' : ''}
                                         </>
                                     )}
@@ -567,7 +808,7 @@ const ProgramClient = () => {
                         
                         {isInShowAllMode && (
                             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                     <div className="flex items-center gap-2">
                                         <CheckSquare className="h-5 w-5 text-blue-600" />
                                         <p className="text-sm text-blue-700">
@@ -577,7 +818,7 @@ const ProgramClient = () => {
                                     </div>
                                     <button 
                                         onClick={handleResetToPagination}
-                                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                                        className="text-sm text-blue-600 hover:text-blue-800 underline whitespace-nowrap"
                                     >
                                         Switch to paginated view
                                     </button>
@@ -590,8 +831,13 @@ const ProgramClient = () => {
                                 <span className="text-sm text-gray-600">Active filters:</span>
                                 
                                 {localFilters.search && (
+<<<<<<< HEAD
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <span>"{localFilters.search}"</span>
+=======
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1 whitespace-nowrap">
+                                        <span>🔍 "{localFilters.search}"</span>
+>>>>>>> 3bd0e4369f9447aeaa86a594817d10377a4abb0e
                                         <button 
                                             onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"
@@ -602,7 +848,7 @@ const ProgramClient = () => {
                                 )}
                                 
                                 {localFilters.status && (
-                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1 whitespace-nowrap">
                                         {getStatusLabel(localFilters.status)}
                                         <button 
                                             onClick={() => clearFilter('status')}
@@ -614,7 +860,7 @@ const ProgramClient = () => {
                                 )}
                                 
                                 {localFilters.businessType && localFilters.businessType !== 'all' && (
-                                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1 whitespace-nowrap">
                                         <Briefcase className="w-3 h-3" />
                                         {getBusinessTypeLabel(localFilters.businessType)}
                                         <button 
@@ -627,7 +873,7 @@ const ProgramClient = () => {
                                 )}
                                 
                                 {localFilters.businessType === 'all' && (
-                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1 whitespace-nowrap">
                                         <Briefcase className="w-3 h-3" />
                                         All Business Types
                                         <button 
@@ -642,7 +888,7 @@ const ProgramClient = () => {
                                 <Button 
                                     variant="ghost" 
                                     onClick={clearAllFilters}
-                                    className="text-sm h-8"
+                                    className="text-sm h-8 whitespace-nowrap"
                                     size="sm"
                                 >
                                     Clear All
@@ -775,6 +1021,102 @@ const ProgramClient = () => {
                     editData={editingClient}
                     onEditClient={handleEditClient}
                 />
+
+                {/* 🔴 PERUBAHAN: Modal Import CSV dengan area upload yang tidak melampaui background */}
+                <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
+                    <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl w-[95vw] max-w-[800px]">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-xl">
+                                <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+                                Import Clients from CSV
+                            </DialogTitle>
+                            <DialogDescription className="text-base">
+                                Upload a CSV file to import multiple clients at once.
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4 py-4">
+                            {/* Petunjuk */}
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                                <h4 className="text-sm font-medium text-blue-800 mb-2">Instructions:</h4>
+                                <ul className="text-sm text-blue-600 space-y-1 list-disc list-inside">
+                                    <li>Download the template first for correct format</li>
+                                    <li>Fill in the data according to the columns</li>
+                                    <li>Maximum file size: 5MB</li>
+                                    <li>Only CSV files are supported</li>
+                                </ul>
+                            </div>
+                            
+                            {/* Upload Area - TAMBAH: max-w-full dan overflow-hidden */}
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 md:p-8 text-center hover:border-blue-400 transition-colors max-w-full overflow-hidden">
+                                {importFile ? (
+                                    <div className="space-y-3">
+                                        <FileText className="h-12 w-12 text-green-500 mx-auto" />
+                                        <p className="font-medium text-gray-700 text-lg truncate max-w-full px-2">{importFile.name}</p>
+                                        <p className="text-sm text-gray-500">
+                                            {(importFile.size / 1024).toFixed(2)} KB
+                                        </p>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                setImportFile(null);
+                                                if (fileInputRef.current) {
+                                                    fileInputRef.current.value = '';
+                                                }
+                                            }}
+                                            className="text-red-600 hover:text-red-700 mt-2"
+                                        >
+                                            Remove File
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                        <p className="text-base text-gray-600 mb-3 px-2">
+                                            <strong>Drag & drop your CSV file here, or click to browse</strong>
+                                        </p>
+                                        <Input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".csv"
+                                            onChange={handleFileUpload}
+                                            className="hidden"
+                                            id="csv-upload"
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="mt-2 px-6 py-2"
+                                        >
+                                            Select File
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <DialogFooter className="flex flex-col sm:flex-row gap-3">
+                            <Button
+                                onClick={handleImportCSV}
+                                disabled={!importFile || isImporting}
+                                className="flex items-center gap-2 px-6 py-2 w-full sm:w-auto justify-center"
+                            >
+                                {isImporting ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Importing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="h-4 w-4" />
+                                        Import File
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     );
