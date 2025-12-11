@@ -653,6 +653,7 @@ const ProgramClient = () => {
                             </div>
                         )}
 
+<<<<<<< HEAD
                         {/* SEARCH & FILTER SECTION */}
                         <div className='flex flex-col lg:flex-row gap-4 mb-6 justify-between'>
                             <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
@@ -664,6 +665,16 @@ const ProgramClient = () => {
                                         onChange={(e) => setLocalFilters(prev => ({ ...prev, search: e.target.value }))}
                                     />
                                 </div>
+=======
+                        <div className='flex flex-wrap gap-4 mb-6 justify-between'>
+                            <div className='flex gap-2 items-center flex-wrap'>
+                                <SearchBar 
+                                    onSearch={handleSearch}
+                                    placeholder="Search clients..."
+                                    value={localFilters.search}
+                                    onChange={(e) => setLocalFilters(prev => ({ ...prev, search: e.target.value }))}
+                                />
+>>>>>>> 1002082e40aea3e28c042d0afa99f70e6e982a1d
                                 
                                 {/* 🔴 MODIFIKASI: Toggle Show All on Search */}
                                 {localFilters.search.trim() !== '' && (
@@ -691,7 +702,6 @@ const ProgramClient = () => {
                                     </div>
                                 )}
                                 
-                                {/* FILTER DROPDOWN */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button 
@@ -863,12 +873,10 @@ const ProgramClient = () => {
                             </div>
                         )}
                         
-                        {/* ACTIVE FILTERS BADGES */}
                         {getTotalActiveCriteria() > 0 && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
                                 <span className="text-sm text-gray-600">Active filters:</span>
                                 
-                                {/* SEARCH BADGE */}
                                 {localFilters.search && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1 whitespace-nowrap">
                                         <span>🔍 "{localFilters.search}"</span>
@@ -881,7 +889,6 @@ const ProgramClient = () => {
                                     </span>
                                 )}
                                 
-                                {/* STATUS FILTER BADGE */}
                                 {localFilters.status && (
                                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1 whitespace-nowrap">
                                         {getStatusLabel(localFilters.status)}
@@ -894,7 +901,6 @@ const ProgramClient = () => {
                                     </span>
                                 )}
                                 
-                                {/* BUSINESS TYPE FILTER BADGE */}
                                 {localFilters.businessType && localFilters.businessType !== 'all' && (
                                     <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1 whitespace-nowrap">
                                         <Briefcase className="w-3 h-3" />
@@ -908,7 +914,6 @@ const ProgramClient = () => {
                                     </span>
                                 )}
                                 
-                                {/* ALL BUSINESS TYPES BADGE */}
                                 {localFilters.businessType === 'all' && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1 whitespace-nowrap">
                                         <Briefcase className="w-3 h-3" />

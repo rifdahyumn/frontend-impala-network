@@ -138,7 +138,7 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
                         variant="default"
                         className="text-xs bg-amber-500 hover:bg-amber-400 text-white cursor-pointer"
                     >
-                        Detail
+                        Details
                     </Badge>
                 );
             
@@ -192,6 +192,38 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
                     return new Date(value).toLocaleDateString('id-ID');
                 }
                 return value;
+
+            case 'Program Name':
+                if (!value) return '-'
+                if (typeof value === 'string') {
+                    let cleaned = value.replace(/\\/g, '')
+
+                    cleaned = cleaned.replace(/^["']+|["']+$/g, '')
+                    
+                    if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
+                        cleaned = cleaned.slice(1, -1)
+                    }
+
+                    const items = cleaned.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
+                        .map(item => item.trim())
+                        .map(item => {
+                            item = item.replace(/^["']+|["']+$/g, '')
+                            if (item.startsWith('[') && item.endsWith(']')) {
+                                item = item.slice(1, -1)
+                            }
+
+                            item = item.replace(/^["']+|["']+$/g, '')
+                            return item
+                        })
+                        .filter(item => item.length > 0)
+                    return items.join(', ')
+                }
+
+                if (Array.isArray(value)) {
+                    return value.join(', ')
+                }
+
+                return value
 
             default:
                 return value || '-';
