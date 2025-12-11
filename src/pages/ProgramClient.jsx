@@ -2,7 +2,7 @@ import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Loader2, Plus, Users, RefreshCw, Briefcase, Filter, X, AlertCircle, CheckSquare } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'; // 🔴 TAMBAHKAN useRef
 import SearchBar from '../components/SearchFilter/SearchBar';
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from '../components/Pagination/Pagination';
@@ -26,6 +26,12 @@ const ProgramClient = () => {
     const [editingClient, setEditingClient] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
+    
+    // 🔴 TAMBAHKAN: State untuk visual feedback
+    const [highlightDetail, setHighlightDetail] = useState(false);
+    
+    // 🔴 TAMBAHKAN: Ref untuk auto-scroll ke detail section
+    const clientDetailRef = useRef(null);
     
     // 🔴 DIUBAH: State filter yang disederhanakan
     const [localFilters, setLocalFilters] = useState({
@@ -63,6 +69,34 @@ const ProgramClient = () => {
     // 🔴 DIUBAH: Get state dari hook
     const { showAllOnSearch } = useClients();
     const isInShowAllMode = isShowAllMode();
+
+    // 🔴 TAMBAHKAN: Fungsi untuk handle select member dengan auto-scroll
+    const handleSelectMember = useCallback((member) => {
+        // Set selected member
+        setSelectedMember(member);
+        
+        // Trigger highlight effect
+        setHighlightDetail(true);
+        
+        // Auto-scroll ke client detail section
+        setTimeout(() => {
+            if (clientDetailRef.current) {
+                clientDetailRef.current.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start',
+                    inline: 'nearest'
+                });
+                
+                // 🔴 OPTIONAL: Tambahkan smooth transition effect
+                clientDetailRef.current.style.transition = 'all 0.5s ease';
+                
+                // Remove highlight after 2 seconds
+                setTimeout(() => {
+                    setHighlightDetail(false);
+                }, 2000);
+            }
+        }, 150); // Delay sedikit untuk memastikan DOM sudah update
+    }, []);
 
     // 🔴 DIUBAH: Apply filters dengan state lokal
     const applyFilters = useCallback(async () => {
@@ -168,11 +202,17 @@ const ProgramClient = () => {
             businessType: '',
         });
         
+        // Reset selected member jika ada
+        setSelectedMember(null);
+        
         // Panggil hook untuk clear semua
         await hookClearFilters();
         
         // Fetch data tanpa filter
         await fetchClients(1, {}, false);
+        
+        // Scroll ke atas
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [hookClearFilters, fetchClients]);
 
     // 🔴 DIUBAH: Clear specific filter
@@ -252,6 +292,9 @@ const ProgramClient = () => {
             
             // Refresh data dengan filter yang sama
             await fetchClients(pagination.page, localFilters, showAllOnSearch);
+            
+            // Scroll ke atas untuk melihat client baru di tabel
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
             console.error('Error adding client', error);
             toast.error(error.message || 'Failed to add client');
@@ -272,25 +315,34 @@ const ProgramClient = () => {
             
             // Refresh data dengan filter yang sama
             await fetchClients(pagination.page, localFilters, showAllOnSearch);
+            
+            // Scroll ke atas setelah delete
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
             console.error('Error deleting client', error);
             toast.error(error.message || 'Failed to delete client');
         }
     }, [selectedMember, deleteClient, fetchClients, pagination.page, localFilters, showAllOnSearch]);
 
+    // 🔴 TAMBAHKAN: Fungsi untuk refresh dengan reset selected member
+    const handleRefreshWithReset = useCallback(() => {
+        setSelectedMember(null); // Reset selected member
+        refreshData();
+        clearAllFilters();
+    }, [refreshData, clearAllFilters]);
+
+    // 🔴 TAMBAHKAN: Effect untuk update selected member jika data berubah
     useEffect(() => {
         if (selectedMember && members.length > 0) {
             const currentSelected = members.find(member => member.id === selectedMember.id);
             if (currentSelected) {
                 setSelectedMember(currentSelected);
+            } else {
+                // Jika member tidak ditemukan (mungkin dihapus atau difilter)
+                setSelectedMember(null);
             }
         }
     }, [members, selectedMember?.id]);
-
-    const handleRefresh = useCallback(() => {
-        refreshData();
-        clearAllFilters();
-    }, [refreshData, clearAllFilters]);
 
     // 🔴 MODIFIKASI: Handle page change dengan fungsi dari hook
     const handlePageChange = useCallback((page) => {
@@ -405,7 +457,7 @@ const ProgramClient = () => {
                                     <Button 
                                         variant="outline" 
                                         size="sm" 
-                                        onClick={handleRefresh}
+                                        onClick={handleRefreshWithReset}
                                         className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
                                     >
                                         <RefreshCw className="h-4 w-4" />
@@ -721,9 +773,10 @@ const ProgramClient = () => {
                                         </div>
                                     )}
                                     
+                                    {/* 🔴 MODIFIKASI: Gunakan handleSelectMember baru untuk auto-scroll */}
                                     <MemberTable
                                         members={formattedMembers}
-                                        onSelectMember={setSelectedMember}
+                                        onSelectMember={handleSelectMember} // ← Ini yang berubah
                                         headers={tableConfig.headers}
                                         isLoading={loading}
                                     />
@@ -758,17 +811,26 @@ const ProgramClient = () => {
                     </CardContent>
                 </Card>
 
-                <ClientContent
-                    selectedMember={selectedMember}
-                    onOpenEditModal={handleOpenEditModal}
-                    onDelete={handleDeleteClient}
-                    detailTitle={tableConfig.detailTitle}
-                    onClientUpdated={() => fetchClients(pagination.page, localFilters, showAllOnSearch)}
-                    onClientDeleted={() => {
-                        fetchClients(pagination.page, localFilters, showAllOnSearch);
-                        setSelectedMember(null);
-                    }}
-                />
+                {/* 🔴 MODIFIKASI: Wrap ClientContent dengan div yang memiliki ref untuk auto-scroll */}
+                <div 
+                    ref={clientDetailRef}
+                    className={`
+                        transition-all duration-500 ease-in-out
+                        ${highlightDetail ? 'ring-2 ring-blue-500 rounded-xl p-1 -m-1 bg-blue-50/50' : ''}
+                    `}
+                >
+                    <ClientContent
+                        selectedMember={selectedMember}
+                        onOpenEditModal={handleOpenEditModal}
+                        onDelete={handleDeleteClient}
+                        detailTitle={tableConfig.detailTitle}
+                        onClientUpdated={() => fetchClients(pagination.page, localFilters, showAllOnSearch)}
+                        onClientDeleted={() => {
+                            fetchClients(pagination.page, localFilters, showAllOnSearch);
+                            setSelectedMember(null);
+                        }}
+                    />
+                </div>
 
                 <AddClient 
                     isAddUserModalOpen={isAddClientModalOpen || isEditModalOpen}
