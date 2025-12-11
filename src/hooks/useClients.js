@@ -39,35 +39,22 @@ export const useClients = (initialFilters = {}) => {
         businessType: filtersRef.current.businessType
     })
 
-    // 🔴 PERBAIKAN: fetchClients dengan request cancellation
     const fetchClients = useCallback(async (page = 1, customFilters = null, showAll = false, requestId = null) => {
         try {
-            // 🔴 Cancel request sebelumnya jika ada
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort()
             }
             
-            // Buat AbortController baru
             abortControllerRef.current = new AbortController()
             
-            // 🔴 Generate request ID
             const currentRequestId = requestId || Date.now()
             lastRequestIdRef.current = currentRequestId
             
             setLoading(true)
             setError(null)
 
-            // Gunakan customFilters jika ada, jika tidak gunakan ref
             const currentFilters = customFilters || filtersRef.current
 
-            console.log('📤 useClients - Fetching with filters:', {
-                page,
-                filters: currentFilters,
-                showAll,
-                requestId: currentRequestId
-            })
-
-            // Siapkan parameter untuk API
             const params = {
                 page,
                 limit: pagination.limit,
@@ -76,24 +63,8 @@ export const useClients = (initialFilters = {}) => {
                 ...(currentFilters.businessType && { businessType: currentFilters.businessType }),
                 ...(currentFilters.search && showAll && { showAllOnSearch: 'true' })
             }
-
-            console.log('📤 useClients - API params:', params)
-
-            // 🔴 PERBAIKAN: Gunakan AbortController
             const result = await clientService.fetchClients(params)
 
-            // 🔴 CEK: Jika ini bukan request terbaru, ignore
-            if (currentRequestId !== lastRequestIdRef.current) {
-                console.log('🔄 Ignoring stale request:', currentRequestId)
-                return
-            }
-
-            console.log('📥 useClients - API response:', {
-                dataCount: result.data?.length,
-                pagination: result.metadata?.pagination
-            })
-
-            // 🔴 PERBAIKAN: Update semua state dalam satu batch
             setMembers(result.data || [])
             
             const paginationData = result.metadata?.pagination || {}
@@ -107,7 +78,6 @@ export const useClients = (initialFilters = {}) => {
                 searchTerm: currentFilters.search || ''
             }))
 
-            // Update showAllOnSearch state
             if (currentFilters.search && paginationData.showingAllResults) {
                 setShowAllOnSearch(true)
             } else if (!currentFilters.search) {
@@ -115,13 +85,11 @@ export const useClients = (initialFilters = {}) => {
             }
 
         } catch (error) {
-            // 🔴 PERBAIKAN: AbortError adalah expected, jangan tampilkan error
             if (error.name === 'AbortError') {
-                console.log('🔄 Request cancelled')
                 return
             }
             
-            console.error('❌ Error fetching clients:', error)
+            console.error('Error fetching clients:', error)
             setError(error.message)
             toast.error('Failed to load clients')
         } finally {
@@ -129,15 +97,13 @@ export const useClients = (initialFilters = {}) => {
         }
     }, [pagination.limit])
 
-    // 🔴 PERBAIKAN: Debounce dengan waktu yang lebih optimal
     const debouncedFetchRef = useRef(
         debounce((page, customFilters, showAll) => {
             const requestId = Date.now()
             fetchClients(page, customFilters, showAll, requestId)
-        }, 500) // 🔴 PERBAIKAN: 500ms untuk filter changes
+        }, 500) 
     )
 
-    // 🔴 PERBAIKAN: Cleanup saat unmount
     useEffect(() => {
         return () => {
             // Cancel semua pending requests
@@ -259,31 +225,23 @@ export const useClients = (initialFilters = {}) => {
             setShowAllOnSearch(false)
         }
         
-        // Gunakan debounced fetch untuk search
         if (debouncedFetchRef.current) {
             debouncedFetchRef.current(1, searchFilters, showAll)
         }
     }, [])
 
-    // 🔴 PERBAIKAN: Fungsi refresh data
     const refreshData = useCallback(() => {
-        console.log('🔄 refreshData')
         fetchClients(pagination.page, filtersRef.current, showAllOnSearch)
     }, [fetchClients, pagination.page, showAllOnSearch])
 
-    // 🔴 PERBAIKAN: Fungsi handle page change
     const handlePageChange = useCallback((newPage) => {
-        console.log('📄 handlePageChange:', newPage)
         fetchClients(newPage, filtersRef.current, showAllOnSearch)
     }, [fetchClients, showAllOnSearch])
 
-    // 🔴 PERBAIKAN: Effect untuk fetch data awal - HANYA SEKALI
     useEffect(() => {
-        console.log('🚀 Initial mount - fetching clients')
         fetchClients(1, filtersRef.current, false)
-    }, []) // 🔴 HANYA SEKALI
+    }, []) 
 
-    // 🔴 PERBAIKAN: Effect untuk fetch stats - HANYA SEKALI
     const fetchClientStats = useCallback(async () => {
         try {
             setStatsLoading(true)
@@ -294,7 +252,6 @@ export const useClients = (initialFilters = {}) => {
             }
         } catch (error) {
             console.error('Error fetching client stats:', error)
-            // 🔴 PERBAIKAN: Tidak perlu toast untuk stats, cukup set default
             setClientStats({
                 title: "Total Client",
                 value: "0",
@@ -312,20 +269,12 @@ export const useClients = (initialFilters = {}) => {
     }, [])
 
     useEffect(() => {
-        console.log('📊 Initial mount - fetching client stats')
         fetchClientStats()
     }, [fetchClientStats])
 
-    // 🔴 PERBAIKAN: Export data
     const exportClients = useCallback(async (format = 'csv') => {
         try {
             setLoading(true)
-            
-            console.log('📤 Exporting clients with filters:', {
-                filters: filtersRef.current,
-                showAllOnSearch,
-                format
-            })
 
             let dataToExport
             

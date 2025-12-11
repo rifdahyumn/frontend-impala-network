@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -8,8 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import clientService from "../../services/clientService";
 import { Badge } from "../ui/badge";
-import { Alert, AlertDescription } from "../ui/alert";
-import { Switch } from "../ui/switch";
+import { locationService } from "../../services/locationService";
 
 const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, editData = null, onEditClient = null }) => {
     const isEditMode = !!editData
@@ -26,8 +26,14 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         business: '',
         total_employee: '',
         address: '',
-        city: '',
-        country: '',
+        province_id: '',  
+        province_name: '',   
+        regency_id: '',    
+        regency_name: '',
+        district_id: '',   
+        district_name: '', 
+        village_id: '',  
+        village_name: '', 
         notes: '',
         status: 'Active'
     });
@@ -42,6 +48,16 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
     const [searchingClient, setSearchingClient] = useState(false)
     const [clientSearchResults, setClientSearchResults] = useState([])
     const [showSearchResults, setShowSearchResults] = useState(false)
+    const [provinces, setProvinces] = useState([])
+    const [regencies, setRegencies] = useState([])
+    const [districts, setDistricts] = useState([])
+    const [villages, setVillages] = useState([])
+    const [loadingLocation, setLoadingLocation] = useState({
+        provinces: false,
+        regencies: false,
+        districts: false,
+        villages: false
+    })
 
     const formSections = [
         {
@@ -90,7 +106,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                     type: 'text',
                     required: true,
                     placeholder: 'Enter company name',
-                    disabled: isEditMode // Hanya disabled di edit mode
+                    disabled: isEditMode
                 },
                 {
                     name: 'business',
@@ -152,7 +168,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                     name: 'program_name',
                     label: 'Program Name',
                     type: 'text',
-                    required: !clientExists, // Tidak required jika client sudah ada
+                    required: !clientExists,
                     placeholder: clientExists ? 'Add new program for existing client' : 'Enter Program Name'
                 },
             ]
@@ -168,18 +184,40 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                     placeholder: 'Enter address'
                 },
                 {
-                    name: 'city',
-                    label: 'City',
-                    type: 'text',
+                    name: 'province_id', // PERBAIKAN: ganti 'province' jadi 'province_id'
+                    label: 'Province',
+                    type: 'select',
                     required: true,
-                    placeholder: 'Enter city'
+                    placeholder: loadingLocation.provinces ? 'Loading Province...' : 'Select Province',
+                    options: provinces.map(p => ({ value: p.value, label: p.label })), // Pastikan format benar
+                    disabled: loadingLocation.provinces
                 },
                 {
-                    name: 'country',
-                    label: 'Country',
-                    type: 'text',
+                    name: 'regency_id', // PERBAIKAN: ganti 'regency' jadi 'regency_id'
+                    label: 'City / Regency',
+                    type: 'select',
                     required: true,
-                    placeholder: 'Enter country'
+                    options: regencies.map(r => ({ value: r.value, label: r.label })), // Pastikan format benar
+                    placeholder: loadingLocation.regencies ? 'Loading regency...' : 'Select Regency',
+                    disabled: loadingLocation.regencies || !formData.province_id
+                },
+                {
+                    name: 'district_id', // PERBAIKAN: ganti 'district' jadi 'district_id'
+                    label: 'District',
+                    type: 'select',
+                    required: true,
+                    options: districts.map(d => ({ value: d.value, label: d.label })), // Pastikan format benar
+                    placeholder: loadingLocation.districts ? 'Loading district...' : 'Select District',
+                    disabled: loadingLocation.districts || !formData.regency_id
+                },
+                {
+                    name: 'village_id', // PERBAIKAN: ganti 'village' jadi 'village_id'
+                    label: 'Village',
+                    type: 'select',
+                    required: true,
+                    options: villages.map(v => ({ value: v.value, label: v.label })), // Pastikan format benar
+                    placeholder: loadingLocation.villages ? 'Loading village...' : 'Select Village',
+                    disabled: loadingLocation.villages || !formData.district_id
                 },
             ]
         },
@@ -207,14 +245,10 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         setSearchingClient(true)
         try {
             const response = await clientService.searchClient(name.trim(), email?.trim())
-            console.log('Search results:', response?.data)
 
             if (response && response.data && response.data.length > 0) {
                 setClientSearchResults(response.data)
                 setShowSearchResults(true)
-                
-                // Hapus auto-fill otomatis untuk hasil tunggal
-                // Biarkan user memilih dari dropdown
             } else {
                 setClientSearchResults([])
                 setShowSearchResults(false)
@@ -228,9 +262,8 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         }
     }
 
-    // Fungsi untuk auto-fill data client (HANYA untuk add mode)
     const autoFillClientData = (client) => {
-        if (isEditMode) return; // Jangan auto-fill jika di edit mode
+        if (isEditMode) return; 
         
         setClientExists(true)
         setExistingClientId(client.id)
@@ -238,9 +271,8 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         setShowSearchResults(false)
         setClientSearchResults([])
 
-        console.log('Client data to auto-fill:', client)
-        console.log('total_employee dari client:', client.total_employee)
-
+        const locationData = client.location_data || {};
+        
         setFormData(prev => ({
             ...prev,
             full_name: client.full_name || '',
@@ -251,9 +283,15 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
             business: client.business || '',
             total_employee: client.total_employee || '',
             position: client.position || '',
-            address: client.address || '',
-            city: client.city || '',
-            country: client.country || '',
+            address: client.address || locationData.address || '',
+            province_id: locationData.province_id || '',
+            province_name: locationData.province_name || '',
+            regency_id: locationData.regency_id || '',
+            regency_name: locationData.regency_name || '',
+            district_id: locationData.district_id || '',
+            district_name: locationData.district_name || '',
+            village_id: locationData.village_id || '',
+            village_name: locationData.village_name || '',
             status: client.status || 'Active',
             existing_programs: Array.isArray(client.program_name)
                 ? client.program_name
@@ -261,40 +299,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         }))
 
         toast.success(`Existing client found: ${client.full_name}. All fields auto-filled.`)
-    }
-
-    // Fungsi untuk membatalkan auto-fill
-    const handleCancelAutoFill = () => {
-        if (isEditMode) return;
-        
-        setClientExists(false)
-        setExistingClientId(null)
-        setShowClientInfo(false)
-        setShowSearchResults(false)
-        setClientSearchResults([])
-        
-        // Reset semua field kecuali nama yang sudah diketik
-        const currentName = formData.full_name;
-        setFormData(prev => ({
-            ...prev,
-            email: '',
-            phone: '',
-            company: '',
-            program_name: '',
-            existing_programs: [],
-            join_date: '',
-            gender: '',
-            position: '',
-            business: '',
-            total_employee: '',
-            address: '',
-            city: '',
-            country: '',
-            notes: '',
-            status: 'Active'
-        }))
-        
-        toast.success('Add new client mode activated');
     }
 
     const handleNameChange = (e) => {
@@ -323,7 +327,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                     checkExistingClient(value, formData.email)
                 }, 500)
             } else {
-                // Jika kurang dari 3 karakter, reset search state
                 setClientSearchResults([])
                 setShowSearchResults(false)
                 setClientExists(false)
@@ -333,13 +336,11 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         }
     }
 
-    // Fungsi untuk memilih client dari hasil search (HANYA untuk add mode)
     const handleSelectClient = (client) => {
-        if (isEditMode) return; // Jangan handle jika di edit mode
+        if (isEditMode) return; 
         autoFillClientData(client)
     }
 
-    // Fungsi untuk menutup dropdown ketika klik di luar
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (showSearchResults && !e.target.closest('.search-results-container') && !e.target.closest('input[name="full_name"]')) {
@@ -362,7 +363,154 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
     }, [])
 
     useEffect(() => {
+        const loadProvinces = async () => {
+            if (!isAddUserModalOpen) return;
+            
+            setLoadingLocation(prev => ({ ...prev, provinces: true }))
+
+            try {
+                const provincesData = await locationService.getProvinces()
+                setProvinces(provincesData || [])
+            } catch (error) {
+                console.error('Error fetching provinces:', error)
+                toast.error('Gagal memuat data provinsi')
+            } finally {
+                setLoadingLocation(prev => ({ ...prev, provinces: false }))
+            }
+        }
+        
+        if (isAddUserModalOpen) {
+            loadProvinces()
+        }
+    }, [isAddUserModalOpen])
+
+    // Load regencies ketika province dipilih
+    useEffect(() => {
+        const loadRegencies = async () => {
+            if (!formData.province_id) {
+                setRegencies([])
+                return
+            }
+
+            setLoadingLocation(prev => ({ ...prev, regencies: true }))
+
+            try {
+                const regenciesData = await locationService.getRegencies(formData.province_id)
+                setRegencies(regenciesData || [])
+                
+                // Reset dependent fields
+                setFormData(prev => ({
+                    ...prev,
+                    regency_id: '',
+                    district_id: '',
+                    village_id: '',
+                    regency_name: '',
+                    district_name: '',
+                    village_name: ''
+                }))
+                setDistricts([])
+                setVillages([])
+            } catch (error) {
+                console.error(`Error fetching regencies for ${formData.province_id}:`, error)
+                toast.error('Gagal memuat data kabupaten/kota')
+                setRegencies([])
+            } finally {
+                setLoadingLocation(prev => ({ ...prev, regencies: false }))
+            }
+        }
+
+        loadRegencies()
+    }, [formData.province_id])
+
+    // Load districts ketika regency dipilih
+    useEffect(() => {
+        const loadDistricts = async () => {
+            if (!formData.regency_id) {
+                setDistricts([])
+                return
+            }
+
+            setLoadingLocation(prev => ({ ...prev, districts: true }))
+
+            try {
+                console.log(`Loading districts for regency ${formData.regency_id}...`)
+                const districtsData = await locationService.getDistricts(formData.regency_id)
+                console.log('Districts loaded:', districtsData)
+                setDistricts(districtsData || [])
+                
+                // Reset dependent fields
+                setFormData(prev => ({
+                    ...prev,
+                    district_id: '',
+                    village_id: '',
+                    district_name: '',
+                    village_name: ''
+                }))
+                setVillages([])
+            } catch (error) {
+                console.error(`Error fetching districts for ${formData.regency_id}:`, error)
+                toast.error('Gagal memuat data kecamatan')
+                setDistricts([])
+            } finally {
+                setLoadingLocation(prev => ({ ...prev, districts: false }))
+            }
+        }
+
+        loadDistricts()
+    }, [formData.regency_id])
+
+    // Load villages ketika district dipilih
+    useEffect(() => {
+        const loadVillages = async () => {
+            if (!formData.district_id) {
+                setVillages([])
+                return
+            }
+
+            setLoadingLocation(prev => ({ ...prev, villages: true }))
+
+            try {
+                console.log(`Loading villages for district ${formData.district_id}...`)
+                const villagesData = await locationService.getVillages(formData.district_id)
+                console.log('Villages loaded:', villagesData)
+                setVillages(villagesData || [])
+                
+                // Reset dependent field
+                setFormData(prev => ({
+                    ...prev,
+                    village_id: '',
+                    village_name: ''
+                }))
+            } catch (error) {
+                console.error(`Error fetching villages for ${formData.district_id}:`, error)
+                toast.error('Gagal memuat data desa/kelurahan')
+                setVillages([])
+            } finally {
+                setLoadingLocation(prev => ({ ...prev, villages: false }))
+            }
+        }
+
+        loadVillages()
+    }, [formData.district_id])
+
+    // Set edit data
+    useEffect(() => {
         if (isEditMode && editData) {
+            console.log('Setting edit data:', editData)
+            
+            // Extract location data dari editData
+            const locationData = {
+                address: editData.address || '',
+                province_id: editData.province_id || '',
+                province_name: editData.province_name || '',
+                regency_id: editData.regency_id || '',
+                regency_name: editData.regency_name || '',
+                district_id: editData.district_id || '',
+                district_name: editData.district_name || '',
+                village_id: editData.village_id || '',
+                village_name: editData.village_name || ''
+            }
+            
             setFormData({
                 full_name: editData.full_name || '',
                 email: editData.email || '',
@@ -377,9 +525,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                 position: editData.position || '',
                 business: editData.business || '',
                 total_employee: editData.total_employee || '',
-                address: editData.address || '',
-                city: editData.city || '',
-                country: editData.country || '',
+                ...locationData,
                 notes: editData.notes || '',
                 status: editData.status || 'Active'
             })
@@ -387,13 +533,15 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
             setExistingClientId(editData.id)
             setShowClientInfo(true)
             setUpdateAllFields(true)
-        } else {
+        } else if (isAddUserModalOpen && !isEditMode) {
+            // Reset form untuk mode tambah baru
             resetForm()
         }
         setErrors({})
     }, [isEditMode, editData, isAddUserModalOpen])
 
     const resetForm = () => {
+        console.log('Resetting form...')
         setFormData({
             full_name: '',
             email: '',
@@ -407,8 +555,14 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
             business: '',
             total_employee: '',
             address: '',
-            city: '',
-            country: '',
+            province_id: '',
+            province_name: '',
+            regency_id: '',
+            regency_name: '',
+            district_id: '',
+            district_name: '',
+            village_id: '',
+            village_name: '',
             notes: '',
             status: 'Active',
         })
@@ -418,6 +572,11 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         setUpdateAllFields(false)
         setClientSearchResults([])
         setShowSearchResults(false)
+        setProvinces([])
+        setRegencies([])
+        setDistricts([])
+        setVillages([])
+        setErrors({})
     }
 
     const validateForm = () => {
@@ -425,12 +584,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
 
         formSections.forEach(section => {
             section.fields.forEach(field => {
-                if (!field.required) {
-                    return
-                }
-
-                // Skip validation untuk field yang disabled
-                if (field.disabled) {
+                if (!field.required || field.disabled) {
                     return
                 }
 
@@ -449,7 +603,22 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
             newErrors.phone = 'Phone number is too short'
         }
 
+        // Validasi location
+        if (!formData.province_id) {
+            newErrors.province_id = 'Province is required'
+        }
+        if (!formData.regency_id) {
+            newErrors.regency_id = 'City/Regency is required'
+        }
+        if (!formData.district_id) {
+            newErrors.district_id = 'District is required'
+        }
+        if (!formData.village_id) {
+            newErrors.village_id = 'Village is required'
+        }
+
         setErrors(newErrors)
+        console.log('Validation errors:', newErrors)
         return Object.keys(newErrors).length === 0
     }
 
@@ -460,7 +629,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
             .flatMap(section => section.fields)
             .find(field => field.name === name);
             
-        // Skip jika field disabled
         if (fieldConfig?.disabled) {
             return;
         }
@@ -484,19 +652,62 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
     };
 
     const handleSelectChange = (name, value) => {
+        console.log(`Select change: ${name} = ${value}`)
+        
         const fieldConfig = formSections
             .flatMap(section => section.fields)
             .find(field => field.name === name);
             
-        // Skip jika field disabled
         if (fieldConfig?.disabled) {
             return;
         }
 
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        if (name === 'province_id') {
+            const selectedProvince = provinces.find(p => p.value === value)
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                province_name: selectedProvince?.label || '',
+                regency_id: '', // Reset dependent fields
+                district_id: '',
+                village_id: '',
+                regency_name: '',
+                district_name: '',
+                village_name: ''
+            }))
+        } else if (name === 'regency_id') {
+            const selectedRegency = regencies.find(r => r.value === value);
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                regency_name: selectedRegency?.label || '',
+                district_id: '', // Reset dependent fields
+                village_id: '',
+                district_name: '',
+                village_name: ''
+            }));
+        } else if (name === 'district_id') {
+            const selectedDistrict = districts.find(d => d.value === value);
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                district_name: selectedDistrict?.label || '',
+                village_id: '', // Reset dependent field
+                village_name: ''
+            }));
+        } else if (name === 'village_id') {
+            const selectedVillage = villages.find(v => v.value === value);
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                village_name: selectedVillage?.label || ''
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
 
         if (errors[name]) {
             setErrors(prev => ({
@@ -508,6 +719,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        console.log('Submitting form data:', formData)
 
         if (!validateForm()) {
             toast.error('Please fix the errors in the form')
@@ -518,6 +730,20 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
 
         try {
             let clientData = { ...formData }
+
+            const locationData = {
+                address: formData.address,
+                province_id: formData.province_id,
+                province_name: formData.province_name,
+                regency_id: formData.regency_id,
+                regency_name: formData.regency_name,
+                district_id: formData.district_id,
+                district_name: formData.district_name,
+                village_id: formData.village_id,
+                village_name: formData.village_name,
+            };
+
+            console.log('Location data:', locationData)
 
             let programData = []
             if (clientExists && existingClientId) {
@@ -531,17 +757,15 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                 }
 
                 if (isEditMode && !updateAllFields) {
-                    // EDIT MODE: Hanya update program jika tidak update all fields
                     clientData = {
                         program_name: programData,
-                        updated_at: new Date().toISOString()
+                        updated_at: new Date().toISOString(),
+                        ...locationData
                     }
                 } else {
-                    // ADD MODE atau EDIT dengan update all: update semua field yang diubah
                     clientData.program_name = programData
                     clientData.updated_at = new Date().toISOString()
                     
-                    // Jika di add mode, update semua data client
                     if (!isEditMode) {
                         clientData = {
                             ...clientData,
@@ -553,9 +777,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                             business: formData.business,
                             total_employee: formData.total_employee,
                             position: formData.position,
-                            address: formData.address,
-                            city: formData.city,
-                            country: formData.country,
+                            ...locationData,
                             notes: formData.notes || null,
                             status: formData.status
                         }
@@ -568,6 +790,8 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
 
             delete clientData.existing_programs
             clientData.join_date = clientData.join_date || new Date().toISOString().split('T')[0]
+
+            console.log('Final client data to submit:', clientData)
 
             if (clientExists && existingClientId) {
                 if (onEditClient) {
@@ -591,7 +815,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
 
             handleCloseModal()
         } catch (error) {
-            console.error(`Error ${clientExists ? 'updating' : 'adding'} client: `, error)
+            console.error(`Error ${clientExists ? 'updating' : 'adding'} client:`, error)
             toast.error(error.message || `Failed to ${clientExists ? 'update' : 'add'} client`)
         } finally {
             setLoading(false)
@@ -619,17 +843,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                         <Label htmlFor={field.name}>
                             Programs
                         </Label>
-                        <div className="flex flex-wrap gap-2">
-                            {formData.existing_programs && formData.existing_programs.length > 0 ? (
-                                formData.existing_programs.map((program, idx) => (
-                                    <Badge key={idx} variant="secondary" className="px-3 py-1">
-                                        {program}
-                                    </Badge>
-                                ))
-                            ) : (
-                                <p className="text-sm text-gray-500">No programs yet</p>
-                            )}
-                        </div>
+                        
                         <p className="text-xs text-gray-500 mt-1">
                             To add new programs, please use the "Add Client" feature
                         </p>
@@ -674,34 +888,60 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         }
 
         if (field.type === 'select') {
-            return (
-                <div key={field.name} className="space-y-2">
-                    <Label htmlFor={field.name}>
-                        {field.label}
-                        {field.required && <span className="text-red-500 ml-1">*</span>}
-                    </Label>
-                    <Select
-                        value={value}
-                        onValueChange={(value) => handleSelectChange(field.name, value)}
-                        required={field.required}
-                        disabled={field.disabled}
-                    >
-                        <SelectTrigger className={error ? 'border-red-500' : ''} >
-                            <SelectValue placeholder={field.placeholder} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {field.options.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+        // PERBAIKAN: Handle location select fields
+        const options = field.options || [];
+        const isDisabled = field.disabled || (field.name.includes('_id') && 
+            ((field.name === 'regency_id' && !formData.province_id) ||
+             (field.name === 'district_id' && !formData.regency_id) ||
+             (field.name === 'village_id' && !formData.district_id)));
+        
+        return (
+            <div key={field.name} className="space-y-2">
+                <Label htmlFor={field.name}>
+                    {field.label}
+                    {field.required && <span className="text-red-500 ml-1">*</span>}
+                </Label>
+                <Select
+                    value={value}
+                    onValueChange={(value) => handleSelectChange(field.name, value)}
+                    required={field.required}
+                    disabled={isDisabled}
+                >
+                    <SelectTrigger className={error ? 'border-red-500' : ''} >
+                        <SelectValue placeholder={field.placeholder} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {/* PERBAIKAN: Jangan render SelectItem dengan value kosong */}
+                        {options.length > 0 ? (
+                            options
+                                .filter(option => option.value && option.value.toString().trim() !== '')
+                                .map((option) => (
+                                    <SelectItem 
+                                        key={option.value} 
+                                        value={option.value.toString()}
+                                    >
+                                        {option.label}
+                                    </SelectItem>
+                                ))
+                        ) : (
+                            <SelectItem value="no-options" disabled>
+                                {field.placeholder || 'No options available'}
+                            </SelectItem>
+                        )}
+                    </SelectContent>
+                </Select>
 
-                    {error && <p className="text-red-500 text-sm">{error}</p>}
-                </div>
-            );
-        }
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+                
+                {/* Debug info untuk location fields */}
+                {process.env.NODE_ENV === 'development' && field.name.includes('_id') && (
+                    <p className="text-xs text-gray-500">
+                        {field.name}: {value} | Options: {options.length}
+                    </p>
+                )}
+            </div>
+        );
+    }
 
         if (field.type === 'textarea') {
             return (
@@ -727,9 +967,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         }
 
         if (field.name === 'full_name') {
-            // Tentukan apakah field full_name disabled
-            // Di add mode: selalu enabled
-            // Di edit mode: disabled jika tidak updateAllFields
             const isDisabled = isEditMode && !updateAllFields;
             
             return (
@@ -774,9 +1011,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
 
                     {!isEditMode && showSearchResults && clientSearchResults.length > 0 && (
                         <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto search-results-container">
-                            <div className="px-4 py-2 bg-gray-50 border-b text-sm font-medium text-gray-700">
-                                Found {clientSearchResults.length} client(s)
-                            </div>
                             {clientSearchResults.map((client) => (
                                 <div
                                     key={client.id}
@@ -785,9 +1019,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="font-medium text-gray-900">{client.full_name}</div>
-                                        <Badge variant="outline" className="text-xs">
-                                            Select
-                                        </Badge>
                                     </div>
                                     <div className="text-sm text-gray-500 mt-1">{client.email}</div>
                                     <div className="text-xs text-gray-400 mt-1 flex flex-wrap gap-2">
@@ -845,30 +1076,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                     </DialogDescription>
                 </DialogHeader>
 
-                {/* Alert untuk add mode ketika client ditemukan */}
-                {!isEditMode && showClientInfo && clientExists && (
-                    <Alert className="bg-blue-50 border-blue-200">
-                        <User className="h-4 w-4 text-blue-600" />
-                        <AlertDescription className="text-blue-700 flex justify-between items-center">
-                            <div>
-                                <span className="font-semibold">Existing client found!</span> 
-                                <p className="text-sm mt-1">
-                                    All fields are auto-filled. You can modify any information and add a new program.
-                                </p>
-                            </div>
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm"
-                                onClick={handleCancelAutoFill}
-                                className="ml-4"
-                            >
-                                Cancel
-                            </Button>
-                        </AlertDescription>
-                    </Alert>
-                )}               
-
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {formSections.map((section, sectionIndex) => (
                         <div key={section.title} className="space-y-4">
@@ -888,6 +1095,23 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                             )}
                         </div>
                     ))}
+
+                    {/* Debug info (hapus di production) */}
+                    {process.env.NODE_ENV === 'development' && (
+                        <div className="p-4 bg-gray-100 rounded-md">
+                            <h4 className="font-semibold mb-2">Debug Info:</h4>
+                            <pre className="text-xs overflow-auto">
+                                Provinces: {provinces.length}<br/>
+                                Regencies: {regencies.length}<br/>
+                                Districts: {districts.length}<br/>
+                                Villages: {villages.length}<br/>
+                                Province ID: {formData.province_id}<br/>
+                                Regency ID: {formData.regency_id}<br/>
+                                District ID: {formData.district_id}<br/>
+                                Village ID: {formData.village_id}
+                            </pre>
+                        </div>
+                    )}
 
                     <div className="flex justify-end gap-3 pt-4 border-t">
                         <Button
