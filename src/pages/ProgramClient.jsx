@@ -387,7 +387,6 @@ const ProgramClient = () => {
                             </div>
                         )}
 
-                        {/* SEARCH & FILTER SECTION */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2 items-center flex-wrap'>
                                 <SearchBar 
@@ -422,7 +421,6 @@ const ProgramClient = () => {
                                     </div>
                                 )}
                                 
-                                {/* FILTER DROPDOWN */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button 
@@ -564,12 +562,10 @@ const ProgramClient = () => {
                             </div>
                         )}
                         
-                        {/* ACTIVE FILTERS BADGES */}
                         {getTotalActiveCriteria() > 0 && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
                                 <span className="text-sm text-gray-600">Active filters:</span>
                                 
-                                {/* SEARCH BADGE */}
                                 {localFilters.search && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <span>🔍 "{localFilters.search}"</span>
@@ -582,7 +578,6 @@ const ProgramClient = () => {
                                     </span>
                                 )}
                                 
-                                {/* STATUS FILTER BADGE */}
                                 {localFilters.status && (
                                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         {getStatusLabel(localFilters.status)}
@@ -595,7 +590,6 @@ const ProgramClient = () => {
                                     </span>
                                 )}
                                 
-                                {/* BUSINESS TYPE FILTER BADGE */}
                                 {localFilters.businessType && localFilters.businessType !== 'all' && (
                                     <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Briefcase className="w-3 h-3" />
@@ -609,7 +603,6 @@ const ProgramClient = () => {
                                     </span>
                                 )}
                                 
-                                {/* ALL BUSINESS TYPES BADGE */}
                                 {localFilters.businessType === 'all' && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Briefcase className="w-3 h-3" />
