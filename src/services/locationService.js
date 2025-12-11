@@ -1,26 +1,20 @@
 import axios from 'axios'
 
-// API alternatif yang GRATIS dan SUPPORT CORS
 const API_BASE = 'https://ibnux.github.io/data-indonesia'
 
 export const locationService = {
     getProvinces: async () => {
         try {
-            console.log('Fetching provinces from ibnux API...')
             const response = await axios.get(`${API_BASE}/provinsi.json`, {
                 timeout: 10000
             })
             
-            console.log('API Response received:', response.data)
-            
-            // Format response ibnux: [{"id":"11","nama":"Aceh"}, ...]
             if (response.data && Array.isArray(response.data)) {
                 const formattedData = response.data.map(prov => ({
                     value: prov.id,
-                    label: prov.nama // Perhatikan: 'nama' bukan 'name'
+                    label: prov.nama
                 }))
                 
-                console.log('Formatted provinces:', formattedData)
                 return formattedData
             } else {
                 console.error('Invalid API response:', response.data)
@@ -28,25 +22,22 @@ export const locationService = {
             }
         } catch (error) {
             console.error('Error fetching provinces:', error.message)
-            console.log('Using fallback provinces data')
             return getFallbackProvinces()
         }
     },
 
     getRegencies: async (provinceId) => {
         if (!provinceId) {
-            console.log('No provinceId provided for regencies')
             return []
         }
         
         try {
-            console.log(`Fetching regencies for province ${provinceId}...`)
             const response = await axios.get(`${API_BASE}/kabupaten/${provinceId}.json`)
             
             if (response.data && Array.isArray(response.data)) {
                 return response.data.map(regency => ({
                     value: regency.id,
-                    label: regency.nama // 'nama' bukan 'name'
+                    label: regency.nama
                 }))
             }
             return []
@@ -58,18 +49,16 @@ export const locationService = {
 
     getDistricts: async (regencyId) => {
         if (!regencyId) {
-            console.log('No regencyId provided for districts')
             return []
         }
         
         try {
-            console.log(`Fetching districts for regency ${regencyId}...`)
             const response = await axios.get(`${API_BASE}/kecamatan/${regencyId}.json`)
             
             if (response.data && Array.isArray(response.data)) {
                 return response.data.map(district => ({
                     value: district.id,
-                    label: district.nama // 'nama' bukan 'name'
+                    label: district.nama 
                 }))
             }
             return []
@@ -81,12 +70,10 @@ export const locationService = {
 
     getVillages: async (districtId) => {
         if (!districtId) {
-            console.log('No districtId provided for villages')
             return []
         }
         
         try {
-            console.log(`Fetching villages for district ${districtId}...`)
             const response = await axios.get(`${API_BASE}/kelurahan/${districtId}.json`)
             
             if (response.data && Array.isArray(response.data)) {
@@ -130,9 +117,7 @@ export const locationService = {
     }
 }
 
-// FALLBACK DATA - PASTI ADA DATA MESKI API ERROR
 const getFallbackProvinces = () => {
-    console.log('Using fallback provinces data')
     return [
         { value: '11', label: 'ACEH' },
         { value: '12', label: 'SUMATERA UTARA' },

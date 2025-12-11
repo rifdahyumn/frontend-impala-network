@@ -48,26 +48,26 @@ const QuarterSummaryCard = ({ quarter, data }) => {
         if (!amount) return 'Rp 0';
         
         if (amount >= 1000000000) {
-            return `Rp ${(amount / 1000000000).toFixed(1)}M`;
+            return `IDR ${(amount / 1000000000).toFixed(1)}B`;
         }
         if (amount >= 1000000) {
-            return `Rp ${(amount / 1000000).toFixed(1)}Jt`;
+            return `IDR ${(amount / 1000000).toFixed(1)}M`;
         }
         if (amount >= 1000) {
-            return `Rp ${(amount / 1000).toFixed(1)}Rb`;
+            return `IDR ${(amount / 1000).toFixed(1)}K`;
         }
         
-        return `Rp ${amount.toLocaleString('id-ID')}`;
+        return `IDR ${amount.toLocaleString('id-ID')}`;
     };
 
     const formatNumber = (num) => {
         if (!num) return '0';
         
         if (num >= 1000000) {
-            return `${(num / 1000000).toFixed(1)}Jt`;
+            return `${(num / 1000000).toFixed(1)}M`;
         }
         if (num >= 1000) {
-            return `${(num / 1000).toFixed(1)}Rb`;
+            return `${(num / 1000).toFixed(1)}K`;
         }
         
         return num.toLocaleString('id-ID');

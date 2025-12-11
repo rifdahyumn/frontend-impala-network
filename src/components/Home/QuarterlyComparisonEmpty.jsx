@@ -1,4 +1,3 @@
-// src/components/Home/QuarterlyComparisonEmpty.jsx (Versi Sederhana)
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { AlertTriangle, Database } from 'lucide-react';
 

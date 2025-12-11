@@ -202,12 +202,10 @@ const ImpalaManagement = () => {
                         headers.forEach((header, index) => {
                             participant[header] = values[index] || '';
                         });
-                        
-                        // Skip contoh data
+
                         if (participant.full_name?.includes('Contoh:')) continue;
                         if (participant.email?.includes('Contoh:')) continue;
-                        
-                        // Validasi data minimal
+
                         if (participant.full_name && participant.email) {
                             importedParticipants.push(participant);
                         }
@@ -217,12 +215,7 @@ const ImpalaManagement = () => {
                         toast.error('Tidak ada data valid yang ditemukan dalam file');
                         return;
                     }
-                    
-                    // Simulasi import data (ganti dengan API call sebenarnya)
-                    console.log('Data yang akan diimport:', importedParticipants);
-                    
-                    // Contoh: Simpan ke localStorage untuk demo
-                    // Dalam implementasi real, kirim ke API
+
                     const existingParticipants = JSON.parse(localStorage.getItem('impala_participants') || '[]');
                     const newParticipants = [
                         ...existingParticipants,
@@ -263,7 +256,6 @@ const ImpalaManagement = () => {
         }
     }, [importFile, refreshData]);
 
-    // 🔴 TAMBAH: Fungsi untuk open import modal
     const handleOpenImportModal = useCallback(() => {
         setImportFile(null);
         if (fileInputRef.current) {
@@ -272,28 +264,23 @@ const ImpalaManagement = () => {
         setIsImportModalOpen(true);
     }, []);
 
-    // GENDER OPTIONS
     const genderOptions = [
-        { value: 'Laki-laki', label: '👨 Laki-laki' },
-        { value: 'Perempuan', label: '👩 Perempuan' },
+        { value: 'Laki-laki', label: 'Laki-laki' },
+        { value: 'Perempuan', label: 'Perempuan' },
     ];
 
-    // 🔴 DIUBAH: Apply filters dengan state lokal
     const applyFilters = useCallback(async () => {
         await updateFiltersAndFetch(localFilters, showAllOnSearch);
     }, [localFilters, showAllOnSearch, updateFiltersAndFetch]);
 
-    // 🔴 DIUBAH: Apply search dengan state lokal
     const applySearch = useCallback(async () => {
         await searchParticipants(localFilters.search, showAllOnSearch);
     }, [localFilters.search, showAllOnSearch, searchParticipants]);
 
-    // 🔴 DIUBAH: Handle search dengan debounce
     const handleSearch = useCallback((term) => {
         setLocalFilters(prev => ({ ...prev, search: term }));
     }, []);
 
-    // 🔴 DIUBAH: Apply search ketika search term berubah (dengan debounce effect)
     useEffect(() => {
         const timer = setTimeout(() => {
             if (localFilters.search !== '') {
@@ -393,7 +380,6 @@ const ImpalaManagement = () => {
         }
     }, [localFilters, exportParticipants]);
 
-    // EKSTRAK SEMUA CATEGORY UNIK DARI DATA PARTICIPANT
     useEffect(() => {
         if (participant.length > 0) {
             const allCategories = participant
@@ -433,11 +419,9 @@ const ImpalaManagement = () => {
     const handleDelete = () => {
         if (selectedParticipant) {
             if (window.confirm(`Are you sure you want to delete ${selectedParticipant.full_name}?`)) {
-                console.log('Delete participant:', selectedParticipant);
                 setSelectedParticipant(null);
                 toast.success('Participant deleted successfully');
-                
-                // Scroll ke atas setelah delete
+
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
@@ -449,7 +433,6 @@ const ImpalaManagement = () => {
             if (currentSelected) {
                 setSelectedParticipant(currentSelected)
             } else {
-                // Jika participant tidak ditemukan (mungkin dihapus atau difilter)
                 setSelectedParticipant(null);
             }
         }
@@ -460,7 +443,6 @@ const ImpalaManagement = () => {
         clearAllFilters();
     }, [refreshData, clearAllFilters]);
 
-    // 🔴 DIUBAH: Handle page change
     const handlePageChangeModified = useCallback((page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         handlePageChange(page);

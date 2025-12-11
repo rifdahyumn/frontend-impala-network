@@ -173,7 +173,6 @@ const Program = () => {
         setImportFile(file);
     }, []);
 
-    // 🔴 TAMBAH: Fungsi untuk import CSV
     const handleImportCSV = useCallback(async () => {
         if (!importFile) {
             toast.error('Pilih file CSV terlebih dahulu');
@@ -217,12 +216,7 @@ const Program = () => {
                         toast.error('Tidak ada data valid yang ditemukan dalam file');
                         return;
                     }
-                    
-                    // Simulasi import data (ganti dengan API call sebenarnya)
-                    console.log('Data yang akan diimport:', importedPrograms);
-                    
-                    // Contoh: Simpan ke localStorage untuk demo
-                    // Dalam implementasi real, kirim ke API
+
                     const existingPrograms = JSON.parse(localStorage.getItem('programs') || '[]');
                     const newPrograms = [
                         ...existingPrograms,
@@ -263,7 +257,6 @@ const Program = () => {
         }
     }, [importFile, refreshData]);
 
-    // 🔴 TAMBAH: Fungsi untuk open import modal
     const handleOpenImportModal = useCallback(() => {
         setImportFile(null);
         if (fileInputRef.current) {
@@ -272,7 +265,6 @@ const Program = () => {
         setIsImportModalOpen(true);
     }, []);
 
-    // EKSTRAK SEMUA CATEGORY UNIK DARI DATA PROGRAM
     useEffect(() => {
         if (programs.length > 0) {
             const allCategories = programs
@@ -293,8 +285,8 @@ const Program = () => {
 
     // STATUS OPTIONS
     const statusOptions = [
-        { value: 'active', label: '🟢 Active', color: 'text-green-600 bg-green-50' },
-        { value: 'inactive', label: '🔴 Inactive', color: 'text-red-600 bg-red-50' },
+        { value: 'Active', label: '🟢 Active', color: 'text-green-600 bg-green-50' },
+        { value: 'Inactive', label: '🔴 Inactive', color: 'text-red-600 bg-red-50' },
     ];
 
     // 🔴 PERBAIKAN: Handle search dengan backend filtering
@@ -902,7 +894,6 @@ const Program = () => {
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    {/* 🔴 PERBAIKAN: Gunakan getDisplayText dari hook */}
                                     <div className="text-sm text-gray-600">
                                         {getDisplayText()}
                                         {getTotalActiveCriteria > 0 && !isShowAllMode() && " (filtered)"}

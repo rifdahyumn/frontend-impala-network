@@ -1,10 +1,3 @@
-// src/utils/programData.js
-
-/**
- * Utility functions for managing program data sharing between components
- * Used to share program data from Program.jsx to Form Builder
- */
-
 let programsData = [];
 
 /**
@@ -15,9 +8,8 @@ export const setProgramsData = (data) => {
     try {
         programsData = Array.isArray(data) ? data : [];
         localStorage.setItem('programsData', JSON.stringify(programsData));
-        console.log('📊 Programs data saved for Form Builder:', programsData.length, 'programs');
     } catch (error) {
-        console.error('❌ Error saving programs data:', error);
+        console.error('Error saving programs data:', error);
     }
 };
 
@@ -51,10 +43,9 @@ export const getProgramNames = () => {
             .filter(name => name && name.trim() !== '')
             .sort();
         
-        console.log('📋 Available program names for Form Builder:', programNames);
         return programNames;
     } catch (error) {
-        console.error('❌ Error getting program names:', error);
+        console.error('Error getting program names:', error);
         return [];
     }
 };
@@ -96,7 +87,6 @@ export const getProgramsCount = () => {
 export const clearProgramsData = () => {
     programsData = [];
     localStorage.removeItem('programsData');
-    console.log('🗑️ Programs data cleared');
 };
 
 // Default programs for fallback
@@ -110,6 +100,5 @@ const defaultPrograms = [
 export const initializeDefaultPrograms = () => {
     if (!hasProgramsData()) {
         setProgramsData(defaultPrograms);
-        console.log('🔄 Initialized with default programs');
     }
 };

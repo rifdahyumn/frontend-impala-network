@@ -1,5 +1,3 @@
-// hapus bagian "Format Info
-
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Loader2, Plus, Users, RefreshCw, Briefcase, Filter, X, AlertCircle, CheckSquare, Download, Upload, FileText, FileSpreadsheet } from "lucide-react";
@@ -12,25 +10,8 @@ import ClientContent from "../components/Content/ClientContent";
 import { toast } from 'react-hot-toast';
 import AddClient from "../components/AddButton/AddClient";
 import { useClients } from '../hooks/useClients';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuGroup, 
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuCheckboxItem
-} from "../components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../components/ui/dialog";
-import { Label } from "../components/ui/label";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "../components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 
 const ProgramClient = () => {
@@ -38,19 +19,10 @@ const ProgramClient = () => {
     const [editingClient, setEditingClient] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
-<<<<<<< HEAD
-=======
-    
-    // 🔴 TAMBAH: State untuk modal import
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importFile, setImportFile] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
-    
-    // 🔴 TAMBAH: Ref untuk upload input
     const fileInputRef = useRef(null);
-    
-    // 🔴 TAMBAHKAN: State untuk visual feedback
->>>>>>> 3bd0e4369f9447aeaa86a594817d10377a4abb0e
     const [highlightDetail, setHighlightDetail] = useState(false);
     const clientDetailRef = useRef(null);
     const [localFilters, setLocalFilters] = useState({
@@ -113,9 +85,6 @@ const ProgramClient = () => {
         await searchClients(localFilters.search, showAllOnSearch);
     }, [localFilters.search, showAllOnSearch, searchClients]);
 
-<<<<<<< HEAD
-=======
-    // 🔴 TAMBAH: Fungsi untuk download template CSV
     const handleDownloadTemplate = useCallback(() => {
         try {
             // Template data untuk import client
@@ -133,7 +102,6 @@ const ProgramClient = () => {
                 },
             ];
             
-            // Convert to CSV
             const headers = Object.keys(templateData[0]);
             const csvContent = [
                 headers.join(','),
@@ -282,7 +250,6 @@ const ProgramClient = () => {
     }, []);
 
     // EKSTRAK SEMUA STATUS UNIK DARI DATA CLIENT
->>>>>>> 3bd0e4369f9447aeaa86a594817d10377a4abb0e
     const availableStatuses = useMemo(() => {
         if (!members.length) return [];
         
@@ -610,19 +577,6 @@ const ProgramClient = () => {
                             </div>
                         )}
 
-<<<<<<< HEAD
-                        {/* SEARCH & FILTER SECTION */}
-                        <div className='flex flex-col lg:flex-row gap-4 mb-6 justify-between'>
-                            <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
-                                <div className="w-full sm:w-auto min-w-[250px]">
-                                    <SearchBar 
-                                        onSearch={handleSearch}
-                                        placeholder="Search clients..."
-                                        value={localFilters.search}
-                                        onChange={(e) => setLocalFilters(prev => ({ ...prev, search: e.target.value }))}
-                                    />
-                                </div>
-=======
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2 items-center flex-wrap'>
                                 <SearchBar 
@@ -631,7 +585,6 @@ const ProgramClient = () => {
                                     value={localFilters.search}
                                     onChange={(e) => setLocalFilters(prev => ({ ...prev, search: e.target.value }))}
                                 />
->>>>>>> 1002082e40aea3e28c042d0afa99f70e6e982a1d
                                 
                                 {localFilters.search.trim() !== '' && (
                                     <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
@@ -754,8 +707,6 @@ const ProgramClient = () => {
                                     <Plus className="h-4 w-4" />
                                     {tableConfig.addButton}
                                 </Button>
-<<<<<<< HEAD
-=======
                                 
                                 {/* 🔴 TAMBAH: Import Button dengan Dropdown */}
                                 <DropdownMenu>
@@ -787,7 +738,6 @@ const ProgramClient = () => {
                                 </DropdownMenu>
                                 
                                 {/* 🔴 MODIFIKASI: ExportButton */}
->>>>>>> 3bd0e4369f9447aeaa86a594817d10377a4abb0e
                                 <Button 
                                     onClick={handleExport}
                                     variant="outline"
@@ -831,13 +781,8 @@ const ProgramClient = () => {
                                 <span className="text-sm text-gray-600">Active filters:</span>
                                 
                                 {localFilters.search && (
-<<<<<<< HEAD
-                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        <span>"{localFilters.search}"</span>
-=======
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1 whitespace-nowrap">
-                                        <span>🔍 "{localFilters.search}"</span>
->>>>>>> 3bd0e4369f9447aeaa86a594817d10377a4abb0e
+                                        <span>"{localFilters.search}"</span>
                                         <button 
                                             onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"

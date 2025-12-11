@@ -184,38 +184,38 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                     placeholder: 'Enter address'
                 },
                 {
-                    name: 'province_id', // PERBAIKAN: ganti 'province' jadi 'province_id'
+                    name: 'province_id',
                     label: 'Province',
                     type: 'select',
                     required: true,
                     placeholder: loadingLocation.provinces ? 'Loading Province...' : 'Select Province',
-                    options: provinces.map(p => ({ value: p.value, label: p.label })), // Pastikan format benar
+                    options: provinces.map(p => ({ value: p.value, label: p.label })),
                     disabled: loadingLocation.provinces
                 },
                 {
-                    name: 'regency_id', // PERBAIKAN: ganti 'regency' jadi 'regency_id'
+                    name: 'regency_id',
                     label: 'City / Regency',
                     type: 'select',
                     required: true,
-                    options: regencies.map(r => ({ value: r.value, label: r.label })), // Pastikan format benar
+                    options: regencies.map(r => ({ value: r.value, label: r.label })),
                     placeholder: loadingLocation.regencies ? 'Loading regency...' : 'Select Regency',
                     disabled: loadingLocation.regencies || !formData.province_id
                 },
                 {
-                    name: 'district_id', // PERBAIKAN: ganti 'district' jadi 'district_id'
+                    name: 'district_id',
                     label: 'District',
                     type: 'select',
                     required: true,
-                    options: districts.map(d => ({ value: d.value, label: d.label })), // Pastikan format benar
+                    options: districts.map(d => ({ value: d.value, label: d.label })),
                     placeholder: loadingLocation.districts ? 'Loading district...' : 'Select District',
                     disabled: loadingLocation.districts || !formData.regency_id
                 },
                 {
-                    name: 'village_id', // PERBAIKAN: ganti 'village' jadi 'village_id'
+                    name: 'village_id',
                     label: 'Village',
                     type: 'select',
                     required: true,
-                    options: villages.map(v => ({ value: v.value, label: v.label })), // Pastikan format benar
+                    options: villages.map(v => ({ value: v.value, label: v.label })),
                     placeholder: loadingLocation.villages ? 'Loading village...' : 'Select Village',
                     disabled: loadingLocation.villages || !formData.district_id
                 },
@@ -384,7 +384,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         }
     }, [isAddUserModalOpen])
 
-    // Load regencies ketika province dipilih
     useEffect(() => {
         const loadRegencies = async () => {
             if (!formData.province_id) {
@@ -398,7 +397,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                 const regenciesData = await locationService.getRegencies(formData.province_id)
                 setRegencies(regenciesData || [])
                 
-                // Reset dependent fields
                 setFormData(prev => ({
                     ...prev,
                     regency_id: '',
@@ -412,7 +410,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                 setVillages([])
             } catch (error) {
                 console.error(`Error fetching regencies for ${formData.province_id}:`, error)
-                toast.error('Gagal memuat data kabupaten/kota')
+                toast.error('Error loading regency')
                 setRegencies([])
             } finally {
                 setLoadingLocation(prev => ({ ...prev, regencies: false }))
@@ -422,7 +420,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         loadRegencies()
     }, [formData.province_id])
 
-    // Load districts ketika regency dipilih
     useEffect(() => {
         const loadDistricts = async () => {
             if (!formData.regency_id) {
@@ -433,12 +430,9 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
             setLoadingLocation(prev => ({ ...prev, districts: true }))
 
             try {
-                console.log(`Loading districts for regency ${formData.regency_id}...`)
                 const districtsData = await locationService.getDistricts(formData.regency_id)
-                console.log('Districts loaded:', districtsData)
                 setDistricts(districtsData || [])
                 
-                // Reset dependent fields
                 setFormData(prev => ({
                     ...prev,
                     district_id: '',
@@ -459,7 +453,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         loadDistricts()
     }, [formData.regency_id])
 
-    // Load villages ketika district dipilih
     useEffect(() => {
         const loadVillages = async () => {
             if (!formData.district_id) {
@@ -470,12 +463,9 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
             setLoadingLocation(prev => ({ ...prev, villages: true }))
 
             try {
-                console.log(`Loading villages for district ${formData.district_id}...`)
                 const villagesData = await locationService.getVillages(formData.district_id)
-                console.log('Villages loaded:', villagesData)
                 setVillages(villagesData || [])
                 
-                // Reset dependent field
                 setFormData(prev => ({
                     ...prev,
                     village_id: '',
@@ -493,12 +483,9 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         loadVillages()
     }, [formData.district_id])
 
-    // Set edit data
     useEffect(() => {
         if (isEditMode && editData) {
-            console.log('Setting edit data:', editData)
             
-            // Extract location data dari editData
             const locationData = {
                 address: editData.address || '',
                 province_id: editData.province_id || '',
@@ -541,7 +528,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
     }, [isEditMode, editData, isAddUserModalOpen])
 
     const resetForm = () => {
-        console.log('Resetting form...')
         setFormData({
             full_name: '',
             email: '',
@@ -603,7 +589,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
             newErrors.phone = 'Phone number is too short'
         }
 
-        // Validasi location
         if (!formData.province_id) {
             newErrors.province_id = 'Province is required'
         }
@@ -618,7 +603,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         }
 
         setErrors(newErrors)
-        console.log('Validation errors:', newErrors)
         return Object.keys(newErrors).length === 0
     }
 
@@ -652,7 +636,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
     };
 
     const handleSelectChange = (name, value) => {
-        console.log(`Select change: ${name} = ${value}`)
         
         const fieldConfig = formSections
             .flatMap(section => section.fields)
@@ -668,7 +651,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                 ...prev,
                 [name]: value,
                 province_name: selectedProvince?.label || '',
-                regency_id: '', // Reset dependent fields
+                regency_id: '', 
                 district_id: '',
                 village_id: '',
                 regency_name: '',
@@ -681,7 +664,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                 ...prev,
                 [name]: value,
                 regency_name: selectedRegency?.label || '',
-                district_id: '', // Reset dependent fields
+                district_id: '', 
                 village_id: '',
                 district_name: '',
                 village_name: ''
@@ -692,7 +675,7 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                 ...prev,
                 [name]: value,
                 district_name: selectedDistrict?.label || '',
-                village_id: '', // Reset dependent field
+                village_id: '',
                 village_name: ''
             }));
         } else if (name === 'village_id') {
@@ -719,7 +702,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        console.log('Submitting form data:', formData)
 
         if (!validateForm()) {
             toast.error('Please fix the errors in the form')
@@ -742,8 +724,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                 village_id: formData.village_id,
                 village_name: formData.village_name,
             };
-
-            console.log('Location data:', locationData)
 
             let programData = []
             if (clientExists && existingClientId) {
@@ -790,8 +770,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
 
             delete clientData.existing_programs
             clientData.join_date = clientData.join_date || new Date().toISOString().split('T')[0]
-
-            console.log('Final client data to submit:', clientData)
 
             if (clientExists && existingClientId) {
                 if (onEditClient) {
@@ -888,7 +866,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
         }
 
         if (field.type === 'select') {
-        // PERBAIKAN: Handle location select fields
         const options = field.options || [];
         const isDisabled = field.disabled || (field.name.includes('_id') && 
             ((field.name === 'regency_id' && !formData.province_id) ||
@@ -911,7 +888,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                         <SelectValue placeholder={field.placeholder} />
                     </SelectTrigger>
                     <SelectContent>
-                        {/* PERBAIKAN: Jangan render SelectItem dengan value kosong */}
                         {options.length > 0 ? (
                             options
                                 .filter(option => option.value && option.value.toString().trim() !== '')
@@ -933,12 +909,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
 
                 {error && <p className="text-red-500 text-sm">{error}</p>}
                 
-                {/* Debug info untuk location fields */}
-                {process.env.NODE_ENV === 'development' && field.name.includes('_id') && (
-                    <p className="text-xs text-gray-500">
-                        {field.name}: {value} | Options: {options.length}
-                    </p>
-                )}
             </div>
         );
     }
@@ -1095,23 +1065,6 @@ const AddClient = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddClient, edi
                             )}
                         </div>
                     ))}
-
-                    {/* Debug info (hapus di production) */}
-                    {process.env.NODE_ENV === 'development' && (
-                        <div className="p-4 bg-gray-100 rounded-md">
-                            <h4 className="font-semibold mb-2">Debug Info:</h4>
-                            <pre className="text-xs overflow-auto">
-                                Provinces: {provinces.length}<br/>
-                                Regencies: {regencies.length}<br/>
-                                Districts: {districts.length}<br/>
-                                Villages: {villages.length}<br/>
-                                Province ID: {formData.province_id}<br/>
-                                Regency ID: {formData.regency_id}<br/>
-                                District ID: {formData.district_id}<br/>
-                                Village ID: {formData.village_id}
-                            </pre>
-                        </div>
-                    )}
 
                     <div className="flex justify-end gap-3 pt-4 border-t">
                         <Button

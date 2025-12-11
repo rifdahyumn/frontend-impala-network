@@ -33,7 +33,6 @@ class ImpalaService {
                 showAllOnSearch = false
             } = params
 
-            // 🔴 DIUBAH: Build query params dengan approach yang sama
             const queryParams = new URLSearchParams({
                 page: page.toString(),
                 ...(limit > 0 && { limit: limit.toString() }),
@@ -43,22 +42,9 @@ class ImpalaService {
                 ...(showAllOnSearch && { showAllOnSearch: 'true' })
             })
 
-            // 🔴 DIUBAH: Jika limit = 0 (show all), hapus limit parameter
             if (limit === 0) {
                 queryParams.delete('limit');
             }
-
-            // 🔴 DIUBAH: Tambahkan debug log
-            console.log('📡 ImpalaService - Request URL:', `${this.baseURL}/impala?${queryParams}`);
-            console.log('📡 ImpalaService - Request Params:', {
-                page,
-                limit,
-                search,
-                gender,
-                category,
-                showAllOnSearch,
-                queryString: queryParams.toString()
-            });
 
             const response = await fetch(`${this.baseURL}/impala?${queryParams}`, {
                 method: 'GET',
@@ -69,7 +55,6 @@ class ImpalaService {
 
             const result = await this.handleResponse(response);
 
-            // 🔴 DIUBAH: Tambahkan metadata jika tidak ada
             if (!result.metadata) {
                 result.metadata = {
                     pagination: {
@@ -83,13 +68,6 @@ class ImpalaService {
                 };
             }
 
-            // 🔴 DIUBAH: Tambahkan debug log response
-            console.log('📡 ImpalaService - Response:', {
-                dataCount: result.data?.length,
-                pagination: result.metadata?.pagination,
-                showingAllResults: result.metadata?.pagination?.showingAllResults
-            });
-
             return result;
 
         } catch (error) {
@@ -98,26 +76,17 @@ class ImpalaService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Fetch all participants dengan filter
     async fetchAllImpala(filters = {}) {
         try {
-            // 🔴 Gunakan fetchImpala dengan limit 0 untuk mengambil semua data
             const params = {
                 ...filters,
                 page: 1,
-                limit: 0, // 🔴 Limit 0 = get all data
+                limit: 0,
                 showAllOnSearch: true
             };
 
-            console.log('📡 ImpalaService - Fetch All Impala:', { params });
 
             const result = await this.fetchImpala(params);
-
-            console.log('📡 ImpalaService - All Impala Response:', {
-                totalCount: result.data?.length,
-                filtersApplied: filters.search || filters.gender || filters.category
-            });
-
             return result;
 
         } catch (error) {
@@ -126,7 +95,6 @@ class ImpalaService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Helper untuk build URL dengan filter
     buildImpalaQueryUrl(params = {}) {
         const {
             page = 1,
@@ -195,10 +163,8 @@ class ImpalaService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Delete participant
     async deleteImpala(participantId) {
         try {
-            // 🔴 VALIDASI: Pastikan participantId valid
             if (!participantId) {
                 throw new Error('Participant ID is required');
             }
@@ -217,12 +183,8 @@ class ImpalaService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Export participants
     async exportImpala(filters = {}, format = 'csv') {
         try {
-            console.log('📡 ImpalaService - Exporting participants:', { filters, format });
-
-            // Gunakan fetchAllImpala untuk mendapatkan semua data dengan filter
             const result = await this.fetchAllImpala(filters);
             
             if (!result.data || result.data.length === 0) {
@@ -231,8 +193,7 @@ class ImpalaService {
 
             if (format.toLowerCase() === 'csv') {
                 const csvContent = this.convertToCSV(result.data);
-                
-                // 🔴 Helper untuk download file
+
                 this.downloadFile(csvContent, `impala_participants_export_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
                 
                 return {
@@ -241,7 +202,6 @@ class ImpalaService {
                     data: result.data
                 };
             } else if (format.toLowerCase() === 'json') {
-                // 🔴 Helper untuk download JSON file
                 const jsonContent = JSON.stringify(result.data, null, 2);
                 this.downloadFile(jsonContent, `impala_participants_export_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
                 
@@ -295,7 +255,6 @@ class ImpalaService {
         return csvRows.join('\n');
     }
 
-    // 🔴 FUNGSI BARU: Helper untuk download file
     downloadFile(content, filename, mimeType) {
         try {
             const blob = new Blob([content], { type: mimeType });
@@ -309,23 +268,18 @@ class ImpalaService {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
-            // 🔴 Cleanup
             window.URL.revokeObjectURL(url);
             
-            console.log('📡 ImpalaService - File downloaded:', filename);
         } catch (error) {
             console.error('Error downloading file:', error);
             throw error;
         }
     }
 
-    // 🔴 FUNGSI BARU: Cek apakah sedang dalam mode show all
     isShowAllMode(paginationData) {
         return paginationData?.showingAllResults || paginationData?.isShowAllMode || false;
     }
 
-    // 🔴 FUNGSI BARU: Hitung display info
     calculateDisplayInfo(paginationData, dataLength = 0) {
         if (!paginationData) {
             return {

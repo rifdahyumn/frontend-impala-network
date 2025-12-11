@@ -69,24 +69,19 @@ const FormPreview = ({ formConfig, onBack }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         
-        // Simpan data dengan format yang benar
         const submissionData = {
             ...formData,
-            // Pastikan disability_type hanya ada jika is_disability = 'Ya'
             disability_type: formData.is_disability === 'Ya' ? formData.disability_type || '' : '',
             category: selectedCategory
         };
         
-        console.log('Form Data Submitted:', submissionData);
         alert('Form berhasil disubmit! (Ini hanya preview)');
     };
 
-    // ===== FUNGSI UNTUK MENDAPATKAN DISABILITY FIELD CONFIG =====
     const getDisabilityTypeField = () => {
         return formConfig?.sections?.personalInfo?.fields?.find(f => f.id === 'disability_type');
     };
 
-    // ===== RENDER DISABILITY TYPE FIELD =====
     const renderDisabilityTypeField = () => {
         if (!showDisabilityField) return null;
         

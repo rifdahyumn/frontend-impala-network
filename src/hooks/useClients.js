@@ -118,41 +118,32 @@ export const useClients = (initialFilters = {}) => {
         }
     }, [])
 
-    // 🔴 PERBAIKAN: updateFiltersAndFetch dengan optimized updates
     const updateFiltersAndFetch = useCallback((newFilters, showAll = false) => {
-        console.log('🔄 updateFiltersAndFetch called with:', { newFilters, showAll })
-        
-        // 🔴 PERBAIKAN: Update ref dulu
+
         const updatedFilters = {
             ...filtersRef.current,
             ...newFilters
         }
         filtersRef.current = updatedFilters
-        
-        // 🔴 PERBAIKAN: Batch UI updates
+
         setFilters(prev => ({
             search: updatedFilters.search,
             status: updatedFilters.status,
             businessType: updatedFilters.businessType
         }))
-        
-        // Handle showAllOnSearch reset jika search dihapus
+
         if (!newFilters.search && showAllOnSearch) {
             setShowAllOnSearch(false)
         }
-        
-        // Gunakan debounced fetch
+
         if (debouncedFetchRef.current) {
             debouncedFetchRef.current(1, updatedFilters, showAll)
         }
     }, [showAllOnSearch])
 
-    // 🔴 PERBAIKAN: Toggle show all on search
     const toggleShowAllOnSearch = useCallback((value) => {
-        console.log('🔄 toggleShowAllOnSearch:', value)
         setShowAllOnSearch(value)
-        
-        // Jika ada search term, refresh dengan setting baru
+
         if (filtersRef.current.search) {
             if (debouncedFetchRef.current) {
                 debouncedFetchRef.current(1, filtersRef.current, value)
@@ -160,9 +151,7 @@ export const useClients = (initialFilters = {}) => {
         }
     }, [])
 
-    // 🔴 PERBAIKAN: Clear filter
     const clearFilters = useCallback(() => {
-        console.log('🔄 clearFilters')
         
         const clearedFilters = {
             search: '',
@@ -172,26 +161,20 @@ export const useClients = (initialFilters = {}) => {
         
         filtersRef.current = clearedFilters
         
-        // 🔴 PERBAIKAN: Batch updates
         setFilters(clearedFilters)
         setShowAllOnSearch(false)
         
-        // Gunakan fetch langsung tanpa debounce untuk clear
         fetchClients(1, clearedFilters, false)
     }, [fetchClients])
 
-    // 🔴 PERBAIKAN: Clear search only
     const clearSearch = useCallback(() => {
-        console.log('🔄 clearSearch')
-        
         const updatedFilters = {
             ...filtersRef.current,
             search: ''
         }
         
         filtersRef.current = updatedFilters
-        
-        // 🔴 PERBAIKAN: Batch updates
+
         setFilters(prev => ({
             ...prev,
             search: ''
@@ -201,24 +184,18 @@ export const useClients = (initialFilters = {}) => {
         fetchClients(1, updatedFilters, false)
     }, [fetchClients])
 
-    // 🔴 PERBAIKAN: Search dengan mode show all
     const searchClients = useCallback((searchTerm, showAll = false) => {
-        console.log('🔍 searchClients:', { searchTerm, showAll })
-        
         const searchFilters = {
             ...filtersRef.current,
             search: searchTerm
         }
         
         filtersRef.current = searchFilters
-        
-        // 🔴 PERBAIKAN: Update UI state
         setFilters(prev => ({
             ...prev,
             search: searchTerm
         }))
-        
-        // Set showAllOnSearch state
+
         if (searchTerm) {
             setShowAllOnSearch(showAll)
         } else {
@@ -406,12 +383,10 @@ export const useClients = (initialFilters = {}) => {
     }, [pagination, members.length])
 
     const refetch = useCallback(() => {
-        console.log('🔄 Refetching current data')
         fetchClients(pagination.page, filtersRef.current, showAllOnSearch)
     }, [fetchClients, pagination.page, showAllOnSearch])
 
     return {
-        // State
         members, 
         loading, 
         error, 
@@ -420,35 +395,21 @@ export const useClients = (initialFilters = {}) => {
         showAllOnSearch,
         clientStats, 
         statsLoading,
-        
-        // Fetch Functions
         fetchClients,
         updateFiltersAndFetch,
         clearFilters,
         clearSearch,
         searchClients,
-        
-        // Show All Mode Functions
         toggleShowAllOnSearch,
         isShowAllMode: () => pagination.showingAllResults || false,
-        
-        // Display Functions
         getDisplayText,
-        
-        // Pagination Functions
         refetch, 
         handlePageChange, 
         refreshData,
-        
-        // CRUD Functions
         addClient, 
         updateClient, 
         deleteClient,
-        
-        // Export Functions
         exportClients,
-        
-        // Stats Functions
         refetchStats: fetchClientStats
     }
 }

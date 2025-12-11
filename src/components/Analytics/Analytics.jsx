@@ -119,12 +119,10 @@ const Analytics = () => {
     }, [selectedMetric, selectedYear, allPrograms]);
 
     const handleDataTypeChange = (type) => {
-        console.log('Data type changed to:', type);
         setSelectedDataType(type);
     };
 
     const handleMetricSelect = (metric) => {
-        console.log('Metric changed to:', metric);
         setSelectedMetric(metric);
     };
 

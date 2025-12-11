@@ -956,7 +956,7 @@ const HeteroSemarang = () => {
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
                                     <div className="text-sm text-gray-600">
-                                        Showing {filteredMembers.length} of {members.length} members
+                                        {/* Showing {filteredMembers.length} of {members.length} members */}
                                         {getTotalActiveCriteria() > 0 && " (filtered)"}
                                         {activeFilters.space && activeFilters.space !== 'all' && (
                                             <span className="ml-1 px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs">

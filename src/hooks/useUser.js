@@ -58,13 +58,10 @@ export const useUsers = (initialFilters = {}) => {
     }, [fetchUsers]);
 
     const refreshUsers = useCallback(async () => {
-        console.log('🔄 Manual refresh triggered');
         await fetchUsers(pagination.page);
     }, [fetchUsers, pagination.page]);
 
     const autoRefresh = useCallback(async () => {
-        console.log('🔄 Auto-refresh triggered');
-        
         const remainingUsers = users.length - 1;
         if (remainingUsers === 0 && pagination.page > 1) {
             await fetchUsers(pagination.page - 1);
@@ -79,13 +76,12 @@ export const useUsers = (initialFilters = {}) => {
 
     const addUser = async (userData) => {
         try {
-            console.log('🔄 Adding user:', userData);
             const result = await userService.addUser(userData)
             toast.success('User added successfully')
             await autoRefresh();
             return result
         } catch (error) {
-            console.error('❌ Error adding user:', error)
+            console.error('Error adding user:', error)
             toast.error(error.message || 'Failed to add user')
             throw error
         }
@@ -93,7 +89,6 @@ export const useUsers = (initialFilters = {}) => {
 
     const updateUser = async (userId, userData) => {
         try {
-            console.log('🔄 Updating user:', userId);
             const result = await userService.updateUser(userId, userData)
             toast.success('User updated successfully')
 
@@ -111,7 +106,7 @@ export const useUsers = (initialFilters = {}) => {
 
             return result.data || result
         } catch (error) {
-            console.error('❌ Error updating user:', error)
+            console.error(' Error updating user:', error)
             toast.error(error.message || 'Failed to update user')
             throw error
         }
@@ -119,12 +114,11 @@ export const useUsers = (initialFilters = {}) => {
 
     const deleteUser = async (userId) => {
         try {
-            console.log('🔄 Deleting user with ID:', userId);
             await userService.deleteUser(userId);
             toast.success('User deactivated successfully');
             await autoRefresh();
         } catch (error) {
-            console.error('❌ Error deleting user:', error);
+            console.error('Error deleting user:', error);
             toast.error(error.message || 'Failed to delete user');
             throw error;
         }
