@@ -61,7 +61,6 @@ export const getDefaultFormConfig = () => ({
                 name: 'phone',
                 label: 'Nomor WhatsApp',
                 required: true,
-                placeholder: '+62-xxx-xxxx-xxxx',
                 locked: true
             },
             {
