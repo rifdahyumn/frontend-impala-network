@@ -3,7 +3,7 @@ import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Plus, Loader2, Users, UserCheck, AlertCircle, Tag, X, Filter, Briefcase } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'; // 🔴 TAMBAHKAN useRef
 import SearchBar from '../components/SearchFilter/SearchBar';
 import ExportButton from '../components/ActionButton/ExportButton';
 import MemberTable from '../components/MemberTable/MemberTable';
@@ -28,6 +28,12 @@ const Account = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     
+    // 🔴 TAMBAHKAN: State untuk visual feedback auto-scroll
+    const [highlightDetail, setHighlightDetail] = useState(false);
+    
+    // 🔴 TAMBAHKAN: Ref untuk auto-scroll ke detail section
+    const userDetailRef = useRef(null);
+    
     // ⭐⭐ STATE UNTUK FRONTEND FILTERING (disesuaikan dengan ImpalaManagement)
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilters, setActiveFilters] = useState({
@@ -37,6 +43,34 @@ const Account = () => {
     const [filteredUsers, setFilteredUsers] = useState([]);
 
     const { users, loading, error, pagination, filters, setFilters, fetchUser, addUser, updateUser, deleteUser, activateUser } = useUsers()
+
+    // 🔴 TAMBAHKAN: Fungsi untuk handle select user dengan auto-scroll
+    const handleSelectUser = useCallback((user) => {
+        // Set selected user
+        setSelectedUser(user);
+        
+        // Trigger highlight effect
+        setHighlightDetail(true);
+        
+        // Auto-scroll ke user detail section
+        setTimeout(() => {
+            if (userDetailRef.current) {
+                userDetailRef.current.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start',
+                    inline: 'nearest'
+                });
+                
+                // Tambahkan smooth transition effect
+                userDetailRef.current.style.transition = 'all 0.5s ease';
+                
+                // Remove highlight after 2 seconds
+                setTimeout(() => {
+                    setHighlightDetail(false);
+                }, 2000);
+            }
+        }, 150); // Delay sedikit untuk memastikan DOM sudah update
+    }, []);
 
     // ⭐⭐ POSITION OPTIONS (disesuaikan dengan genderOptions di ImpalaManagement)
     const positionOptions = [
@@ -195,7 +229,7 @@ const Account = () => {
     };
 
     // ⭐⭐ CLEAR ALL FILTERS
-    const clearAllFilters = () => {
+    const clearAllFilters = useCallback(() => {
         setSearchTerm("");
         setActiveFilters({
             position: null,
@@ -203,7 +237,9 @@ const Account = () => {
         });
         setFilters({ search: "", position: "", role: "", status: "" });
         setFilteredUsers(users);
-    };
+        setSelectedUser(null); // Reset selected user saat clear filter
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll ke atas
+    }, [users, setFilters]);
 
     // ⭐⭐ CLEAR SPECIFIC FILTER
     const clearFilter = (filterType) => {
@@ -240,7 +276,11 @@ const Account = () => {
         try {
             await addUser(userData);
             setIsAddUserModalOpen(false);
+            toast.success('User added successfully');
             fetchUser(pagination.page);
+            
+            // Scroll ke atas setelah add user
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
             // Error sudah dihandle di hook
         }
@@ -283,7 +323,11 @@ const Account = () => {
         try {
             await deleteUser(userId)
             setSelectedUser(null)
+            toast.success('User deleted successfully')
             fetchUser(pagination.page);
+            
+            // Scroll ke atas setelah delete
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
             //
         }
@@ -304,6 +348,9 @@ const Account = () => {
             const currentSelected = users.find(member => member.id === selectedUser.id)
             if (currentSelected) {
                 setSelectedUser(currentSelected)
+            } else {
+                // Jika user tidak ditemukan (mungkin dihapus atau difilter)
+                setSelectedUser(null);
             }
         }
     }, [users, selectedUser?.id])
@@ -701,9 +748,10 @@ const Account = () => {
                                         </div>
                                     )}
                                     
+                                    {/* 🔴 MODIFIKASI: Gunakan handleSelectUser untuk auto-scroll */}
                                     <MemberTable
                                         members={formattedUsers}
-                                        onSelectMember={setSelectedUser}
+                                        onSelectMember={handleSelectUser} // ← Ganti dengan fungsi baru
                                         headers={tableConfig.headers}
                                         isLoading={loading}
                                     />
@@ -730,18 +778,27 @@ const Account = () => {
                     </CardContent>
                 </Card>
 
-                <AccountContent
-                    selectedUser={selectedUser}
-                    onOpenEditModal={handleOpenEditModal}
-                    onDelete={handleDeleteUser}
-                    onActivateUser={handleActivate}
-                    detailTitle={tableConfig.detailTitle}
-                    onUserUpdated={() => fetchUser(pagination.page)}
-                    onClientDeleted={() => {
-                        fetchUser(pagination.page);
-                        setSelectedUser(null);
-                    }}
-                />
+                {/* 🔴 MODIFIKASI: Wrap AccountContent dengan div yang memiliki ref untuk auto-scroll */}
+                <div 
+                    ref={userDetailRef}
+                    className={`
+                        transition-all duration-500 ease-in-out
+                        ${highlightDetail ? 'ring-2 ring-blue-500 rounded-xl p-1 -m-1 bg-blue-50/50' : ''}
+                    `}
+                >
+                    <AccountContent
+                        selectedUser={selectedUser}
+                        onOpenEditModal={handleOpenEditModal}
+                        onDelete={handleDeleteUser}
+                        onActivateUser={handleActivate}
+                        detailTitle={tableConfig.detailTitle}
+                        onUserUpdated={() => fetchUser(pagination.page)}
+                        onClientDeleted={() => {
+                            fetchUser(pagination.page);
+                            setSelectedUser(null);
+                        }}
+                    />
+                </div>
                 
                 {/* Add User Modal */}
                 <AddUser 

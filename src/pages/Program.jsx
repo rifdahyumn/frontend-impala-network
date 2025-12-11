@@ -2,7 +2,7 @@ import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Plus, Loader2, Users, RefreshCw, AlertCircle, Tag, Filter, X, CheckSquare } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'; // 🔴 TAMBAHKAN useRef
 import SearchBar from '../components/SearchFilter/SearchBar';
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from "../components/Pagination/Pagination";
@@ -26,6 +26,12 @@ const Program = () => {
     const [isAddProgramModalOpen, setIsAddProgramModalOpen] = useState(false)
     const [editingProgram, setEditingProgram] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    
+    // 🔴 TAMBAHKAN: State untuk visual feedback auto-scroll
+    const [highlightDetail, setHighlightDetail] = useState(false);
+    
+    // 🔴 TAMBAHKAN: Ref untuk auto-scroll ke detail section
+    const programDetailRef = useRef(null);
     
     // 🔴 PERBAIKAN: Hapus state untuk frontend filtering dan gunakan hook sepenuhnya
     const {
@@ -54,6 +60,34 @@ const Program = () => {
     // 🔴 PERBAIKAN: State lokal hanya untuk UI control
     const [searchTerm, setSearchTerm] = useState("");
     const [availableCategories, setAvailableCategories] = useState([]);
+
+    // 🔴 TAMBAHKAN: Fungsi untuk handle select program dengan auto-scroll
+    const handleSelectProgram = useCallback((program) => {
+        // Set selected program
+        setSelectedProgram(program);
+        
+        // Trigger highlight effect
+        setHighlightDetail(true);
+        
+        // Auto-scroll ke program detail section
+        setTimeout(() => {
+            if (programDetailRef.current) {
+                programDetailRef.current.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start',
+                    inline: 'nearest'
+                });
+                
+                // Tambahkan smooth transition effect
+                programDetailRef.current.style.transition = 'all 0.5s ease';
+                
+                // Remove highlight after 2 seconds
+                setTimeout(() => {
+                    setHighlightDetail(false);
+                }, 2000);
+            }
+        }, 150); // Delay sedikit untuk memastikan DOM sudah update
+    }, []);
 
     // EKSTRAK SEMUA CATEGORY UNIK DARI DATA PROGRAM
     useEffect(() => {
@@ -102,6 +136,8 @@ const Program = () => {
     const handleClearAllFilters = useCallback(() => {
         setSearchTerm("");
         clearFilters();
+        setSelectedProgram(null); // Reset selected program saat clear filter
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [clearFilters]);
 
     // 🔴 PERBAIKAN: Clear specific filter
@@ -171,6 +207,9 @@ const Program = () => {
             await addProgram(programData);
             setIsAddProgramModalOpen(false);
             toast.success('Program added successfully');
+            
+            // Scroll ke atas setelah add program
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
             console.error('Error adding program:', error);
             toast.error(error.message || 'Failed to add program');
@@ -188,6 +227,9 @@ const Program = () => {
             await deleteProgram(programId);
             setSelectedProgram(null);
             toast.success('Program deleted successfully');
+            
+            // Scroll ke atas setelah delete
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
             console.error('Error deleting program:', error);
             toast.error(error.message || 'Failed to delete program');
@@ -199,6 +241,9 @@ const Program = () => {
             const currentSelected = programs.find(program => program.id === selectedProgram.id)
             if (currentSelected) {
                 setSelectedProgram(currentSelected)
+            } else {
+                // Jika program tidak ditemukan (mungkin dihapus atau difilter)
+                setSelectedProgram(null);
             }
         }
     }, [programs, selectedProgram?.id])
@@ -621,9 +666,10 @@ const Program = () => {
                                         </div>
                                     )}
                                     
+                                    {/* 🔴 MODIFIKASI: Gunakan handleSelectProgram untuk auto-scroll */}
                                     <MemberTable
                                         members={formattedPrograms}
-                                        onSelectMember={setSelectedProgram}
+                                        onSelectMember={handleSelectProgram} // ← Ganti dengan fungsi baru
                                         headers={tableConfig.headers}
                                         isLoading={loading}
                                         formatFields={{
@@ -673,18 +719,27 @@ const Program = () => {
                     </CardContent>
                 </Card>
 
-                <ProgramContent
-                    selectedProgram={selectedProgram}
-                    onOpenEditModal={handleOpenEditModal}
-                    onEdit={handleEditProgram}
-                    onDelete={handleDeleteProgram}
-                    detailTitle={tableConfig.detailTitle}
-                    onClientUpdated={() => hookFetchPrograms(pagination.page)}
-                    onClientDeleted={() => {
-                        hookFetchPrograms(pagination.page);
-                        setSelectedProgram(null);
-                    }}
-                />
+                {/* 🔴 MODIFIKASI: Wrap ProgramContent dengan div yang memiliki ref untuk auto-scroll */}
+                <div 
+                    ref={programDetailRef}
+                    className={`
+                        transition-all duration-500 ease-in-out
+                        ${highlightDetail ? 'ring-2 ring-blue-500 rounded-xl p-1 -m-1 bg-blue-50/50' : ''}
+                    `}
+                >
+                    <ProgramContent
+                        selectedProgram={selectedProgram}
+                        onOpenEditModal={handleOpenEditModal}
+                        onEdit={handleEditProgram}
+                        onDelete={handleDeleteProgram}
+                        detailTitle={tableConfig.detailTitle}
+                        onClientUpdated={() => hookFetchPrograms(pagination.page)}
+                        onClientDeleted={() => {
+                            hookFetchPrograms(pagination.page);
+                            setSelectedProgram(null);
+                        }}
+                    />
+                </div>
 
                 <AddProgram
                     isAddProgramModalOpen={isAddProgramModalOpen || isEditModalOpen}

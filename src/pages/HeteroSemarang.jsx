@@ -1,6 +1,6 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'; // 🔴 TAMBAHKAN useRef
 import SearchBar from "../components/SearchFilter/SearchBar";
 import ExportButton from "../components/ActionButton/ExportButton";
 import MemberTable from "../components/MemberTable/MemberTable";
@@ -29,6 +29,12 @@ const HeteroSemarang = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
     
+    // 🔴 TAMBAHKAN: State untuk visual feedback auto-scroll
+    const [highlightDetail, setHighlightDetail] = useState(false);
+    
+    // 🔴 TAMBAHKAN: Ref untuk auto-scroll ke detail section
+    const memberDetailRef = useRef(null);
+    
     // STATE UNTUK FRONTEND FILTERING
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilters, setActiveFilters] = useState({
@@ -39,6 +45,34 @@ const HeteroSemarang = () => {
     const [availableSpaces, setAvailableSpaces] = useState([]);
 
     const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroSemarang, updateMemberHeteroSemarang, deleteMemberHeteroSemarang } = useHeteroSemarang()
+
+    // 🔴 TAMBAHKAN: Fungsi untuk handle select member dengan auto-scroll
+    const handleSelectMember = useCallback((member) => {
+        // Set selected member
+        setSelectedMember(member);
+        
+        // Trigger highlight effect
+        setHighlightDetail(true);
+        
+        // Auto-scroll ke member detail section
+        setTimeout(() => {
+            if (memberDetailRef.current) {
+                memberDetailRef.current.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start',
+                    inline: 'nearest'
+                });
+                
+                // Tambahkan smooth transition effect
+                memberDetailRef.current.style.transition = 'all 0.5s ease';
+                
+                // Remove highlight after 2 seconds
+                setTimeout(() => {
+                    setHighlightDetail(false);
+                }, 2000);
+            }
+        }, 150); // Delay sedikit untuk memastikan DOM sudah update
+    }, []);
 
     // DAFTAR SPACE FIXED SESUAI PERMINTAAN
     const allSpaceOptions = [
@@ -199,7 +233,7 @@ const HeteroSemarang = () => {
     };
 
     // CLEAR ALL FILTERS
-    const clearAllFilters = () => {
+    const clearAllFilters = useCallback(() => {
         setSearchTerm("");
         setActiveFilters({
             gender: null,
@@ -207,7 +241,9 @@ const HeteroSemarang = () => {
         });
         setFilteredMembers(members);
         setFilters({ search: "", gender: "", space: "" });
-    };
+        setSelectedMember(null); // Reset selected member saat clear filter
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll ke atas
+    }, [members, setFilters]);
 
     // CLEAR SPECIFIC FILTER
     const clearFilter = (filterType) => {
@@ -313,6 +349,9 @@ const HeteroSemarang = () => {
             setIsAddMemberModalOpen(false)
             toast.success('Member added successfully')
             fetchMembers(pagination.page);
+            
+            // Scroll ke atas setelah add member
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
             //
         }
@@ -328,7 +367,11 @@ const HeteroSemarang = () => {
         try {
             await deleteMemberHeteroSemarang(memberId)
             setSelectedMember(null)
+            toast.success('Member deleted successfully')
             fetchMembers(pagination.page);
+            
+            // Scroll ke atas setelah delete
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
             //
         }
@@ -339,6 +382,9 @@ const HeteroSemarang = () => {
             const currentSelected = members.find(member => member.id === selectedMember.id)
             if (currentSelected) {
                 setSelectedMember(currentSelected)
+            } else {
+                // Jika member tidak ditemukan (mungkin dihapus atau difilter)
+                setSelectedMember(null);
             }
         }
     }, [members, selectedMember?.id])
@@ -685,9 +731,10 @@ const HeteroSemarang = () => {
                                         </div>
                                     )}
                                     
+                                    {/* 🔴 MODIFIKASI: Gunakan handleSelectMember untuk auto-scroll */}
                                     <MemberTable
                                         members={formattedMembers}
-                                        onSelectMember={setSelectedMember}
+                                        onSelectMember={handleSelectMember} // ← Ganti dengan fungsi baru
                                         headers={tableConfig.headers}
                                         isLoading={loading}
                                     />
@@ -718,18 +765,27 @@ const HeteroSemarang = () => {
                     </CardContent>
                 </Card>
 
-                <HeteroContent
-                    selectedMember={selectedMember}
-                    onOpenEditModal={handleOpenEditModal}
-                    onEdit={handleEditMember}
-                    onDelete={handleDeleteMember}
-                    detailTitle={tableConfig.detailTitle}
-                    onClientUpdated={() => fetchMembers(pagination.page)}
-                    onClientDeleted={() => {
-                        fetchMembers(pagination.page);
-                        setSelectedMember(null);
-                    }}
-                />
+                {/* 🔴 MODIFIKASI: Wrap HeteroContent dengan div yang memiliki ref untuk auto-scroll */}
+                <div 
+                    ref={memberDetailRef}
+                    className={`
+                        transition-all duration-500 ease-in-out
+                        ${highlightDetail ? 'ring-2 ring-blue-500 rounded-xl p-1 -m-1 bg-blue-50/50' : ''}
+                    `}
+                >
+                    <HeteroContent
+                        selectedMember={selectedMember}
+                        onOpenEditModal={handleOpenEditModal}
+                        onEdit={handleEditMember}
+                        onDelete={handleDeleteMember}
+                        detailTitle={tableConfig.detailTitle}
+                        onClientUpdated={() => fetchMembers(pagination.page)}
+                        onClientDeleted={() => {
+                            fetchMembers(pagination.page);
+                            setSelectedMember(null);
+                        }}
+                    />
+                </div>
 
                 <AddMember 
                     isAddMemberModalOpen={isAddMemberModalOpen || isEditModalOpen} 
