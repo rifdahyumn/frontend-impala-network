@@ -1,11 +1,9 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X, RefreshCw, CheckSquare } from "lucide-react";
+import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X, RefreshCw, CheckSquare, Download, Upload, FileText, FileSpreadsheet } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'; // 🔴 TAMBAHKAN useRef
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
-// HAPUS Import ExportButton
-// import ExportButton from "../components/ActionButton/ExportButton";
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from "../components/Pagination/Pagination";
 import ImpalaContent from '../components/Content/ImpalaContent';
@@ -21,9 +19,26 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem
 } from "../components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
 
 const ImpalaManagement = () => {
     const [selectedParticipant, setSelectedParticipant] = useState(null);
+    
+    // 🔴 TAMBAH: State untuk modal import
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [importFile, setImportFile] = useState(null);
+    const [isImporting, setIsImporting] = useState(false);
+    
+    // 🔴 TAMBAH: Ref untuk upload input
+    const fileInputRef = useRef(null);
     
     // 🔴 TAMBAHKAN: State untuk visual feedback auto-scroll
     const [highlightDetail, setHighlightDetail] = useState(false);
@@ -90,6 +105,172 @@ const ImpalaManagement = () => {
     // 🔴 DIUBAH: Get state dari hook
     const { showAllOnSearch } = useImpala();
     const isInShowAllMode = isShowAllMode();
+
+    // 🔴 TAMBAH: Fungsi untuk download template CSV
+    const handleDownloadTemplate = useCallback(() => {
+        try {
+            // Template data untuk import participant Impala
+            const templateData = [
+                {
+                    'full_name': 'Contoh: John Doe',
+                    'email': 'Contoh: john@example.com',
+                    'gender': 'Contoh: Laki-laki',
+                    'phone': 'Contoh: 081234567890',
+                    'category': 'Contoh: Mahasiswa',
+                    'program_name': 'Contoh: Program Impala',
+                    'entity': 'Contoh: Universitas Indonesia',
+                    'address': 'Contoh: Jl. Contoh No. 123',
+                    'notes': 'Contoh: Catatan tambahan'
+                },
+            ];
+            
+            // Convert to CSV
+            const headers = Object.keys(templateData[0]);
+            const csvContent = [
+                headers.join(','),
+                ...templateData.map(row => 
+                    headers.map(header => 
+                        `"${row[header] || ''}"`
+                    ).join(',')
+                )
+            ].join('\n');
+            
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `impala_import_template_${new Date().getTime()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            toast.success('Template CSV berhasil didownload');
+        } catch (error) {
+            console.error('Download template error:', error);
+            toast.error('Gagal mendownload template');
+        }
+    }, []);
+
+    // 🔴 TAMBAH: Fungsi untuk handle file upload
+    const handleFileUpload = useCallback((event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        // Validasi file type
+        if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+            toast.error('Hanya file CSV yang diperbolehkan');
+            return;
+        }
+        
+        // Validasi file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('File terlalu besar. Maksimal 5MB');
+            return;
+        }
+        
+        setImportFile(file);
+    }, []);
+
+    // 🔴 TAMBAH: Fungsi untuk import CSV
+    const handleImportCSV = useCallback(async () => {
+        if (!importFile) {
+            toast.error('Pilih file CSV terlebih dahulu');
+            return;
+        }
+        
+        setIsImporting(true);
+        
+        try {
+            // Read CSV file
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const csvText = e.target.result;
+                    const rows = csvText.split('\n');
+                    const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                    
+                    // Parse CSV data
+                    const importedParticipants = [];
+                    for (let i = 1; i < rows.length; i++) {
+                        if (!rows[i].trim()) continue;
+                        
+                        const values = rows[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                        const participant = {};
+                        
+                        headers.forEach((header, index) => {
+                            participant[header] = values[index] || '';
+                        });
+                        
+                        // Skip contoh data
+                        if (participant.full_name?.includes('Contoh:')) continue;
+                        if (participant.email?.includes('Contoh:')) continue;
+                        
+                        // Validasi data minimal
+                        if (participant.full_name && participant.email) {
+                            importedParticipants.push(participant);
+                        }
+                    }
+                    
+                    if (importedParticipants.length === 0) {
+                        toast.error('Tidak ada data valid yang ditemukan dalam file');
+                        return;
+                    }
+                    
+                    // Simulasi import data (ganti dengan API call sebenarnya)
+                    console.log('Data yang akan diimport:', importedParticipants);
+                    
+                    // Contoh: Simpan ke localStorage untuk demo
+                    // Dalam implementasi real, kirim ke API
+                    const existingParticipants = JSON.parse(localStorage.getItem('impala_participants') || '[]');
+                    const newParticipants = [
+                        ...existingParticipants,
+                        ...importedParticipants.map((participant, index) => ({
+                            id: Date.now() + index,
+                            ...participant,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        }))
+                    ];
+                    localStorage.setItem('impala_participants', JSON.stringify(newParticipants));
+                    
+                    // Reset form
+                    setImportFile(null);
+                    if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                    }
+                    
+                    // Close modal
+                    setIsImportModalOpen(false);
+                    
+                    // Refresh data
+                    await refreshData();
+                    
+                    toast.success(`Berhasil mengimport ${importedParticipants.length} participant`);
+                } catch (parseError) {
+                    console.error('Parse error:', parseError);
+                    toast.error('Format file CSV tidak valid');
+                }
+            };
+            
+            reader.readAsText(importFile);
+        } catch (error) {
+            console.error('Import error:', error);
+            toast.error('Gagal mengimport data');
+        } finally {
+            setIsImporting(false);
+        }
+    }, [importFile, refreshData]);
+
+    // 🔴 TAMBAH: Fungsi untuk open import modal
+    const handleOpenImportModal = useCallback(() => {
+        setImportFile(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+        setIsImportModalOpen(true);
+    }, []);
 
     // GENDER OPTIONS
     const genderOptions = [
@@ -527,6 +708,34 @@ const ImpalaManagement = () => {
                             </div>
 
                             <div className='flex gap-2'>
+                                {/* 🔴 TAMBAH: Import Button dengan Dropdown */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+                                        >
+                                            <Upload className="h-4 w-4" />
+                                            Import
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-48">
+                                        <DropdownMenuItem 
+                                            onClick={handleDownloadTemplate}
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <Download className="h-4 w-4" />
+                                            Download Template
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem 
+                                            onClick={handleOpenImportModal}
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <FileSpreadsheet className="h-4 w-4" />
+                                            Upload File
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                                 
                                 {/* 🔴 MODIFIKASI: Ganti ExportButton dengan Button seperti di Program.jsx */}
                                 <Button 
@@ -539,9 +748,7 @@ const ImpalaManagement = () => {
                                         <Loader2 className="h-4 w-4 animate-spin" />
                                     ) : (
                                         <>
-                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
+                                            <Download className="h-4 w-4" />
                                             Export {isInShowAllMode ? 'All' : ''}
                                         </>
                                     )}
@@ -750,6 +957,102 @@ const ImpalaManagement = () => {
                         detailTitle={tableConfig.detailTitle}
                     />
                 </div>
+
+                {/* 🔴 TAMBAH: Modal Import CSV */}
+                <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
+                    <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl w-[95vw] max-w-[800px]">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-xl">
+                                <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+                                Import Participants from CSV
+                            </DialogTitle>
+                            <DialogDescription className="text-base">
+                                Upload a CSV file to import multiple participants at once.
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4 py-4">
+                            {/* Petunjuk */}
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                                <h4 className="text-sm font-medium text-blue-800 mb-2">Instructions:</h4>
+                                <ul className="text-sm text-blue-600 space-y-1 list-disc list-inside">
+                                    <li>Download the template first for correct format</li>
+                                    <li>Fill in the data according to the columns</li>
+                                    <li>Maximum file size: 5MB</li>
+                                    <li>Only CSV files are supported</li>
+                                </ul>
+                            </div>
+                            
+                            {/* Upload Area */}
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 md:p-8 text-center hover:border-blue-400 transition-colors max-w-full overflow-hidden">
+                                {importFile ? (
+                                    <div className="space-y-3">
+                                        <FileText className="h-12 w-12 text-green-500 mx-auto" />
+                                        <p className="font-medium text-gray-700 text-lg truncate max-w-full px-2">{importFile.name}</p>
+                                        <p className="text-sm text-gray-500">
+                                            {(importFile.size / 1024).toFixed(2)} KB
+                                        </p>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                setImportFile(null);
+                                                if (fileInputRef.current) {
+                                                    fileInputRef.current.value = '';
+                                                }
+                                            }}
+                                            className="text-red-600 hover:text-red-700 mt-2"
+                                        >
+                                            Remove File
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                        <p className="text-base text-gray-600 mb-3 px-2">
+                                            <strong>Drag & drop your CSV file here, or click to browse</strong>
+                                        </p>
+                                        <Input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".csv"
+                                            onChange={handleFileUpload}
+                                            className="hidden"
+                                            id="csv-upload"
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="mt-2 px-6 py-2"
+                                        >
+                                            Select File
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <DialogFooter className="flex flex-col sm:flex-row gap-3">
+                            <Button
+                                onClick={handleImportCSV}
+                                disabled={!importFile || isImporting}
+                                className="flex items-center gap-2 px-6 py-2 w-full sm:w-auto justify-center"
+                            >
+                                {isImporting ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Importing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="h-4 w-4" />
+                                        Import File
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     )

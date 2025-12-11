@@ -1,0 +1,697 @@
+import React, { useState, useRef } from 'react';
+import { Button } from "../components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
+import { 
+  Upload, 
+  Download, 
+  FileSpreadsheet, 
+  FileText, 
+  Loader2, 
+  AlertCircle,
+  CheckCircle2,
+  X,
+  FileDown
+} from "lucide-react";
+import { toast } from 'react-hot-toast';
+
+const ImportButton = ({ 
+  // Props utama
+  onImport, 
+  onDownloadTemplate,
+  
+  // Props untuk kustomisasi
+  buttonText = "Import CSV",
+  buttonVariant = "outline",
+  buttonClassName = "",
+  disabled = false,
+  
+  // Props untuk konfigurasi CSV
+  expectedColumns = [], // Wajib diisi: array of column names
+  requiredColumns = [], // Kolom yang wajib diisi
+  columnDisplayNames = {}, // Mapping nama kolom untuk display
+  sampleData = [], // Data contoh untuk template
+  
+  // Props untuk kustomisasi UI
+  title = "Import Data",
+  description = "Upload file CSV untuk mengimport data secara massal.",
+  instructionText = null,
+  
+  // Props untuk validasi kustom
+  customValidators = [], // Array of validator functions
+  maxFileSize = 5, // MB
+}) => {
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importPreview, setImportPreview] = useState(null);
+  const [validationErrors, setValidationErrors] = useState([]);
+  const [importSummary, setImportSummary] = useState(null);
+  
+  const fileInputRef = useRef(null);
+
+  // Default sample data jika tidak disediakan
+  const defaultSampleData = expectedColumns.length > 0 ? [
+    Object.fromEntries(
+      expectedColumns.map(col => [col, `Contoh: ${columnDisplayNames[col] || col}`])
+    )
+  ] : [];
+
+  // Validasi file CSV
+  const validateCSVFile = (file) => {
+    const errors = [];
+    
+    // Validasi ekstensi file
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      errors.push('File harus berformat CSV (.csv)');
+    }
+    
+    // Validasi ukuran file
+    if (file.size > maxFileSize * 1024 * 1024) {
+      errors.push(`Ukuran file maksimal ${maxFileSize}MB`);
+    }
+    
+    // Validasi tipe MIME
+    const validTypes = ['text/csv', 'application/vnd.ms-excel', 'text/plain'];
+    if (!validTypes.includes(file.type) && file.type !== '') {
+      errors.push('Tipe file tidak valid. Hanya file CSV yang diperbolehkan');
+    }
+    
+    return errors;
+  };
+
+  // Validasi row data dengan validators kustom
+  const validateRowData = (row, rowIndex) => {
+    const errors = [];
+    
+    // Validasi kolom wajib
+    requiredColumns.forEach(column => {
+      if (!row[column] || row[column].trim() === '') {
+        errors.push(`Baris ${rowIndex}: Kolom "${columnDisplayNames[column] || column}" wajib diisi`);
+      }
+    });
+    
+    // Validasi format email jika ada kolom email
+    if (row.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(row.email)) {
+        errors.push(`Baris ${rowIndex}: Format email tidak valid`);
+      }
+    }
+    
+    // Jalankan validators kustom
+    customValidators.forEach((validator, index) => {
+      try {
+        const result = validator(row, rowIndex);
+        if (result && typeof result === 'string') {
+          errors.push(`Baris ${rowIndex}: ${result}`);
+        }
+      } catch (error) {
+        console.warn(`Custom validator ${index} error:`, error);
+      }
+    });
+    
+    return errors;
+  };
+
+  // Parse CSV file
+  const parseCSV = (text) => {
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+    if (lines.length === 0) {
+      throw new Error('File CSV kosong');
+    }
+    
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    
+    // Validasi header jika expectedColumns disediakan
+    if (expectedColumns.length > 0) {
+      const missingColumns = expectedColumns.filter(col => !headers.includes(col));
+      if (missingColumns.length > 0) {
+        throw new Error(`Kolom yang hilang: ${missingColumns.join(', ')}`);
+      }
+    }
+    
+    // Parse data
+    const data = [];
+    const errors = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      try {
+        // Handle quoted fields with commas
+        const regex = /(".*?"|[^",]+)(?=\s*,|\s*$)/g;
+        const matches = line.match(regex) || [];
+        const values = matches.map(value => value.trim().replace(/"/g, ''));
+        
+        if (values.length !== headers.length) {
+          errors.push(`Baris ${i + 1}: Jumlah kolom tidak sesuai dengan header`);
+          continue;
+        }
+        
+        const row = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] || '';
+        });
+        
+        // Skip contoh data dari template
+        if (Object.values(row).some(value => value.includes('Contoh:'))) {
+          continue;
+        }
+        
+        // Validasi row data
+        const rowErrors = validateRowData(row, i + 1);
+        if (rowErrors.length > 0) {
+          errors.push(...rowErrors);
+          continue;
+        }
+        
+        data.push(row);
+      } catch (error) {
+        errors.push(`Baris ${i + 1}: ${error.message}`);
+      }
+    }
+    
+    return { data, errors, headers };
+  };
+
+  // Handle file upload
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Reset state
+    setValidationErrors([]);
+    setImportSummary(null);
+    
+    // Validasi file
+    const errors = validateCSVFile(file);
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      setImportFile(null);
+      return;
+    }
+    
+    // Read and parse file
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const { data, errors, headers } = parseCSV(text);
+        
+        if (errors.length > 0) {
+          setValidationErrors(errors);
+          if (data.length === 0) {
+            toast.error('Tidak ada data valid yang ditemukan dalam file');
+          } else {
+            toast.error(`Terdapat ${errors.length} error dalam file`);
+          }
+        }
+        
+        if (data.length > 0) {
+          setImportFile(file);
+          setImportPreview({
+            totalRows: data.length + errors.length,
+            validRows: data.length,
+            invalidRows: errors.length,
+            headers,
+            sampleData: data.slice(0, 5) // Preview 5 baris pertama
+          });
+          toast.success(`File berhasil diupload: ${data.length} data valid ditemukan`);
+        } else {
+          setImportFile(null);
+        }
+      } catch (error) {
+        setValidationErrors([error.message]);
+        toast.error('Gagal membaca file CSV');
+      }
+    };
+    
+    reader.readAsText(file, 'UTF-8');
+  };
+
+  // Handle import
+  const handleImport = async () => {
+    if (!importFile) {
+      toast.error('Pilih file terlebih dahulu');
+      return;
+    }
+    
+    setIsProcessing(true);
+    
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const text = e.target.result;
+          const { data, errors } = parseCSV(text);
+          
+          if (data.length === 0) {
+            toast.error('Tidak ada data yang bisa diimport');
+            setIsProcessing(false);
+            return;
+          }
+          
+          // Call parent import handler
+          if (onImport) {
+            const result = await onImport(data);
+            
+            // Show summary
+            setImportSummary({
+              totalProcessed: data.length,
+              successful: result?.successful || data.length,
+              failed: result?.failed || errors.length,
+              errors: result?.errors || errors
+            });
+            
+            if (result?.successful > 0) {
+              toast.success(`Berhasil mengimport ${result.successful} data`);
+              
+              // Reset and close modal after success
+              setTimeout(() => {
+                resetImportState();
+                setIsImportModalOpen(false);
+              }, 3000);
+            }
+          }
+        } catch (error) {
+          toast.error(`Error saat import: ${error.message}`);
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+      
+      reader.readAsText(importFile, 'UTF-8');
+    } catch (error) {
+      console.error('Import error:', error);
+      toast.error('Gagal melakukan import');
+      setIsProcessing(false);
+    }
+  };
+
+  // Reset import state
+  const resetImportState = () => {
+    setImportFile(null);
+    setImportPreview(null);
+    setValidationErrors([]);
+    setImportSummary(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Handle download template
+  const handleDownloadTemplate = () => {
+    if (onDownloadTemplate) {
+      onDownloadTemplate();
+    } else {
+      // Generate template dari konfigurasi
+      const templateData = sampleData.length > 0 ? sampleData : defaultSampleData;
+      
+      if (templateData.length === 0) {
+        toast.error('Tidak ada konfigurasi kolom untuk template');
+        return;
+      }
+      
+      const headers = expectedColumns.length > 0 ? expectedColumns : Object.keys(templateData[0]);
+      const csvContent = [
+        headers.join(','),
+        ...templateData.map(row => 
+          headers.map(header => 
+            `"${row[header] || ''}"`
+          ).join(',')
+        )
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `import_template_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Template berhasil didownload');
+    }
+  };
+
+  return (
+    <>
+      {/* Import Button dengan Dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant={buttonVariant}
+            disabled={disabled}
+            className={`flex items-center gap-2 ${buttonClassName}`}
+          >
+            <Upload className="h-4 w-4" />
+            {buttonText}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56">
+          <DropdownMenuItem 
+            onClick={handleDownloadTemplate}
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <FileDown className="h-4 w-4" />
+            <div>
+              <div className="font-medium">Download Template</div>
+              <div className="text-xs text-gray-500">Format CSV yang benar</div>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            <div>
+              <div className="font-medium">Upload File CSV</div>
+              <div className="text-xs text-gray-500">Import data dari file</div>
+            </div>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Import Modal */}
+      <Dialog open={isImportModalOpen} onOpenChange={(open) => {
+        if (!open) {
+          resetImportState();
+        }
+        setIsImportModalOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <FileSpreadsheet className="h-6 w-6 text-blue-600" />
+              {title}
+            </DialogTitle>
+            <DialogDescription>
+              {description}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Step Indicator */}
+          <div className="flex items-center justify-between mb-6">
+            <div className={`flex items-center gap-2 ${importFile ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${importFile ? 'bg-blue-100 border-2 border-blue-600' : 'bg-gray-100 border-2 border-gray-300'}`}>
+                1
+              </div>
+              <span className="text-sm font-medium">Upload File</span>
+            </div>
+            <div className="flex-1 h-0.5 mx-4 bg-gray-200"></div>
+            <div className={`flex items-center gap-2 ${importSummary ? 'text-green-600' : 'text-gray-400'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${importSummary ? 'bg-green-100 border-2 border-green-600' : 'bg-gray-100 border-2 border-gray-300'}`}>
+                2
+              </div>
+              <span className="text-sm font-medium">Import Selesai</span>
+            </div>
+          </div>
+
+          {/* Upload Section */}
+          {!importSummary && (
+            <div className="space-y-4">
+              {/* Petunjuk */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-blue-800 mb-2 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  {instructionText || 'Petunjuk Import:'}
+                </h4>
+                <ul className="text-xs text-blue-600 space-y-1 list-disc list-inside">
+                  <li>Download template terlebih dahulu untuk format yang benar</li>
+                  {requiredColumns.length > 0 && (
+                    <li>Kolom wajib: {requiredColumns.map(col => columnDisplayNames[col] || col).join(', ')}</li>
+                  )}
+                  <li>Maksimal ukuran file: {maxFileSize}MB</li>
+                  <li>Hanya file CSV (.csv) yang didukung</li>
+                </ul>
+              </div>
+
+              {/* Upload Area */}
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
+                {importFile ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-center gap-3">
+                      <FileText className="h-12 w-12 text-green-500" />
+                      <div className="text-left">
+                        <p className="font-medium text-gray-800">{importFile.name}</p>
+                        <p className="text-sm text-gray-500">
+                          {(importFile.size / 1024).toFixed(2)} KB • {importPreview?.validRows || 0} data valid
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Preview Data */}
+                    {importPreview && importPreview.sampleData.length > 0 && (
+                      <div className="mt-4 border rounded-lg overflow-hidden">
+                        <div className="bg-gray-50 px-4 py-2 border-b">
+                          <h5 className="text-sm font-medium text-gray-700">
+                            Preview Data ({importPreview.validRows} data valid)
+                          </h5>
+                        </div>
+                        <div className="max-h-60 overflow-y-auto">
+                          <table className="w-full text-xs">
+                            <thead className="bg-gray-100">
+                              <tr>
+                                {importPreview.headers.slice(0, Math.min(4, importPreview.headers.length)).map((header, index) => (
+                                  <th key={index} className="p-2 text-left border-b font-medium text-gray-700">
+                                    {columnDisplayNames[header] || header}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {importPreview.sampleData.map((row, rowIndex) => (
+                                <tr key={rowIndex} className="border-b hover:bg-gray-50">
+                                  {importPreview.headers.slice(0, Math.min(4, importPreview.headers.length)).map((header, colIndex) => (
+                                    <td key={colIndex} className="p-2 truncate max-w-[120px]">
+                                      {row[header] || '-'}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-2 justify-center pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={resetImportState}
+                        className="flex items-center gap-2"
+                      >
+                        <X className="h-4 w-4" />
+                        Ganti File
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                      <Upload className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">
+                      Drag & drop file CSV Anda di sini
+                    </p>
+                    <p className="text-xs text-gray-500 mb-4">
+                      atau klik untuk memilih file dari komputer
+                    </p>
+                    <Input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="csv-upload"
+                    />
+                    <Button
+                      variant="default"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-6"
+                    >
+                      Pilih File
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {/* Error Messages */}
+              {validationErrors.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-red-800 mb-2 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    Terdapat {validationErrors.length} error:
+                  </h4>
+                  <ul className="text-xs text-red-600 space-y-1 max-h-32 overflow-y-auto">
+                    {validationErrors.slice(0, 10).map((error, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="mt-1">•</span>
+                        <span>{error}</span>
+                      </li>
+                    ))}
+                    {validationErrors.length > 10 && (
+                      <li className="text-red-500 text-xs italic">
+                        ... dan {validationErrors.length - 10} error lainnya
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+
+              {/* Kolom yang diharapkan */}
+              {expectedColumns.length > 0 && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    Format Kolom yang Diharapkan:
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {expectedColumns.map((column, index) => (
+                      <span 
+                        key={index}
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          requiredColumns.includes(column)
+                            ? 'bg-red-100 text-red-800 border border-red-300'
+                            : 'bg-white text-gray-600 border border-gray-300'
+                        }`}
+                      >
+                        {columnDisplayNames[column] || column}
+                        {requiredColumns.includes(column) && ' *'}
+                      </span>
+                    ))}
+                  </div>
+                  {requiredColumns.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      * Kolom dengan tanda bintang wajib diisi
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Import Summary */}
+          {importSummary && (
+            <div className="space-y-6">
+              <div className={`${importSummary.successful > 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} border rounded-xl p-6 text-center`}>
+                {importSummary.successful > 0 ? (
+                  <>
+                    <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">
+                      Import Berhasil!
+                    </h3>
+                    <p className="text-green-600">
+                      {importSummary.successful} dari {importSummary.totalProcessed} data berhasil diimport
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+                      Import Gagal
+                    </h3>
+                    <p className="text-yellow-600">
+                      Tidak ada data yang berhasil diimport
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {importSummary.totalProcessed > 0 && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-blue-600">{importSummary.successful}</div>
+                    <div className="text-sm text-blue-800">Berhasil</div>
+                  </div>
+                  <div className="bg-red-50 p-4 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-red-600">{importSummary.failed}</div>
+                    <div className="text-sm text-red-800">Gagal</div>
+                  </div>
+                </div>
+              )}
+
+              {importSummary.errors.length > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-yellow-800 mb-2">
+                    Data yang gagal diimport:
+                  </h4>
+                  <ul className="text-xs text-yellow-600 space-y-1 max-h-32 overflow-y-auto">
+                    {importSummary.errors.slice(0, 5).map((error, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="mt-1">•</span>
+                        <span>{error}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="text-center text-sm text-gray-500">
+                Modal akan tertutup otomatis dalam 3 detik...
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
+            {!importSummary && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadTemplate}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Template
+                </Button>
+                <div className="flex-1"></div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    resetImportState();
+                    setIsImportModalOpen(false);
+                  }}
+                >
+                  Batal
+                </Button>
+                <Button
+                  onClick={handleImport}
+                  disabled={!importFile || isProcessing || validationErrors.length > 0}
+                  className="flex items-center gap-2"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Memproses...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      Import Data
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+export default ImportButton;
