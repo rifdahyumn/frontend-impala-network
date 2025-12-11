@@ -2,7 +2,7 @@ import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X, RefreshCw, CheckSquare } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'; // 🔴 TAMBAHKAN useRef
 import SearchBar from '../components/SearchFilter/SearchBar';
 // HAPUS Import ExportButton
 // import ExportButton from "../components/ActionButton/ExportButton";
@@ -24,6 +24,12 @@ import {
 
 const ImpalaManagement = () => {
     const [selectedParticipant, setSelectedParticipant] = useState(null);
+    
+    // 🔴 TAMBAHKAN: State untuk visual feedback auto-scroll
+    const [highlightDetail, setHighlightDetail] = useState(false);
+    
+    // 🔴 TAMBAHKAN: Ref untuk auto-scroll ke detail section
+    const participantDetailRef = useRef(null);
     
     // 🔴 DIUBAH: State filter yang disederhanakan sama seperti ProgramClient.jsx
     const [localFilters, setLocalFilters] = useState({
@@ -52,6 +58,34 @@ const ImpalaManagement = () => {
         refreshData,
         exportParticipants // 🔴 TAMBAHKAN: Pastikan ini ada di hook
     } = useImpala();
+
+    // 🔴 TAMBAHKAN: Fungsi untuk handle select participant dengan auto-scroll
+    const handleSelectParticipant = useCallback((participant) => {
+        // Set selected participant
+        setSelectedParticipant(participant);
+        
+        // Trigger highlight effect
+        setHighlightDetail(true);
+        
+        // Auto-scroll ke participant detail section
+        setTimeout(() => {
+            if (participantDetailRef.current) {
+                participantDetailRef.current.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start',
+                    inline: 'nearest'
+                });
+                
+                // Tambahkan smooth transition effect
+                participantDetailRef.current.style.transition = 'all 0.5s ease';
+                
+                // Remove highlight after 2 seconds
+                setTimeout(() => {
+                    setHighlightDetail(false);
+                }, 2000);
+            }
+        }, 150); // Delay sedikit untuk memastikan DOM sudah update
+    }, []);
 
     // 🔴 DIUBAH: Get state dari hook
     const { showAllOnSearch } = useImpala();
@@ -125,8 +159,14 @@ const ImpalaManagement = () => {
             category: '',
         });
         
+        // Reset selected participant saat clear filter
+        setSelectedParticipant(null);
+        
         // Panggil hook untuk clear semua
         await hookClearFilters();
+        
+        // Scroll ke atas
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [hookClearFilters]);
 
     // 🔴 DIUBAH: Clear specific filter
@@ -213,7 +253,11 @@ const ImpalaManagement = () => {
         if (selectedParticipant) {
             if (window.confirm(`Are you sure you want to delete ${selectedParticipant.full_name}?`)) {
                 console.log('Delete participant:', selectedParticipant);
-                setSelectedParticipant(null); 
+                setSelectedParticipant(null);
+                toast.success('Participant deleted successfully');
+                
+                // Scroll ke atas setelah delete
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
     };
@@ -223,6 +267,9 @@ const ImpalaManagement = () => {
             const currentSelected = participant.find(p => p.id === selectedParticipant.id)
             if (currentSelected) {
                 setSelectedParticipant(currentSelected)
+            } else {
+                // Jika participant tidak ditemukan (mungkin dihapus atau difilter)
+                setSelectedParticipant(null);
             }
         }
     }, [participant, selectedParticipant?.id]);
@@ -649,9 +696,10 @@ const ImpalaManagement = () => {
                                         </div>
                                     )}
                                     
+                                    {/* 🔴 MODIFIKASI: Gunakan handleSelectParticipant untuk auto-scroll */}
                                     <MemberTable
                                         members={formattedParticipants}
-                                        onSelectMember={setSelectedParticipant}
+                                        onSelectMember={handleSelectParticipant} // ← Ganti dengan fungsi baru
                                         headers={tableConfig.headers}
                                         isLoading={loading}
                                     />
@@ -665,7 +713,7 @@ const ImpalaManagement = () => {
                                     </div>
                                     
                                     {/* 🔴 MODIFIKASI: Conditional rendering pagination */}
-                                    
+                                    {!isInShowAllMode && pagination.totalPages > 1 ? (
                                         <Pagination 
                                             currentPage={pagination.page}
                                             totalPages={pagination.totalPages}
@@ -674,7 +722,12 @@ const ImpalaManagement = () => {
                                             onPageChange={handlePageChangeModified}
                                             disabled={loading}
                                         />
-                                    )
+                                    ) : isInShowAllMode ? (
+                                        <div className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full flex items-center gap-2">
+                                            <CheckSquare className="h-4 w-4" />
+                                            All results shown in one page
+                                        </div>
+                                    ) : null}
                                 </div>
                             </>
                         )}
@@ -682,12 +735,21 @@ const ImpalaManagement = () => {
                     </CardContent>
                 </Card>
 
-                <ImpalaContent
-                    selectedMember={selectedParticipant}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    detailTitle={tableConfig.detailTitle}
-                />
+                {/* 🔴 MODIFIKASI: Wrap ImpalaContent dengan div yang memiliki ref untuk auto-scroll */}
+                <div 
+                    ref={participantDetailRef}
+                    className={`
+                        transition-all duration-500 ease-in-out
+                        ${highlightDetail ? 'ring-2 ring-blue-500 rounded-xl p-1 -m-1 bg-blue-50/50' : ''}
+                    `}
+                >
+                    <ImpalaContent
+                        selectedMember={selectedParticipant}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        detailTitle={tableConfig.detailTitle}
+                    />
+                </div>
             </div>
         </div>
     )
