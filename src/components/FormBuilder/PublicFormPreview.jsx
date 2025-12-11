@@ -6,30 +6,55 @@ import FormField from './fields/FormField';
 const PublicFormPreview = ({ fields, category, onBack, formConfig }) => {
     const [formData, setFormData] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showDisabilityField, setShowDisabilityField] = useState(false);
     
     // ===== UPDATE DOCUMENT TITLE BASED ON FORM CONFIG =====
     useEffect(() => {
         if (formConfig && formConfig.title) {
-            // Gunakan title dari formConfig yang sudah ada
             document.title = `${formConfig.title} | Impala Network`;
         } else if (category) {
-            // Fallback ke category name
             document.title = `Pendaftaran Program ${category.name} | Impala Network`;
         } else {
             document.title = 'Form Pendaftaran | Impala Network';
         }
         
-        // Cleanup: kembalikan title default saat komponen unmount
         return () => {
             document.title = 'Impala Network';
         };
     }, [formConfig, category]);
 
+    // ===== EFEX UNTUK MENANGANI PERUBAHAN FIELD DISABILITAS =====
+    useEffect(() => {
+        // Update showDisabilityField berdasarkan pilihan user
+        if (formData.is_disability === 'Ya') {
+            setShowDisabilityField(true);
+        } else {
+            setShowDisabilityField(false);
+            // Hapus nilai disability_type jika user memilih "Tidak"
+            if (formData.disability_type) {
+                setFormData(prev => ({
+                    ...prev,
+                    disability_type: ''
+                }));
+            }
+        }
+    }, [formData.is_disability]);
+
     const handleInputChange = (fieldName, value) => {
-        setFormData(prev => ({
-            ...prev,
-            [fieldName]: value
-        }));
+        // Jika field is_disability berubah, langsung update formData
+        if (fieldName === 'is_disability') {
+            setFormData(prev => ({
+                ...prev,
+                [fieldName]: value,
+                // Jika memilih "Tidak", reset disability_type
+                ...(value !== 'Ya' && { disability_type: '' })
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [fieldName]: value
+            }));
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -37,24 +62,66 @@ const PublicFormPreview = ({ fields, category, onBack, formConfig }) => {
         setIsSubmitting(true);
         
         try {
-            // Simulasi API call
-            console.log('Form data submitted:', formData);
+            // Simpan data dengan format yang benar
+            const submissionData = {
+                ...formData,
+                // Pastikan disability_type hanya ada jika is_disability = 'Ya'
+                disability_type: formData.is_disability === 'Ya' ? formData.disability_type || '' : ''
+            };
             
-            // Tunggu 2 detik untuk simulasi
+            console.log('Form data submitted:', submissionData);
             await new Promise(resolve => setTimeout(resolve, 2000));
             
             alert('Form berhasil dikirim! Terima kasih telah mendaftar.');
-            setFormData({}); // Reset form
+            
+            // Reset form
+            setFormData({});
+            setShowDisabilityField(false);
         } catch (error) {
             alert('Terjadi error saat mengirim form. Silakan coba lagi.');
+            console.error('Submit error:', error);
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // Pisahkan fields menjadi personal info dan additional info
-    const personalInfoFields = fields.slice(0, 5);
-    const additionalFields = fields.slice(5);
+    // ===== FUNGSI UNTUK MENGELOMPOKKAN FIELDS =====
+    const organizeFields = () => {
+        const personalInfoFields = [];
+        const additionalFields = [];
+        let foundDisabilitySection = false;
+        
+        fields.forEach(field => {
+            // Field pribadi utama (sebelum disability section)
+            if (field.id === 'education' || !foundDisabilitySection) {
+                personalInfoFields.push(field);
+                
+                // Setelah education, kita akan menambahkan is_disability
+                if (field.id === 'education') {
+                    const disabilityField = fields.find(f => f.id === 'is_disability');
+                    if (disabilityField) {
+                        personalInfoFields.push(disabilityField);
+                        foundDisabilitySection = true;
+                    }
+                }
+            } 
+            // Field disability_type akan dihandle secara terpisah
+            else if (field.id === 'disability_type') {
+                // Tidak ditambahkan ke array, akan dihandle secara conditional
+                return;
+            }
+            // Field setelah disability section
+            else if (field.id === 'address' || foundDisabilitySection) {
+                if (field.id !== 'is_disability') {
+                    additionalFields.push(field);
+                }
+            }
+        });
+        
+        return { personalInfoFields, additionalFields };
+    };
+
+    const { personalInfoFields, additionalFields } = organizeFields();
 
     const getCategoryTitle = () => {
         switch(category.id) {
@@ -66,7 +133,6 @@ const PublicFormPreview = ({ fields, category, onBack, formConfig }) => {
         }
     };
 
-    // ===== FUNGSI UNTUK MENDAPATKAN JUDUL FORM =====
     const getFormTitle = () => {
         if (formConfig && formConfig.title) {
             return formConfig.title;
@@ -88,6 +154,33 @@ const PublicFormPreview = ({ fields, category, onBack, formConfig }) => {
         return `Form Pendaftaran ${category?.name || 'Program'}`;
     };
 
+    // ===== FUNGSI UNTUK MENDAPATKAN DISABILITY FIELD CONFIG =====
+    const getDisabilityTypeField = () => {
+        return fields.find(f => f.id === 'disability_type');
+    };
+
+    // ===== RENDER DISABILITY TYPE FIELD =====
+    const renderDisabilityTypeField = () => {
+        if (!showDisabilityField) return null;
+        
+        const disabilityField = getDisabilityTypeField();
+        if (!disabilityField) return null;
+        
+        return (
+            <div key="disability_type" className="mt-2 ml-4 pl-4 border-l-2 border-blue-200 animate-fadeIn">
+                <FormField 
+                    field={disabilityField}
+                    value={formData[disabilityField.name] || ''}
+                    onChange={(value) => handleInputChange(disabilityField.name, value)}
+                    isEditing={false}
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Contoh: Tuna netra, Tuna rungu, Disabilitas fisik, dll.
+                </p>
+            </div>
+        );
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
             <div className="container mx-auto px-4 max-w-2xl">
@@ -101,11 +194,9 @@ const PublicFormPreview = ({ fields, category, onBack, formConfig }) => {
                 {/* Header */}
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                        {/* ===== JUDUL UTAMA DARI FORM CONFIG ===== */}
                         {getFormTitle()}
                     </h1>
                     <p className="text-gray-600">
-                        {/* ===== SUBTITLE ===== */}
                         {getFormSubtitle()}
                     </p>
                 </div>
@@ -115,7 +206,6 @@ const PublicFormPreview = ({ fields, category, onBack, formConfig }) => {
                     {/* Form Header */}
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
                         <h2 className="text-xl font-semibold text-center">
-                            {/* ===== JUDUL HEADER FORM ===== */}
                             {getFormHeaderTitle()}
                         </h2>
                     </div>
@@ -137,6 +227,8 @@ const PublicFormPreview = ({ fields, category, onBack, formConfig }) => {
                                                 onChange={(value) => handleInputChange(field.name, value)}
                                                 isEditing={false}
                                             />
+                                            {/* Render disability_type field setelah is_disability jika dipilih "Ya" */}
+                                            {field.id === 'is_disability' && renderDisabilityTypeField()}
                                         </div>
                                     ))}
                                 </div>
@@ -177,6 +269,17 @@ const PublicFormPreview = ({ fields, category, onBack, formConfig }) => {
                                         data yang saya berikan adalah benar.
                                     </label>
                                 </div>
+                            </div>
+
+                            {/* Data Review (optional, untuk debugging) */}
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 hidden">
+                                <h4 className="font-medium text-gray-700 mb-2">Data yang akan dikirim:</h4>
+                                <pre className="text-xs text-gray-600 overflow-auto">
+                                    {JSON.stringify({
+                                        ...formData,
+                                        disability_type: showDisabilityField ? formData.disability_type : '(tidak diisi)'
+                                    }, null, 2)}
+                                </pre>
                             </div>
 
                             {/* Submit Button */}
