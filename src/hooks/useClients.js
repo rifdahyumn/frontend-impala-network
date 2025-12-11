@@ -444,16 +444,15 @@ export const useClients = (initialFilters = {}) => {
         }
     }
 
-    // 🔴 PERBAIKAN: Helper functions
     const getDisplayText = useCallback(() => {
         if (pagination.showingAllResults && filtersRef.current.search) {
             return `Showing all ${members.length} results for "${filtersRef.current.search}"`
         } else if (pagination.showingAllResults) {
             return `Showing all ${members.length} clients`
         } else {
-            const start = ((pagination.page - 1) * pagination.limit) + 1
-            const end = Math.min(pagination.page * pagination.limit, pagination.total)
-            return `Showing ${start} to ${end} of ${pagination.total} clients`
+            // const start = ((pagination.page - 1) * pagination.limit) + 1
+            // const end = Math.min(pagination.page * pagination.limit, pagination.total)
+            // return `Showing ${start} to ${end} of ${pagination.total} clients`
         }
     }, [pagination, members.length])
 

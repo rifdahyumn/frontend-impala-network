@@ -21,7 +21,6 @@ class ClientService {
         return result;
     }
 
-    // 🔴 DIUBAH: Sederhanakan parameter dan gunakan approach yang konsisten
     async fetchClients(params = {}) {
         try {
             const {
@@ -33,7 +32,6 @@ class ClientService {
                 showAllOnSearch = false
             } = params;
 
-            // 🔴 DIUBAH: Build query params dengan approach yang lebih clean
             const queryParams = new URLSearchParams({
                 page: page.toString(),
                 ...(limit > 0 && { limit: limit.toString() }),
@@ -43,22 +41,9 @@ class ClientService {
                 ...(showAllOnSearch && { showAllOnSearch: 'true' })
             });
 
-            // 🔴 DIUBAH: Jika limit = 0 (show all), hapus limit parameter
             if (limit === 0) {
                 queryParams.delete('limit');
             }
-
-            // 🔴 DEBUG: Log query parameters
-            console.log('📡 ClientService - Request URL:', `${this.baseURL}/client?${queryParams}`);
-            console.log('📡 ClientService - Request Params:', {
-                page,
-                limit,
-                search,
-                status,
-                businessType,
-                showAllOnSearch,
-                queryString: queryParams.toString()
-            });
 
             const response = await fetch(`${this.baseURL}/client?${queryParams}`, {
                 method: 'GET',
@@ -69,7 +54,6 @@ class ClientService {
 
             const result = await this.handleResponse(response);
 
-            // 🔴 DIUBAH: Tambahkan metadata jika tidak ada
             if (!result.metadata) {
                 result.metadata = {
                     pagination: {
@@ -83,13 +67,6 @@ class ClientService {
                 };
             }
 
-            // 🔴 DEBUG: Log response
-            console.log('📡 ClientService - Response:', {
-                dataCount: result.data?.length,
-                pagination: result.metadata?.pagination,
-                showingAllResults: result.metadata?.pagination?.showingAllResults
-            });
-
             return result;
 
         } catch (error) {
@@ -98,25 +75,16 @@ class ClientService {
         }
     }
 
-    // 🔴 DIUBAH: Sederhanakan fetchAllClients
     async fetchAllClients(filters = {}) {
         try {
-            // 🔴 DIUBAH: Gunakan fetchClients dengan limit 0 untuk mengambil semua data
             const params = {
                 ...filters,
                 page: 1,
-                limit: 0, // 🔴 Limit 0 = get all data
+                limit: 0, 
                 showAllOnSearch: true
             };
 
-            console.log('📡 ClientService - Fetch All Clients:', { params });
-
             const result = await this.fetchClients(params);
-
-            console.log('📡 ClientService - All Clients Response:', {
-                totalCount: result.data?.length,
-                filtersApplied: filters.search || filters.status || filters.businessType
-            });
 
             return result;
 
@@ -126,7 +94,6 @@ class ClientService {
         }
     }
 
-    // 🔴 DIUBAH: Helper untuk build URL dengan filter
     buildClientQueryUrl(params = {}) {
         const {
             page = 1,
@@ -149,10 +116,8 @@ class ClientService {
         return `${this.baseURL}/client?${queryParams}`;
     }
 
-    // 🔴 DIUBAH: Add client dengan error handling yang lebih baik
     async addClient(clientData) {
         try {
-            // 🔴 VALIDASI: Pastikan data yang diperlukan ada
             if (!clientData.full_name || !clientData.email) {
                 throw new Error('Full name and email are required');
             }
@@ -173,10 +138,8 @@ class ClientService {
         }
     }
 
-    // 🔴 DIUBAH: Update client
     async updateClient(clientId, clientData) {
         try {
-            // 🔴 VALIDASI: Pastikan clientId valid
             if (!clientId) {
                 throw new Error('Client ID is required');
             }
@@ -196,10 +159,8 @@ class ClientService {
         }
     }
 
-    // 🔴 DIUBAH: Delete client
     async deleteClient(clientId) {
         try {
-            // 🔴 VALIDASI: Pastikan clientId valid
             if (!clientId) {
                 throw new Error('Client ID is required');
             }
@@ -218,7 +179,20 @@ class ClientService {
         }
     }
 
-    // 🔴 DIUBAH: Fetch client stats
+    async searchClient(name, email) {
+        try {
+            const params = new URLSearchParams()
+            if (name) params.append('name', name)
+            if (email) params.append('email', email)
+
+            const response = await fetch(`${this.baseURL}/client/search?${params.toString()}`)
+            return await this.handleResponse(response) 
+        } catch (error) {
+            console.error('Error searching client:', error);
+            throw error;
+        }
+    }
+
     async fetchClientStats() {
         try {
             const response = await fetch(`${this.baseURL}/client/stats`, {
@@ -232,7 +206,6 @@ class ClientService {
         } catch (error) {
             console.error('Error fetching client stats:', error);
             
-            // 🔴 FALLBACK: Return default stats jika API error
             return {
                 success: true,
                 data: {
@@ -250,12 +223,8 @@ class ClientService {
         }
     }
 
-    // 🔴 DIUBAH: Export clients dengan format yang berbeda
     async exportClients(filters = {}, format = 'csv') {
         try {
-            console.log('📡 ClientService - Exporting clients:', { filters, format });
-
-            // Gunakan fetchAllClients untuk mendapatkan semua data dengan filter
             const result = await this.fetchAllClients(filters);
             
             if (!result.data || result.data.length === 0) {
@@ -264,8 +233,7 @@ class ClientService {
 
             if (format.toLowerCase() === 'csv') {
                 const csvContent = this.convertToCSV(result.data);
-                
-                // 🔴 Helper untuk download file
+
                 this.downloadFile(csvContent, `clients_export_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
                 
                 return {
@@ -274,7 +242,6 @@ class ClientService {
                     data: result.data
                 };
             } else if (format.toLowerCase() === 'json') {
-                // 🔴 Helper untuk download JSON file
                 const jsonContent = JSON.stringify(result.data, null, 2);
                 this.downloadFile(jsonContent, `clients_export_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
                 
@@ -293,29 +260,21 @@ class ClientService {
         }
     }
 
-    // 🔴 DIUBAH: Helper untuk konversi ke CSV
     convertToCSV(data) {
         if (!data || data.length === 0) return '';
-
-        // 🔴 Tentukan headers berdasarkan data pertama
         const headers = Object.keys(data[0] || {});
-        
-        // 🔴 Siapkan rows
         const csvRows = [
-            headers.join(','), // Header row
+            headers.join(','), 
             ...data.map(row => 
                 headers.map(header => {
                     const value = row[header];
-                    
-                    // 🔴 Handle berbagai tipe data
+
                     if (value === null || value === undefined) {
                         return '';
                     }
-                    
-                    // 🔴 Escape quotes dan convert ke string
+
                     const stringValue = String(value).replace(/"/g, '""');
                     
-                    // 🔴 Wrap dalam quotes jika mengandung comma, newline, atau quotes
                     if (stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('"')) {
                         return `"${stringValue}"`;
                     }
@@ -328,7 +287,6 @@ class ClientService {
         return csvRows.join('\n');
     }
 
-    // 🔴 DIUBAH: Helper untuk download file
     downloadFile(content, filename, mimeType) {
         try {
             const blob = new Blob([content], { type: mimeType });
@@ -343,26 +301,21 @@ class ClientService {
             link.click();
             document.body.removeChild(link);
             
-            // 🔴 Cleanup
             window.URL.revokeObjectURL(url);
             
-            console.log('📡 ClientService - File downloaded:', filename);
         } catch (error) {
             console.error('Error downloading file:', error);
             throw error;
         }
     }
 
-    // 🔴 DIUBAH: Cek apakah sedang dalam mode show all
     isShowAllMode(paginationData) {
         return paginationData?.showingAllResults || paginationData?.isShowAllMode || false;
     }
 
-    // 🔴 DIUBAH: Hitung display info
     calculateDisplayInfo(paginationData, dataLength = 0) {
         if (!paginationData) {
             return {
-                showingText: `Showing ${dataLength} clients`,
                 isShowAllMode: false,
                 total: dataLength,
                 page: 1,
@@ -375,7 +328,6 @@ class ClientService {
         
         if (isShowAll && searchTerm) {
             return {
-                showingText: `Showing all ${dataLength} results for "${searchTerm}"`,
                 isShowAllMode: true,
                 total: dataLength,
                 page: 1,
@@ -402,13 +354,12 @@ class ClientService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Get filtered clients count
     async getFilteredCount(filters = {}) {
         try {
             const result = await this.fetchClients({
                 ...filters,
                 page: 1,
-                limit: 1 // Hanya perlu count, ambil 1 item saja
+                limit: 1
             });
 
             return result.metadata?.pagination?.total || 0;
@@ -418,11 +369,9 @@ class ClientService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Validate filter parameters
     validateFilters(filters = {}) {
         const validFilters = {};
         
-        // 🔴 Hanya ambil filter yang valid
         if (filters.search && typeof filters.search === 'string' && filters.search.trim()) {
             validFilters.search = filters.search.trim();
         }
@@ -438,7 +387,6 @@ class ClientService {
         return validFilters;
     }
 
-    // 🔴 FUNGSI BARU: Batch operations
     async batchUpdate(clientsData) {
         try {
             if (!Array.isArray(clientsData) || clientsData.length === 0) {
@@ -466,7 +414,6 @@ class ClientService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Search suggestions
     async getSearchSuggestions(searchTerm, limit = 5) {
         try {
             if (!searchTerm || searchTerm.length < 2) {
@@ -479,7 +426,6 @@ class ClientService {
                 page: 1
             });
 
-            // 🔴 Extract suggestions dari hasil
             const suggestions = (result.data || []).map(client => ({
                 id: client.id,
                 name: client.full_name,
@@ -495,7 +441,6 @@ class ClientService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Get available filters from data
     extractAvailableFilters(clients) {
         if (!clients || !Array.isArray(clients)) {
             return {
