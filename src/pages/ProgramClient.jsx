@@ -27,17 +27,14 @@ const ProgramClient = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
     
-    // 🔴 DIUBAH: State filter yang disederhanakan
     const [localFilters, setLocalFilters] = useState({
         search: '',
         status: '',
         businessType: '',
     });
-    
-    // 🔴 DIUBAH: State untuk business types
+
     const [availableBusinessTypes, setAvailableBusinessTypes] = useState([]);
 
-    // Gunakan hook dengan semua fungsi baru
     const {
         members,
         loading,
@@ -60,21 +57,17 @@ const ProgramClient = () => {
         refreshData
     } = useClients();
 
-    // 🔴 DIUBAH: Get state dari hook
     const { showAllOnSearch } = useClients();
     const isInShowAllMode = isShowAllMode();
 
-    // 🔴 DIUBAH: Apply filters dengan state lokal
     const applyFilters = useCallback(async () => {
         await updateFiltersAndFetch(localFilters, showAllOnSearch);
     }, [localFilters, showAllOnSearch, updateFiltersAndFetch]);
 
-    // 🔴 DIUBAH: Apply search dengan state lokal
     const applySearch = useCallback(async () => {
         await searchClients(localFilters.search, showAllOnSearch);
     }, [localFilters.search, showAllOnSearch, searchClients]);
 
-    // EKSTRAK SEMUA STATUS UNIK DARI DATA CLIENT
     const availableStatuses = useMemo(() => {
         if (!members.length) return [];
         
@@ -86,12 +79,11 @@ const ProgramClient = () => {
         
         return uniqueStatuses.map(status => ({
             value: status.toLowerCase(),
-            label: status === 'active' ? '🟢 Active' : status === 'inactive' ? '🔴 Inactive' : `📌 ${status}`,
+            label: status === 'active' ? 'Active' : status === 'inactive' ? 'Inactive' : `${status}`,
             original: status
         }));
     }, [members]);
 
-    // 🔴 DIUBAH: Extract business types yang lebih sederhana
     useEffect(() => {
         if (members.length > 0) {
             const allBusinessTypes = members
@@ -102,7 +94,7 @@ const ProgramClient = () => {
             
             const formattedTypes = uniqueBusinessTypes.map(businessType => ({
                 value: businessType.toLowerCase(),
-                label: `🏢 ${businessType}`,
+                label: `${businessType}`,
                 original: businessType
             }));
             
@@ -110,29 +102,25 @@ const ProgramClient = () => {
         }
     }, [members]);
 
-    // STATUS OPTIONS
     const statusOptions = [
-        { value: 'active', label: '🟢 Active', color: 'text-green-600 bg-green-50' },
-        { value: 'inactive', label: '🔴 Inactive', color: 'text-red-600 bg-red-50' },
+        { value: 'active', label: 'Active', color: 'text-green-600 bg-green-50' },
+        { value: 'inactive', label: 'Inactive', color: 'text-red-600 bg-red-50' },
     ];
 
-    // 🔴 DIUBAH: Handle search dengan debounce
     const handleSearch = useCallback((term) => {
         setLocalFilters(prev => ({ ...prev, search: term }));
     }, []);
 
-    // 🔴 DIUBAH: Apply search ketika search term berubah (dengan debounce effect)
     useEffect(() => {
         const timer = setTimeout(() => {
             if (localFilters.search !== '') {
                 applySearch();
             }
-        }, 500); // Debounce 500ms
+        }, 500);
         
         return () => clearTimeout(timer);
     }, [localFilters.search, applySearch]);
 
-    // 🔴 DIUBAH: Apply filters ketika filter berubah
     useEffect(() => {
         if (localFilters.status !== '' || localFilters.businessType !== '') {
             const timer = setTimeout(() => {
@@ -143,7 +131,6 @@ const ProgramClient = () => {
         }
     }, [localFilters.status, localFilters.businessType, applyFilters]);
 
-    // 🔴 DIUBAH: Handle status filter change yang lebih sederhana
     const handleStatusFilterChange = useCallback((status) => {
         setLocalFilters(prev => ({
             ...prev,
@@ -151,7 +138,6 @@ const ProgramClient = () => {
         }));
     }, []);
 
-    // 🔴 DIUBAH: Handle business type filter change yang lebih sederhana
     const handleBusinessTypeFilterChange = useCallback((businessType) => {
         setLocalFilters(prev => ({
             ...prev,
@@ -159,7 +145,6 @@ const ProgramClient = () => {
         }));
     }, []);
 
-    // 🔴 DIUBAH: Clear all filters yang lebih sederhana
     const clearAllFilters = useCallback(async () => {
         // Reset state lokal
         setLocalFilters({
@@ -168,14 +153,11 @@ const ProgramClient = () => {
             businessType: '',
         });
         
-        // Panggil hook untuk clear semua
         await hookClearFilters();
         
-        // Fetch data tanpa filter
         await fetchClients(1, {}, false);
     }, [hookClearFilters, fetchClients]);
 
-    // 🔴 DIUBAH: Clear specific filter
     const clearFilter = useCallback((filterType) => {
         if (filterType === 'search') {
             setLocalFilters(prev => ({ ...prev, search: '' }));
@@ -186,22 +168,18 @@ const ProgramClient = () => {
         setLocalFilters(prev => ({ ...prev, [filterType]: '' }));
     }, [hookClearSearch]);
 
-    // 🔴 MODIFIKASI: Toggle show all on search
     const handleToggleShowAll = useCallback(async (checked) => {
         await toggleShowAllOnSearch(checked);
         
-        // Re-apply filters dengan mode baru
         if (localFilters.search || localFilters.status || localFilters.businessType) {
             await applyFilters();
         }
     }, [toggleShowAllOnSearch, localFilters, applyFilters]);
 
-    // 🔴 MODIFIKASI: Reset to pagination mode
     const handleResetToPagination = useCallback(async () => {
         await resetToPaginationMode();
     }, [resetToPaginationMode]);
 
-    // 🔴 MODIFIKASI: Handle export dengan fungsi baru
     const handleExport = useCallback(async () => {
         try {
             await exportClients('csv');
@@ -292,13 +270,11 @@ const ProgramClient = () => {
         clearAllFilters();
     }, [refreshData, clearAllFilters]);
 
-    // 🔴 MODIFIKASI: Handle page change dengan fungsi dari hook
     const handlePageChange = useCallback((page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         hookHandlePageChange(page);
     }, [hookHandlePageChange]);
 
-    // GET ACTIVE FILTERS COUNT
     const getActiveFiltersCount = useCallback(() => {
         let count = 0;
         if (localFilters.status) count++;
@@ -306,7 +282,6 @@ const ProgramClient = () => {
         return count;
     }, [localFilters]);
 
-    // GET TOTAL ACTIVE CRITERIA (SEARCH + FILTERS) UNTUK DISPLAY
     const getTotalActiveCriteria = useCallback(() => {
         let count = 0;
         if (localFilters.search) count++;
@@ -322,15 +297,13 @@ const ProgramClient = () => {
         return businessType ? businessType.original : businessTypeValue;
     }, [availableBusinessTypes]);
 
-    // GET STATUS LABEL
     const getStatusLabel = useCallback((statusValue) => {
         if (!statusValue) return "";
-        if (statusValue === 'active') return '🟢 Active';
-        if (statusValue === 'inactive') return '🔴 Inactive';
+        if (statusValue === 'active') return 'Active';
+        if (statusValue === 'inactive') return 'Inactive';
         return statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
     }, []);
 
-    // GET BUSINESS TYPE DISPLAY NAME
     const getBusinessDisplayName = useCallback((businessValue) => {
         if (!businessValue) return '-';
         
@@ -345,7 +318,6 @@ const ProgramClient = () => {
         return String(businessValue);
     }, []);
 
-    // 🔴 DIUBAH: Format members
     const formattedMembers = useMemo(() => {
         return members.map((client, index) => {
             const currentPage = pagination.page;
@@ -425,7 +397,6 @@ const ProgramClient = () => {
                                     onChange={(e) => setLocalFilters(prev => ({ ...prev, search: e.target.value }))}
                                 />
                                 
-                                {/* 🔴 MODIFIKASI: Toggle Show All on Search */}
                                 {localFilters.search.trim() !== '' && (
                                     <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
                                         <label className="flex items-center gap-2 cursor-pointer">
@@ -508,7 +479,7 @@ const ProgramClient = () => {
                                                     onCheckedChange={() => handleBusinessTypeFilterChange('all')}
                                                     className="cursor-pointer hover:bg-gray-50"
                                                 >
-                                                    📊 All Business Types
+                                                    All Business Types
                                                 </DropdownMenuCheckboxItem>
                                                 
                                                 {availableBusinessTypes.map((businessType) => (
@@ -518,7 +489,6 @@ const ProgramClient = () => {
                                                         onCheckedChange={() => handleBusinessTypeFilterChange(businessType.value)}
                                                         className="cursor-pointer hover:bg-gray-50"
                                                     >
-                                                        <span className="mr-2">🏢</span>
                                                         {businessType.original}
                                                     </DropdownMenuCheckboxItem>
                                                 ))}
@@ -553,7 +523,7 @@ const ProgramClient = () => {
                                     <Plus className="h-4 w-4" />
                                     {tableConfig.addButton}
                                 </Button>
-                                {/* 🔴 MODIFIKASI: ExportButton */}
+
                                 <Button 
                                     onClick={handleExport}
                                     variant="outline"
@@ -574,7 +544,6 @@ const ProgramClient = () => {
                             </div>
                         </div>
                         
-                        {/* 🔴 MODIFIKASI: Show All Mode Indicator */}
                         {isInShowAllMode && (
                             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                 <div className="flex items-center justify-between">
@@ -730,13 +699,11 @@ const ProgramClient = () => {
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    {/* 🔴 MODIFIKASI: Gunakan getDisplayText dari hook */}
                                     <div className="text-sm text-gray-600">
                                         {getDisplayText()}
                                         {getTotalActiveCriteria() > 0 && !isInShowAllMode && " (filtered)"}
                                     </div>
                                     
-                                    {/* 🔴 MODIFIKASI: Conditional rendering pagination */}
                                     {!isInShowAllMode && pagination.totalPages > 1 ? (
                                         <Pagination 
                                             currentPage={pagination.page}
