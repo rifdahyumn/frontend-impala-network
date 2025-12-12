@@ -1,121 +1,141 @@
-import axios from 'axios'
-
+// locationService.js - Menggunakan Fetch API
 const API_BASE = 'https://ibnux.github.io/data-indonesia'
+
+const fetchWithTimeout = async (url, options = {}) => {
+    const timeout = 10000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+    }
+};
 
 export const locationService = {
     getProvinces: async () => {
         try {
-            const response = await axios.get(`${API_BASE}/provinsi.json`, {
-                timeout: 10000
-            })
+            const data = await fetchWithTimeout(`${API_BASE}/provinsi.json`);
             
-            if (response.data && Array.isArray(response.data)) {
-                const formattedData = response.data.map(prov => ({
+            if (data && Array.isArray(data)) {
+                const formattedData = data.map(prov => ({
                     value: prov.id,
                     label: prov.nama
-                }))
+                }));
                 
-                return formattedData
+                return formattedData;
             } else {
-                console.error('Invalid API response:', response.data)
-                return getFallbackProvinces()
+                console.error('Invalid API response:', data);
+                return getFallbackProvinces();
             }
         } catch (error) {
-            console.error('Error fetching provinces:', error.message)
-            return getFallbackProvinces()
+            console.error('Error fetching provinces:', error.message);
+            return getFallbackProvinces();
         }
     },
 
     getRegencies: async (provinceId) => {
         if (!provinceId) {
-            return []
+            return [];
         }
         
         try {
-            const response = await axios.get(`${API_BASE}/kabupaten/${provinceId}.json`)
+            const data = await fetch(`${API_BASE}/kabupaten/${provinceId}.json`);
+            const response = await data.json();
             
-            if (response.data && Array.isArray(response.data)) {
-                return response.data.map(regency => ({
+            if (response && Array.isArray(response)) {
+                return response.map(regency => ({
                     value: regency.id,
                     label: regency.nama
-                }))
+                }));
             }
-            return []
+            return [];
         } catch (error) {
-            console.error(`Error fetching regencies for ${provinceId}:`, error.message)
-            return []
+            console.error(`Error fetching regencies for ${provinceId}:`, error.message);
+            return [];
         }
     },
 
     getDistricts: async (regencyId) => {
         if (!regencyId) {
-            return []
+            return [];
         }
         
         try {
-            const response = await axios.get(`${API_BASE}/kecamatan/${regencyId}.json`)
+            const data = await fetch(`${API_BASE}/kecamatan/${regencyId}.json`);
+            const response = await data.json();
             
-            if (response.data && Array.isArray(response.data)) {
-                return response.data.map(district => ({
+            if (response && Array.isArray(response)) {
+                return response.map(district => ({
                     value: district.id,
                     label: district.nama 
-                }))
+                }));
             }
-            return []
+            return [];
         } catch (error) {
-            console.error(`Error fetching districts for ${regencyId}:`, error.message)
-            return []
+            console.error(`Error fetching districts for ${regencyId}:`, error.message);
+            return [];
         }
     },
 
     getVillages: async (districtId) => {
         if (!districtId) {
-            return []
+            return [];
         }
         
         try {
-            const response = await axios.get(`${API_BASE}/kelurahan/${districtId}.json`)
+            const data = await fetch(`${API_BASE}/kelurahan/${districtId}.json`);
+            const response = await data.json();
             
-            if (response.data && Array.isArray(response.data)) {
-                return response.data.map(village => ({
+            if (response && Array.isArray(response)) {
+                return response.map(village => ({
                     value: village.id,
-                    label: village.nama // 'nama' bukan 'name'
-                }))
+                    label: village.nama
+                }));
             }
-            return []
+            return [];
         } catch (error) {
-            console.error(`Error fetching villages for ${districtId}:`, error.message)
-            return []
+            console.error(`Error fetching villages for ${districtId}:`, error.message);
+            return [];
         }
     },
 
     getLocationNameById: async (type, id) => {
-        if (!id) return ''
+        if (!id) return '';
 
         try {
-            let endpoint = ''
+            let endpoint = '';
             switch(type) {
                 case 'province': 
-                    // Untuk ibnux API, kita harus fetch semua provinces
-                    const provinces = await axios.get(`${API_BASE}/provinsi.json`)
-                    const province = provinces.data.find(p => p.id === id)
-                    return province ? province.nama : ''
+                    const provinces = await fetch(`${API_BASE}/provinsi.json`);
+                    const provincesData = await provinces.json();
+                    const province = provincesData.find(p => p.id === id);
+                    return province ? province.nama : '';
                 case 'regency': 
-                    // Harus tahu provinceId dulu - ini limitation
-                    // Untuk simple, coba cari di semua data
-                    return `Kabupaten ${id}`
+                    return `Kabupaten ${id}`;
                 case 'district': 
-                    return `Kecamatan ${id}`
+                    return `Kecamatan ${id}`;
                 case 'village': 
-                    return `Kelurahan ${id}`
+                    return `Kelurahan ${id}`;
                 default: return '';
             }
         } catch (error) {
-            console.error(`Error getting ${type} name:`, error)
-            return ''
+            console.error(`Error getting ${type} name:`, error);
+            return '';
         }
     }
-}
+};
 
 const getFallbackProvinces = () => {
     return [
@@ -153,5 +173,7 @@ const getFallbackProvinces = () => {
         { value: '82', label: 'MALUKU UTARA' },
         { value: '91', label: 'PAPUA' },
         { value: '92', label: 'PAPUA BARAT' }
-    ]
-}
+    ];
+};
+
+export default locationService;

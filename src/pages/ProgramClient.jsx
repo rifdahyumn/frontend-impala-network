@@ -130,7 +130,7 @@ const ProgramClient = () => {
         }
     }, []);
 
-    // 🔴 TAMBAH: Fungsi untuk handle file upload
+    // Fungsi untuk handle file upload
     const handleFileUpload = useCallback((event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -150,7 +150,7 @@ const ProgramClient = () => {
         setImportFile(file);
     }, []);
 
-    // 🔴 TAMBAH: Fungsi untuk import CSV
+    // Fungsi untuk import CSV
     const handleImportCSV = useCallback(async () => {
         if (!importFile) {
             toast.error('Pilih file CSV terlebih dahulu');
@@ -240,7 +240,7 @@ const ProgramClient = () => {
         }
     }, [importFile, refreshData]);
 
-    // 🔴 TAMBAH: Fungsi untuk open import modal
+    // Fungsi untuk open import modal
     const handleOpenImportModal = useCallback(() => {
         setImportFile(null);
         if (fileInputRef.current) {
@@ -577,7 +577,6 @@ const ProgramClient = () => {
                             </div>
                         )}
 
-<<<<<<< HEAD
                         {/* SEARCH & FILTER SECTION */}
                         <div className='flex flex-col lg:flex-row gap-4 mb-6 justify-between'>
                             <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
@@ -589,16 +588,6 @@ const ProgramClient = () => {
                                         onChange={(e) => setLocalFilters(prev => ({ ...prev, search: e.target.value }))}
                                     />
                                 </div>
-=======
-                        <div className='flex flex-wrap gap-4 mb-6 justify-between'>
-                            <div className='flex gap-2 items-center flex-wrap'>
-                                <SearchBar 
-                                    onSearch={handleSearch}
-                                    placeholder="Search clients..."
-                                    value={localFilters.search}
-                                    onChange={(e) => setLocalFilters(prev => ({ ...prev, search: e.target.value }))}
-                                />
->>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
                                 
                                 {localFilters.search.trim() !== '' && (
                                     <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
@@ -722,7 +711,7 @@ const ProgramClient = () => {
                                     {tableConfig.addButton}
                                 </Button>
                                 
-                                {/* 🔴 TAMBAH: Import Button dengan Dropdown */}
+                                {/* Import Button dengan Dropdown */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button
@@ -751,7 +740,7 @@ const ProgramClient = () => {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 
-                                {/* 🔴 MODIFIKASI: ExportButton */}
+                                {/* ExportButton */}
                                 <Button 
                                     onClick={handleExport}
                                     variant="outline"
@@ -910,7 +899,6 @@ const ProgramClient = () => {
                                         </div>
                                     )}
                                     
-                                    
                                     <MemberTable
                                         members={formattedMembers}
                                         onSelectMember={handleSelectMember}
@@ -946,7 +934,6 @@ const ProgramClient = () => {
                     </CardContent>
                 </Card>
 
-            
                 <div 
                     ref={clientDetailRef}
                     className={`
@@ -981,7 +968,7 @@ const ProgramClient = () => {
                     onEditClient={handleEditClient}
                 />
 
-                {/* 🔴 PERUBAHAN: Modal Import CSV dengan area upload yang tidak melampaui background */}
+                {/* Modal Import CSV dengan area upload yang tidak melampaui background */}
                 <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
                     <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl w-[95vw] max-w-[800px]">
                         <DialogHeader>
@@ -1006,7 +993,7 @@ const ProgramClient = () => {
                                 </ul>
                             </div>
                             
-                            {/* Upload Area - TAMBAH: max-w-full dan overflow-hidden */}
+                            {/* Upload Area - max-w-full dan overflow-hidden */}
                             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 md:p-8 text-center hover:border-blue-400 transition-colors max-w-full overflow-hidden">
                                 {importFile ? (
                                     <div className="space-y-3">

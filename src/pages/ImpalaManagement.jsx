@@ -1,8 +1,8 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X } from "lucide-react";
+import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X, RefreshCw, Download, Upload, FileText, FileSpreadsheet, CheckSquare } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
 import ExportButton from "../components/ActionButton/ExportButton";
 import MemberTable from '../components/MemberTable/MemberTable';
@@ -19,31 +19,37 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem
 } from "../components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import { toast } from 'react-hot-toast';
 
 const ImpalaManagement = () => {
-    const [selectedParticipant, setSelectedParticipant] = useState(null)
+    const [selectedParticipant, setSelectedParticipant] = useState(null);
+    const [highlightDetail, setHighlightDetail] = useState(false);
+    const participantDetailRef = useRef(null);
     
     // STATE UNTUK FRONTEND FILTERING
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilters, setActiveFilters] = useState({
-        gender: null, // 'male', 'female', atau null
-        category: null, // category atau null
+        gender: null,
+        category: null,
     });
     const [filteredParticipants, setFilteredParticipants] = useState([]);
     const [availableCategories, setAvailableCategories] = useState([]);
+    
+    // STATE UNTUK IMPORT
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [importFile, setImportFile] = useState(null);
+    const [isImporting, setIsImporting] = useState(false);
+    const fileInputRef = useRef(null);
 
-<<<<<<< HEAD
-    const { participant, loading, error, pagination, handlePageChange } = useImpala();
-=======
-    // 🔴 TAMBAHKAN: Fungsi untuk handle select participant dengan auto-scroll
+    const { participant, loading, error, pagination, handlePageChange, refreshData } = useImpala();
+
+    // Fungsi untuk handle select participant dengan auto-scroll
     const handleSelectParticipant = useCallback((participant) => {
-        // Set selected participant
         setSelectedParticipant(participant);
-        
-        // Trigger highlight effect
         setHighlightDetail(true);
         
-        // Auto-scroll ke participant detail section
         setTimeout(() => {
             if (participantDetailRef.current) {
                 participantDetailRef.current.scrollIntoView({ 
@@ -52,25 +58,18 @@ const ImpalaManagement = () => {
                     inline: 'nearest'
                 });
                 
-                // Tambahkan smooth transition effect
                 participantDetailRef.current.style.transition = 'all 0.5s ease';
                 
-                // Remove highlight after 2 seconds
                 setTimeout(() => {
                     setHighlightDetail(false);
                 }, 2000);
             }
-        }, 150); // Delay sedikit untuk memastikan DOM sudah update
+        }, 150);
     }, []);
 
-    // 🔴 DIUBAH: Get state dari hook
-    const { showAllOnSearch } = useImpala();
-    const isInShowAllMode = isShowAllMode();
-
-    // 🔴 TAMBAH: Fungsi untuk download template CSV
+    // Fungsi untuk download template CSV
     const handleDownloadTemplate = useCallback(() => {
         try {
-            // Template data untuk import participant Impala
             const templateData = [
                 {
                     'full_name': 'Contoh: John Doe',
@@ -85,7 +84,6 @@ const ImpalaManagement = () => {
                 },
             ];
             
-            // Convert to CSV
             const headers = Object.keys(templateData[0]);
             const csvContent = [
                 headers.join(','),
@@ -96,7 +94,6 @@ const ImpalaManagement = () => {
                 )
             ].join('\n');
             
-            // Create blob and download
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -114,18 +111,16 @@ const ImpalaManagement = () => {
         }
     }, []);
 
-    // 🔴 TAMBAH: Fungsi untuk handle file upload
+    // Fungsi untuk handle file upload
     const handleFileUpload = useCallback((event) => {
         const file = event.target.files[0];
         if (!file) return;
         
-        // Validasi file type
         if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
             toast.error('Hanya file CSV yang diperbolehkan');
             return;
         }
         
-        // Validasi file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
             toast.error('File terlalu besar. Maksimal 5MB');
             return;
@@ -134,7 +129,7 @@ const ImpalaManagement = () => {
         setImportFile(file);
     }, []);
 
-    // 🔴 TAMBAH: Fungsi untuk import CSV
+    // Fungsi untuk import CSV
     const handleImportCSV = useCallback(async () => {
         if (!importFile) {
             toast.error('Pilih file CSV terlebih dahulu');
@@ -144,7 +139,6 @@ const ImpalaManagement = () => {
         setIsImporting(true);
         
         try {
-            // Read CSV file
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
@@ -152,7 +146,6 @@ const ImpalaManagement = () => {
                     const rows = csvText.split('\n');
                     const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
                     
-                    // Parse CSV data
                     const importedParticipants = [];
                     for (let i = 1; i < rows.length; i++) {
                         if (!rows[i].trim()) continue;
@@ -189,16 +182,13 @@ const ImpalaManagement = () => {
                     ];
                     localStorage.setItem('impala_participants', JSON.stringify(newParticipants));
                     
-                    // Reset form
                     setImportFile(null);
                     if (fileInputRef.current) {
                         fileInputRef.current.value = '';
                     }
                     
-                    // Close modal
                     setIsImportModalOpen(false);
                     
-                    // Refresh data
                     await refreshData();
                     
                     toast.success(`Berhasil mengimport ${importedParticipants.length} participant`);
@@ -224,10 +214,8 @@ const ImpalaManagement = () => {
         }
         setIsImportModalOpen(true);
     }, []);
->>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
 
     const genderOptions = [
-<<<<<<< HEAD
         { value: 'laki-laki', label: '👨 Laki-laki' },
         { value: 'perempuan', label: '👩 Perempuan' },
     ];
@@ -237,135 +225,12 @@ const ImpalaManagement = () => {
         return (participants) => {
             if (!participants.length) return [];
             
-            // Ambil semua category dari data participant
             const allCategories = participants
-=======
-        { value: 'Laki-laki', label: 'Laki-laki' },
-        { value: 'Perempuan', label: 'Perempuan' },
-    ];
-
-    const applyFilters = useCallback(async () => {
-        await updateFiltersAndFetch(localFilters, showAllOnSearch);
-    }, [localFilters, showAllOnSearch, updateFiltersAndFetch]);
-
-    const applySearch = useCallback(async () => {
-        await searchParticipants(localFilters.search, showAllOnSearch);
-    }, [localFilters.search, showAllOnSearch, searchParticipants]);
-
-    const handleSearch = useCallback((term) => {
-        setLocalFilters(prev => ({ ...prev, search: term }));
-    }, []);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (localFilters.search !== '') {
-                applySearch();
-            }
-        }, 500); // Debounce 500ms
-        
-        return () => clearTimeout(timer);
-    }, [localFilters.search, applySearch]);
-
-    // 🔴 DIUBAH: Apply filters ketika filter berubah
-    useEffect(() => {
-        if (localFilters.gender !== '' || localFilters.category !== '') {
-            const timer = setTimeout(() => {
-                applyFilters();
-            }, 300);
-            
-            return () => clearTimeout(timer);
-        }
-    }, [localFilters.gender, localFilters.category, applyFilters]);
-
-    // 🔴 DIUBAH: Handle gender filter change yang lebih sederhana
-    const handleGenderFilterChange = useCallback((gender) => {
-        setLocalFilters(prev => ({
-            ...prev,
-            gender: prev.gender === gender ? '' : gender
-        }));
-    }, []);
-
-    // 🔴 DIUBAH: Handle category filter change yang lebih sederhana
-    const handleCategoryFilterChange = useCallback((category) => {
-        setLocalFilters(prev => ({
-            ...prev,
-            category: prev.category === category ? '' : category
-        }));
-    }, []);
-
-    // 🔴 DIUBAH: Clear all filters yang lebih sederhana
-    const clearAllFilters = useCallback(async () => {
-        // Reset state lokal
-        setLocalFilters({
-            search: '',
-            gender: '',
-            category: '',
-        });
-        
-        // Reset selected participant saat clear filter
-        setSelectedParticipant(null);
-        
-        // Panggil hook untuk clear semua
-        await hookClearFilters();
-        
-        // Scroll ke atas
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [hookClearFilters]);
-
-    // 🔴 DIUBAH: Clear specific filter
-    const clearFilter = useCallback((filterType) => {
-        if (filterType === 'search') {
-            setLocalFilters(prev => ({ ...prev, search: '' }));
-            hookClearSearch();
-            return;
-        }
-        
-        setLocalFilters(prev => ({ ...prev, [filterType]: '' }));
-    }, [hookClearSearch]);
-
-    // 🔴 MODIFIKASI: Toggle show all on search
-    const handleToggleShowAll = useCallback(async (checked) => {
-        await toggleShowAllOnSearch(checked);
-        
-        // Re-apply filters dengan mode baru
-        if (localFilters.search || localFilters.gender || localFilters.category) {
-            await applyFilters();
-        }
-    }, [toggleShowAllOnSearch, localFilters, applyFilters]);
-
-    // 🔴 MODIFIKASI: Reset to pagination mode
-    const handleResetToPagination = useCallback(async () => {
-        await resetToPaginationMode();
-    }, [resetToPaginationMode]);
-
-    // 🔴 TAMBAHKAN: Handle export seperti di Program.jsx
-    const handleExport = useCallback(async () => {
-        try {
-            // Gunakan filter yang sedang aktif
-            const currentFilters = {
-                search: localFilters.search,
-                gender: localFilters.gender,
-                category: localFilters.category
-            };
-            
-            await exportParticipants('csv', currentFilters);
-        } catch (error) {
-            console.error('Export failed:', error);
-            toast.error('Failed to export participants');
-        }
-    }, [localFilters, exportParticipants]);
-
-    useEffect(() => {
-        if (participant.length > 0) {
-            const allCategories = participant
->>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
                 .map(p => p.category)
                 .filter(category => category && category.trim() !== "");
             
-            // Hilangkan duplikat dan urutkan
             const uniqueCategories = [...new Set(allCategories)].sort();
             
-            // Format untuk filter options dengan emoji yang sesuai
             return uniqueCategories.map(category => {
                 let emoji = "👤";
                 const lowerCategory = category.toLowerCase();
@@ -390,7 +255,6 @@ const ImpalaManagement = () => {
     const applyAllFilters = () => {
         let result = [...participant];
         
-        // 1. Apply Search
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase();
             result = result.filter(participant =>
@@ -403,7 +267,6 @@ const ImpalaManagement = () => {
             );
         }
         
-        // 2. Apply Gender Filter
         if (activeFilters.gender) {
             result = result.filter(participant => {
                 const participantGender = participant.gender?.toLowerCase();
@@ -411,7 +274,6 @@ const ImpalaManagement = () => {
             });
         }
         
-        // 3. Apply Category Filter
         if (activeFilters.category && activeFilters.category !== 'all') {
             result = result.filter(participant => {
                 const participantCategory = participant.category;
@@ -428,12 +290,12 @@ const ImpalaManagement = () => {
     const handleSearch = (term) => {
         setSearchTerm(term);
         const lowerTerm = term.toLowerCase();
-    if (lowerTerm === 'perempuan' || lowerTerm === 'laki-laki') {
-        setActiveFilters(prev => ({
-            ...prev,
-            gender: lowerTerm
-        }));
-    }
+        if (lowerTerm === 'perempuan' || lowerTerm === 'laki-laki') {
+            setActiveFilters(prev => ({
+                ...prev,
+                gender: lowerTerm
+            }));
+        }
     };
 
     // HANDLE GENDER FILTER CHANGE
@@ -476,14 +338,14 @@ const ImpalaManagement = () => {
     useEffect(() => {
         if (participant.length > 0) {
             const normalizedParticipants = participant.map(p => ({
-            ...p,
-            gender: p.gender ? p.gender.toLowerCase().trim() : p.gender
-        }));
-        
-        const extractedCategories = extractCategories(normalizedParticipants);
-        setAvailableCategories(extractedCategories);
-        setFilteredParticipants(normalizedParticipants);
-    }
+                ...p,
+                gender: p.gender ? p.gender.toLowerCase().trim() : p.gender
+            }));
+            
+            const extractedCategories = extractCategories(normalizedParticipants);
+            setAvailableCategories(extractedCategories);
+            setFilteredParticipants(normalizedParticipants);
+        }
     }, [participant, extractCategories]);
 
     // APPLY FILTERS SETIAP PARTICIPANT BERUBAH
@@ -508,37 +370,25 @@ const ImpalaManagement = () => {
     const handleDelete = () => {
         if (selectedParticipant) {
             if (window.confirm(`Are you sure you want to delete ${selectedParticipant.full_name}?`)) {
-<<<<<<< HEAD
                 console.log('Delete participant:', selectedParticipant);
-                setSelectedParticipant(null); 
-=======
                 setSelectedParticipant(null);
                 toast.success('Participant deleted successfully');
-
                 window.scrollTo({ top: 0, behavior: 'smooth' });
->>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
             }
         }
     };
 
     useEffect(() => {
         if (selectedParticipant && participant.length > 0) {
-            const currentSelected = participant.find(p => p.id === selectedParticipant.id)
+            const currentSelected = participant.find(p => p.id === selectedParticipant.id);
             if (currentSelected) {
-                setSelectedParticipant(currentSelected)
-<<<<<<< HEAD
-=======
+                setSelectedParticipant(currentSelected);
             } else {
                 setSelectedParticipant(null);
->>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
             }
         }
-    }, [participant, selectedParticipant?.id])
+    }, [participant, selectedParticipant?.id]);
 
-<<<<<<< HEAD
-    // GET ACTIVE FILTERS COUNT - HANYA GENDER DAN CATEGORY
-    const getActiveFiltersCount = () => {
-=======
     const handleRefresh = useCallback(() => {
         refreshData();
         clearAllFilters();
@@ -550,10 +400,8 @@ const ImpalaManagement = () => {
     }, [handlePageChange]);
 
     // GET ACTIVE FILTERS COUNT
-    const getActiveFiltersCount = useCallback(() => {
->>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
+    const getActiveFiltersCount = () => {
         let count = 0;
-        // TIDAK MENGHITUNG SEARCH TERM
         if (activeFilters.gender) count++;
         if (activeFilters.category) count++;
         return count;
@@ -611,11 +459,51 @@ const ImpalaManagement = () => {
         };
     });
 
+    const handleExport = useCallback(async () => {
+        try {
+            // Simulasi export (ganti dengan implementasi sesungguhnya)
+            const exportData = filteredParticipants.map(p => ({
+                'Nama': p.full_name,
+                'Email': p.email,
+                'Gender': p.gender,
+                'Category': p.category,
+                'Program': p.program_name,
+                'Entity': p.business,
+                'Phone': p.phone
+            }));
+            
+            const headers = Object.keys(exportData[0]);
+            const csvContent = [
+                headers.join(','),
+                ...exportData.map(row => 
+                    headers.map(header => 
+                        `"${row[header] || ''}"`
+                    ).join(',')
+                )
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `impala_participants_${new Date().getTime()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            toast.success('Data berhasil diexport');
+        } catch (error) {
+            console.error('Export failed:', error);
+            toast.error('Failed to export participants');
+        }
+    }, [filteredParticipants]);
+
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
-            <div className='flex-1 p-6'>
+            <div className='flex-1 p-6 max-w-screen-2xl mx-auto w-full'>
                 <Header />
-                <Card className='mb-6'>
+                <Card className='mb-6 max-w-none'>
                     <CardHeader>
                         <CardTitle className='text-xl'>{tableConfig.title}</CardTitle>
 
@@ -627,7 +515,7 @@ const ImpalaManagement = () => {
                         )}
                     </CardHeader>
                     <CardContent>
-                        {/*ERROR MESSAGE */}
+                        {/* ERROR MESSAGE */}
                         {error && (
                             <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
                                 <div className="flex items-start gap-3">
@@ -639,10 +527,11 @@ const ImpalaManagement = () => {
                                     <Button 
                                         variant="outline" 
                                         size="sm" 
-                                        onClick={() => window.location.reload()}
+                                        onClick={handleRefresh}
                                         className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
                                     >
-                                        Reload Page
+                                        <RefreshCw className="h-4 w-4" />
+                                        Retry
                                     </Button>
                                 </div>
                             </div>
@@ -650,11 +539,15 @@ const ImpalaManagement = () => {
 
                         {/* SEARCH & FILTER SECTION */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
-                            <div className='flex gap-2 items-center'>
-                                <SearchBar 
-                                    onSearch={handleSearch}
-                                    placeholder="Search..."
-                                />
+                            <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
+                                <div className="w-full sm:w-auto min-w-[250px]">
+                                    <SearchBar 
+                                        onSearch={handleSearch}
+                                        placeholder="Search..."
+                                        value={searchTerm}
+                                        onChange={(e) => handleSearch(e.target.value)}
+                                    />
+                                </div>
                                 
                                 {/* FILTER DROPDOWN DENGAN WARNA AMBER */}
                                 <DropdownMenu>
@@ -707,7 +600,6 @@ const ImpalaManagement = () => {
                                                 Category
                                             </DropdownMenuLabel>
                                             <div className="max-h-48 overflow-y-auto">
-                                                {/* ALL CATEGORIES OPTION */}
                                                 <DropdownMenuCheckboxItem
                                                     checked={activeFilters.category === 'all'}
                                                     onCheckedChange={() => handleCategoryFilterChange('all')}
@@ -731,7 +623,7 @@ const ImpalaManagement = () => {
                                         
                                         <DropdownMenuSeparator />
                                         
-                                        {/* CLEAR FILTERS - HANYA CLEAR GENDER & CATEGORY */}
+                                        {/* CLEAR FILTERS */}
                                         <DropdownMenuItem 
                                             onClick={() => {
                                                 setActiveFilters({
@@ -748,21 +640,59 @@ const ImpalaManagement = () => {
                                 </DropdownMenu>
                             </div>
 
-                            <div className='flex gap-2'>
-                                <Button className='flex items-center gap-2'>
-                                    <Plus className="h-4 w-4" />
-                                    {tableConfig.addButton}
+                            <div className='flex flex-wrap gap-2'>
+                                {/* Import Button dengan Dropdown */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50 whitespace-nowrap"
+                                        >
+                                            <Upload className="h-4 w-4" />
+                                            Import
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-48">
+                                        <DropdownMenuItem 
+                                            onClick={handleDownloadTemplate}
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <Download className="h-4 w-4" />
+                                            Download Template
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem 
+                                            onClick={handleOpenImportModal}
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <FileSpreadsheet className="h-4 w-4" />
+                                            Upload File
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                
+                                <Button 
+                                    onClick={handleExport}
+                                    variant="outline"
+                                    className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
+                                    disabled={loading}
+                                >
+                                    {loading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <Download className="h-4 w-4" />
+                                            Export
+                                        </>
+                                    )}
                                 </Button>
-                                <ExportButton data={formattedParticipants} />
                             </div>
                         </div>
                         
-                        {/* ACTIVE FILTERS BADGES - TAMPILKAN JIKA ADA SEARCH ATAU FILTER */}
+                        {/* ACTIVE FILTERS BADGES */}
                         {getTotalActiveCriteria() > 0 && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
                                 <span className="text-sm text-gray-600">Active filters:</span>
                                 
-                                {/* SEARCH BADGE */}
                                 {searchTerm && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <span>🔍 "{searchTerm}"</span>
@@ -775,7 +705,6 @@ const ImpalaManagement = () => {
                                     </span>
                                 )}
                                 
-                                {/* GENDER FILTER BADGE */}
                                 {activeFilters.gender && (
                                     <span className="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         {getGenderLabel(activeFilters.gender)}
@@ -788,7 +717,6 @@ const ImpalaManagement = () => {
                                     </span>
                                 )}
                                 
-                                {/* CATEGORY FILTER BADGE */}
                                 {activeFilters.category && activeFilters.category !== 'all' && (
                                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Tag className="w-3 h-3" />
@@ -802,7 +730,6 @@ const ImpalaManagement = () => {
                                     </span>
                                 )}
                                 
-                                {/* ALL CATEGORIES BADGE */}
                                 {activeFilters.category === 'all' && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Tag className="w-3 h-3" />
@@ -816,7 +743,6 @@ const ImpalaManagement = () => {
                                     </span>
                                 )}
                                 
-                                {/* CLEAR ALL - CLEARS BOTH SEARCH AND FILTERS */}
                                 <Button 
                                     variant="ghost" 
                                     onClick={clearAllFilters}
@@ -884,7 +810,7 @@ const ImpalaManagement = () => {
                                     
                                     <MemberTable
                                         members={formattedParticipants}
-                                        onSelectMember={setSelectedParticipant}
+                                        onSelectMember={handleSelectParticipant}
                                         headers={tableConfig.headers}
                                         isLoading={loading}
                                     />
@@ -901,7 +827,7 @@ const ImpalaManagement = () => {
                                         totalPages={pagination.totalPages}
                                         totalItems={pagination.total}
                                         itemsPerPage={pagination.limit}
-                                        onPageChange={handlePageChange}
+                                        onPageChange={handlePageChangeModified}
                                         disabled={loading}
                                     />
                                 </div>
@@ -911,12 +837,114 @@ const ImpalaManagement = () => {
                     </CardContent>
                 </Card>
 
-                <ImpalaContent
-                    selectedMember={selectedParticipant}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    detailTitle={tableConfig.detailTitle}
-                />
+                <div 
+                    ref={participantDetailRef}
+                    className={`
+                        transition-all duration-500 ease-in-out
+                        ${highlightDetail ? 'rounded-xl p-1 -m-1 bg-blue-50/50' : ''}
+                    `}
+                >
+                    <ImpalaContent
+                        selectedMember={selectedParticipant}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        detailTitle={tableConfig.detailTitle}
+                    />
+                </div>
+
+                {/* Modal Import CSV */}
+                <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
+                    <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl w-[95vw] max-w-[800px]">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-xl">
+                                <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+                                Import Participants from CSV
+                            </DialogTitle>
+                            <DialogDescription className="text-base">
+                                Upload a CSV file to import multiple participants at once.
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4 py-4">
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                                <h4 className="text-sm font-medium text-blue-800 mb-2">Instructions:</h4>
+                                <ul className="text-sm text-blue-600 space-y-1 list-disc list-inside">
+                                    <li>Download the template first for correct format</li>
+                                    <li>Fill in the data according to the columns</li>
+                                    <li>Maximum file size: 5MB</li>
+                                    <li>Only CSV files are supported</li>
+                                </ul>
+                            </div>
+                            
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 md:p-8 text-center hover:border-blue-400 transition-colors max-w-full overflow-hidden">
+                                {importFile ? (
+                                    <div className="space-y-3">
+                                        <FileText className="h-12 w-12 text-green-500 mx-auto" />
+                                        <p className="font-medium text-gray-700 text-lg truncate max-w-full px-2">{importFile.name}</p>
+                                        <p className="text-sm text-gray-500">
+                                            {(importFile.size / 1024).toFixed(2)} KB
+                                        </p>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                setImportFile(null);
+                                                if (fileInputRef.current) {
+                                                    fileInputRef.current.value = '';
+                                                }
+                                            }}
+                                            className="text-red-600 hover:text-red-700 mt-2"
+                                        >
+                                            Remove File
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                        <p className="text-base text-gray-600 mb-3 px-2">
+                                            <strong>Drag & drop your CSV file here, or click to browse</strong>
+                                        </p>
+                                        <Input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".csv"
+                                            onChange={handleFileUpload}
+                                            className="hidden"
+                                            id="csv-upload"
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="mt-2 px-6 py-2"
+                                        >
+                                            Select File
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <DialogFooter className="flex flex-col sm:flex-row gap-3">
+                            <Button
+                                onClick={handleImportCSV}
+                                disabled={!importFile || isImporting}
+                                className="flex items-center gap-2 px-6 py-2 w-full sm:w-auto justify-center"
+                            >
+                                {isImporting ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Importing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="h-4 w-4" />
+                                        Import File
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     )
