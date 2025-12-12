@@ -1,5 +1,3 @@
-// hapus bagian "Format Info
-
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Loader2, Plus, Users, RefreshCw, Briefcase, Filter, X, AlertCircle, CheckSquare, Download, Upload, FileText, FileSpreadsheet } from "lucide-react";
@@ -653,7 +651,6 @@ const ProgramClient = () => {
                             </div>
                         )}
 
-<<<<<<< HEAD
                         {/* SEARCH & FILTER SECTION */}
                         <div className='flex flex-col lg:flex-row gap-4 mb-6 justify-between'>
                             <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
@@ -665,16 +662,6 @@ const ProgramClient = () => {
                                         onChange={(e) => setLocalFilters(prev => ({ ...prev, search: e.target.value }))}
                                     />
                                 </div>
-=======
-                        <div className='flex flex-wrap gap-4 mb-6 justify-between'>
-                            <div className='flex gap-2 items-center flex-wrap'>
-                                <SearchBar 
-                                    onSearch={handleSearch}
-                                    placeholder="Search clients..."
-                                    value={localFilters.search}
-                                    onChange={(e) => setLocalFilters(prev => ({ ...prev, search: e.target.value }))}
-                                />
->>>>>>> 1002082e40aea3e28c042d0afa99f70e6e982a1d
                                 
                                 {/* 🔴 MODIFIKASI: Toggle Show All on Search */}
                                 {localFilters.search.trim() !== '' && (
@@ -830,7 +817,7 @@ const ProgramClient = () => {
                                             <FileSpreadsheet className="h-4 w-4" />
                                             Upload File
                                         </DropdownMenuItem>
-                                </DropdownMenuContent>
+                                    </DropdownMenuContent>
                                 </DropdownMenu>
                                 
                                 {/* 🔴 MODIFIKASI: ExportButton */}

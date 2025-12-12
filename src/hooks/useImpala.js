@@ -89,19 +89,40 @@ export const useImpala = (initialFilters = {}) => {
             }
 
             console.log('📥 useImpala - API response:', {
-                dataCount: result.data?.length,
-                pagination: result.metadata?.pagination
+                dataCount: result.data?.length || 0,
+                pagination: result.metadata?.pagination || {},
+                metadata: result.metadata
+            })
+
+            // 🔴 PERBAIKAN: Pastikan data tidak undefined
+            const participantsData = result.data || []
+            const paginationData = result.metadata?.pagination || {}
+            
+            // 🔴 FIX: Hitung totalPages dengan benar
+            const totalItems = paginationData.total || participantsData.length
+            const limit = paginationData.limit || pagination.limit
+            const calculatedTotalPages = Math.max(1, Math.ceil(totalItems / limit))
+            
+            // 🔴 FIX: Perbaiki perhitungan halaman
+            const currentPage = paginationData.page || page
+            const validPage = Math.max(1, Math.min(currentPage, calculatedTotalPages))
+
+            console.log('📊 useImpala - Calculated pagination:', {
+                totalItems,
+                limit,
+                calculatedTotalPages,
+                currentPage,
+                validPage
             })
 
             // 🔴 PERBAIKAN: Update semua state dalam satu batch
-            setParticipant(result.data || [])
+            setParticipant(participantsData)
             
-            const paginationData = result.metadata?.pagination || {}
             setPagination(prev => ({
-                page: paginationData.page || page,
-                limit: paginationData.limit || pagination.limit,
-                total: paginationData.total || 0,
-                totalPages: paginationData.totalPages || 0,
+                page: validPage,
+                limit: limit,
+                total: totalItems,
+                totalPages: calculatedTotalPages,
                 isShowAllMode: paginationData.isShowAllMode || false,
                 showingAllResults: paginationData.showingAllResults || false,
                 searchTerm: currentFilters.search || ''
@@ -122,7 +143,7 @@ export const useImpala = (initialFilters = {}) => {
             }
             
             console.error('❌ Error fetching participants:', error)
-            setError(error.message)
+            setError(error.message || 'Failed to load participants')
             toast.error('Failed to load participants')
         } finally {
             setLoading(false)
@@ -274,8 +295,10 @@ export const useImpala = (initialFilters = {}) => {
     // 🔴 PERBAIKAN: Fungsi handle page change
     const handlePageChange = useCallback((newPage) => {
         console.log('📄 handlePageChange:', newPage)
-        fetchImpala(newPage, filtersRef.current, showAllOnSearch)
-    }, [fetchImpala, showAllOnSearch])
+        // 🔴 FIX: Pastikan page dalam range yang valid
+        const validPage = Math.max(1, Math.min(newPage, pagination.totalPages))
+        fetchImpala(validPage, filtersRef.current, showAllOnSearch)
+    }, [fetchImpala, showAllOnSearch, pagination.totalPages])
 
     // 🔴 PERBAIKAN: Effect untuk fetch data awal - HANYA SEKALI
     useEffect(() => {
@@ -457,18 +480,42 @@ export const useImpala = (initialFilters = {}) => {
         }
     }
 
-    // 🔴 PERBAIKAN: Helper functions
+    // 🔴 PERBAIKAN: Helper functions untuk display text yang benar
     const getDisplayText = useCallback(() => {
-        if (pagination.showingAllResults && filtersRef.current.search) {
-            return `Showing all ${participant.length} results for "${filtersRef.current.search}"`
-        } else if (pagination.showingAllResults) {
-            return `Showing all ${participant.length} participants`
-        } else {
-            const start = ((pagination.page - 1) * pagination.limit) + 1
-            const end = Math.min(pagination.page * pagination.limit, pagination.total)
-            return `Showing ${start} to ${end} of ${pagination.total} participants`
+        // Jika tidak ada data sama sekali
+        if (participant.length === 0 && pagination.total === 0) {
+            return "No participants found";
         }
-    }, [pagination, participant.length])
+        
+        // Jika dalam show all mode
+        if (pagination.showingAllResults && filtersRef.current.search) {
+            return `Showing all ${participant.length} results for "${filtersRef.current.search}"`;
+        } else if (pagination.showingAllResults) {
+            return `Showing all ${participant.length} participants`;
+        }
+        
+        // Hitung start dan end dengan benar
+        const start = Math.max(1, ((pagination.page - 1) * pagination.limit) + 1);
+        const end = Math.min(pagination.page * pagination.limit, pagination.total);
+        
+        // Jika total 0 tapi ada data di participant (inconsistency)
+        if (pagination.total === 0 && participant.length > 0) {
+            return `Showing ${participant.length} participants`;
+        }
+        
+        // Jika start > end (data tidak konsisten)
+        if (start > end) {
+            return `Showing ${participant.length} participants`;
+        }
+        
+        // Normal case
+        return `Showing ${start} to ${end} of ${pagination.total} participants`;
+    }, [participant.length, pagination, filtersRef.current.search])
+
+    // 🔴 PERBAIKAN: isShowAllMode function
+    const isShowAllMode = useCallback(() => {
+        return pagination.showingAllResults || false;
+    }, [pagination.showingAllResults])
 
     const refetch = useCallback(() => {
         console.log('🔄 Refetching current data')
@@ -500,7 +547,7 @@ export const useImpala = (initialFilters = {}) => {
         
         // Show All Mode Functions
         toggleShowAllOnSearch,
-        isShowAllMode: () => pagination.showingAllResults || false,
+        isShowAllMode,
         resetToPaginationMode,
         
         // Display Functions

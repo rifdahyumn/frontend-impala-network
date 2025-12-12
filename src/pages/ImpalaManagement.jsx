@@ -1,14 +1,14 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X, RefreshCw, CheckSquare, Download, Upload, FileText, FileSpreadsheet } from "lucide-react";
+import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
+import ExportButton from "../components/ActionButton/ExportButton";
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from "../components/Pagination/Pagination";
 import ImpalaContent from '../components/Content/ImpalaContent';
 import { useImpala } from "../hooks/useImpala";
-import { toast } from 'react-hot-toast';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -19,390 +19,42 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem
 } from "../components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../components/ui/dialog";
-import { Input } from "../components/ui/input";
 
 const ImpalaManagement = () => {
-    const [selectedParticipant, setSelectedParticipant] = useState(null);
+    const [selectedParticipant, setSelectedParticipant] = useState(null)
     
-    // 🔴 TAMBAH: State untuk modal import
-    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [importFile, setImportFile] = useState(null);
-    const [isImporting, setIsImporting] = useState(false);
-    
-    // 🔴 TAMBAH: Ref untuk upload input
-    const fileInputRef = useRef(null);
-    
-    // 🔴 TAMBAHKAN: State untuk visual feedback auto-scroll
-    const [highlightDetail, setHighlightDetail] = useState(false);
-    
-    // 🔴 TAMBAHKAN: Ref untuk auto-scroll ke detail section
-    const participantDetailRef = useRef(null);
-    
-    // 🔴 DIUBAH: State filter yang disederhanakan sama seperti ProgramClient.jsx
-    const [localFilters, setLocalFilters] = useState({
-        search: '',
-        gender: '',
-        category: '',
+    // STATE UNTUK FRONTEND FILTERING
+    const [searchTerm, setSearchTerm] = useState("");
+    const [activeFilters, setActiveFilters] = useState({
+        gender: null, // 'male', 'female', atau null
+        category: null, // category atau null
     });
-    
+    const [filteredParticipants, setFilteredParticipants] = useState([]);
     const [availableCategories, setAvailableCategories] = useState([]);
-    
-    // 🔴 DIUBAH: Pastikan hook mengembalikan exportParticipants
-    const { 
-        participant, 
-        loading, 
-        error, 
-        pagination, 
-        handlePageChange,
-        searchParticipants,
-        toggleShowAllOnSearch,
-        clearFilters: hookClearFilters,
-        clearSearch: hookClearSearch,
-        updateFiltersAndFetch,
-        getDisplayText,
-        isShowAllMode,
-        resetToPaginationMode,
-        refreshData,
-        exportParticipants // 🔴 TAMBAHKAN: Pastikan ini ada di hook
-    } = useImpala();
 
-    // 🔴 TAMBAHKAN: Fungsi untuk handle select participant dengan auto-scroll
-    const handleSelectParticipant = useCallback((participant) => {
-        // Set selected participant
-        setSelectedParticipant(participant);
-        
-        // Trigger highlight effect
-        setHighlightDetail(true);
-        
-        // Auto-scroll ke participant detail section
-        setTimeout(() => {
-            if (participantDetailRef.current) {
-                participantDetailRef.current.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'start',
-                    inline: 'nearest'
-                });
-                
-                // Tambahkan smooth transition effect
-                participantDetailRef.current.style.transition = 'all 0.5s ease';
-                
-                // Remove highlight after 2 seconds
-                setTimeout(() => {
-                    setHighlightDetail(false);
-                }, 2000);
-            }
-        }, 150); // Delay sedikit untuk memastikan DOM sudah update
-    }, []);
-
-    // 🔴 DIUBAH: Get state dari hook
-    const { showAllOnSearch } = useImpala();
-    const isInShowAllMode = isShowAllMode();
-
-    // 🔴 TAMBAH: Fungsi untuk download template CSV
-    const handleDownloadTemplate = useCallback(() => {
-        try {
-            // Template data untuk import participant Impala
-            const templateData = [
-                {
-                    'full_name': 'Contoh: John Doe',
-                    'email': 'Contoh: john@example.com',
-                    'gender': 'Contoh: Laki-laki',
-                    'phone': 'Contoh: 081234567890',
-                    'category': 'Contoh: Mahasiswa',
-                    'program_name': 'Contoh: Program Impala',
-                    'entity': 'Contoh: Universitas Indonesia',
-                    'address': 'Contoh: Jl. Contoh No. 123',
-                    'notes': 'Contoh: Catatan tambahan'
-                },
-            ];
-            
-            // Convert to CSV
-            const headers = Object.keys(templateData[0]);
-            const csvContent = [
-                headers.join(','),
-                ...templateData.map(row => 
-                    headers.map(header => 
-                        `"${row[header] || ''}"`
-                    ).join(',')
-                )
-            ].join('\n');
-            
-            // Create blob and download
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `impala_import_template_${new Date().getTime()}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-            
-            toast.success('Template CSV berhasil didownload');
-        } catch (error) {
-            console.error('Download template error:', error);
-            toast.error('Gagal mendownload template');
-        }
-    }, []);
-
-    // 🔴 TAMBAH: Fungsi untuk handle file upload
-    const handleFileUpload = useCallback((event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        // Validasi file type
-        if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
-            toast.error('Hanya file CSV yang diperbolehkan');
-            return;
-        }
-        
-        // Validasi file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            toast.error('File terlalu besar. Maksimal 5MB');
-            return;
-        }
-        
-        setImportFile(file);
-    }, []);
-
-    // 🔴 TAMBAH: Fungsi untuk import CSV
-    const handleImportCSV = useCallback(async () => {
-        if (!importFile) {
-            toast.error('Pilih file CSV terlebih dahulu');
-            return;
-        }
-        
-        setIsImporting(true);
-        
-        try {
-            // Read CSV file
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const csvText = e.target.result;
-                    const rows = csvText.split('\n');
-                    const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
-                    
-                    // Parse CSV data
-                    const importedParticipants = [];
-                    for (let i = 1; i < rows.length; i++) {
-                        if (!rows[i].trim()) continue;
-                        
-                        const values = rows[i].split(',').map(v => v.trim().replace(/"/g, ''));
-                        const participant = {};
-                        
-                        headers.forEach((header, index) => {
-                            participant[header] = values[index] || '';
-                        });
-                        
-                        // Skip contoh data
-                        if (participant.full_name?.includes('Contoh:')) continue;
-                        if (participant.email?.includes('Contoh:')) continue;
-                        
-                        // Validasi data minimal
-                        if (participant.full_name && participant.email) {
-                            importedParticipants.push(participant);
-                        }
-                    }
-                    
-                    if (importedParticipants.length === 0) {
-                        toast.error('Tidak ada data valid yang ditemukan dalam file');
-                        return;
-                    }
-                    
-                    // Simulasi import data (ganti dengan API call sebenarnya)
-                    console.log('Data yang akan diimport:', importedParticipants);
-                    
-                    // Contoh: Simpan ke localStorage untuk demo
-                    // Dalam implementasi real, kirim ke API
-                    const existingParticipants = JSON.parse(localStorage.getItem('impala_participants') || '[]');
-                    const newParticipants = [
-                        ...existingParticipants,
-                        ...importedParticipants.map((participant, index) => ({
-                            id: Date.now() + index,
-                            ...participant,
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString()
-                        }))
-                    ];
-                    localStorage.setItem('impala_participants', JSON.stringify(newParticipants));
-                    
-                    // Reset form
-                    setImportFile(null);
-                    if (fileInputRef.current) {
-                        fileInputRef.current.value = '';
-                    }
-                    
-                    // Close modal
-                    setIsImportModalOpen(false);
-                    
-                    // Refresh data
-                    await refreshData();
-                    
-                    toast.success(`Berhasil mengimport ${importedParticipants.length} participant`);
-                } catch (parseError) {
-                    console.error('Parse error:', parseError);
-                    toast.error('Format file CSV tidak valid');
-                }
-            };
-            
-            reader.readAsText(importFile);
-        } catch (error) {
-            console.error('Import error:', error);
-            toast.error('Gagal mengimport data');
-        } finally {
-            setIsImporting(false);
-        }
-    }, [importFile, refreshData]);
-
-    // 🔴 TAMBAH: Fungsi untuk open import modal
-    const handleOpenImportModal = useCallback(() => {
-        setImportFile(null);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-        setIsImportModalOpen(true);
-    }, []);
+    const { participant, loading, error, pagination, handlePageChange } = useImpala();
 
     // GENDER OPTIONS
     const genderOptions = [
-        { value: 'Laki-laki', label: '👨 Laki-laki' },
-        { value: 'Perempuan', label: '👩 Perempuan' },
+        { value: 'laki-laki', label: '👨 Laki-laki' },
+        { value: 'perempuan', label: '👩 Perempuan' },
     ];
 
-    // 🔴 DIUBAH: Apply filters dengan state lokal
-    const applyFilters = useCallback(async () => {
-        await updateFiltersAndFetch(localFilters, showAllOnSearch);
-    }, [localFilters, showAllOnSearch, updateFiltersAndFetch]);
-
-    // 🔴 DIUBAH: Apply search dengan state lokal
-    const applySearch = useCallback(async () => {
-        await searchParticipants(localFilters.search, showAllOnSearch);
-    }, [localFilters.search, showAllOnSearch, searchParticipants]);
-
-    // 🔴 DIUBAH: Handle search dengan debounce
-    const handleSearch = useCallback((term) => {
-        setLocalFilters(prev => ({ ...prev, search: term }));
-    }, []);
-
-    // 🔴 DIUBAH: Apply search ketika search term berubah (dengan debounce effect)
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (localFilters.search !== '') {
-                applySearch();
-            }
-        }, 500); // Debounce 500ms
-        
-        return () => clearTimeout(timer);
-    }, [localFilters.search, applySearch]);
-
-    // 🔴 DIUBAH: Apply filters ketika filter berubah
-    useEffect(() => {
-        if (localFilters.gender !== '' || localFilters.category !== '') {
-            const timer = setTimeout(() => {
-                applyFilters();
-            }, 300);
-            
-            return () => clearTimeout(timer);
-        }
-    }, [localFilters.gender, localFilters.category, applyFilters]);
-
-    // 🔴 DIUBAH: Handle gender filter change yang lebih sederhana
-    const handleGenderFilterChange = useCallback((gender) => {
-        setLocalFilters(prev => ({
-            ...prev,
-            gender: prev.gender === gender ? '' : gender
-        }));
-    }, []);
-
-    // 🔴 DIUBAH: Handle category filter change yang lebih sederhana
-    const handleCategoryFilterChange = useCallback((category) => {
-        setLocalFilters(prev => ({
-            ...prev,
-            category: prev.category === category ? '' : category
-        }));
-    }, []);
-
-    // 🔴 DIUBAH: Clear all filters yang lebih sederhana
-    const clearAllFilters = useCallback(async () => {
-        // Reset state lokal
-        setLocalFilters({
-            search: '',
-            gender: '',
-            category: '',
-        });
-        
-        // Reset selected participant saat clear filter
-        setSelectedParticipant(null);
-        
-        // Panggil hook untuk clear semua
-        await hookClearFilters();
-        
-        // Scroll ke atas
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [hookClearFilters]);
-
-    // 🔴 DIUBAH: Clear specific filter
-    const clearFilter = useCallback((filterType) => {
-        if (filterType === 'search') {
-            setLocalFilters(prev => ({ ...prev, search: '' }));
-            hookClearSearch();
-            return;
-        }
-        
-        setLocalFilters(prev => ({ ...prev, [filterType]: '' }));
-    }, [hookClearSearch]);
-
-    // 🔴 MODIFIKASI: Toggle show all on search
-    const handleToggleShowAll = useCallback(async (checked) => {
-        await toggleShowAllOnSearch(checked);
-        
-        // Re-apply filters dengan mode baru
-        if (localFilters.search || localFilters.gender || localFilters.category) {
-            await applyFilters();
-        }
-    }, [toggleShowAllOnSearch, localFilters, applyFilters]);
-
-    // 🔴 MODIFIKASI: Reset to pagination mode
-    const handleResetToPagination = useCallback(async () => {
-        await resetToPaginationMode();
-    }, [resetToPaginationMode]);
-
-    // 🔴 TAMBAHKAN: Handle export seperti di Program.jsx
-    const handleExport = useCallback(async () => {
-        try {
-            // Gunakan filter yang sedang aktif
-            const currentFilters = {
-                search: localFilters.search,
-                gender: localFilters.gender,
-                category: localFilters.category
-            };
-            
-            await exportParticipants('csv', currentFilters);
-        } catch (error) {
-            console.error('Export failed:', error);
-            toast.error('Failed to export participants');
-        }
-    }, [localFilters, exportParticipants]);
-
     // EKSTRAK SEMUA CATEGORY UNIK DARI DATA PARTICIPANT
-    useEffect(() => {
-        if (participant.length > 0) {
-            const allCategories = participant
+    const extractCategories = useMemo(() => {
+        return (participants) => {
+            if (!participants.length) return [];
+            
+            // Ambil semua category dari data participant
+            const allCategories = participants
                 .map(p => p.category)
                 .filter(category => category && category.trim() !== "");
             
+            // Hilangkan duplikat dan urutkan
             const uniqueCategories = [...new Set(allCategories)].sort();
             
-            const formattedCategories = uniqueCategories.map(category => {
+            // Format untuk filter options dengan emoji yang sesuai
+            return uniqueCategories.map(category => {
                 let emoji = "👤";
                 const lowerCategory = category.toLowerCase();
                 
@@ -419,10 +71,121 @@ const ImpalaManagement = () => {
                     original: category
                 };
             });
-            
-            setAvailableCategories(formattedCategories);
+        };
+    }, []);
+
+    // FUNGSI UNTUK APPLY SEARCH & FILTER
+    const applyAllFilters = () => {
+        let result = [...participant];
+        
+        // 1. Apply Search
+        if (searchTerm.trim()) {
+            const term = searchTerm.toLowerCase();
+            result = result.filter(participant =>
+                participant.full_name?.toLowerCase().includes(term) ||
+                participant.email?.toLowerCase().includes(term) ||
+                participant.category?.toLowerCase().includes(term) ||
+                participant.program_name?.toLowerCase().includes(term) ||
+                participant.business?.toLowerCase().includes(term) ||
+                participant.gender?.toLowerCase().includes(term)
+            );
+        }
+        
+        // 2. Apply Gender Filter
+        if (activeFilters.gender) {
+            result = result.filter(participant => {
+                const participantGender = participant.gender?.toLowerCase();
+                return activeFilters.gender === 'all' || participantGender === activeFilters.gender;
+            });
+        }
+        
+        // 3. Apply Category Filter
+        if (activeFilters.category && activeFilters.category !== 'all') {
+            result = result.filter(participant => {
+                const participantCategory = participant.category;
+                if (!participantCategory) return false;
+                
+                return participantCategory.toLowerCase() === activeFilters.category.toLowerCase();
+            });
+        }
+        
+        setFilteredParticipants(result);
+    };
+
+    // HANDLE SEARCH
+    const handleSearch = (term) => {
+        setSearchTerm(term);
+        const lowerTerm = term.toLowerCase();
+    if (lowerTerm === 'perempuan' || lowerTerm === 'laki-laki') {
+        setActiveFilters(prev => ({
+            ...prev,
+            gender: lowerTerm
+        }));
+    }
+    };
+
+    // HANDLE GENDER FILTER CHANGE
+    const handleGenderFilterChange = (gender) => {
+        setActiveFilters(prev => ({
+            ...prev,
+            gender: prev.gender === gender ? null : gender
+        }));
+    };
+
+    // HANDLE CATEGORY FILTER CHANGE
+    const handleCategoryFilterChange = (category) => {
+        setActiveFilters(prev => ({
+            ...prev,
+            category: prev.category === category ? null : category
+        }));
+    };
+
+    // CLEAR ALL FILTERS
+    const clearAllFilters = () => {
+        setSearchTerm("");
+        setActiveFilters({
+            gender: null,
+            category: null,
+        });
+    };
+
+    // CLEAR SPECIFIC FILTER
+    const clearFilter = (filterType) => {
+        if (filterType === 'gender') {
+            setActiveFilters(prev => ({ ...prev, gender: null }));
+        } else if (filterType === 'category') {
+            setActiveFilters(prev => ({ ...prev, category: null }));
+        } else if (filterType === 'search') {
+            setSearchTerm("");
+        }
+    };
+
+    // INITIALIZE CATEGORIES
+    useEffect(() => {
+        if (participant.length > 0) {
+            const normalizedParticipants = participant.map(p => ({
+            ...p,
+            gender: p.gender ? p.gender.toLowerCase().trim() : p.gender
+        }));
+        
+        const extractedCategories = extractCategories(normalizedParticipants);
+        setAvailableCategories(extractedCategories);
+        setFilteredParticipants(normalizedParticipants);
+    }
+    }, [participant, extractCategories]);
+
+    // APPLY FILTERS SETIAP PARTICIPANT BERUBAH
+    useEffect(() => {
+        if (participant.length > 0) {
+            setFilteredParticipants(participant);
+            applyAllFilters();
         }
     }, [participant]);
+
+    // APPLY FILTERS SETIAP SEARCH ATAU FILTER BERUBAH
+    useEffect(() => {
+        applyAllFilters();
+    }, [searchTerm, activeFilters]);
 
     const handleEdit = () => {
         if (selectedParticipant) {
@@ -434,11 +197,7 @@ const ImpalaManagement = () => {
         if (selectedParticipant) {
             if (window.confirm(`Are you sure you want to delete ${selectedParticipant.full_name}?`)) {
                 console.log('Delete participant:', selectedParticipant);
-                setSelectedParticipant(null);
-                toast.success('Participant deleted successfully');
-                
-                // Scroll ke atas setelah delete
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setSelectedParticipant(null); 
             }
         }
     };
@@ -448,55 +207,42 @@ const ImpalaManagement = () => {
             const currentSelected = participant.find(p => p.id === selectedParticipant.id)
             if (currentSelected) {
                 setSelectedParticipant(currentSelected)
-            } else {
-                // Jika participant tidak ditemukan (mungkin dihapus atau difilter)
-                setSelectedParticipant(null);
             }
         }
-    }, [participant, selectedParticipant?.id]);
+    }, [participant, selectedParticipant?.id])
 
-    const handleRefresh = useCallback(() => {
-        refreshData();
-        clearAllFilters();
-    }, [refreshData, clearAllFilters]);
-
-    // 🔴 DIUBAH: Handle page change
-    const handlePageChangeModified = useCallback((page) => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        handlePageChange(page);
-    }, [handlePageChange]);
-
-    // GET ACTIVE FILTERS COUNT
-    const getActiveFiltersCount = useCallback(() => {
+    // GET ACTIVE FILTERS COUNT - HANYA GENDER DAN CATEGORY
+    const getActiveFiltersCount = () => {
         let count = 0;
-        if (localFilters.gender) count++;
-        if (localFilters.category) count++;
+        // TIDAK MENGHITUNG SEARCH TERM
+        if (activeFilters.gender) count++;
+        if (activeFilters.category) count++;
         return count;
-    }, [localFilters]);
+    };
 
     // GET TOTAL ACTIVE CRITERIA (SEARCH + FILTERS) UNTUK DISPLAY
-    const getTotalActiveCriteria = useCallback(() => {
+    const getTotalActiveCriteria = () => {
         let count = 0;
-        if (localFilters.search) count++;
-        if (localFilters.gender) count++;
-        if (localFilters.category) count++;
+        if (searchTerm) count++;
+        if (activeFilters.gender) count++;
+        if (activeFilters.category) count++;
         return count;
-    }, [localFilters]);
+    };
 
     // GET CATEGORY LABEL
-    const getCategoryLabel = useCallback((categoryValue) => {
+    const getCategoryLabel = (categoryValue) => {
         if (!categoryValue || categoryValue === "all") return "All Categories";
         const category = availableCategories.find(c => c.value === categoryValue);
         return category ? category.original : categoryValue;
-    }, [availableCategories]);
+    };
 
     // GET GENDER LABEL
-    const getGenderLabel = useCallback((genderValue) => {
+    const getGenderLabel = (genderValue) => {
         if (!genderValue) return "";
-        if (genderValue.toLowerCase() === 'Laki-laki') return '👨 Laki-laki';
-        if (genderValue.toLowerCase() === 'Perempuan') return '👩 Perempuan';
+        if (genderValue.toLowerCase() === 'laki-laki') return '👨 Laki-laki';
+        if (genderValue.toLowerCase() === 'perempuan') return '👩 Perempuan';
         return genderValue;
-    }, []);
+    };
 
     const tableConfig = {
         headers: ['No', 'Full Name', 'Email', 'Gender', 'Program Name', 'Category', 'Entity', 'Action'],
@@ -505,40 +251,26 @@ const ImpalaManagement = () => {
         detailTitle: "Participant Details"
     };
 
-    // 🔴 DIUBAH: Format participants - PERBAIKAN UTAMA: ganti `business` dengan `entity`
-    const formattedParticipants = useMemo(() => {
-        return participant.map((participant, index) => {
-            const currentPage = pagination.page;
-            const itemsPerPage = pagination.limit;
-            
-            const itemNumber = isInShowAllMode 
-                ? index + 1
-                : (currentPage - 1) * itemsPerPage + index + 1;
+    // FORMAT PARTICIPANT DARI filteredParticipants
+    const formattedParticipants = filteredParticipants.map((participant, index) => {
+        const currentPage = pagination.page;
+        const itemsPerPage = pagination.limit;
+        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
 
-            return {
-                id: participant.id,
-                no: itemNumber,
-                full_name: participant.full_name,
-                email: participant.email,
-                category: participant.category,
-                program_name: participant.program_name,
-                phone: participant.phone,
-                // 🔴 PERBAIKAN: Ganti business dengan entity
-                entity: participant.entity || participant.business, // Fallback ke business jika entity tidak ada
-                gender: participant.gender,
-                action: 'Detail',
-                // 🔴 PERBAIKAN: Tambahkan properti asli untuk akses mudah
-                ...participant
-            };
-        });
-    }, [participant, pagination.page, pagination.limit, isInShowAllMode]);
-
-    // 🔴 PERBAIKAN: Tambahkan properti business ke entity untuk kompatibilitas
-    useEffect(() => {
-        if (participant.length > 0 && participant.some(p => p.business && !p.entity)) {
-            console.warn("Some participants have 'business' field instead of 'entity'. Consider updating your database schema.");
-        }
-    }, [participant]);
+        return {
+            id: participant.id,
+            no: itemNumber,
+            full_name: participant.full_name,
+            email: participant.email,
+            category: participant.category,
+            program_name: participant.program_name,
+            phone: participant.phone,
+            business: participant.business,
+            gender: participant.gender,
+            action: 'Detail',
+            ...participant
+        };
+    });
 
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
@@ -556,7 +288,7 @@ const ImpalaManagement = () => {
                         )}
                     </CardHeader>
                     <CardContent>
-                        {/* ERROR MESSAGE */}
+                        {/*ERROR MESSAGE */}
                         {error && (
                             <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
                                 <div className="flex items-start gap-3">
@@ -568,11 +300,10 @@ const ImpalaManagement = () => {
                                     <Button 
                                         variant="outline" 
                                         size="sm" 
-                                        onClick={handleRefresh}
+                                        onClick={() => window.location.reload()}
                                         className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
                                     >
-                                        <RefreshCw className="h-4 w-4" />
-                                        Retry
+                                        Reload Page
                                     </Button>
                                 </div>
                             </div>
@@ -580,39 +311,11 @@ const ImpalaManagement = () => {
 
                         {/* SEARCH & FILTER SECTION */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
-                            <div className='flex gap-2 items-center flex-wrap'>
+                            <div className='flex gap-2 items-center'>
                                 <SearchBar 
                                     onSearch={handleSearch}
-                                    placeholder="Search participants..."
-                                    value={localFilters.search}
-                                    onChange={(e) => setLocalFilters(prev => ({ ...prev, search: e.target.value }))}
+                                    placeholder="Search..."
                                 />
-                                
-                                {/* 🔴 MODIFIKASI: Toggle Show All on Search */}
-                                {localFilters.search.trim() !== '' && (
-                                    <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={showAllOnSearch}
-                                                onChange={(e) => handleToggleShowAll(e.target.checked)}
-                                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                            />
-                                            <span className="text-sm font-medium text-blue-700">
-                                                Show all results
-                                            </span>
-                                        </label>
-                                        
-                                        {isInShowAllMode && (
-                                            <button
-                                                onClick={handleResetToPagination}
-                                                className="text-xs text-blue-600 hover:text-blue-800 underline ml-2"
-                                            >
-                                                Switch to pages
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
                                 
                                 {/* FILTER DROPDOWN DENGAN WARNA AMBER */}
                                 <DropdownMenu>
@@ -648,7 +351,7 @@ const ImpalaManagement = () => {
                                             {genderOptions.map((option) => (
                                                 <DropdownMenuCheckboxItem
                                                     key={option.value}
-                                                    checked={localFilters.gender?.toLowerCase() === option.value.toLowerCase()}
+                                                    checked={activeFilters.gender?.toLowerCase() === option.value.toLowerCase()}
                                                     onCheckedChange={() => handleGenderFilterChange(option.value)}
                                                     className="flex items-center gap-2 cursor-pointer hover:bg-gray-50"
                                                 >
@@ -667,7 +370,7 @@ const ImpalaManagement = () => {
                                             <div className="max-h-48 overflow-y-auto">
                                                 {/* ALL CATEGORIES OPTION */}
                                                 <DropdownMenuCheckboxItem
-                                                    checked={localFilters.category === 'all'}
+                                                    checked={activeFilters.category === 'all'}
                                                     onCheckedChange={() => handleCategoryFilterChange('all')}
                                                     className="cursor-pointer hover:bg-gray-50"
                                                 >
@@ -677,7 +380,7 @@ const ImpalaManagement = () => {
                                                 {availableCategories.map((category) => (
                                                     <DropdownMenuCheckboxItem
                                                         key={category.value}
-                                                        checked={localFilters.category?.toLowerCase() === category.value.toLowerCase()}
+                                                        checked={activeFilters.category?.toLowerCase() === category.value.toLowerCase()}
                                                         onCheckedChange={() => handleCategoryFilterChange(category.value)}
                                                         className="cursor-pointer hover:bg-gray-50"
                                                     >
@@ -689,14 +392,13 @@ const ImpalaManagement = () => {
                                         
                                         <DropdownMenuSeparator />
                                         
-                                        {/* CLEAR FILTERS */}
+                                        {/* CLEAR FILTERS - HANYA CLEAR GENDER & CATEGORY */}
                                         <DropdownMenuItem 
                                             onClick={() => {
-                                                setLocalFilters(prev => ({
-                                                    ...prev,
-                                                    gender: '',
-                                                    category: ''
-                                                }));
+                                                setActiveFilters({
+                                                    gender: null,
+                                                    category: null,
+                                                });
                                             }}
                                             className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer font-medium"
                                         >
@@ -708,84 +410,23 @@ const ImpalaManagement = () => {
                             </div>
 
                             <div className='flex gap-2'>
-                                {/* 🔴 TAMBAH: Import Button dengan Dropdown */}
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
-                                        >
-                                            <Upload className="h-4 w-4" />
-                                            Import
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-48">
-                                        <DropdownMenuItem 
-                                            onClick={handleDownloadTemplate}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <Download className="h-4 w-4" />
-                                            Download Template
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem 
-                                            onClick={handleOpenImportModal}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileSpreadsheet className="h-4 w-4" />
-                                            Upload File
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                                
-                                {/* 🔴 MODIFIKASI: Ganti ExportButton dengan Button seperti di Program.jsx */}
-                                <Button 
-                                    onClick={handleExport}
-                                    variant="outline"
-                                    className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <>
-                                            <Download className="h-4 w-4" />
-                                            Export {isInShowAllMode ? 'All' : ''}
-                                        </>
-                                    )}
+                                <Button className='flex items-center gap-2'>
+                                    <Plus className="h-4 w-4" />
+                                    {tableConfig.addButton}
                                 </Button>
+                                <ExportButton data={formattedParticipants} />
                             </div>
                         </div>
                         
-                        {/* 🔴 MODIFIKASI: Show All Mode Indicator */}
-                        {isInShowAllMode && (
-                            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <CheckSquare className="h-5 w-5 text-blue-600" />
-                                        <p className="text-sm text-blue-700">
-                                            <strong>All search results are shown in one page.</strong> 
-                                            {localFilters.search && ` Search term: "${localFilters.search}"`}
-                                        </p>
-                                    </div>
-                                    <button 
-                                        onClick={handleResetToPagination}
-                                        className="text-sm text-blue-600 hover:text-blue-800 underline"
-                                    >
-                                        Switch to paginated view
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                        
-                        {/* ACTIVE FILTERS BADGES */}
+                        {/* ACTIVE FILTERS BADGES - TAMPILKAN JIKA ADA SEARCH ATAU FILTER */}
                         {getTotalActiveCriteria() > 0 && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
                                 <span className="text-sm text-gray-600">Active filters:</span>
                                 
                                 {/* SEARCH BADGE */}
-                                {localFilters.search && (
+                                {searchTerm && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        <span>🔍 "{localFilters.search}"</span>
+                                        <span>🔍 "{searchTerm}"</span>
                                         <button 
                                             onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"
@@ -796,9 +437,9 @@ const ImpalaManagement = () => {
                                 )}
                                 
                                 {/* GENDER FILTER BADGE */}
-                                {localFilters.gender && (
+                                {activeFilters.gender && (
                                     <span className="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        {getGenderLabel(localFilters.gender)}
+                                        {getGenderLabel(activeFilters.gender)}
                                         <button 
                                             onClick={() => clearFilter('gender')}
                                             className="text-pink-600 hover:text-pink-800 ml-1"
@@ -809,10 +450,10 @@ const ImpalaManagement = () => {
                                 )}
                                 
                                 {/* CATEGORY FILTER BADGE */}
-                                {localFilters.category && localFilters.category !== 'all' && (
+                                {activeFilters.category && activeFilters.category !== 'all' && (
                                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Tag className="w-3 h-3" />
-                                        {getCategoryLabel(localFilters.category)}
+                                        {getCategoryLabel(activeFilters.category)}
                                         <button 
                                             onClick={() => clearFilter('category')}
                                             className="text-green-600 hover:text-green-800 ml-1"
@@ -823,7 +464,7 @@ const ImpalaManagement = () => {
                                 )}
                                 
                                 {/* ALL CATEGORIES BADGE */}
-                                {localFilters.category === 'all' && (
+                                {activeFilters.category === 'all' && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Tag className="w-3 h-3" />
                                         All Categories
@@ -836,7 +477,7 @@ const ImpalaManagement = () => {
                                     </span>
                                 )}
                                 
-                                {/* CLEAR ALL */}
+                                {/* CLEAR ALL - CLEARS BOTH SEARCH AND FILTERS */}
                                 <Button 
                                     variant="ghost" 
                                     onClick={clearAllFilters}
@@ -856,7 +497,7 @@ const ImpalaManagement = () => {
                                     <div className="bg-blue-600 h-2 rounded-full animate-pulse w-3/4"></div>
                                 </div>
                             </div>
-                        ) : participant.length === 0 ? (
+                        ) : filteredParticipants.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
                                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
                                     <Users className="w-10 h-10 text-gray-400" />
@@ -879,7 +520,6 @@ const ImpalaManagement = () => {
                                             onClick={clearAllFilters}
                                             variant="outline"
                                         >
-                                            <RefreshCw className="h-4 w-4" />
                                             Clear Filters
                                         </Button>
                                     )}
@@ -903,38 +543,28 @@ const ImpalaManagement = () => {
                                         </div>
                                     )}
                                     
-                                    {/* 🔴 MODIFIKASI: Gunakan handleSelectParticipant untuk auto-scroll */}
                                     <MemberTable
                                         members={formattedParticipants}
-                                        onSelectMember={handleSelectParticipant} // ← Ganti dengan fungsi baru
+                                        onSelectMember={setSelectedParticipant}
                                         headers={tableConfig.headers}
                                         isLoading={loading}
                                     />
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    {/* 🔴 MODIFIKASI: Gunakan getDisplayText dari hook */}
                                     <div className="text-sm text-gray-600">
-                                        {getDisplayText ? getDisplayText() : `Showing ${participant.length} of ${pagination.total} participants`}
-                                        {getTotalActiveCriteria() > 0 && !isInShowAllMode && " (filtered)"}
+                                        Showing {filteredParticipants.length} of {participant.length} participants
+                                        {getTotalActiveCriteria() > 0 && " (filtered)"}
                                     </div>
                                     
-                                    {/* 🔴 MODIFIKASI: Conditional rendering pagination */}
-                                    {!isInShowAllMode && pagination.totalPages > 1 ? (
-                                        <Pagination 
-                                            currentPage={pagination.page}
-                                            totalPages={pagination.totalPages}
-                                            totalItems={pagination.total}
-                                            itemsPerPage={pagination.limit}
-                                            onPageChange={handlePageChangeModified}
-                                            disabled={loading}
-                                        />
-                                    ) : isInShowAllMode ? (
-                                        <div className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full flex items-center gap-2">
-                                            <CheckSquare className="h-4 w-4" />
-                                            All results shown in one page
-                                        </div>
-                                    ) : null}
+                                    <Pagination 
+                                        currentPage={pagination.page}
+                                        totalPages={pagination.totalPages}
+                                        totalItems={pagination.total}
+                                        itemsPerPage={pagination.limit}
+                                        onPageChange={handlePageChange}
+                                        disabled={loading}
+                                    />
                                 </div>
                             </>
                         )}
@@ -942,117 +572,12 @@ const ImpalaManagement = () => {
                     </CardContent>
                 </Card>
 
-                {/* 🔴 MODIFIKASI: Wrap ImpalaContent dengan div yang memiliki ref untuk auto-scroll */}
-                <div 
-                    ref={participantDetailRef}
-                    className={`
-                        transition-all duration-500 ease-in-out
-                        ${highlightDetail ? 'ring-2 ring-blue-500 rounded-xl p-1 -m-1 bg-blue-50/50' : ''}
-                    `}
-                >
-                    <ImpalaContent
-                        selectedMember={selectedParticipant}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                        detailTitle={tableConfig.detailTitle}
-                    />
-                </div>
-
-                {/* 🔴 TAMBAH: Modal Import CSV */}
-                <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
-                    <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl w-[95vw] max-w-[800px]">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2 text-xl">
-                                <FileSpreadsheet className="h-5 w-5 text-blue-600" />
-                                Import Participants from CSV
-                            </DialogTitle>
-                            <DialogDescription className="text-base">
-                                Upload a CSV file to import multiple participants at once.
-                            </DialogDescription>
-                        </DialogHeader>
-                        
-                        <div className="space-y-4 py-4">
-                            {/* Petunjuk */}
-                            <div className="bg-blue-50 p-4 rounded-lg">
-                                <h4 className="text-sm font-medium text-blue-800 mb-2">Instructions:</h4>
-                                <ul className="text-sm text-blue-600 space-y-1 list-disc list-inside">
-                                    <li>Download the template first for correct format</li>
-                                    <li>Fill in the data according to the columns</li>
-                                    <li>Maximum file size: 5MB</li>
-                                    <li>Only CSV files are supported</li>
-                                </ul>
-                            </div>
-                            
-                            {/* Upload Area */}
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 md:p-8 text-center hover:border-blue-400 transition-colors max-w-full overflow-hidden">
-                                {importFile ? (
-                                    <div className="space-y-3">
-                                        <FileText className="h-12 w-12 text-green-500 mx-auto" />
-                                        <p className="font-medium text-gray-700 text-lg truncate max-w-full px-2">{importFile.name}</p>
-                                        <p className="text-sm text-gray-500">
-                                            {(importFile.size / 1024).toFixed(2)} KB
-                                        </p>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => {
-                                                setImportFile(null);
-                                                if (fileInputRef.current) {
-                                                    fileInputRef.current.value = '';
-                                                }
-                                            }}
-                                            className="text-red-600 hover:text-red-700 mt-2"
-                                        >
-                                            Remove File
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                        <p className="text-base text-gray-600 mb-3 px-2">
-                                            <strong>Drag & drop your CSV file here, or click to browse</strong>
-                                        </p>
-                                        <Input
-                                            ref={fileInputRef}
-                                            type="file"
-                                            accept=".csv"
-                                            onChange={handleFileUpload}
-                                            className="hidden"
-                                            id="csv-upload"
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => fileInputRef.current?.click()}
-                                            className="mt-2 px-6 py-2"
-                                        >
-                                            Select File
-                                        </Button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                        
-                        <DialogFooter className="flex flex-col sm:flex-row gap-3">
-                            <Button
-                                onClick={handleImportCSV}
-                                disabled={!importFile || isImporting}
-                                className="flex items-center gap-2 px-6 py-2 w-full sm:w-auto justify-center"
-                            >
-                                {isImporting ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Importing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Upload className="h-4 w-4" />
-                                        Import File
-                                    </>
-                                )}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                <ImpalaContent
+                    selectedMember={selectedParticipant}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    detailTitle={tableConfig.detailTitle}
+                />
             </div>
         </div>
     )

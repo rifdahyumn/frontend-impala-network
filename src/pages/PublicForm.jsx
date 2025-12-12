@@ -28,6 +28,20 @@ const PublicForm = () => {
     const [loadError, setLoadError] = useState(null);
     const [hasTimeout, setHasTimeout] = useState(false);
 
+    // Opsi disabilitas untuk dropdown
+    const disabilityOptions = [
+        { value: 'tidak_ada', label: 'Tidak memiliki disabilitas' },
+        { value: 'fisik', label: 'Disabilitas Fisik/Motorik' },
+        { value: 'penglihatan', label: 'Disabilitas Penglihatan (Tuna Netra/Low Vision)' },
+        { value: 'pendengaran', label: 'Disabilitas Pendengaran (Tuna Rungu/Tuli)' },
+        { value: 'bicara', label: 'Disabilitas Bicara/Komunikasi' },
+        { value: 'intelektual', label: 'Disabilitas Intelektual' },
+        { value: 'mental_psikososial', label: 'Disabilitas Mental/Psikososial' },
+        { value: 'ganda', label: 'Disabilitas Ganda/Multiple' },
+        { value: 'neurologis', label: 'Disabilitas Neurologis/Perkembangan (Autisme, ADHD, dll)' },
+        { value: 'penyakit_kronis', label: 'Penyakit Kronis/Disabilitas Laten' }
+    ];
+
     // ===== UPDATE TAB BROWSER TITLE =====
     useEffect(() => {
         if (template) {
@@ -146,42 +160,27 @@ const PublicForm = () => {
     // ===== EFEK UNTUK MENAMBAHKAN FIELD DISABILITAS JIKA TIDAK ADA =====
     useEffect(() => {
         if (formConfig && formConfig.personalInfo) {
-            const hasDisabilityField = formConfig.personalInfo.fields?.some(f => f.id === 'is_disability');
-            const hasDisabilityTypeField = formConfig.personalInfo.fields?.some(f => f.id === 'disability_type');
+            const hasDisabilityField = formConfig.personalInfo.fields?.some(f => f.id === 'disability_status');
             
-            if (!hasDisabilityField || !hasDisabilityTypeField) {
+            if (!hasDisabilityField) {
                 const updatedFormConfig = { ...formConfig };
                 const personalFields = [...(formConfig.personalInfo.fields || [])];
                 const educationIndex = personalFields.findIndex(f => f.id === 'education');
                 
                 if (educationIndex !== -1) {
-                    const disabilityFields = [
-                        {
-                            id: 'is_disability',
-                            type: 'checkbox',
-                            name: 'is_disability',
-                            label: 'Saya memiliki disabilitas',
-                            required: false,
-                            options: ['Ya', 'Tidak'],
-                            locked: true,
-                            conditional: true
-                        },
-                        {
-                            id: 'disability_type',
-                            type: 'text',
-                            name: 'disability_type',
-                            label: 'Jenis Disabilitas',
-                            required: false,
-                            placeholder: 'Jelaskan jenis disabilitas (contoh: Tuna netra, Tuna rungu, Disabilitas fisik)',
-                            locked: true,
-                            conditionalShow: {
-                                field: 'is_disability',
-                                value: 'Ya'
-                            }
-                        }
-                    ];
+                    const disabilityField = {
+                        id: 'disability_status',
+                        type: 'select',
+                        name: 'disability_status',
+                        label: 'Status Disabilitas',
+                        required: false,
+                        placeholder: 'Pilih status disabilitas Anda',
+                        options: disabilityOptions.map(opt => opt.label),
+                        locked: true
+                    };
                     
-                    personalFields.splice(educationIndex + 1, 0, ...disabilityFields);
+                    // Sisipkan field disabilitas tepat setelah pendidikan
+                    personalFields.splice(educationIndex + 1, 0, disabilityField);
                     
                     updatedFormConfig.personalInfo = {
                         ...formConfig.personalInfo,
@@ -209,6 +208,7 @@ const PublicForm = () => {
             'gender',
             'date_of_birth',
             'education',
+            'disability_status', // Tambahkan disabilitas dalam urutan
             'address',
             'city',
             'province',
@@ -218,7 +218,7 @@ const PublicForm = () => {
         
         fieldOrder.forEach(fieldId => {
             const field = allFields.find(f => f.id === fieldId);
-            if (field && field.id !== 'is_disability' && field.id !== 'disability_type') {
+            if (field) {
                 fields.push({
                     ...field,
                     name: field.name || field.id
@@ -264,69 +264,25 @@ const PublicForm = () => {
         }
     };
 
-    // ===== FUNGSI RENDER DISABILITY SECTION =====
-    const renderDisabilitySection = () => {
+    // ===== FUNGSI RENDER CUSTOM DISABILITY FIELD =====
+    const renderCustomDisabilityField = () => {
         return (
-            <div className="space-y-4 mt-2">
-                <Card className="border-blue-100 bg-blue-50/50">
-                    <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                            <input
-                                type="checkbox"
-                                id="is_disability"
-                                checked={isDisabilityChecked}
-                                onChange={(e) => {
-                                    setIsDisabilityChecked(e.target.checked);
-                                    if (e.target.checked) {
-                                        setFormData(prev => ({ ...prev, is_disability: 'Ya' }));
-                                    } else {
-                                        setFormData(prev => ({ 
-                                            ...prev, 
-                                            is_disability: 'Tidak',
-                                            disability_type: '' 
-                                        }));
-                                    }
-                                }}
-                                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-blue-300 rounded"
-                            />
-                            <div className="flex-1">
-                                <Label htmlFor="is_disability" className="text-base font-medium text-gray-900 cursor-pointer">
-                                    Saya memiliki disabilitas
-                                </Label>
-                                <p className="text-sm text-gray-600 mt-1">
-                                    Centang kotak ini jika Anda memiliki disabilitas
-                                </p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {isDisabilityChecked && (
-                    <Card className="border-blue-100 bg-blue-50/50">
-                        <CardContent className="p-4 space-y-3">
-                            <div className="space-y-2">
-                                <Label htmlFor="disability_type" className="text-gray-900">
-                                    Jenis Disabilitas
-                                </Label>
-                                <Input
-                                    id="disability_type"
-                                    name="disability_type"
-                                    type="text"
-                                    value={formData.disability_type || ''}
-                                    onChange={(e) => setFormData(prev => ({
-                                        ...prev,
-                                        disability_type: e.target.value
-                                    }))}
-                                    placeholder="Jelaskan jenis disabilitas Anda"
-                                    className="w-full border-blue-200 focus:border-blue-500"
-                                />
-                                <p className="text-sm text-gray-500">
-                                    Contoh: Tuna netra, Tuna rungu, Disabilitas fisik, dll.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
+            <div className="space-y-2">
+                <Label htmlFor="disability_type" className="text-gray-900">
+                    Jenis Disabilitas (jika memilih Lainnya)
+                </Label>
+                <Input
+                    id="disability_type"
+                    name="disability_type"
+                    type="text"
+                    value={formData.disability_type || ''}
+                    onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        disability_type: e.target.value
+                    }))}
+                    placeholder="Jelaskan jenis disabilitas Anda"
+                    className="w-full border-blue-200 focus:border-blue-500"
+                />
             </div>
         );
     };
@@ -386,8 +342,9 @@ const PublicForm = () => {
             return { disabled: true, tooltip: `Harap lengkapi: ${missingFields.map(f => fieldLabels[f]).join(', ')}` };
         }
 
-        if (isDisabilityChecked && (!formData.disability_type || formData.disability_type.trim() === '')) {
-            return { disabled: true, tooltip: 'Harap isi jenis disabilitas Anda' };
+        // Validasi jika memilih disabilitas "Lainnya" tapi tidak mengisi detail
+        if (formData.disability_status === 'Lainnya' && (!formData.disability_type || formData.disability_type.trim() === '')) {
+            return { disabled: true, tooltip: 'Harap jelaskan jenis disabilitas Anda' };
         }
 
         return { disabled: false, tooltip: 'Kirim formulir pendaftaran' };
@@ -395,6 +352,11 @@ const PublicForm = () => {
 
     const handleInputChange = (fieldName, value) => {
         setFormData(prev => ({ ...prev, [fieldName]: value }));
+        
+        // Reset disability_type jika tidak memilih "Lainnya"
+        if (fieldName === 'disability_status' && value !== 'Lainnya') {
+            setFormData(prev => ({ ...prev, disability_type: '' }));
+        }
     };
 
     const handleCategorySelect = (categoryType) => {
@@ -422,6 +384,7 @@ const PublicForm = () => {
                 gender: formData.gender,
                 date_of_birth: formData.date_of_birth,
                 education: formData.education,
+                disability_status: formData.disability_status || 'Tidak memiliki disabilitas',
                 address: formData.address,
                 city: formData.city,
                 province: formData.province,
@@ -434,13 +397,12 @@ const PublicForm = () => {
                          selectedCategory === 'umum' ? 'Umum' : selectedCategory,
             };
 
-            if (isDisabilityChecked) {
-                submissionData.is_disability = 'Ya';
+            // Tambahkan detail disabilitas jika ada
+            if (formData.disability_status && formData.disability_status !== 'Tidak memiliki disabilitas') {
+                submissionData.disability_status = formData.disability_status;
                 if (formData.disability_type) {
                     submissionData.disability_type = formData.disability_type;
                 }
-            } else {
-                submissionData.is_disability = 'Tidak';
             }
 
             // Add category-specific fields
@@ -674,7 +636,12 @@ const PublicForm = () => {
                                             ))}
                                         </div>
 
-                                        {renderDisabilitySection()}
+                                        {/* Field tambahan untuk disabilitas jika memilih Lainnya */}
+                                        {formData.disability_status === 'Lainnya' && (
+                                            <div className="mt-2 md:col-span-2">
+                                                {renderCustomDisabilityField()}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Pilih Kategori */}
@@ -840,7 +807,7 @@ const PublicForm = () => {
                                             </div>
                                             <div className="flex justify-between">
                                                 <span className="text-gray-600">Status Disabilitas:</span>
-                                                <span className="font-semibold">{submittedData.is_disability || 'Tidak'}</span>
+                                                <span className="font-semibold">{submittedData.disability_status || 'Tidak memiliki disabilitas'}</span>
                                             </div>
                                         </div>
                                         <div className="space-y-3">
