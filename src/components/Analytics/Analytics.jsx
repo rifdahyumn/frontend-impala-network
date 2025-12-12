@@ -24,7 +24,7 @@ const Analytics = () => {
     const [selectedMetric, setSelectedMetric] = useState('clients');
     const [selectedDataType, setSelectedDataType] = useState('growth');
     
-    const { allPrograms, refreshAllData, allProgramsLoading } = usePrograms();
+    const { allPrograms, refreshAllData } = usePrograms();
 
     const fetchAnalyticsData = useCallback(async () => {
         try {

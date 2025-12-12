@@ -1,4 +1,3 @@
-// components/MemberGrowthDetails.js
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { TrendingUp, TrendingDown, Minus, Users, Package, Users2, DollarSign, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"

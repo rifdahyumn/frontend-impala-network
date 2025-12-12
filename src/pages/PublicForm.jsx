@@ -28,7 +28,6 @@ const PublicForm = () => {
     const [loadError, setLoadError] = useState(null);
     const [hasTimeout, setHasTimeout] = useState(false);
 
-    // ===== UPDATE TAB BROWSER TITLE =====
     useEffect(() => {
         if (template) {
             let tabTitle = 'Impala Network';
@@ -185,7 +184,6 @@ const PublicForm = () => {
         }
     }, [formConfig]);
 
-    // ===== FUNGSI UNTUK MENGELOMPOKKAN FIELDS PERSONAL INFO =====
     const getPersonalInfoFields = () => {
         if (!formConfig?.personalInfo?.fields) return [];
         
@@ -220,7 +218,6 @@ const PublicForm = () => {
         return fields;
     };
 
-    // ===== FUNGSI RENDER DYNAMIC FIELDS =====
     const renderDynamicFields = () => {
         if (!formConfig) return { personalFields: [], categoryFields: [] };
 
@@ -255,7 +252,6 @@ const PublicForm = () => {
         }
     };
 
-    // ===== FUNGSI RENDER DISABILITY SECTION =====
     const renderDisabilitySection = () => {
         return (
             <div className="space-y-4 mt-2">
@@ -322,7 +318,6 @@ const PublicForm = () => {
         );
     };
 
-    // ===== FUNGSI GET PROGRAM INFO =====
     const getProgramName = () => {
         if (template) {
             return template.program_name;
@@ -353,7 +348,6 @@ const PublicForm = () => {
         return `Form Pendaftaran Program ${programName}`;
     };
 
-    // ===== FUNGSI VALIDASI =====
     const getSubmitButtonStatus = () => {
         if (!selectedCategory) {
             return { disabled: true, tooltip: 'Silakan pilih kategori profil Anda' };
@@ -566,7 +560,6 @@ const PublicForm = () => {
         );
     }
 
-    // ===== ERROR STATE =====
     if (loadError || !formConfig || !template) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">

@@ -62,7 +62,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                     options: [
                         { value: 'admin', label: 'Admin' },
                         { value: 'manajer_program', label: 'Manajer Program' },
-                        { value: 'staff', label: 'Community Team' }
+                        { value: 'komunitas', label: 'Community Team' }
                     ]
                 }
             ]

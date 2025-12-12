@@ -244,7 +244,6 @@ export const usePrograms = (initialFilters = {}) => {
         try {
             await fetchPrograms(pagination.page, filtersRef.current, showAllOnSearch);
             await fetchAllPrograms();
-            // await fetchAllStats();
 
             return true;
         } catch (error) {

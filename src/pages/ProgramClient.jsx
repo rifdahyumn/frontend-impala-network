@@ -87,7 +87,6 @@ const ProgramClient = () => {
 
     const handleDownloadTemplate = useCallback(() => {
         try {
-            // Template data untuk import client
             const templateData = [
                 {
                     'full_name': 'Contoh: John Doe',

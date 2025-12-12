@@ -26,7 +26,7 @@ export const getProgramsData = () => {
         }
         return programsData;
     } catch (error) {
-        console.error('❌ Error loading programs data:', error);
+        console.error('Error loading programs data:', error);
         return [];
     }
 };
@@ -60,7 +60,7 @@ export const getProgramById = (programId) => {
         const data = getProgramsData();
         return data.find(program => program.id === programId || program.id == programId) || null;
     } catch (error) {
-        console.error('❌ Error getting program by ID:', error);
+        console.error('Error getting program by ID:', error);
         return null;
     }
 };

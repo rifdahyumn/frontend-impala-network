@@ -12,27 +12,53 @@ const Sidebar = () => {
     const [isHeteroOpen, setIsHeteroOpen] = useState(false)
     const { user } = useAuth()
 
-    const menuItems = [
-        {icon: Home, label: 'Home', path: '/'},
-        {icon: Phone, label: 'Client', path: '/client'},
-        {icon: ClipboardList, label: 'Program', path: '/program'},
-        {icon: BarChart3, label: 'Impala Management', path: '/impala'},
-        {
-            icon: Building2, 
-            label: 'Hetero Management', 
-            path: '/hetero',
-            hasSubmenu: true,
-            submenu: [
-                { label: 'Hetero Semarang', path: '/hetero/semarang' },
-                { label: 'Hetero Surakarta', path: '/hetero/surakarta' },
-                { label: 'Hetero Banyumas', path: '/hetero/banyumas' }
+    const menuItems = 
+        user?.role === 'komunitas'
+            ? [
+                {
+                    icon: Building2,
+                    label: 'Hetero Management',
+                    path: '/hetero',
+                    hasSubmenu: true,
+                    submenu: [
+                        { label: 'Hetero Semarang', path: '/hetero/semarang' },
+                        { label: 'Hetero Surakarta', path: '/hetero/surakarta' },
+                        { label: 'Hetero Banyumas', path: '/hetero/banyumas' }
+                    ]
+                }
             ]
-        },
-        {icon: FileSpreadsheet, label: 'Form Builder', path: '/form-builder'},
-        ...(user?.role === 'admin' ? [
-            {icon: User, label: 'Account', path: '/user'}
-        ] : [])
-    ];
+            :
+            [
+                { icon: Home, label: 'Home', path: '/' },
+                { icon: Phone, label: 'Client', path: '/client' },
+                { icon: ClipboardList, label: 'Program', path: '/program' },
+                { icon: BarChart3, label: 'Impala Management', path: '/impala' },
+
+                ...(user?.role !== 'manajer_program'
+                    ? [
+                        {
+                            icon: Building2,
+                            label: 'Hetero Management',
+                            path: '/hetero',
+                            hasSubmenu: true,
+                            submenu: [
+                                { label: 'Hetero Semarang', path: '/hetero/semarang' },
+                                { label: 'Hetero Surakarta', path: '/hetero/surakarta' },
+                                { label: 'Hetero Banyumas', path: '/hetero/banyumas' }
+                            ]
+                        }
+                    ]
+                    : []
+                ),
+
+                { icon: FileSpreadsheet, label: 'Form Builder', path: '/form-builder' },
+
+                ...(user?.role === 'admin'
+                    ? [{ icon: User, label: 'Account', path: '/user' }]
+                    : []
+                )
+            ];
+
 
     const isActive = (path) => {
         if (path === '/') {
@@ -55,7 +81,7 @@ const Sidebar = () => {
 
     return (
         <div className='w-80 bg-white border-r border-gray-200 p-6 fixed h-screen top-0 left-0 overflow-hidden flex flex-col'>
-            {/* Header Dashboard */}
+
             <div className='flex items-center gap-3 mb-8'>
                 <RiDashboardFill className='w-8 h-8 text-amber-400' />
                 <h2 className='text-2xl font-bold text-gray-800'>Dashboard</h2>
@@ -63,7 +89,6 @@ const Sidebar = () => {
 
             <div className='h-px bg-amber-400 mb-8' /> 
 
-            {/* Navigation Menu */}
             <nav className='space-y-2'>
                 {menuItems.map((item) => {
                     const Icon = item.icon

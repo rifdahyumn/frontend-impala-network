@@ -32,6 +32,6 @@ export const quarterlyMetrics = [
         description: 'Pendapatan yang dihasilkan',
         color: METRICS_CONFIG.revenue?.color || '#f59e0b',
         icon: DollarSign,
-        format: (value) => value ? `Rp ${value.toLocaleString('id-ID')}` : 'Rp 0'
+        format: (value) => value ? `IDR ${value.toLocaleString('id-ID')}` : 'IDR 0'
     }
 ];
