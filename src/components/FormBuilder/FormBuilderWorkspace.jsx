@@ -24,16 +24,21 @@ const FormBuilderWorkspace = () => {
     const [activeTab, setActiveTab] = useState('builder');
     const { toast } = useToast();
 
+    // ===== UPDATE DOCUMENT TITLE BASED ON FORM STATE =====
     useEffect(() => {
         if (formConfig) {
             if (selectedTemplate) {
+                // Edit mode dengan template terpilih
                 document.title = `Edit "${formConfig.title || selectedTemplate.program_name}" - Form Builder | Impala Network`;
             } else if (formConfig.programName) {
+                // Create mode dengan program terpilih
                 document.title = `Buat Form "${formConfig.programName}" - Form Builder | Impala Network`;
             } else {
+                // Default form builder
                 document.title = 'Form Builder - Impala Network';
             }
         } else {
+            // Loading state
             document.title = 'Form Builder - Impala Network';
         }
     }, [formConfig, selectedTemplate]);
@@ -128,6 +133,7 @@ const FormBuilderWorkspace = () => {
         setSelectedTemplate(template);
         setFormConfig(template.form_config);
         
+        // Update title saat template dipilih
         document.title = `Edit "${template.program_name}" - Form Builder | Impala Network`;
         
         toast({
@@ -162,6 +168,7 @@ const FormBuilderWorkspace = () => {
                 setFormTemplates(prev => [newTemplate, ...prev]);
                 setSelectedTemplate(newTemplate);
                 
+                // Update title setelah template dibuat
                 document.title = `Edit "${formConfig.programName}" - Form Builder | Impala Network`;
                 
                 toast({
@@ -211,6 +218,7 @@ const FormBuilderWorkspace = () => {
             const formLink = `http://localhost:5173/register/${updatedTemplate.unique_slug}`;
             navigator.clipboard.writeText(formLink);
             
+            // Update title untuk published form
             document.title = `Form "${updatedTemplate.program_name}" (Published) - Form Builder | Impala Network`;
             
             toast({
@@ -263,6 +271,7 @@ const FormBuilderWorkspace = () => {
                 title: `Pendaftaran Program ${programName}`
             }));
             
+            // Update title saat program dipilih
             document.title = `Buat Form "${programName}" - Form Builder | Impala Network`;
         }
     };
@@ -297,6 +306,7 @@ const FormBuilderWorkspace = () => {
             if (selectedTemplate && selectedTemplate.id === templateId) {
                 setSelectedTemplate(null);
                 setFormConfig(null);
+                // Kembalikan ke default title saat template dihapus
                 document.title = 'Form Builder - Impala Network';
             }
 
@@ -364,6 +374,7 @@ const FormBuilderWorkspace = () => {
                             <button
                                 onClick={() => {
                                     setActiveTab('builder');
+                                    // Update title sesuai tab aktif
                                     if (activeTab !== 'builder') {
                                         if (selectedTemplate) {
                                             document.title = `Edit "${selectedTemplate.program_name}" - Form Builder | Impala Network`;
@@ -383,6 +394,7 @@ const FormBuilderWorkspace = () => {
                             <button
                                 onClick={() => {
                                     setActiveTab('links');
+                                    // Update title untuk manage links tab
                                     document.title = `Manage Form Links (${formTemplates.filter(t => t.is_published).length}) - Impala Network`;
                                 }}
                                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
