@@ -50,8 +50,6 @@ class HeteroSemarangService {
 
     async addMemberHeteroSemarang(memberData) {
         try {
-            console.log('Sending member data:', memberData); // Debug log
-
             const response = await fetch(`${this.baseURL}/hetero/semarang`, {
                 method: 'POST',
                 headers: {

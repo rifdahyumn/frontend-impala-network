@@ -10,7 +10,6 @@ import { useAuth } from "../../hooks/useAuth";
 const Header = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    // const [notifications, setNotifications] = useState(3)
     const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
@@ -39,7 +38,6 @@ const Header = () => {
         }
     }
 
-    // ✅ PERBAIKI: Navigate ke /account-settings untuk membuka account settings
     const handleSettings = () => navigate('/account-settings');
 
     const getInitials = (name) => {
@@ -104,20 +102,6 @@ const Header = () => {
                 </div>  
 
                 <div className='flex items-center gap-4'>
-                    {/* <Button
-                        variant="ghost"
-                        icon="icon"
-                        className="relative h-10 w-10 rounded-lg hover:bg-amber-50"
-                        onClick={handleNotifications}
-                    >
-                        <Bell className="h-5 w-5 text-amber-600" />
-                        {notifications > 0 && (
-                            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-medium text-white">
-                                {notifications}
-                            </span>
-                        )}
-                    </Button> */}
-
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button

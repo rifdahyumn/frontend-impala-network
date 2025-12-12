@@ -46,7 +46,6 @@ const PublicFormPreview = ({ fields, category, onBack, formConfig }) => {
             setFormData(prev => ({
                 ...prev,
                 [fieldName]: value,
-                // Jika memilih "Tidak", reset disability_type
                 ...(value !== 'Ya' && { disability_type: '' })
             }));
         } else {
@@ -62,14 +61,11 @@ const PublicFormPreview = ({ fields, category, onBack, formConfig }) => {
         setIsSubmitting(true);
         
         try {
-            // Simpan data dengan format yang benar
             const submissionData = {
                 ...formData,
-                // Pastikan disability_type hanya ada jika is_disability = 'Ya'
                 disability_type: formData.is_disability === 'Ya' ? formData.disability_type || '' : ''
             };
             
-            console.log('Form data submitted:', submissionData);
             await new Promise(resolve => setTimeout(resolve, 2000));
             
             alert('Form berhasil dikirim! Terima kasih telah mendaftar.');
@@ -85,18 +81,15 @@ const PublicFormPreview = ({ fields, category, onBack, formConfig }) => {
         }
     };
 
-    // ===== FUNGSI UNTUK MENGELOMPOKKAN FIELDS =====
     const organizeFields = () => {
         const personalInfoFields = [];
         const additionalFields = [];
         let foundDisabilitySection = false;
         
         fields.forEach(field => {
-            // Field pribadi utama (sebelum disability section)
             if (field.id === 'education' || !foundDisabilitySection) {
                 personalInfoFields.push(field);
                 
-                // Setelah education, kita akan menambahkan is_disability
                 if (field.id === 'education') {
                     const disabilityField = fields.find(f => f.id === 'is_disability');
                     if (disabilityField) {

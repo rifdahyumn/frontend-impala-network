@@ -471,7 +471,7 @@ export const usePrograms = (initialFilters = {}) => {
         } else {
             const start = ((pagination.page - 1) * pagination.limit) + 1
             const end = Math.min(pagination.page * pagination.limit, pagination.total)
-            return `Showing ${start} to ${end} of ${pagination.total} programs`
+            // return `Showing ${start} to ${end} of ${pagination.total} programs`
         }
     }, [pagination, programs.length])
 

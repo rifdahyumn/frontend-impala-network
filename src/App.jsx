@@ -19,50 +19,48 @@ import HeteroSurakarta from './pages/HeteroSurakarta';
 import PublicForm from './pages/PublicForm';
 import UserAccountSettings from "./components/UserAccountSettings/UserAccountSettings";
 
-// Main Layout Component - DENGAN SIDEBAR & HEADER (untuk halaman biasa)
+
 const MainLayout = ({ children }) => {
-  return (
-    <div className="flex min-h-screen bg-gray-50">
-      <div className='flex-shrink-0 fixed left-0 top-0 h-screen z-40'>
-        <Sidebar />
-      </div>
-
-      <div className='flex-1 flex flex-col min-w-0 ml-80'>
-        <Header />
-        <div className='h-screen overflow-y-auto main-content-scroll animated-main-scroll glow-main-scroll'>
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Minimal Layout Component - TANPA SIDEBAR & TANPA HEADER (hanya untuk account settings)
-const MinimalLayout = ({ children }) => {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* TIDAK ADA HEADER DAN SIDEBAR */}
-      <div className='h-screen overflow-y-auto main-content-scroll animated-main-scroll glow-main-scroll'>
-        {children}
-      </div>
-    </div>
-  );
-};
-
-// Protected Route Wrapper
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
-  const location = useLocation();
-
-  if (isAuthenticated === null) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Checking authentication...</p>
+        <div className="flex min-h-screen bg-gray-50">
+            <div className='flex-shrink-0 fixed left-0 top-0 h-screen z-40'>
+                <Sidebar />
+            </div>
+
+            <div className='flex-1 flex flex-col min-w-0 ml-80'>
+                <Header />
+                <div className='h-screen overflow-y-auto main-content-scroll animated-main-scroll glow-main-scroll'>
+                    {children}
+                </div>
+            </div>
         </div>
-      </div>
     );
+};
+
+
+const MinimalLayout = ({ children }) => {
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <div className='h-screen overflow-y-auto main-content-scroll animated-main-scroll glow-main-scroll'>
+                {children}
+            </div>
+        </div>
+    );
+};
+
+const ProtectedRoute = ({ children }) => {
+    const { isAuthenticated } = useAuth();
+    const location = useLocation();
+
+    if (isAuthenticated === null) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-gray-50">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Checking authentication...</p>
+                </div>
+            </div>
+        );
   }
 
   if (!isAuthenticated) {
@@ -72,7 +70,6 @@ const ProtectedRoute = ({ children }) => {
   return <MainLayout>{children}</MainLayout>;
 };
 
-// Protected Route dengan Minimal Layout (khusus untuk account settings)
 const ProtectedRouteMinimal = ({ children }) => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();

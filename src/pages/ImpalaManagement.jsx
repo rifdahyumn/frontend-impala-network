@@ -32,10 +32,202 @@ const ImpalaManagement = () => {
     const [filteredParticipants, setFilteredParticipants] = useState([]);
     const [availableCategories, setAvailableCategories] = useState([]);
 
+<<<<<<< HEAD
     const { participant, loading, error, pagination, handlePageChange } = useImpala();
+=======
+    // 🔴 TAMBAHKAN: Fungsi untuk handle select participant dengan auto-scroll
+    const handleSelectParticipant = useCallback((participant) => {
+        // Set selected participant
+        setSelectedParticipant(participant);
+        
+        // Trigger highlight effect
+        setHighlightDetail(true);
+        
+        // Auto-scroll ke participant detail section
+        setTimeout(() => {
+            if (participantDetailRef.current) {
+                participantDetailRef.current.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start',
+                    inline: 'nearest'
+                });
+                
+                // Tambahkan smooth transition effect
+                participantDetailRef.current.style.transition = 'all 0.5s ease';
+                
+                // Remove highlight after 2 seconds
+                setTimeout(() => {
+                    setHighlightDetail(false);
+                }, 2000);
+            }
+        }, 150); // Delay sedikit untuk memastikan DOM sudah update
+    }, []);
 
-    // GENDER OPTIONS
+    // 🔴 DIUBAH: Get state dari hook
+    const { showAllOnSearch } = useImpala();
+    const isInShowAllMode = isShowAllMode();
+
+    // 🔴 TAMBAH: Fungsi untuk download template CSV
+    const handleDownloadTemplate = useCallback(() => {
+        try {
+            // Template data untuk import participant Impala
+            const templateData = [
+                {
+                    'full_name': 'Contoh: John Doe',
+                    'email': 'Contoh: john@example.com',
+                    'gender': 'Contoh: Laki-laki',
+                    'phone': 'Contoh: 081234567890',
+                    'category': 'Contoh: Mahasiswa',
+                    'program_name': 'Contoh: Program Impala',
+                    'entity': 'Contoh: Universitas Indonesia',
+                    'address': 'Contoh: Jl. Contoh No. 123',
+                    'notes': 'Contoh: Catatan tambahan'
+                },
+            ];
+            
+            // Convert to CSV
+            const headers = Object.keys(templateData[0]);
+            const csvContent = [
+                headers.join(','),
+                ...templateData.map(row => 
+                    headers.map(header => 
+                        `"${row[header] || ''}"`
+                    ).join(',')
+                )
+            ].join('\n');
+            
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `impala_import_template_${new Date().getTime()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            toast.success('Template CSV berhasil didownload');
+        } catch (error) {
+            console.error('Download template error:', error);
+            toast.error('Gagal mendownload template');
+        }
+    }, []);
+
+    // 🔴 TAMBAH: Fungsi untuk handle file upload
+    const handleFileUpload = useCallback((event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        // Validasi file type
+        if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+            toast.error('Hanya file CSV yang diperbolehkan');
+            return;
+        }
+        
+        // Validasi file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('File terlalu besar. Maksimal 5MB');
+            return;
+        }
+        
+        setImportFile(file);
+    }, []);
+
+    // 🔴 TAMBAH: Fungsi untuk import CSV
+    const handleImportCSV = useCallback(async () => {
+        if (!importFile) {
+            toast.error('Pilih file CSV terlebih dahulu');
+            return;
+        }
+        
+        setIsImporting(true);
+        
+        try {
+            // Read CSV file
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const csvText = e.target.result;
+                    const rows = csvText.split('\n');
+                    const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                    
+                    // Parse CSV data
+                    const importedParticipants = [];
+                    for (let i = 1; i < rows.length; i++) {
+                        if (!rows[i].trim()) continue;
+                        
+                        const values = rows[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                        const participant = {};
+                        
+                        headers.forEach((header, index) => {
+                            participant[header] = values[index] || '';
+                        });
+
+                        if (participant.full_name?.includes('Contoh:')) continue;
+                        if (participant.email?.includes('Contoh:')) continue;
+
+                        if (participant.full_name && participant.email) {
+                            importedParticipants.push(participant);
+                        }
+                    }
+                    
+                    if (importedParticipants.length === 0) {
+                        toast.error('Tidak ada data valid yang ditemukan dalam file');
+                        return;
+                    }
+
+                    const existingParticipants = JSON.parse(localStorage.getItem('impala_participants') || '[]');
+                    const newParticipants = [
+                        ...existingParticipants,
+                        ...importedParticipants.map((participant, index) => ({
+                            id: Date.now() + index,
+                            ...participant,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        }))
+                    ];
+                    localStorage.setItem('impala_participants', JSON.stringify(newParticipants));
+                    
+                    // Reset form
+                    setImportFile(null);
+                    if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                    }
+                    
+                    // Close modal
+                    setIsImportModalOpen(false);
+                    
+                    // Refresh data
+                    await refreshData();
+                    
+                    toast.success(`Berhasil mengimport ${importedParticipants.length} participant`);
+                } catch (parseError) {
+                    console.error('Parse error:', parseError);
+                    toast.error('Format file CSV tidak valid');
+                }
+            };
+            
+            reader.readAsText(importFile);
+        } catch (error) {
+            console.error('Import error:', error);
+            toast.error('Gagal mengimport data');
+        } finally {
+            setIsImporting(false);
+        }
+    }, [importFile, refreshData]);
+
+    const handleOpenImportModal = useCallback(() => {
+        setImportFile(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+        setIsImportModalOpen(true);
+    }, []);
+>>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
+
     const genderOptions = [
+<<<<<<< HEAD
         { value: 'laki-laki', label: '👨 Laki-laki' },
         { value: 'perempuan', label: '👩 Perempuan' },
     ];
@@ -47,6 +239,126 @@ const ImpalaManagement = () => {
             
             // Ambil semua category dari data participant
             const allCategories = participants
+=======
+        { value: 'Laki-laki', label: 'Laki-laki' },
+        { value: 'Perempuan', label: 'Perempuan' },
+    ];
+
+    const applyFilters = useCallback(async () => {
+        await updateFiltersAndFetch(localFilters, showAllOnSearch);
+    }, [localFilters, showAllOnSearch, updateFiltersAndFetch]);
+
+    const applySearch = useCallback(async () => {
+        await searchParticipants(localFilters.search, showAllOnSearch);
+    }, [localFilters.search, showAllOnSearch, searchParticipants]);
+
+    const handleSearch = useCallback((term) => {
+        setLocalFilters(prev => ({ ...prev, search: term }));
+    }, []);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (localFilters.search !== '') {
+                applySearch();
+            }
+        }, 500); // Debounce 500ms
+        
+        return () => clearTimeout(timer);
+    }, [localFilters.search, applySearch]);
+
+    // 🔴 DIUBAH: Apply filters ketika filter berubah
+    useEffect(() => {
+        if (localFilters.gender !== '' || localFilters.category !== '') {
+            const timer = setTimeout(() => {
+                applyFilters();
+            }, 300);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [localFilters.gender, localFilters.category, applyFilters]);
+
+    // 🔴 DIUBAH: Handle gender filter change yang lebih sederhana
+    const handleGenderFilterChange = useCallback((gender) => {
+        setLocalFilters(prev => ({
+            ...prev,
+            gender: prev.gender === gender ? '' : gender
+        }));
+    }, []);
+
+    // 🔴 DIUBAH: Handle category filter change yang lebih sederhana
+    const handleCategoryFilterChange = useCallback((category) => {
+        setLocalFilters(prev => ({
+            ...prev,
+            category: prev.category === category ? '' : category
+        }));
+    }, []);
+
+    // 🔴 DIUBAH: Clear all filters yang lebih sederhana
+    const clearAllFilters = useCallback(async () => {
+        // Reset state lokal
+        setLocalFilters({
+            search: '',
+            gender: '',
+            category: '',
+        });
+        
+        // Reset selected participant saat clear filter
+        setSelectedParticipant(null);
+        
+        // Panggil hook untuk clear semua
+        await hookClearFilters();
+        
+        // Scroll ke atas
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [hookClearFilters]);
+
+    // 🔴 DIUBAH: Clear specific filter
+    const clearFilter = useCallback((filterType) => {
+        if (filterType === 'search') {
+            setLocalFilters(prev => ({ ...prev, search: '' }));
+            hookClearSearch();
+            return;
+        }
+        
+        setLocalFilters(prev => ({ ...prev, [filterType]: '' }));
+    }, [hookClearSearch]);
+
+    // 🔴 MODIFIKASI: Toggle show all on search
+    const handleToggleShowAll = useCallback(async (checked) => {
+        await toggleShowAllOnSearch(checked);
+        
+        // Re-apply filters dengan mode baru
+        if (localFilters.search || localFilters.gender || localFilters.category) {
+            await applyFilters();
+        }
+    }, [toggleShowAllOnSearch, localFilters, applyFilters]);
+
+    // 🔴 MODIFIKASI: Reset to pagination mode
+    const handleResetToPagination = useCallback(async () => {
+        await resetToPaginationMode();
+    }, [resetToPaginationMode]);
+
+    // 🔴 TAMBAHKAN: Handle export seperti di Program.jsx
+    const handleExport = useCallback(async () => {
+        try {
+            // Gunakan filter yang sedang aktif
+            const currentFilters = {
+                search: localFilters.search,
+                gender: localFilters.gender,
+                category: localFilters.category
+            };
+            
+            await exportParticipants('csv', currentFilters);
+        } catch (error) {
+            console.error('Export failed:', error);
+            toast.error('Failed to export participants');
+        }
+    }, [localFilters, exportParticipants]);
+
+    useEffect(() => {
+        if (participant.length > 0) {
+            const allCategories = participant
+>>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
                 .map(p => p.category)
                 .filter(category => category && category.trim() !== "");
             
@@ -196,8 +508,15 @@ const ImpalaManagement = () => {
     const handleDelete = () => {
         if (selectedParticipant) {
             if (window.confirm(`Are you sure you want to delete ${selectedParticipant.full_name}?`)) {
+<<<<<<< HEAD
                 console.log('Delete participant:', selectedParticipant);
                 setSelectedParticipant(null); 
+=======
+                setSelectedParticipant(null);
+                toast.success('Participant deleted successfully');
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+>>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
             }
         }
     };
@@ -207,12 +526,32 @@ const ImpalaManagement = () => {
             const currentSelected = participant.find(p => p.id === selectedParticipant.id)
             if (currentSelected) {
                 setSelectedParticipant(currentSelected)
+<<<<<<< HEAD
+=======
+            } else {
+                setSelectedParticipant(null);
+>>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
             }
         }
     }, [participant, selectedParticipant?.id])
 
+<<<<<<< HEAD
     // GET ACTIVE FILTERS COUNT - HANYA GENDER DAN CATEGORY
     const getActiveFiltersCount = () => {
+=======
+    const handleRefresh = useCallback(() => {
+        refreshData();
+        clearAllFilters();
+    }, [refreshData, clearAllFilters]);
+
+    const handlePageChangeModified = useCallback((page) => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        handlePageChange(page);
+    }, [handlePageChange]);
+
+    // GET ACTIVE FILTERS COUNT
+    const getActiveFiltersCount = useCallback(() => {
+>>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
         let count = 0;
         // TIDAK MENGHITUNG SEARCH TERM
         if (activeFilters.gender) count++;

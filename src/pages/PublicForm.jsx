@@ -74,14 +74,12 @@ const PublicForm = () => {
         };
     }, [template]);
 
-    // ===== UPDATE TITLE PADA SUCCESS PAGE =====
     useEffect(() => {
         if (submissionSuccess && submittedData) {
             document.title = `Pendaftaran Berhasil - ${submittedData.programName} | Impala Network`;
         }
     }, [submissionSuccess, submittedData]);
 
-    // ===== LOAD FORM DENGAN TIMEOUT HANDLING =====
     useEffect(() => {
         let isMounted = true;
         const controller = new AbortController();
@@ -95,17 +93,14 @@ const PublicForm = () => {
                 if (!slug) {
                     throw new Error('Slug tidak ditemukan di URL');
                 }
-
-                console.log('Loading form with slug:', slug);
                 
-                // Tambahkan timeout
                 const timeoutId = setTimeout(() => {
                     if (isMounted) {
                         setHasTimeout(true);
                         setLoadError('Waktu memuat formulir habis. Silakan coba lagi.');
                         setIsLoading(false);
                     }
-                }, 10000); // 10 detik timeout
+                }, 10000);
 
                 const response = await formTemplateService.getFormTemplateBySlug(slug);
                 clearTimeout(timeoutId);
@@ -116,7 +111,6 @@ const PublicForm = () => {
                     setTemplate(templateData);
                     setFormConfig(templateData.form_config);
                     
-                    console.log('Form loaded successfully:', templateData.program_name);
                     
                     toast({
                         title: "Form Dimuat",
@@ -129,8 +123,7 @@ const PublicForm = () => {
             } catch (error) {
                 if (isMounted) {
                     console.error('Error loading form from API:', error);
-                    
-                    // Jika bukan timeout error yang sudah dihandle
+
                     if (!hasTimeout) {
                         setLoadError(error.message || 'Gagal memuat form');
                         
@@ -144,7 +137,6 @@ const PublicForm = () => {
             } finally {
                 if (isMounted) {
                     setIsLoading(false);
-                    console.log('Loading completed');
                 }
             }
         };
@@ -157,7 +149,6 @@ const PublicForm = () => {
         };
     }, [slug, toast]);
 
-    // ===== EFEK UNTUK MENAMBAHKAN FIELD DISABILITAS JIKA TIDAK ADA =====
     useEffect(() => {
         if (formConfig && formConfig.personalInfo) {
             const hasDisabilityField = formConfig.personalInfo.fields?.some(f => f.id === 'disability_status');
@@ -453,8 +444,6 @@ const PublicForm = () => {
                 Object.entries(submissionData).filter(([_, value]) => value != null && value !== '')
             );
 
-            console.log('Data yang dikirim:', cleanData);
-
             const response = await impalaService.createImpala(cleanData);
             if (response.success) {
                 setSubmittedData({
@@ -465,7 +454,7 @@ const PublicForm = () => {
                 });
                 setSubmissionSuccess(true);
                 toast({
-                    title: 'Pendaftaran Berhasil 🎉',
+                    title: 'Pendaftaran Berhasil',
                     description: `Terima kasih telah mendaftar program ${programName}`,
                     variant: 'default'
                 });

@@ -26,7 +26,8 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
             fields: [
                 { key: 'company', label: 'Company', icon: Building },
                 { key: 'business', label: 'Business Type', icon: Building },
-                { key: 'total_employee', label: 'Total Employee', icon: Building }
+                { key: 'total_employee', label: 'Total Employee', icon: Building },
+                { key: 'address', label: 'Address', icon: MapPin },
             ]
         },
         {
@@ -36,15 +37,6 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
                 { key: 'program_name', label: 'Program Name', icon: DollarSign },
                 { key: 'status', label: 'Status', icon: DollarSign },
                 { key: 'join_date', label: 'Join Date', icon: Calendar }
-            ]
-        },
-        {
-            category: 'Location',
-            icon: MapPin,
-            fields: [
-                { key: 'address', label: 'Address', icon: MapPin },
-                { key: 'city', label: 'City', icon: MapPin },
-                { key: 'country', label: 'Country', icon: MapPin }
             ]
         },
         {

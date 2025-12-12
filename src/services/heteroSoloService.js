@@ -50,8 +50,6 @@ class HeteroSoloService {
 
     async addMemberHeteroSolo(memberData) {
         try {
-            console.log('Sending member data:', memberData); // Debug log
-
             const response = await fetch(`${this.baseURL}/hetero/solo`, {
                 method: 'POST',
                 headers: {

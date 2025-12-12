@@ -39,35 +39,22 @@ export const useClients = (initialFilters = {}) => {
         businessType: filtersRef.current.businessType
     })
 
-    // 🔴 PERBAIKAN: fetchClients dengan request cancellation
     const fetchClients = useCallback(async (page = 1, customFilters = null, showAll = false, requestId = null) => {
         try {
-            // 🔴 Cancel request sebelumnya jika ada
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort()
             }
             
-            // Buat AbortController baru
             abortControllerRef.current = new AbortController()
             
-            // 🔴 Generate request ID
             const currentRequestId = requestId || Date.now()
             lastRequestIdRef.current = currentRequestId
             
             setLoading(true)
             setError(null)
 
-            // Gunakan customFilters jika ada, jika tidak gunakan ref
             const currentFilters = customFilters || filtersRef.current
 
-            console.log('📤 useClients - Fetching with filters:', {
-                page,
-                filters: currentFilters,
-                showAll,
-                requestId: currentRequestId
-            })
-
-            // Siapkan parameter untuk API
             const params = {
                 page,
                 limit: pagination.limit,
@@ -76,24 +63,8 @@ export const useClients = (initialFilters = {}) => {
                 ...(currentFilters.businessType && { businessType: currentFilters.businessType }),
                 ...(currentFilters.search && showAll && { showAllOnSearch: 'true' })
             }
-
-            console.log('📤 useClients - API params:', params)
-
-            // 🔴 PERBAIKAN: Gunakan AbortController
             const result = await clientService.fetchClients(params)
 
-            // 🔴 CEK: Jika ini bukan request terbaru, ignore
-            if (currentRequestId !== lastRequestIdRef.current) {
-                console.log('🔄 Ignoring stale request:', currentRequestId)
-                return
-            }
-
-            console.log('📥 useClients - API response:', {
-                dataCount: result.data?.length,
-                pagination: result.metadata?.pagination
-            })
-
-            // 🔴 PERBAIKAN: Update semua state dalam satu batch
             setMembers(result.data || [])
             
             const paginationData = result.metadata?.pagination || {}
@@ -107,7 +78,6 @@ export const useClients = (initialFilters = {}) => {
                 searchTerm: currentFilters.search || ''
             }))
 
-            // Update showAllOnSearch state
             if (currentFilters.search && paginationData.showingAllResults) {
                 setShowAllOnSearch(true)
             } else if (!currentFilters.search) {
@@ -115,13 +85,11 @@ export const useClients = (initialFilters = {}) => {
             }
 
         } catch (error) {
-            // 🔴 PERBAIKAN: AbortError adalah expected, jangan tampilkan error
             if (error.name === 'AbortError') {
-                console.log('🔄 Request cancelled')
                 return
             }
             
-            console.error('❌ Error fetching clients:', error)
+            console.error('Error fetching clients:', error)
             setError(error.message)
             toast.error('Failed to load clients')
         } finally {
@@ -129,15 +97,13 @@ export const useClients = (initialFilters = {}) => {
         }
     }, [pagination.limit])
 
-    // 🔴 PERBAIKAN: Debounce dengan waktu yang lebih optimal
     const debouncedFetchRef = useRef(
         debounce((page, customFilters, showAll) => {
             const requestId = Date.now()
             fetchClients(page, customFilters, showAll, requestId)
-        }, 500) // 🔴 PERBAIKAN: 500ms untuk filter changes
+        }, 500) 
     )
 
-    // 🔴 PERBAIKAN: Cleanup saat unmount
     useEffect(() => {
         return () => {
             // Cancel semua pending requests
@@ -152,41 +118,32 @@ export const useClients = (initialFilters = {}) => {
         }
     }, [])
 
-    // 🔴 PERBAIKAN: updateFiltersAndFetch dengan optimized updates
     const updateFiltersAndFetch = useCallback((newFilters, showAll = false) => {
-        console.log('🔄 updateFiltersAndFetch called with:', { newFilters, showAll })
-        
-        // 🔴 PERBAIKAN: Update ref dulu
+
         const updatedFilters = {
             ...filtersRef.current,
             ...newFilters
         }
         filtersRef.current = updatedFilters
-        
-        // 🔴 PERBAIKAN: Batch UI updates
+
         setFilters(prev => ({
             search: updatedFilters.search,
             status: updatedFilters.status,
             businessType: updatedFilters.businessType
         }))
-        
-        // Handle showAllOnSearch reset jika search dihapus
+
         if (!newFilters.search && showAllOnSearch) {
             setShowAllOnSearch(false)
         }
-        
-        // Gunakan debounced fetch
+
         if (debouncedFetchRef.current) {
             debouncedFetchRef.current(1, updatedFilters, showAll)
         }
     }, [showAllOnSearch])
 
-    // 🔴 PERBAIKAN: Toggle show all on search
     const toggleShowAllOnSearch = useCallback((value) => {
-        console.log('🔄 toggleShowAllOnSearch:', value)
         setShowAllOnSearch(value)
-        
-        // Jika ada search term, refresh dengan setting baru
+
         if (filtersRef.current.search) {
             if (debouncedFetchRef.current) {
                 debouncedFetchRef.current(1, filtersRef.current, value)
@@ -194,9 +151,7 @@ export const useClients = (initialFilters = {}) => {
         }
     }, [])
 
-    // 🔴 PERBAIKAN: Clear filter
     const clearFilters = useCallback(() => {
-        console.log('🔄 clearFilters')
         
         const clearedFilters = {
             search: '',
@@ -206,26 +161,20 @@ export const useClients = (initialFilters = {}) => {
         
         filtersRef.current = clearedFilters
         
-        // 🔴 PERBAIKAN: Batch updates
         setFilters(clearedFilters)
         setShowAllOnSearch(false)
         
-        // Gunakan fetch langsung tanpa debounce untuk clear
         fetchClients(1, clearedFilters, false)
     }, [fetchClients])
 
-    // 🔴 PERBAIKAN: Clear search only
     const clearSearch = useCallback(() => {
-        console.log('🔄 clearSearch')
-        
         const updatedFilters = {
             ...filtersRef.current,
             search: ''
         }
         
         filtersRef.current = updatedFilters
-        
-        // 🔴 PERBAIKAN: Batch updates
+
         setFilters(prev => ({
             ...prev,
             search: ''
@@ -235,55 +184,41 @@ export const useClients = (initialFilters = {}) => {
         fetchClients(1, updatedFilters, false)
     }, [fetchClients])
 
-    // 🔴 PERBAIKAN: Search dengan mode show all
     const searchClients = useCallback((searchTerm, showAll = false) => {
-        console.log('🔍 searchClients:', { searchTerm, showAll })
-        
         const searchFilters = {
             ...filtersRef.current,
             search: searchTerm
         }
         
         filtersRef.current = searchFilters
-        
-        // 🔴 PERBAIKAN: Update UI state
         setFilters(prev => ({
             ...prev,
             search: searchTerm
         }))
-        
-        // Set showAllOnSearch state
+
         if (searchTerm) {
             setShowAllOnSearch(showAll)
         } else {
             setShowAllOnSearch(false)
         }
         
-        // Gunakan debounced fetch untuk search
         if (debouncedFetchRef.current) {
             debouncedFetchRef.current(1, searchFilters, showAll)
         }
     }, [])
 
-    // 🔴 PERBAIKAN: Fungsi refresh data
     const refreshData = useCallback(() => {
-        console.log('🔄 refreshData')
         fetchClients(pagination.page, filtersRef.current, showAllOnSearch)
     }, [fetchClients, pagination.page, showAllOnSearch])
 
-    // 🔴 PERBAIKAN: Fungsi handle page change
     const handlePageChange = useCallback((newPage) => {
-        console.log('📄 handlePageChange:', newPage)
         fetchClients(newPage, filtersRef.current, showAllOnSearch)
     }, [fetchClients, showAllOnSearch])
 
-    // 🔴 PERBAIKAN: Effect untuk fetch data awal - HANYA SEKALI
     useEffect(() => {
-        console.log('🚀 Initial mount - fetching clients')
         fetchClients(1, filtersRef.current, false)
-    }, []) // 🔴 HANYA SEKALI
+    }, []) 
 
-    // 🔴 PERBAIKAN: Effect untuk fetch stats - HANYA SEKALI
     const fetchClientStats = useCallback(async () => {
         try {
             setStatsLoading(true)
@@ -294,7 +229,6 @@ export const useClients = (initialFilters = {}) => {
             }
         } catch (error) {
             console.error('Error fetching client stats:', error)
-            // 🔴 PERBAIKAN: Tidak perlu toast untuk stats, cukup set default
             setClientStats({
                 title: "Total Client",
                 value: "0",
@@ -312,20 +246,12 @@ export const useClients = (initialFilters = {}) => {
     }, [])
 
     useEffect(() => {
-        console.log('📊 Initial mount - fetching client stats')
         fetchClientStats()
     }, [fetchClientStats])
 
-    // 🔴 PERBAIKAN: Export data
     const exportClients = useCallback(async (format = 'csv') => {
         try {
             setLoading(true)
-            
-            console.log('📤 Exporting clients with filters:', {
-                filters: filtersRef.current,
-                showAllOnSearch,
-                format
-            })
 
             let dataToExport
             
@@ -457,12 +383,10 @@ export const useClients = (initialFilters = {}) => {
     }, [pagination, members.length])
 
     const refetch = useCallback(() => {
-        console.log('🔄 Refetching current data')
         fetchClients(pagination.page, filtersRef.current, showAllOnSearch)
     }, [fetchClients, pagination.page, showAllOnSearch])
 
     return {
-        // State
         members, 
         loading, 
         error, 
@@ -471,35 +395,21 @@ export const useClients = (initialFilters = {}) => {
         showAllOnSearch,
         clientStats, 
         statsLoading,
-        
-        // Fetch Functions
         fetchClients,
         updateFiltersAndFetch,
         clearFilters,
         clearSearch,
         searchClients,
-        
-        // Show All Mode Functions
         toggleShowAllOnSearch,
         isShowAllMode: () => pagination.showingAllResults || false,
-        
-        // Display Functions
         getDisplayText,
-        
-        // Pagination Functions
         refetch, 
         handlePageChange, 
         refreshData,
-        
-        // CRUD Functions
         addClient, 
         updateClient, 
         deleteClient,
-        
-        // Export Functions
         exportClients,
-        
-        // Stats Functions
         refetchStats: fetchClientStats
     }
 }

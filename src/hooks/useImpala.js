@@ -39,35 +39,21 @@ export const useImpala = (initialFilters = {}) => {
         category: filtersRef.current.category
     })
 
-    // 🔴 PERBAIKAN: fetchImpala dengan request cancellation
     const fetchImpala = useCallback(async (page = 1, customFilters = null, showAll = false, requestId = null) => {
         try {
-            // 🔴 Cancel request sebelumnya jika ada
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort()
             }
             
-            // Buat AbortController baru
             abortControllerRef.current = new AbortController()
-            
-            // 🔴 Generate request ID
+
             const currentRequestId = requestId || Date.now()
             lastRequestIdRef.current = currentRequestId
             
             setLoading(true)
             setError(null)
 
-            // Gunakan customFilters jika ada, jika tidak gunakan ref
             const currentFilters = customFilters || filtersRef.current
-
-            console.log('📤 useImpala - Fetching with filters:', {
-                page,
-                filters: currentFilters,
-                showAll,
-                requestId: currentRequestId
-            })
-
-            // Siapkan parameter untuk API
             const params = {
                 page,
                 limit: pagination.limit,
@@ -77,17 +63,13 @@ export const useImpala = (initialFilters = {}) => {
                 ...(currentFilters.search && showAll && { showAllOnSearch: 'true' })
             }
 
-            console.log('📤 useImpala - API params:', params)
-
-            // 🔴 PERBAIKAN: Gunakan AbortController
             const result = await impalaService.fetchImpala(params)
 
-            // 🔴 CEK: Jika ini bukan request terbaru, ignore
             if (currentRequestId !== lastRequestIdRef.current) {
-                console.log('🔄 Ignoring stale request:', currentRequestId)
                 return
             }
 
+<<<<<<< HEAD
             console.log('📥 useImpala - API response:', {
                 dataCount: result.data?.length || 0,
                 pagination: result.metadata?.pagination || {},
@@ -117,6 +99,9 @@ export const useImpala = (initialFilters = {}) => {
 
             // 🔴 PERBAIKAN: Update semua state dalam satu batch
             setParticipant(participantsData)
+=======
+            setParticipant(result.data || [])
+>>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
             
             setPagination(prev => ({
                 page: validPage,
@@ -128,7 +113,6 @@ export const useImpala = (initialFilters = {}) => {
                 searchTerm: currentFilters.search || ''
             }))
 
-            // Update showAllOnSearch state
             if (currentFilters.search && paginationData.showingAllResults) {
                 setShowAllOnSearch(true)
             } else if (!currentFilters.search) {
@@ -136,29 +120,30 @@ export const useImpala = (initialFilters = {}) => {
             }
 
         } catch (error) {
-            // 🔴 PERBAIKAN: AbortError adalah expected, jangan tampilkan error
             if (error.name === 'AbortError') {
-                console.log('🔄 Request cancelled')
                 return
             }
             
+<<<<<<< HEAD
             console.error('❌ Error fetching participants:', error)
             setError(error.message || 'Failed to load participants')
+=======
+            console.error('Error fetching participants:', error)
+            setError(error.message)
+>>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
             toast.error('Failed to load participants')
         } finally {
             setLoading(false)
         }
     }, [pagination.limit])
 
-    // 🔴 PERBAIKAN: Debounce dengan waktu yang lebih optimal
     const debouncedFetchRef = useRef(
         debounce((page, customFilters, showAll) => {
             const requestId = Date.now()
             fetchImpala(page, customFilters, showAll, requestId)
-        }, 500) // 🔴 PERBAIKAN: 500ms untuk filter changes
+        }, 500)
     )
 
-    // 🔴 PERBAIKAN: Cleanup saat unmount
     useEffect(() => {
         return () => {
             // Cancel semua pending requests
@@ -173,41 +158,31 @@ export const useImpala = (initialFilters = {}) => {
         }
     }, [])
 
-    // 🔴 PERBAIKAN: updateFiltersAndFetch dengan optimized updates
     const updateFiltersAndFetch = useCallback((newFilters, showAll = false) => {
-        console.log('🔄 updateFiltersAndFetch called with:', { newFilters, showAll })
-        
-        // 🔴 PERBAIKAN: Update ref dulu
         const updatedFilters = {
             ...filtersRef.current,
             ...newFilters
         }
         filtersRef.current = updatedFilters
-        
-        // 🔴 PERBAIKAN: Batch UI updates
+
         setFilters(prev => ({
             search: updatedFilters.search,
             gender: updatedFilters.gender,
             category: updatedFilters.category
         }))
-        
-        // Handle showAllOnSearch reset jika search dihapus
+
         if (!newFilters.search && showAllOnSearch) {
             setShowAllOnSearch(false)
         }
-        
-        // Gunakan debounced fetch
+
         if (debouncedFetchRef.current) {
             debouncedFetchRef.current(1, updatedFilters, showAll)
         }
     }, [showAllOnSearch])
 
-    // 🔴 PERBAIKAN: Toggle show all on search
     const toggleShowAllOnSearch = useCallback((value) => {
-        console.log('🔄 toggleShowAllOnSearch:', value)
         setShowAllOnSearch(value)
         
-        // Jika ada search term, refresh dengan setting baru
         if (filtersRef.current.search) {
             if (debouncedFetchRef.current) {
                 debouncedFetchRef.current(1, filtersRef.current, value)
@@ -215,10 +190,7 @@ export const useImpala = (initialFilters = {}) => {
         }
     }, [])
 
-    // 🔴 PERBAIKAN: Clear filter
     const clearFilters = useCallback(() => {
-        console.log('🔄 clearFilters')
-        
         const clearedFilters = {
             search: '',
             gender: '',
@@ -227,18 +199,13 @@ export const useImpala = (initialFilters = {}) => {
         
         filtersRef.current = clearedFilters
         
-        // 🔴 PERBAIKAN: Batch updates
         setFilters(clearedFilters)
         setShowAllOnSearch(false)
         
-        // Gunakan fetch langsung tanpa debounce untuk clear
         fetchImpala(1, clearedFilters, false)
     }, [fetchImpala])
 
-    // 🔴 PERBAIKAN: Clear search only
     const clearSearch = useCallback(() => {
-        console.log('🔄 clearSearch')
-        
         const updatedFilters = {
             ...filtersRef.current,
             search: ''
@@ -246,7 +213,6 @@ export const useImpala = (initialFilters = {}) => {
         
         filtersRef.current = updatedFilters
         
-        // 🔴 PERBAIKAN: Batch updates
         setFilters(prev => ({
             ...prev,
             search: ''
@@ -256,9 +222,7 @@ export const useImpala = (initialFilters = {}) => {
         fetchImpala(1, updatedFilters, false)
     }, [fetchImpala])
 
-    // 🔴 PERBAIKAN: Search dengan mode show all
     const searchParticipants = useCallback((searchTerm, showAll = false) => {
-        console.log('🔍 searchParticipants:', { searchTerm, showAll })
         
         const searchFilters = {
             ...filtersRef.current,
@@ -267,46 +231,42 @@ export const useImpala = (initialFilters = {}) => {
         
         filtersRef.current = searchFilters
         
-        // 🔴 PERBAIKAN: Update UI state
         setFilters(prev => ({
             ...prev,
             search: searchTerm
         }))
         
-        // Set showAllOnSearch state
         if (searchTerm) {
             setShowAllOnSearch(showAll)
         } else {
             setShowAllOnSearch(false)
         }
         
-        // Gunakan debounced fetch untuk search
         if (debouncedFetchRef.current) {
             debouncedFetchRef.current(1, searchFilters, showAll)
         }
     }, [])
 
-    // 🔴 PERBAIKAN: Fungsi refresh data
     const refreshData = useCallback(() => {
-        console.log('🔄 refreshData')
         fetchImpala(pagination.page, filtersRef.current, showAllOnSearch)
     }, [fetchImpala, pagination.page, showAllOnSearch])
 
-    // 🔴 PERBAIKAN: Fungsi handle page change
     const handlePageChange = useCallback((newPage) => {
+<<<<<<< HEAD
         console.log('📄 handlePageChange:', newPage)
         // 🔴 FIX: Pastikan page dalam range yang valid
         const validPage = Math.max(1, Math.min(newPage, pagination.totalPages))
         fetchImpala(validPage, filtersRef.current, showAllOnSearch)
     }, [fetchImpala, showAllOnSearch, pagination.totalPages])
+=======
+        fetchImpala(newPage, filtersRef.current, showAllOnSearch)
+    }, [fetchImpala, showAllOnSearch])
+>>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
 
-    // 🔴 PERBAIKAN: Effect untuk fetch data awal - HANYA SEKALI
     useEffect(() => {
-        console.log('🚀 Initial mount - fetching participants')
         fetchImpala(1, filtersRef.current, false)
-    }, []) // 🔴 HANYA SEKALI
+    }, []) 
 
-    // 🔴 PERBAIKAN: Effect untuk fetch stats
     const fetchImpalaStats = useCallback(async () => {
         try {
             setStatsLoadingImpala(true)
@@ -330,7 +290,6 @@ export const useImpala = (initialFilters = {}) => {
             }
         } catch (error) {
             console.error('Error fetching participant stats:', error)
-            // 🔴 PERBAIKAN: Tidak perlu toast untuk stats, cukup set default
             setImpalaStats({
                 title: 'Total Participant',
                 value: participant.length.toString() || "0",
@@ -348,20 +307,12 @@ export const useImpala = (initialFilters = {}) => {
     }, [participant.length])
 
     useEffect(() => {
-        console.log('📊 Initial mount - fetching participant stats')
         fetchImpalaStats()
     }, [fetchImpalaStats])
 
-    // 🔴 PERBAIKAN: Export data
     const exportParticipants = useCallback(async (format = 'csv') => {
         try {
             setLoading(true)
-            
-            console.log('📤 Exporting participants with filters:', {
-                filters: filtersRef.current,
-                showAllOnSearch,
-                format
-            })
 
             let dataToExport
             
@@ -480,7 +431,10 @@ export const useImpala = (initialFilters = {}) => {
         }
     }
 
+<<<<<<< HEAD
     // 🔴 PERBAIKAN: Helper functions untuk display text yang benar
+=======
+>>>>>>> ac48c155c7b3994cbe7cadf0f0017f41bb579e48
     const getDisplayText = useCallback(() => {
         // Jika tidak ada data sama sekali
         if (participant.length === 0 && pagination.total === 0) {
@@ -518,17 +472,14 @@ export const useImpala = (initialFilters = {}) => {
     }, [pagination.showingAllResults])
 
     const refetch = useCallback(() => {
-        console.log('🔄 Refetching current data')
         fetchImpala(pagination.page, filtersRef.current, showAllOnSearch)
     }, [fetchImpala, pagination.page, showAllOnSearch])
 
     const resetToPaginationMode = useCallback(async () => {
-        console.log('🔄 Resetting to pagination mode')
         await fetchImpala(1, filtersRef.current, false)
     }, [fetchImpala])
 
     return {
-        // State
         participant, 
         loading, 
         error, 
@@ -537,36 +488,22 @@ export const useImpala = (initialFilters = {}) => {
         showAllOnSearch,
         impalaStats, 
         statsLoadingImpala,
-        
-        // Fetch Functions
         fetchImpala,
         updateFiltersAndFetch,
         clearFilters,
         clearSearch,
         searchParticipants,
-        
-        // Show All Mode Functions
         toggleShowAllOnSearch,
         isShowAllMode,
         resetToPaginationMode,
-        
-        // Display Functions
         getDisplayText,
-        
-        // Pagination Functions
         refetch, 
         handlePageChange, 
         refreshData,
-        
-        // CRUD Functions
         addParticipant, 
         updateParticipant, 
         deleteParticipant,
-        
-        // Export Functions
         exportParticipants,
-        
-        // Stats Functions
         refetchStats: fetchImpalaStats
     }
 }

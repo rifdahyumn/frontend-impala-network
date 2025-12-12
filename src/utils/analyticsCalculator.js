@@ -1,102 +1,68 @@
 import { MONTHS, getQuarterFromMonth, getMonthsInQuarter, getMonthIndicesInQuarter, getQuarterLabel } from './constants'
 
 export const calculateMonthlyData = (data, year, metric) => {
-    console.log(`🚨 CALCULATE MONTHLY DATA CALLED - Metric: ${metric}, Year: ${year}`);
     
     const extractArray = (input) => {
-        console.log(`📦 Extracting array for ${metric}:`, input);
-        
         if (!input) {
-            console.log(`❌ ${metric}: Input is null/undefined`);
             return [];
         }
         
-        // 1. Jika sudah array
         if (Array.isArray(input)) {
-            console.log(`✅ ${metric}: Input is already array, length: ${input.length}`);
             return input;
         }
         
-        // 2. Coba field 'data' (yang ada di kode Anda)
         if (input.data && Array.isArray(input.data)) {
-            console.log(`✅ ${metric}: Found array in .data, length: ${input.data.length}`);
             return input.data;
         }
         
-        // 3. Coba field lain yang mungkin
         const possibleFields = ['items', 'results', 'list', 'records', 'programs', 'revenues', 'clients', 'participants'];
         
         for (const field of possibleFields) {
             if (input[field] && Array.isArray(input[field])) {
-                console.log(`✅ ${metric}: Found array in .${field}, length: ${input[field].length}`);
                 return input[field];
             }
         }
         
-        // 4. Coba semua properti yang merupakan array
         for (const key in input) {
             if (Array.isArray(input[key])) {
-                console.log(`✅ ${metric}: Found array in .${key}, length: ${input[key].length}`);
                 return input[key];
             }
         }
-        
-        console.log(`❌ ${metric}: No array found in input structure`);
-        console.log(`📋 ${metric}: Input type:`, typeof input);
-        console.log(`📋 ${metric}: Input keys:`, Object.keys(input));
         return [];
     };
     
     const dataArray = extractArray(data);
-    console.log(`📊 ${metric}: Extracted array length: ${dataArray.length}`);
-    
     if (!dataArray || dataArray.length === 0) {
-        console.log(`⚠️ ${metric}: Empty array, returning fallback data`);
         return getFallbackData(metric, year);
-    }
-    
-    // Debug: Show first item structure
-    if (dataArray[0]) {
-        console.log(`🔍 ${metric}: First item structure:`, Object.keys(dataArray[0]));
-        console.log(`📅 ${metric}: First item created_at:`, dataArray[0].created_at);
-        console.log(`💰 ${metric}: First item price:`, dataArray[0].price);
-        console.log(`📝 ${metric}: First item full:`, dataArray[0]);
     }
     
     const parseDateUniversal = (dateStr) => {
         if (!dateStr) {
-            console.log(`❌ Date string is empty`);
             return null;
         }
         try {
             const date = new Date(dateStr);
             if (isNaN(date.getTime())) {
-                console.log(`❌ Invalid date: ${dateStr}`);
                 return null;
             }
             return date;
-        } catch (error) {
-            console.log(`❌ Date parse error for: ${dateStr}`, error);
+        } catch {
             return null;
         }
     };
     
     const parsePrice = (price) => {
         if (price == null) {
-            console.log(`💰 Price is null/undefined`);
             return 0;
         }
         if (typeof price === 'number') {
-            console.log(`💰 Parsed number price: ${price}`);
             return price;
         }
         if (typeof price === 'string') {
             const digitsOnly = price.replace(/\D/g, '');
             const parsed = parseInt(digitsOnly, 10) || 0;
-            console.log(`💰 Parsed string price: "${price}" -> ${parsed}`);
             return parsed;
         }
-        console.log(`💰 Unknown price type: ${typeof price}, value: ${price}`);
         return 0;
     };
     
@@ -124,14 +90,12 @@ export const calculateMonthlyData = (data, year, metric) => {
         itemsProcessed++;
         
         if (!item?.created_at) {
-            console.log(`❌ Item ${index}: No created_at field`);
             itemsFilteredOut++;
             return;
         }
         
         const date = parseDateUniversal(item.created_at);
         if (!date || isNaN(date.getTime())) {
-            console.log(`❌ Item ${index}: Invalid date: ${item.created_at}`);
             itemsFilteredOut++;
             return;
         }
@@ -139,68 +103,38 @@ export const calculateMonthlyData = (data, year, metric) => {
         const itemYear = date.getFullYear();
         const monthIndex = date.getMonth();
         
-        console.log(`📅 Item ${index}: Date parsed - Year: ${itemYear}, Month: ${monthIndex}`);
-        
         if (itemYear.toString() !== year) {
-            console.log(`❌ Item ${index}: Year mismatch (${itemYear} != ${year})`);
             itemsFilteredOut++;
             return;
         }
         
         if (monthIndex < 0 || monthIndex > 11) {
-            console.log(`❌ Item ${index}: Invalid month index: ${monthIndex}`);
             itemsFilteredOut++;
             return;
         }
         
-        console.log(`✅ Item ${index}: Processing for month ${monthIndex}, metric: ${metric}`);
-        
         switch(metric) {
             case 'clients':
                 months[monthIndex].newClients++;
-                console.log(`👥 Added client to month ${monthIndex}`);
                 break;
             case 'programs':
                 months[monthIndex].newPrograms++;
-                console.log(`📋 Added program to month ${monthIndex}`);
                 if (item.price !== undefined) {
                     const price = parsePrice(item.price);
                     months[monthIndex].revenue += price;
                     months[monthIndex].programsCount++;
-                    console.log(`💰 Added price ${price} to month ${monthIndex}`);
-                } else {
-                    console.log(`❌ Item ${index}: No price field for program`);
                 }
                 break;
             case 'participants':
                 months[monthIndex].newParticipants++;
-                console.log(`👤 Added participant to month ${monthIndex}`);
                 break;
             case 'revenue':
                 if (item.price !== undefined) {
                     const price = parsePrice(item.price);
                     months[monthIndex].revenue += price;
                     months[monthIndex].programsCount++;
-                    console.log(`💰 Added revenue ${price} to month ${monthIndex}`);
-                } else {
-                    console.log(`❌ Item ${index}: No price field for revenue`);
                 }
                 break;
-        }
-    });
-    
-    console.log(`📈 ${metric}: Items processed: ${itemsProcessed}, filtered out: ${itemsFilteredOut}`);
-    
-    // Tampilkan summary per bulan
-    console.log(`📊 ${metric}: Monthly summary:`);
-    months.forEach((month, i) => {
-        if (month.newClients > 0 || month.newPrograms > 0 || month.newParticipants > 0 || month.revenue > 0) {
-            console.log(`  Month ${i} (${month.month}):`, {
-                newClients: month.newClients,
-                newPrograms: month.newPrograms,
-                newParticipants: month.newParticipants,
-                revenue: month.revenue
-            });
         }
     });
     
@@ -271,7 +205,6 @@ export const calculateMonthlyData = (data, year, metric) => {
         }
     }
     
-    console.log(`✅ ${metric}: Calculation completed`);
     return months;
 };
 

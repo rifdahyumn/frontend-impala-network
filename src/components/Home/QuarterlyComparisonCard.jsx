@@ -57,22 +57,22 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
     }, [metric.id]);
     
     const formatRevenue = useCallback((amount) => {
-        if (!amount || amount === 0 || isNaN(amount)) return 'Rp 0';
+        if (!amount || amount === 0 || isNaN(amount)) return 'IDR 0';
         
         if (amount >= 1000000000) {
             const billions = amount / 1000000000;
-            return `Rp ${billions % 1 === 0 ? billions.toFixed(0) : billions.toFixed(1)} B`;
+            return `IDR ${billions % 1 === 0 ? billions.toFixed(0) : billions.toFixed(1)} B`;
         } 
         if (amount >= 1000000) {
             const millions = amount / 1000000;
-            return `Rp ${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1)} M`;
+            return `IDR ${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1)} M`;
         }
         if (amount >= 1000) {
             const thousands = amount / 1000;
-            return `Rp ${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1)} K`;
+            return `IDR ${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1)} K`;
         }
         
-        return `Rp ${amount.toLocaleString('id-ID')}`;
+        return `IDR ${amount.toLocaleString('id-ID')}`;
     }, []);
     
     const formatCount = useCallback((count) => {
