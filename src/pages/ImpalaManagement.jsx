@@ -852,7 +852,6 @@ const ImpalaManagement = () => {
                     />
                 </div>
 
-                {/* Modal Import CSV */}
                 <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
                     <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl w-[95vw] max-w-[800px]">
                         <DialogHeader>

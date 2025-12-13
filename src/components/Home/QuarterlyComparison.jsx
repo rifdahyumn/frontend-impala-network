@@ -7,7 +7,7 @@ import QuarterlyComparisonSkeleton from './QuarterlyComparisonSkeleton';
 import QuarterlyComparisonEmpty from './QuarterlyComparisonEmpty';
 
 const LazyQuarterlyComparisonCard = lazy(() => import('./QuarterlyComparisonCard'));
-const LazyQuarterSummaryCard = lazy(() => import('./QuarterSummaryCard'));
+// const LazyQuarterSummaryCard = lazy(() => import('./QuarterSummaryCard'));
 
 const QuarterlyComparison = memo(({ selectedYear, refreshTrigger }) => {
     const { 

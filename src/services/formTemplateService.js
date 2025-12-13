@@ -94,6 +94,37 @@ class FormTemplateService {
             throw error
         }
     }
+
+    async getPublishedFormTemplates() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/form-templates/published`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) {
+                const allTemplates = await this.getAllFormTemplates()
+                return {
+                    ...allTemplates,
+                    data: allTemplates.data?.filter(t => t.is_published) || []
+                }
+            }
+
+            return result
+        } catch (error) {
+            console.error('Error fetching published templates:', error)
+
+            const allTemplates = await this.getAllFormTemplates()
+            return {
+                ...allTemplates,
+                data: allTemplates.data?.filter(t => t.is_published) || []
+            }
+        }
+    }
 }
 
 export default new FormTemplateService()

@@ -7,7 +7,7 @@ import formTemplateService from '../services/formTemplateService';
 import { useToast } from '../hooks/use-toast';
 import impalaService from '../services/impalaService';
 import { CheckCircle, Home, UserCheck, Mail, Phone, MessageCircle } from 'lucide-react';
-import { Card, CardContent } from '../components/ui/card';
+// import { Card, CardContent } from '../components/ui/card';
 import { Label } from '../components/ui/label';
 import { Input } from '../components/ui/input';
 
@@ -28,9 +28,6 @@ const PublicForm = () => {
     const [loadError, setLoadError] = useState(null);
     const [hasTimeout, setHasTimeout] = useState(false);
 
-<<<<<<< HEAD
-=======
-    // Opsi disabilitas untuk dropdown
     const disabilityOptions = [
         { value: 'tidak_ada', label: 'Tidak memiliki disabilitas' },
         { value: 'fisik', label: 'Disabilitas Fisik/Motorik' },
@@ -44,8 +41,6 @@ const PublicForm = () => {
         { value: 'penyakit_kronis', label: 'Penyakit Kronis/Disabilitas Laten' }
     ];
 
-    // ===== UPDATE TAB BROWSER TITLE =====
->>>>>>> 982d97c45f5083567969675cfa351e4fcf48f83e
     useEffect(() => {
         if (template) {
             let tabTitle = 'Impala Network';
@@ -256,12 +251,7 @@ const PublicForm = () => {
         }
     };
 
-<<<<<<< HEAD
-    const renderDisabilitySection = () => {
-=======
-    // ===== FUNGSI RENDER CUSTOM DISABILITY FIELD =====
     const renderCustomDisabilityField = () => {
->>>>>>> 982d97c45f5083567969675cfa351e4fcf48f83e
         return (
             <div className="space-y-2">
                 <Label htmlFor="disability_type" className="text-gray-900">

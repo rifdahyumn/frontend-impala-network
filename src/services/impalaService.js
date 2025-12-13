@@ -323,13 +323,12 @@ class ImpalaService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Get filtered participants count
     async getFilteredCount(filters = {}) {
         try {
             const result = await this.fetchImpala({
                 ...filters,
                 page: 1,
-                limit: 1 // Hanya perlu count, ambil 1 item saja
+                limit: 1 
             });
 
             return result.metadata?.pagination?.total || 0;
@@ -339,11 +338,9 @@ class ImpalaService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Validate filter parameters
     validateFilters(filters = {}) {
         const validFilters = {};
         
-        // 🔴 Hanya ambil filter yang valid
         if (filters.search && typeof filters.search === 'string' && filters.search.trim()) {
             validFilters.search = filters.search.trim();
         }
@@ -416,7 +413,6 @@ class ImpalaService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Get available filters from data
     extractAvailableFilters(participants) {
         if (!participants || !Array.isArray(participants)) {
             return {
@@ -449,7 +445,6 @@ class ImpalaService {
         };
     }
 
-    // 🔴 FUNGSI BARU: Batch operations
     async batchUpdate(participantsData) {
         try {
             if (!Array.isArray(participantsData) || participantsData.length === 0) {
