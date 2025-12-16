@@ -27,6 +27,7 @@ import {
   FileDown
 } from "lucide-react";
 import { toast } from 'react-hot-toast';
+import * as XLSX from 'xlsx';
 
 const ImportButton = ({ 
   // Props utama
@@ -34,12 +35,12 @@ const ImportButton = ({
   onDownloadTemplate,
   
   // Props untuk kustomisasi
-  buttonText = "Import CSV",
+  buttonText = "Import Excel",
   buttonVariant = "outline",
   buttonClassName = "",
   disabled = false,
   
-  // Props untuk konfigurasi CSV
+  // Props untuk konfigurasi Excel
   expectedColumns = [], // Wajib diisi: array of column names
   requiredColumns = [], // Kolom yang wajib diisi
   columnDisplayNames = {}, // Mapping nama kolom untuk display
@@ -47,12 +48,12 @@ const ImportButton = ({
   
   // Props untuk kustomisasi UI
   title = "Import Data",
-  description = "Upload file CSV untuk mengimport data secara massal.",
+  description = "Upload file Excel (.xlsx) untuk mengimport data secara massal.",
   instructionText = null,
   
   // Props untuk validasi kustom
   customValidators = [], // Array of validator functions
-  maxFileSize = 5, // MB
+  maxFileSize = 10, // MB - diperbesar untuk Excel
 }) => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -70,13 +71,16 @@ const ImportButton = ({
     )
   ] : [];
 
-  // Validasi file CSV
-  const validateCSVFile = (file) => {
+  // Validasi file Excel
+  const validateExcelFile = (file) => {
     const errors = [];
     
     // Validasi ekstensi file
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      errors.push('File harus berformat CSV (.csv)');
+    const validExtensions = ['.xlsx', '.xls'];
+    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    
+    if (!validExtensions.includes(fileExtension)) {
+      errors.push('File harus berformat Excel (.xlsx atau .xls)');
     }
     
     // Validasi ukuran file
@@ -85,9 +89,16 @@ const ImportButton = ({
     }
     
     // Validasi tipe MIME
-    const validTypes = ['text/csv', 'application/vnd.ms-excel', 'text/plain'];
+    const validTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'application/excel',
+      'application/x-excel',
+      'application/x-msexcel'
+    ];
+    
     if (!validTypes.includes(file.type) && file.type !== '') {
-      errors.push('Tipe file tidak valid. Hanya file CSV yang diperbolehkan');
+      errors.push('Tipe file tidak valid. Hanya file Excel yang diperbolehkan');
     }
     
     return errors;
@@ -99,7 +110,7 @@ const ImportButton = ({
     
     // Validasi kolom wajib
     requiredColumns.forEach(column => {
-      if (!row[column] || row[column].trim() === '') {
+      if (!row[column] || row[column].toString().trim() === '') {
         errors.push(`Baris ${rowIndex}: Kolom "${columnDisplayNames[column] || column}" wajib diisi`);
       }
     });
@@ -107,7 +118,7 @@ const ImportButton = ({
     // Validasi format email jika ada kolom email
     if (row.email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(row.email)) {
+      if (!emailRegex.test(row.email.toString())) {
         errors.push(`Baris ${rowIndex}: Format email tidak valid`);
       }
     }
@@ -127,64 +138,76 @@ const ImportButton = ({
     return errors;
   };
 
-  // Parse CSV file
-  const parseCSV = (text) => {
-    const lines = text.split('\n').filter(line => line.trim() !== '');
-    if (lines.length === 0) {
-      throw new Error('File CSV kosong');
-    }
-    
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    
-    // Validasi header jika expectedColumns disediakan
-    if (expectedColumns.length > 0) {
-      const missingColumns = expectedColumns.filter(col => !headers.includes(col));
-      if (missingColumns.length > 0) {
-        throw new Error(`Kolom yang hilang: ${missingColumns.join(', ')}`);
+  // Parse Excel file
+  const parseExcel = (data) => {
+    try {
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      
+      // Convert to JSON
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+      
+      if (jsonData.length === 0) {
+        throw new Error('File Excel tidak berisi data');
       }
-    }
-    
-    // Parse data
-    const data = [];
-    const errors = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i];
-      try {
-        // Handle quoted fields with commas
-        const regex = /(".*?"|[^",]+)(?=\s*,|\s*$)/g;
-        const matches = line.match(regex) || [];
-        const values = matches.map(value => value.trim().replace(/"/g, ''));
-        
-        if (values.length !== headers.length) {
-          errors.push(`Baris ${i + 1}: Jumlah kolom tidak sesuai dengan header`);
-          continue;
+      
+      // Get headers from first row
+      const headers = Object.keys(jsonData[0]).map(h => h.trim());
+      
+      // Validasi header jika expectedColumns disediakan
+      if (expectedColumns.length > 0) {
+        const missingColumns = expectedColumns.filter(col => !headers.includes(col));
+        if (missingColumns.length > 0) {
+          throw new Error(`Kolom yang hilang: ${missingColumns.join(', ')}`);
         }
-        
-        const row = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index] || '';
-        });
-        
-        // Skip contoh data dari template
-        if (Object.values(row).some(value => value.includes('Contoh:'))) {
-          continue;
-        }
-        
-        // Validasi row data
-        const rowErrors = validateRowData(row, i + 1);
-        if (rowErrors.length > 0) {
-          errors.push(...rowErrors);
-          continue;
-        }
-        
-        data.push(row);
-      } catch (error) {
-        errors.push(`Baris ${i + 1}: ${error.message}`);
       }
+      
+      // Parse dan validasi data
+      const dataRows = [];
+      const errors = [];
+      
+      jsonData.forEach((row, index) => {
+        try {
+          // Bersihkan data: hapus spasi di awal/akhir dan konversi ke string jika perlu
+          const cleanRow = {};
+          headers.forEach(header => {
+            const value = row[header];
+            cleanRow[header] = value !== undefined && value !== null ? 
+              (typeof value === 'string' ? value.trim() : value.toString().trim()) : '';
+          });
+          
+          // Skip contoh data dari template
+          if (Object.values(cleanRow).some(value => 
+            value.toString().includes('Contoh:') || 
+            value.toString().includes('CONTOH:') ||
+            value.toString().includes('contoh:')
+          )) {
+            return;
+          }
+          
+          // Skip baris kosong
+          if (Object.values(cleanRow).every(value => value === '')) {
+            return;
+          }
+          
+          // Validasi row data
+          const rowErrors = validateRowData(cleanRow, index + 1);
+          if (rowErrors.length > 0) {
+            errors.push(...rowErrors);
+            return;
+          }
+          
+          dataRows.push(cleanRow);
+        } catch (error) {
+          errors.push(`Baris ${index + 1}: ${error.message}`);
+        }
+      });
+      
+      return { data: dataRows, errors, headers };
+    } catch (error) {
+      throw new Error(`Gagal membaca file Excel: ${error.message}`);
     }
-    
-    return { data, errors, headers };
   };
 
   // Handle file upload
@@ -197,7 +220,7 @@ const ImportButton = ({
     setImportSummary(null);
     
     // Validasi file
-    const errors = validateCSVFile(file);
+    const errors = validateExcelFile(file);
     if (errors.length > 0) {
       setValidationErrors(errors);
       setImportFile(null);
@@ -208,38 +231,38 @@ const ImportButton = ({
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const text = e.target.result;
-        const { data, errors, headers } = parseCSV(text);
+        const data = new Uint8Array(e.target.result);
+        const { data: parsedData, errors, headers } = parseExcel(data);
         
         if (errors.length > 0) {
           setValidationErrors(errors);
-          if (data.length === 0) {
+          if (parsedData.length === 0) {
             toast.error('Tidak ada data valid yang ditemukan dalam file');
           } else {
             toast.error(`Terdapat ${errors.length} error dalam file`);
           }
         }
         
-        if (data.length > 0) {
+        if (parsedData.length > 0) {
           setImportFile(file);
           setImportPreview({
-            totalRows: data.length + errors.length,
-            validRows: data.length,
+            totalRows: parsedData.length + errors.length,
+            validRows: parsedData.length,
             invalidRows: errors.length,
             headers,
-            sampleData: data.slice(0, 5) // Preview 5 baris pertama
+            sampleData: parsedData.slice(0, 5) // Preview 5 baris pertama
           });
-          toast.success(`File berhasil diupload: ${data.length} data valid ditemukan`);
+          toast.success(`File berhasil diupload: ${parsedData.length} data valid ditemukan`);
         } else {
           setImportFile(null);
         }
       } catch (error) {
         setValidationErrors([error.message]);
-        toast.error('Gagal membaca file CSV');
+        toast.error('Gagal membaca file Excel');
       }
     };
     
-    reader.readAsText(file, 'UTF-8');
+    reader.readAsArrayBuffer(file);
   };
 
   // Handle import
@@ -255,10 +278,10 @@ const ImportButton = ({
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const text = e.target.result;
-          const { data, errors } = parseCSV(text);
+          const data = new Uint8Array(e.target.result);
+          const { data: parsedData, errors } = parseExcel(data);
           
-          if (data.length === 0) {
+          if (parsedData.length === 0) {
             toast.error('Tidak ada data yang bisa diimport');
             setIsProcessing(false);
             return;
@@ -266,12 +289,12 @@ const ImportButton = ({
           
           // Call parent import handler
           if (onImport) {
-            const result = await onImport(data);
+            const result = await onImport(parsedData);
             
             // Show summary
             setImportSummary({
-              totalProcessed: data.length,
-              successful: result?.successful || data.length,
+              totalProcessed: parsedData.length,
+              successful: result?.successful || parsedData.length,
               failed: result?.failed || errors.length,
               errors: result?.errors || errors
             });
@@ -293,7 +316,7 @@ const ImportButton = ({
         }
       };
       
-      reader.readAsText(importFile, 'UTF-8');
+      reader.readAsArrayBuffer(importFile);
     } catch (error) {
       console.error('Import error:', error);
       toast.error('Gagal melakukan import');
@@ -326,26 +349,31 @@ const ImportButton = ({
       }
       
       const headers = expectedColumns.length > 0 ? expectedColumns : Object.keys(templateData[0]);
-      const csvContent = [
-        headers.join(','),
+      
+      // Buat worksheet dengan data template
+      const wsData = [
+        headers.map(header => columnDisplayNames[header] || header), // Header dengan nama display
         ...templateData.map(row => 
-          headers.map(header => 
-            `"${row[header] || ''}"`
-          ).join(',')
+          headers.map(header => row[header] || '')
         )
-      ].join('\n');
+      ];
       
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `import_template_${Date.now()}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
       
-      toast.success('Template berhasil didownload');
+      // Styling untuk header (optional)
+      if (!ws['!cols']) ws['!cols'] = [];
+      headers.forEach((_, i) => {
+        ws['!cols'][i] = { wch: 20 }; // Set column width
+      });
+      
+      // Buat workbook dan download
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Template");
+      
+      // Generate Excel file
+      XLSX.writeFile(wb, `import_template_${Date.now()}.xlsx`);
+      
+      toast.success('Template Excel berhasil didownload');
     }
   };
 
@@ -371,7 +399,7 @@ const ImportButton = ({
             <FileDown className="h-4 w-4" />
             <div>
               <div className="font-medium">Download Template</div>
-              <div className="text-xs text-gray-500">Format CSV yang benar</div>
+              <div className="text-xs text-gray-500">Format Excel yang benar</div>
             </div>
           </DropdownMenuItem>
           <DropdownMenuItem 
@@ -380,7 +408,7 @@ const ImportButton = ({
           >
             <FileSpreadsheet className="h-4 w-4" />
             <div>
-              <div className="font-medium">Upload File CSV</div>
+              <div className="font-medium">Upload File Excel</div>
               <div className="text-xs text-gray-500">Import data dari file</div>
             </div>
           </DropdownMenuItem>
@@ -437,7 +465,9 @@ const ImportButton = ({
                     <li>Kolom wajib: {requiredColumns.map(col => columnDisplayNames[col] || col).join(', ')}</li>
                   )}
                   <li>Maksimal ukuran file: {maxFileSize}MB</li>
-                  <li>Hanya file CSV (.csv) yang didukung</li>
+                  <li>File Excel (.xlsx atau .xls) yang didukung</li>
+                  <li>Data harus berada pada sheet pertama</li>
+                  <li>Baris pertama harus berisi header/nama kolom</li>
                 </ul>
               </div>
 
@@ -507,7 +537,7 @@ const ImportButton = ({
                       <Upload className="h-8 w-8 text-blue-600" />
                     </div>
                     <p className="text-sm text-gray-600 mb-2">
-                      Drag & drop file CSV Anda di sini
+                      Drag & drop file Excel Anda di sini
                     </p>
                     <p className="text-xs text-gray-500 mb-4">
                       atau klik untuk memilih file dari komputer
@@ -515,10 +545,10 @@ const ImportButton = ({
                     <Input
                       ref={fileInputRef}
                       type="file"
-                      accept=".csv"
+                      accept=".xlsx,.xls"
                       onChange={handleFileUpload}
                       className="hidden"
-                      id="csv-upload"
+                      id="excel-upload"
                     />
                     <Button
                       variant="default"
