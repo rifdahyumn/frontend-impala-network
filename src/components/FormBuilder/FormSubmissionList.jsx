@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Loader2, Users, ChevronRight, Filter, Calendar } from 'lucide-react';
+import { Loader2, Users, ChevronRight, Filter, Calendar, ChevronLeft } from 'lucide-react';
 import formTemplateService from '../../services/formTemplateService';
 import formSubmissionService from '../../services/formSubmissionService';
 
@@ -14,8 +14,8 @@ const FormSubmissionsList = () => {
     const [loadingTemplates, setLoadingTemplates] = useState(true);
     const [loadingSubmissions, setLoadingSubmissions] = useState(false);
     const [programStats, setProgramStats] = useState({});
-    const [programs, setPrograms] = useState([])
-    const [loading, setLoading] = useState(true)
+    // const [programs, setPrograms] = useState([])
+    // const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         loadAllPrograms();
@@ -43,23 +43,28 @@ const FormSubmissionsList = () => {
     };
 
     const handleSelectProgram = async (programName) => {
-        try {
-            setSelectedProgram(programName);
-            // setLoadingSubmissions(true);
-            
-            const response = await formSubmissionService.getSubmissionByProgram(programName, {
-                limit: 50
-            });
+    try {
+        setSelectedProgram(programName);
+        setLoadingSubmissions(true);
 
-            const stats = await formSubmissionService.getProgramStats(programName)
-            
+        const response = await formSubmissionService.getSubmissionByProgram(programName, {
+            limit: 50
+        });
+        
+        if (response.success === false) {
+            console.error('[Component] API error:', response.message);
+            setSubmissions([]);
+        } else {
             setSubmissions(response.data || []);
-        } catch (error) {
-            console.error('Error loading submissions:', error);
-        } finally {
-            setLoadingSubmissions(false);
         }
-    };
+        
+    } catch (error) {
+        console.error('[Component] Error:', error);
+        setSubmissions([]);
+    } finally {
+        setLoadingSubmissions(false);
+    }
+};
 
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('id-ID', {
@@ -159,10 +164,8 @@ const FormSubmissionsList = () => {
         );
     }
 
-    // TAMPILAN KETIKA PROGRAM SUDAH DIPILIH: DATA SUBMISSIONS
     return (
         <div className="space-y-4">
-            {/* Header dengan tombol kembali */}
             <Card>
                 <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
@@ -173,7 +176,7 @@ const FormSubmissionsList = () => {
                                 onClick={() => setSelectedProgram(null)}
                                 className="flex items-center gap-2"
                             >
-                                ← Kembali ke Daftar Program
+                                <ChevronLeft className='h-4 w-4' />
                             </Button>
                             <div>
                                 <h2 className="text-xl font-bold">{selectedProgram}</h2>
@@ -191,7 +194,6 @@ const FormSubmissionsList = () => {
                 </CardContent>
             </Card>
 
-            {/* Tabel Data */}
             <Card>
                 <CardContent className="pt-6">
                     {loadingSubmissions ? (

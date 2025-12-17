@@ -1,4 +1,3 @@
-// locationService.js - Menggunakan Fetch API
 const API_BASE = 'https://ibnux.github.io/data-indonesia'
 
 const fetchWithTimeout = async (url, options = {}) => {

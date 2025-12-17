@@ -1,5 +1,4 @@
-// eslint-disable-next-line no-undef
-const API_BASE_URL = process.env.BASE_API_URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 class FormSubmissionService {
     async getSubmissionByProgram(programName, options = {}) {
@@ -11,46 +10,84 @@ class FormSubmissionService {
                 gender = '',
                 search = '',
                 showAllOnSearch = 'false'
-            } = options
+            } = options;
 
-            const queryParams = new URLSearchParams({
-                program: programName,
-                page: page.toString(),
-                limit: limit.toString(),
-                showAllOnSearch: showAllOnSearch
-            })
-
+            // const encodedProgramName = encodeURIComponent(programName);
+            
+            const params = new URLSearchParams();
+            params.append('program', programName);
+            params.append('page', page.toString());
+            params.append('limit', limit.toString());
+            params.append('showAllOnSearch', showAllOnSearch);
+            
             if (category && category !== 'all') {
-                queryParams.append('category', category)
+                params.append('category', category);
             }
-
+            
             if (gender && gender !== 'all') {
-                queryParams.append('gender', gender)
+                params.append('gender', gender);
             }
-
+            
             if (search && search.trim()) {
-                queryParams.append('search', search.trim())
+                params.append('search', search.trim());
             }
-
-            const url = `${API_BASE_URL}/impala?${queryParams.toString()}`
-
+            
+            const url = `${API_BASE_URL}/impala?${params.toString()}`;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                signal: controller.signal
+            });
 
-            const result = await response.json()
-
-            if (!response.ok) {
-                throw new Error(result.message || `HTTP error! status: ${response.status}`)
+            clearTimeout(timeoutId);
+            // const contentType = response.headers.get('content-type') || '';
+            const rawText = await response.text();
+            if (rawText.includes('<!DOCTYPE') || rawText.includes('<html') || rawText.includes('<!doctype')) {
+                console.error('[Service] ERROR: Server returned HTML instead of JSON!');
+                console.error('Full response start:', rawText.substring(0, 500));
+                // const baseUrl = `${API_BASE_URL}/impala`;
+                throw new Error(`Server returned HTML. Endpoint mungkin tidak ada. URL: ${url}`);
+            }
+        
+            let result;
+            try {
+                result = JSON.parse(rawText);
+            } catch (parseError) {
+                console.error('[Service] JSON Parse Error:', parseError.message);
+                console.error('Raw response that failed:', rawText);
+                throw new Error(`Invalid JSON response: ${parseError.message}. Response: ${rawText.substring(0, 100)}`);
             }
 
-            return result
+            if (!response.ok) {
+                console.error('[Service] Server error:', result);
+                throw new Error(result.message || `HTTP ${response.status}`);
+            }
+
+            return result;
+            
         } catch (error) {
-            console.error('Error fetching submission by program:', error)
-            throw error
+            console.error('[Service] Error:', error.name, error.message);
+            
+            return {
+                success: false,
+                data: [],
+                message: error.message,
+                error: error.name,
+                metadata: {
+                    pagination: {
+                        page: 1,
+                        limit: 50,
+                        total: 0,
+                        totalPages: 1
+                    }
+                }
+            };
         }
     }
 

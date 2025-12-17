@@ -19,7 +19,20 @@ export const getDefaultFormConfig = () => ({
                     loading: false,
                     locked: true
                 }
-            ]
+            ],
+            fieldWa: [
+                {
+                    id: 'program_name',
+                    type: 'program_dropdown',
+                    name: 'program_name',
+                    label: 'Group WA ',
+                    required: true,
+                    placeholder: 'Pilih nama program',
+                    options: [],
+                    loading: false,
+                    locked: true
+                }
+            ],
         }
     },
     personalInfo: {

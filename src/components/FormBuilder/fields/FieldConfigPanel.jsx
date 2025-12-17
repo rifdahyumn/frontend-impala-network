@@ -1,4 +1,3 @@
-// src/components/FormBuilder/fields/FieldConfigPanel.jsx
 import React from 'react';
 
 const FieldConfigPanel = ({ 

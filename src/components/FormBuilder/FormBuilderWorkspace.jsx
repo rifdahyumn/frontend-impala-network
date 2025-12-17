@@ -1,4 +1,3 @@
-// components/FormBuilder/FormBuilderWorkspace.jsx
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -7,7 +6,6 @@ import { Alert, AlertDescription } from '../ui/alert';
 import { Loader2, Plus, Rocket } from 'lucide-react';
 import FormCanvas from './FormCanvas';
 import FormTemplatesList from './FormTemplateList';
-// import FormLinksTab from './FormLinkTabs';
 import formBuilderService from '../../services/formBuilderService';
 import formTemplateService from '../../services/formTemplateService';
 import { useToast } from '../../hooks/use-toast';
@@ -116,16 +114,6 @@ const FormBuilderWorkspace = () => {
         }
     }, [availablePrograms, loadingPrograms]);
 
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
     const handleTemplateSelect = (template) => {
         setSelectedTemplate(template);
         setFormConfig(template.form_config);
@@ -150,10 +138,35 @@ const FormBuilderWorkspace = () => {
 
         try {
             setIsSaving(true);
-            const response = await formTemplateService.createFormTemplate({
+
+            const whatsappLink = formConfig.settings?.whatsappGroupLink;
+
+            if (whatsappLink && whatsappLink.trim() !== "") {
+                if (!whatsappLink.startsWith('https://')) {
+                    toast({
+                        title: "Error",
+                        description: "WhatsApp link harus dimulai dengan https://",
+                        variant: "destructive"
+                    });
+
+                    setIsSaving(false);
+                    return;
+                }
+            }
+
+            const templateData = {
                 program_name: formConfig.programName,
-                form_config: formConfig
-            });
+                form_config: {
+                    ...formConfig,
+                    settings: {
+                        whatsappGroupLink: formConfig.settings?.whatsappGroupLink || "",
+                        afterSubmitMessage: formConfig.settings?.afterSubmitMessage || 
+                            "Terima kasih telah mendaftar! Silakan bergabung ke grup WhatsApp untuk informasi lebih lanjut."
+                    }
+                }
+            };
+
+            const response = await formTemplateService.createFormTemplate(templateData)
 
             if (!response.success) {
                 throw new Error(response.message || 'Gagal membuat template');
@@ -161,8 +174,23 @@ const FormBuilderWorkspace = () => {
 
             const newTemplate = response.data;
             if (newTemplate) {
-                setFormTemplates(prev => [newTemplate, ...prev]);
-                setSelectedTemplate(newTemplate);
+                const enhancedTemplate = {
+                    ...newTemplate,
+                    form_config: {
+                        ...newTemplate.form_config,
+                        settings: {
+                            whatsappGroupLink: newTemplate.whatsapp_group_link || 
+                                            newTemplate.form_config?.settings?.whatsappGroupLink || "",
+                            afterSubmitMessage: newTemplate.after_submit_message || 
+                                            newTemplate.form_config?.settings?.afterSubmitMessage || 
+                                            "Terima kasih telah mendaftar! Silakan bergabung ke grup WhatsApp untuk informasi lebih lanjut."
+                        }
+                    }
+                };
+
+
+                setFormTemplates(prev => [enhancedTemplate, ...prev]);
+                setSelectedTemplate(enhancedTemplate);
                 
                 document.title = `Edit "${formConfig.programName}" - Form Builder | Impala Network`;
                 
@@ -210,8 +238,10 @@ const FormBuilderWorkspace = () => {
             );
             setSelectedTemplate(updatedTemplate);
 
-            const formLink = `http://localhost:5173/register/${updatedTemplate.unique_slug}`;
-            navigator.clipboard.writeText(formLink);
+            const baseUrl = import.meta.env.VITE_API_URL || window.location.origin;
+            const formLink = `${baseUrl}/register/${updatedTemplate.unique_slug}`;
+
+            await navigator.clipboard.writeText(formLink);
             
             document.title = `Form "${updatedTemplate.program_name}" (Published) - Form Builder | Impala Network`;
             
@@ -404,7 +434,7 @@ const FormBuilderWorkspace = () => {
                                 }`}
 
                             >
-                                Submissions ({selectedTemplate?.submissionCount || 0})
+                                Submissions
                             </button>
                         </nav>
                     </div>
@@ -444,12 +474,11 @@ const FormBuilderWorkspace = () => {
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                 )}
                             </CardTitle>
-                            {/* Tampilkan nama form di header */}
-                            {formConfig.title && (
+                            {/* {formConfig.title && (
                                 <CardDescription className="text-lg font-medium text-blue-700">
                                     {formConfig.title}
                                 </CardDescription>
-                            )}
+                            )} */}
                         </CardHeader>
                         <CardContent>
                             <FormCanvas
@@ -470,12 +499,12 @@ const FormBuilderWorkspace = () => {
                         <CardContent className='pt-6'>
                             <div className='flex justify-between items-center'>
                                 <div className='space-y-2'>
-                                    <p className='text-sm text-gray-600'>
+                                    {/* <p className='text-sm text-gray-600'>
                                         Pilih nama program dari daftar yang tersedia
-                                    </p>
+                                    </p> */}
                                     {formConfig.programName && (
                                         <Badge variant="outline" className="bg-green-50 text-green-700">
-                                            ✓ Program: {formConfig.programName}
+                                            Program: {formConfig.programName}
                                         </Badge>
                                     )}
                                 </div>
@@ -510,16 +539,36 @@ const FormBuilderWorkspace = () => {
                                                 Published - Link: /register/{selectedTemplate.unique_slug}
                                             </span>
                                         ) : (
-                                            <span className="text-yellow-600">📝 Draft (belum dipublish)</span>
+                                            <span className="text-yellow-600">Draft (belum dipublish)</span>
                                         )
                                     ) : (
-                                        <span className="text-gray-600">📝 Belum ada template yang dipilih</span>
+                                        <span className="text-gray-600">Belum ada template yang dipilih</span>
                                     )}
                                 </AlertDescription>
                             </Alert>
                         </CardContent>
                     </Card>
                 </>
+            )}
+
+            {activeTab === 'submission' && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className='flex items-center gap-2'>
+                            Data Pengisian Form
+                            {loadingSubmissions && (
+                                <Loader2 className='h-4 w-4 animate-spin' />
+                            )}
+                        </CardTitle>
+                        <CardDescription>
+                            Lihat data pendaftar dari semua program yang sudah di publish
+                        </CardDescription>
+                    </CardHeader>
+
+                    <CardContent>
+                        <FormSubmissionsList />
+                    </CardContent>
+                </Card>
             )}
         </div>
     );
