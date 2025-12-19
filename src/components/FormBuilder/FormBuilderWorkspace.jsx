@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { Alert, AlertDescription } from '../ui/alert';
-import { Loader2, Plus, Rocket } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import FormCanvas from './FormCanvas';
 import FormTemplatesList from './FormTemplateList';
 import formBuilderService from '../../services/formBuilderService';
@@ -114,6 +111,18 @@ const FormBuilderWorkspace = () => {
         }
     }, [availablePrograms, loadingPrograms]);
 
+    const handleSettingsUpdate = (newSettings) => {
+        if (!formConfig) return
+
+        setFormConfig(prev => ({
+            ...prev,
+            settings: {
+                ...prev.settings,
+                ...newSettings
+            }
+        }))
+    }
+
     const handleTemplateSelect = (template) => {
         setSelectedTemplate(template);
         setFormConfig(template.form_config);
@@ -126,130 +135,106 @@ const FormBuilderWorkspace = () => {
         });
     };
 
-    const handleCreateTemplate = async () => {
+    const handleDirectPublish = async () => {
         if (!formConfig || !formConfig.programName) {
             toast({
                 title: "Error",
-                description: "Silakan pilih program dan simpan form terlebih dahulu",
+                description: "Please select a program first",
                 variant: "destructive"
             });
             return;
+        }
+
+        const whatsappLink = formConfig.settings?.whatsappGroupLink;
+        if (whatsappLink && whatsappLink.trim() !== "") {
+            if (!whatsappLink.startsWith('https://')) {
+                toast({
+                    title: "Error",
+                    description: "Please enter the WhatsApp Group link",
+                    variant: "destructive"
+                });
+
+                return
+            }
         }
 
         try {
             setIsSaving(true);
 
-            const whatsappLink = formConfig.settings?.whatsappGroupLink;
-
-            if (whatsappLink && whatsappLink.trim() !== "") {
-                if (!whatsappLink.startsWith('https://')) {
-                    toast({
-                        title: "Error",
-                        description: "WhatsApp link harus dimulai dengan https://",
-                        variant: "destructive"
-                    });
-
-                    setIsSaving(false);
-                    return;
-                }
-            }
-
             const templateData = {
                 program_name: formConfig.programName,
+                whatsapp_group_link: whatsappLink || "",
+                after_submit_message: formConfig.settings?.afterSubmitMessage || "Terima kasih sudah mendaftar program ini",
                 form_config: {
                     ...formConfig,
+                    personalInfo: formConfig.personalInfo || getDefaultFormConfig().personalInfo,
+                    categories: formConfig.categories || getDefaultFormConfig().categories,
+                    title: formConfig.title || `Pendaftaran Program ${formConfig.programName}`,
+                    programName: formConfig.programName,
                     settings: {
-                        whatsappGroupLink: formConfig.settings?.whatsappGroupLink || "",
+                        whatsappGroupLink: whatsappLink || "",
                         afterSubmitMessage: formConfig.settings?.afterSubmitMessage || 
-                            "Terima kasih telah mendaftar! Silakan bergabung ke grup WhatsApp untuk informasi lebih lanjut."
+                            "Terima kasih sudah mendaftar program ini"
                     }
                 }
             };
 
-            const response = await formTemplateService.createFormTemplate(templateData)
+            let templateToPublish;
 
-            if (!response.success) {
-                throw new Error(response.message || 'Gagal membuat template');
-            }
-
-            const newTemplate = response.data;
-            if (newTemplate) {
-                const enhancedTemplate = {
-                    ...newTemplate,
-                    form_config: {
-                        ...newTemplate.form_config,
-                        settings: {
-                            whatsappGroupLink: newTemplate.whatsapp_group_link || 
-                                            newTemplate.form_config?.settings?.whatsappGroupLink || "",
-                            afterSubmitMessage: newTemplate.after_submit_message || 
-                                            newTemplate.form_config?.settings?.afterSubmitMessage || 
-                                            "Terima kasih telah mendaftar! Silakan bergabung ke grup WhatsApp untuk informasi lebih lanjut."
-                        }
-                    }
-                };
-
-
-                setFormTemplates(prev => [enhancedTemplate, ...prev]);
-                setSelectedTemplate(enhancedTemplate);
+            if (selectedTemplate && selectedTemplate.id) {
+                const updateResponse = await formTemplateService.updateFormTemplate(selectedTemplate.id, templateData);
                 
-                document.title = `Edit "${formConfig.programName}" - Form Builder | Impala Network`;
+                if (!updateResponse.success) {
+                    throw new Error(updateResponse.message || 'Failed to update form');
+                }
+                templateToPublish = updateResponse.data;
                 
-                toast({
-                    title: "Template Berhasil Dibuat",
-                    description: `Template "${formConfig.programName}" berhasil dibuat`
-                });
             } else {
-                throw new Error('Template data tidak valid');
-            }
-        } catch (error) {
-            console.error('Error creating template:', error);
-            toast({
-                title: "Error",
-                description: error.message || "Gagal membuat form template",
-                variant: "destructive"
-            });
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const handlePublishTemplate = async () => {
-        if (!selectedTemplate || !selectedTemplate.id) {
-            toast({
-                title: "Error",
-                description: "Silakan buat atau pilih template terlebih dahulu",
-                variant: "destructive"
-            });
-            return;
-        }
-
-        try {
-            const response = await formTemplateService.publishFormTemplate(selectedTemplate.id);
-            
-            if (!response.success) {
-                throw new Error(response.message || 'Gagal mempublish template');
+                const createResponse = await formTemplateService.createFormTemplate(templateData);
+                
+                if (!createResponse.success) {
+                    throw new Error(createResponse.message || 'Failed to create form');
+                }
+                templateToPublish = createResponse.data;
             }
 
-            const updatedTemplate = response.data;
-            setFormTemplates(prev => 
-                prev.map(template => 
-                    template && template.id === updatedTemplate.id ? updatedTemplate : template
-                )
-            );
-            setSelectedTemplate(updatedTemplate);
+            const publishResponse = await formTemplateService.publishFormTemplate(templateToPublish.id);
 
-            const baseUrl = import.meta.env.VITE_API_URL || window.location.origin;
-            const formLink = `${baseUrl}/register/${updatedTemplate.unique_slug}`;
+            if (!publishResponse.success) {
+                throw new Error(publishResponse.message || "Failed to publish form");
+            }
+
+            const publishedTemplate = publishResponse.data;
+
+            const enhancedTemplate = {
+                ...publishedTemplate,
+                form_config: {
+                    ...publishedTemplate.form_config,
+                    settings: {
+                        whatsappGroupLink: publishedTemplate.whatsapp_group_link || 
+                                        publishedTemplate.form_config?.settings?.whatsappGroupLink || "",
+                        afterSubmitMessage: publishedTemplate.after_submit_message || 
+                                        publishedTemplate.form_config?.settings?.afterSubmitMessage || 
+                                        "Terima Kasih telah mendaftar"
+                    }
+                }
+            };
+
+            setFormTemplates(prev => [enhancedTemplate, ...prev]);
+            setSelectedTemplate(enhancedTemplate);
+
+            const publicUrl = import.meta.env.VITE_PUBLIC_URL || window.location.origin;
+            const formLink = `${publicUrl}/register/${publishedTemplate.unique_slug}`;
 
             await navigator.clipboard.writeText(formLink);
             
-            document.title = `Form "${updatedTemplate.program_name}" (Published) - Form Builder | Impala Network`;
+            document.title = `Form "${publishedTemplate.program_name}" (Published) - Form Builder | Impala Network`;
             
             toast({
                 title: "Form Berhasil Dipublish!",
                 description: (
                     <div>
-                        <p>Form "<strong>{updatedTemplate.program_name}</strong>" sekarang live!</p>
+                        <p>Form "<strong>{publishedTemplate.program_name}</strong>" sekarang live!</p>
                         <p className="text-sm mt-2">
                             <strong>Link Public:</strong>
                             <br />
@@ -257,7 +242,7 @@ const FormBuilderWorkspace = () => {
                                 href={formLink}
                                 target='_blank'
                                 rel='noopener noreferrer'
-                                className='text-blue-600 underline break-all'
+                                className='text-blue-600 underline break-all text-xs'
                             >
                                 {formLink}
                             </a>
@@ -267,16 +252,27 @@ const FormBuilderWorkspace = () => {
                         </p>
                     </div>
                 ),
-                duration: 5000
+                duration: 8000
             });
 
         } catch (error) {
             console.error('Error publishing template:', error);
+            
+            let errorMessage = error.message || "Error to publish form";
+            
+            if (error.message.includes("500")) {
+                errorMessage = "Server error. Please check backend logs.";
+            } else if (error.message.includes("400")) {
+                errorMessage = "Invalid data format. Please check your inputs.";
+            }
+            
             toast({
                 title: "Error",
-                description: error.message || "Gagal mempublish form",
+                description: errorMessage,
                 variant: "destructive"
             });
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -474,11 +470,6 @@ const FormBuilderWorkspace = () => {
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                 )}
                             </CardTitle>
-                            {/* {formConfig.title && (
-                                <CardDescription className="text-lg font-medium text-blue-700">
-                                    {formConfig.title}
-                                </CardDescription>
-                            )} */}
                         </CardHeader>
                         <CardContent>
                             <FormCanvas
@@ -487,65 +478,15 @@ const FormBuilderWorkspace = () => {
                                 onFieldSelect={setSelectedField}
                                 onFieldUpdate={updateField}
                                 onProgramNameUpdate={handleProgramSelect}
+                                onSettingsUpdate={handleSettingsUpdate}
                                 onProgramSearch={handleProgramSearch}
+                                onDirectPublish={handleDirectPublish}
+                                isSaving={isSaving}
+                                selectedTemplate={selectedTemplate}
                                 availablePrograms={availablePrograms}
                                 loadingPrograms={loadingPrograms}
                                 showOnlyProgramInfo={true}
                             />
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardContent className='pt-6'>
-                            <div className='flex justify-between items-center'>
-                                <div className='space-y-2'>
-                                    {/* <p className='text-sm text-gray-600'>
-                                        Pilih nama program dari daftar yang tersedia
-                                    </p> */}
-                                    {formConfig.programName && (
-                                        <Badge variant="outline" className="bg-green-50 text-green-700">
-                                            Program: {formConfig.programName}
-                                        </Badge>
-                                    )}
-                                </div>
-
-                                <div className='flex gap-2'>
-                                    <Button
-                                        onClick={handleCreateTemplate}
-                                        disabled={!formConfig?.programName}
-                                        variant="secondary"
-                                        className="flex items-center gap-2"
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                        Buat Form
-                                    </Button>
-                                    <Button
-                                        onClick={handlePublishTemplate}
-                                        disabled={!selectedTemplate || selectedTemplate.is_published}
-                                        className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
-                                    >
-                                        <Rocket className="h-4 w-4" />
-                                        Publish Form
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <Alert className="mt-4">
-                                <AlertDescription>
-                                    <strong>Status Form:</strong>{' '}
-                                    {selectedTemplate && selectedTemplate.id ? (
-                                        selectedTemplate.is_published ? (
-                                            <span className="text-green-600">
-                                                Published - Link: /register/{selectedTemplate.unique_slug}
-                                            </span>
-                                        ) : (
-                                            <span className="text-yellow-600">Draft (belum dipublish)</span>
-                                        )
-                                    ) : (
-                                        <span className="text-gray-600">Belum ada template yang dipilih</span>
-                                    )}
-                                </AlertDescription>
-                            </Alert>
                         </CardContent>
                     </Card>
                 </>

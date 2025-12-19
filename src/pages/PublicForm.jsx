@@ -7,7 +7,6 @@ import formTemplateService from '../services/formTemplateService';
 import { useToast } from '../hooks/use-toast';
 import impalaService from '../services/impalaService';
 import { CheckCircle, Home, UserCheck, Mail, Phone, MessageCircle } from 'lucide-react';
-// import { Card, CardContent } from '../components/ui/card';
 import { Label } from '../components/ui/label';
 import { Input } from '../components/ui/input';
 
@@ -28,18 +27,18 @@ const PublicForm = () => {
     const [loadError, setLoadError] = useState(null);
     const [hasTimeout, setHasTimeout] = useState(false);
 
-    const disabilityOptions = [
-        { value: 'tidak_ada', label: 'Tidak memiliki disabilitas' },
-        { value: 'fisik', label: 'Disabilitas Fisik/Motorik' },
-        { value: 'penglihatan', label: 'Disabilitas Penglihatan (Tuna Netra/Low Vision)' },
-        { value: 'pendengaran', label: 'Disabilitas Pendengaran (Tuna Rungu/Tuli)' },
-        { value: 'bicara', label: 'Disabilitas Bicara/Komunikasi' },
-        { value: 'intelektual', label: 'Disabilitas Intelektual' },
-        { value: 'mental_psikososial', label: 'Disabilitas Mental/Psikososial' },
-        { value: 'ganda', label: 'Disabilitas Ganda/Multiple' },
-        { value: 'neurologis', label: 'Disabilitas Neurologis/Perkembangan (Autisme, ADHD, dll)' },
-        { value: 'penyakit_kronis', label: 'Penyakit Kronis/Disabilitas Laten' }
-    ];
+    // const disabilityOptions = [
+    //     { value: 'tidak_ada', label: 'Tidak memiliki disabilitas' },
+    //     { value: 'fisik', label: 'Disabilitas Fisik/Motorik' },
+    //     { value: 'penglihatan', label: 'Disabilitas Penglihatan (Tuna Netra/Low Vision)' },
+    //     { value: 'pendengaran', label: 'Disabilitas Pendengaran (Tuna Rungu/Tuli)' },
+    //     { value: 'bicara', label: 'Disabilitas Bicara/Komunikasi' },
+    //     { value: 'intelektual', label: 'Disabilitas Intelektual' },
+    //     { value: 'mental_psikososial', label: 'Disabilitas Mental/Psikososial' },
+    //     { value: 'ganda', label: 'Disabilitas Ganda/Multiple' },
+    //     { value: 'neurologis', label: 'Disabilitas Neurologis/Perkembangan (Autisme, ADHD, dll)' },
+    //     { value: 'penyakit_kronis', label: 'Penyakit Kronis/Disabilitas Laten' }
+    // ];
 
     useEffect(() => {
         if (template) {
@@ -107,6 +106,7 @@ const PublicForm = () => {
                     const templateData = response.data;
                     
                     setTemplate(templateData);
+
                     setFormConfig(templateData.form_config);
                     
                     
@@ -147,40 +147,50 @@ const PublicForm = () => {
         };
     }, [slug, toast]);
 
-    useEffect(() => {
-        if (formConfig && formConfig.personalInfo) {
-            const hasDisabilityField = formConfig.personalInfo.fields?.some(f => f.id === 'disability_status');
+    // useEffect(() => {
+    //     const getPersonalFields = () => {
+    //         if (formConfig?.sections?.personalInfo?.fields) {
+    //             return formConfig.sections.personalInfo.fields;
+    //         }
+    //         return [];
+    //     };
+
+    //     if (formConfig?.sections?.personalInfo) {
+    //         const personalFields = getPersonalFields();
+    //         const hasDisabilityField = personalFields?.some(f => f.id === 'disability_status');
             
-            if (!hasDisabilityField) {
-                const updatedFormConfig = { ...formConfig };
-                const personalFields = [...(formConfig.personalInfo.fields || [])];
-                const educationIndex = personalFields.findIndex(f => f.id === 'education');
+    //         if (!hasDisabilityField) {
+    //             const updatedFormConfig = { ...formConfig };
+    //             const newPersonalFields = [...personalFields];
+    //             const educationIndex = newPersonalFields.findIndex(f => f.id === 'education');
                 
-                if (educationIndex !== -1) {
-                    const disabilityField = {
-                        id: 'disability_status',
-                        type: 'select',
-                        name: 'disability_status',
-                        label: 'Status Disabilitas',
-                        required: false,
-                        placeholder: 'Pilih status disabilitas Anda',
-                        options: disabilityOptions.map(opt => opt.label),
-                        locked: true
-                    };
+    //             if (educationIndex !== -1) {
+    //                 const disabilityField = {
+    //                     id: 'disability_status',
+    //                     type: 'select',
+    //                     name: 'disability_status',
+    //                     label: 'Status Disabilitas',
+    //                     required: false,
+    //                     placeholder: 'Pilih status disabilitas Anda',
+    //                     options: disabilityOptions.map(opt => opt.label),
+    //                     locked: true
+    //                 };
                     
-                    // Sisipkan field disabilitas tepat setelah pendidikan
-                    personalFields.splice(educationIndex + 1, 0, disabilityField);
+    //                 newPersonalFields.splice(educationIndex + 1, 0, disabilityField);
+
+    //                 updatedFormConfig.sections = {
+    //                     ...formConfig.sections,
+    //                     personalInfo: {
+    //                         ...formConfig.sections.personalInfo,
+    //                         fields: newPersonalFields
+    //                     }
+    //                 };
                     
-                    updatedFormConfig.personalInfo = {
-                        ...formConfig.personalInfo,
-                        fields: personalFields
-                    };
-                    
-                    setFormConfig(updatedFormConfig);
-                }
-            }
-        }
-    }, [formConfig]);
+    //                 setFormConfig(updatedFormConfig);
+    //             }
+    //         }
+    //     }
+    // }, [formConfig, disabilityOptions]);
 
     const getPersonalInfoFields = () => {
         if (!formConfig?.personalInfo?.fields) return [];
@@ -196,7 +206,7 @@ const PublicForm = () => {
             'gender',
             'date_of_birth',
             'education',
-            'disability_status', // Tambahkan disabilitas dalam urutan
+            'disability_status',
             'address',
             'city',
             'province',
@@ -224,7 +234,6 @@ const PublicForm = () => {
             const personalFields = getPersonalInfoFields();
             const categoryFields = [];
 
-            // Show category-specific fields only if category is selected
             if (selectedCategory && formConfig.categories) {
                 const categoryKey = Object.keys(formConfig.categories).find(
                     key => key.toLowerCase() === selectedCategory.toLowerCase()
@@ -326,7 +335,6 @@ const PublicForm = () => {
             return { disabled: true, tooltip: `Harap lengkapi: ${missingFields.map(f => fieldLabels[f]).join(', ')}` };
         }
 
-        // Validasi jika memilih disabilitas "Lainnya" tapi tidak mengisi detail
         if (formData.disability_status === 'Lainnya' && (!formData.disability_type || formData.disability_type.trim() === '')) {
             return { disabled: true, tooltip: 'Harap jelaskan jenis disabilitas Anda' };
         }
@@ -337,7 +345,6 @@ const PublicForm = () => {
     const handleInputChange = (fieldName, value) => {
         setFormData(prev => ({ ...prev, [fieldName]: value }));
         
-        // Reset disability_type jika tidak memilih "Lainnya"
         if (fieldName === 'disability_status' && value !== 'Lainnya') {
             setFormData(prev => ({ ...prev, disability_type: '' }));
         }
@@ -381,7 +388,6 @@ const PublicForm = () => {
                          selectedCategory === 'umum' ? 'Umum' : selectedCategory,
             };
 
-            // Tambahkan detail disabilitas jika ada
             if (formData.disability_status && formData.disability_status !== 'Tidak memiliki disabilitas') {
                 submissionData.disability_status = formData.disability_status;
                 if (formData.disability_type) {
@@ -389,7 +395,6 @@ const PublicForm = () => {
                 }
             }
 
-            // Add category-specific fields
             if (selectedCategory === 'umkm') {
                 submissionData.business_name = formData.business_name;
                 submissionData.business_type = formData.business_type;
@@ -495,16 +500,13 @@ const PublicForm = () => {
         { id: 'umum', name: 'Umum', description: 'Umum' },
     ];
 
-    // ===== LOADING STATE =====
     if (isLoading) {
         return (
             <div className='min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center'>
                 <div className='text-center'>
                     <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4'></div>
                     <p className='text-gray-600'>Memuat Formulir...</p>
-                    <p className='text-sm text-gray-500 mt-2'>
-                        Slug: <strong>{slug}</strong>
-                    </p>
+                    
                     <p className='text-xs text-gray-400 mt-1'>
                         {hasTimeout ? 'Mengulang...' : 'Silakan tunggu sebentar'}
                     </p>
@@ -521,7 +523,7 @@ const PublicForm = () => {
         );
     }
 
-    if (loadError || !formConfig || !template) {
+    if (loadError) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
                 <div className="text-center bg-white p-8 rounded-xl shadow-lg max-w-md">
@@ -554,7 +556,7 @@ const PublicForm = () => {
                             onClick={() => window.location.reload()}
                             className="w-full bg-blue-600 hover:bg-blue-700"
                         >
-                            🔄 Coba Lagi
+                            Coba Lagi
                         </Button>
                         <Button 
                             onClick={() => navigate('/')}
@@ -826,14 +828,14 @@ const PublicForm = () => {
                                     <MessageCircle className="h-4 w-4" />
                                     Gabung Grup WhatsApp
                                 </Button>
-                                <Button
+                                {/* <Button
                                     onClick={() => navigate('/')}
                                     variant="outline"
                                     className="flex items-center gap-2"
                                 >
                                     <Home className="h-4 w-4" />
                                     Kembali ke Beranda
-                                </Button>
+                                </Button> */}
                             </div>
 
                             <div className="text-center mt-8 pt-6 border-t border-gray-200">

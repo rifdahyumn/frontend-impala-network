@@ -181,6 +181,39 @@ class FormTemplateService {
             };
         }
     }
+
+    async updateFormTemplate(templateId, templateData) {
+        try {
+            const whatsapp_group_link = templateData.form_config?.settings?.whatsappGroupLink || ""
+            const after_submit_message = templateData.form_config?.settings?.afterSubmitMessage || "Terima kasih telah mendaftar program ini!"
+
+            const payload = {
+                program_name: templateData.program_name,
+                form_config: templateData.form_config,
+                whatsapp_group_link: whatsapp_group_link,
+                after_submit_message: after_submit_message
+            }
+
+            const response = await fetch(`${API_BASE_URL}/form-templates/${templateId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.message || `HTTP error! status: ${response.status}`);
+            }
+
+            return result
+        } catch (error) {
+            console.error('Error updating form template:', error);
+            throw error;
+        }
+    }
 }
 
 export default new FormTemplateService()

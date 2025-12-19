@@ -1,27 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, AlertCircle, Users, MessageSquare, Link } from 'lucide-react';
+import { Loader2, AlertCircle, Users, MessageSquare, Link, Rocket } from 'lucide-react';
+import { Button } from '../ui/button';
 
 const FormCanvas = ({ 
-    formConfig, 
-    selectedField,
+    formConfig = {}, // ← BERI DEFAULT VALUE
     onProgramNameUpdate,
     onSettingsUpdate,
-    onProgramSearch,
+    onDirectPublish,
+    isSaving = false,
+    selectedTemplate = null,
     availablePrograms = [],
     loadingPrograms = false
 }) => {
-    // State lokal untuk input
     const [whatsappLink, setWhatsappLink] = useState("");
     const [afterSubmitMessage, setAfterSubmitMessage] = useState("");
 
-    // Sync dengan formConfig saat berubah
+    const safeFormConfig = formConfig || {};
+
     useEffect(() => {
-        if (formConfig.settings) {
-            setWhatsappLink(formConfig.settings.whatsappGroupLink || "");
-            setAfterSubmitMessage(formConfig.settings.afterSubmitMessage || 
+        if (safeFormConfig.settings) {
+            setWhatsappLink(safeFormConfig.settings.whatsappGroupLink || "");
+            setAfterSubmitMessage(safeFormConfig.settings.afterSubmitMessage || 
                 "Terima kasih telah mendaftar! ");
+        } else {
+            setWhatsappLink("");
+            setAfterSubmitMessage("Terima kasih telah mendaftar! ");
         }
-    }, [formConfig.settings]);
+    }, [safeFormConfig.settings]);
 
     const handleProgramNameChange = (e) => {
         if (onProgramNameUpdate) {
@@ -33,14 +38,11 @@ const FormCanvas = ({
         const value = e.target.value;
         setWhatsappLink(value);
         
-        // Update parent component
         if (onSettingsUpdate) {
-            const newSettings = {
-                ...formConfig.settings,
+            onSettingsUpdate({
                 whatsappGroupLink: value,
                 afterSubmitMessage: afterSubmitMessage
-            };
-            onSettingsUpdate(newSettings);
+            })
         }
     };
 
@@ -48,60 +50,64 @@ const FormCanvas = ({
         const value = e.target.value;
         setAfterSubmitMessage(value);
         
-        // Update parent component
         if (onSettingsUpdate) {
-            const newSettings = {
-                ...formConfig.settings,
+            onSettingsUpdate({
                 whatsappGroupLink: whatsappLink,
                 afterSubmitMessage: value
-            };
-            onSettingsUpdate(newSettings);
+            })
         }
     };
 
     const getProgramName = (program) => {
+        if (!program) return "";
         if (typeof program === 'string') return program;
-        if (program && program.program_name) return program.program_name;
-        if (program && program.name) return program.name;
+        if (program.program_name) return program.program_name;
+        if (program.name) return program.name;
         return String(program);
     };
 
     const getProgramId = (program) => {
+        if (!program) return "";
         if (typeof program === 'string') return program;
-        if (program && program.id) return program.id;
-        if (program && program.program_id) return program.program_id;
+        if (program.id) return program.id;
+        if (program.program_id) return program.program_id;
         return program;
     };
 
+    const handlePublicClick = () => {
+        if (onDirectPublish) {
+            onDirectPublish()
+        }
+    }
+
+    const canPublish = () => {
+        const hasProgram = safeFormConfig.programName && safeFormConfig.programName.trim() !== "";
+        const hasWhatsAppLink = whatsappLink && whatsappLink.trim() !== "";
+        if (hasWhatsAppLink && !whatsappLink.startsWith('https://')){
+            return false
+        }
+
+        return hasProgram && !isSaving
+    }
+
     const renderProgramField = () => {
-        const field = {
-            id: 'program_name',
-            label: 'Nama Program',
-            required: true
-        };
-        
-        const isRequired = field.required === true;
-        const hasSelectedProgram = formConfig.programName && formConfig.programName !== "";
+        const isRequired = true;
+        const hasSelectedProgram = safeFormConfig.programName && safeFormConfig.programName !== "";
         const selectedProgram = availablePrograms.find(
-            p => getProgramName(p) === formConfig.programName
+            p => getProgramName(p) === safeFormConfig.programName
         );
 
         return (
             <div 
-                key={field.id}
                 className={`field-item p-4 border-2 ${
                     hasSelectedProgram 
                         ? 'border-gray-200 bg-white' 
                         : 'border-blue-200 bg-blue-50'
-                } rounded-lg mb-4 ${
-                    selectedField?.id === field.id 
-                        ? 'ring-2 ring-blue-500 ring-offset-2' 
-                        : ''
-                }`}
+                } rounded-lg mb-4`}
             >
                 <div className="field-header mb-3">
                     <label className="block text-sm font-bold text-gray-800 mb-1">
-                        {field.label}
+                        Nama Program
                         {isRequired && <span className="text-red-500 ml-1">*</span>}
                     </label>
                     <p className="text-xs text-gray-500 mt-1">
@@ -111,7 +117,7 @@ const FormCanvas = ({
                 
                 <div className="relative">
                     <select
-                        value={formConfig.programName || ''}
+                        value={safeFormConfig.programName || ''}
                         onChange={handleProgramNameChange}
                         disabled={loadingPrograms || availablePrograms.length === 0}
                         className="w-full px-3 py-2 border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-300 bg-white font-medium appearance-none"
@@ -169,7 +175,7 @@ const FormCanvas = ({
                                     Program Terpilih
                                 </p>
                                 <p className="text-sm text-green-700">
-                                    {formConfig.programName}
+                                    {safeFormConfig.programName}
                                 </p>
                             </div>
                         </div>
@@ -189,7 +195,7 @@ const FormCanvas = ({
                             <Users className="w-5 h-5 text-black" />
                             <label className="block text-sm font-bold text-black">
                                 WhatsApp Group Link
-                                <span className="text-red-500 ml-1">*</span>
+                                <span className="text-red-500 ml-1">(Opsional)</span>
                             </label>
                         </div>
                         <p className="text-xs text-gray-400 ml-7">
@@ -256,9 +262,45 @@ const FormCanvas = ({
                         className="w-full px-3 py-2 border-2 border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white resize-none"
                     />
                 </div>
+
+                <div className='mt-8 pt-6 border-t border-gray-200'>
+                    <div className='flex flex-row justify-between items-center gap-4'>
+                        <div className='space-y-2'>
+                            <Button
+                                onClick={handlePublicClick}
+                                disabled={!canPublish() || isSaving}
+                                className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 w-auto"
+                                size="lg"
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <Loader2 className='w-4 h-4 animate-spin' />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Rocket className='w-4 h-4' />
+                                        {selectedTemplate && selectedTemplate.is_published ? 'Update & Republish' : 'Publish'}
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     };
+
+    if (!formConfig) {
+        return (
+            <div className="form-canvas p-8">
+                <div className="flex flex-col items-center justify-center h-64">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+                    <p className="text-gray-600">Memuat konfigurasi form...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="form-canvas">
@@ -282,7 +324,7 @@ const FormCanvas = ({
                     {renderProgramField()}
                 </div>
 
-                {formConfig.programName && (
+                {safeFormConfig.programName && (
                     <div className="mt-8 pt-6 border-t border-gray-200">
                         <h4 className="text-md font-medium text-gray-700 mb-3 flex items-center gap-2">
                             <div className="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center">
@@ -292,62 +334,9 @@ const FormCanvas = ({
                         </h4>
                         <p className="text-sm text-gray-600 mb-4">
                             Konfigurasi grup WhatsApp dan pesan setelah submit untuk program{" "}
-                            <span className="font-semibold text-amber-700">{formConfig.programName}</span>
+                            <span className="font-semibold text-amber-700">{safeFormConfig.programName}</span>
                         </p>
                         {renderWhatsAppSettings()}
-                    </div>
-                )}
-
-                {formConfig.programName && (
-                    <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">
-                            Status Konfigurasi:
-                        </h4>
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                                {formConfig.programName ? (
-                                    <>
-                                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                                            <span className="text-white text-xs">✓</span>
-                                        </div>
-                                        <p className="text-sm text-gray-700">
-                                            Program: <span className="font-medium">{formConfig.programName}</span>
-                                        </p>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
-                                            <span className="text-white text-xs">!</span>
-                                        </div>
-                                        <p className="text-sm text-gray-700">
-                                            Program belum dipilih
-                                        </p>
-                                    </>
-                                )}
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                                {whatsappLink ? (
-                                    <>
-                                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                                            <span className="text-white text-xs">✓</span>
-                                        </div>
-                                        <p className="text-sm text-gray-700">
-                                            WhatsApp Group: <span className="font-medium">Terkonfigurasi</span>
-                                        </p>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
-                                            <span className="text-white text-xs">!</span>
-                                        </div>
-                                        <p className="text-sm text-gray-700">
-                                            WhatsApp Group: <span className="text-red-600 font-medium">Belum dikonfigurasi</span>
-                                        </p>
-                                    </>
-                                )}
-                            </div>
-                        </div>
                     </div>
                 )}
             </div>

@@ -348,7 +348,6 @@ const ImpalaManagement = () => {
         }
     }, [participant, extractCategories]);
 
-    // APPLY FILTERS SETIAP PARTICIPANT BERUBAH
     useEffect(() => {
         if (participant.length > 0) {
             setFilteredParticipants(participant);
@@ -356,7 +355,6 @@ const ImpalaManagement = () => {
         }
     }, [participant]);
 
-    // APPLY FILTERS SETIAP SEARCH ATAU FILTER BERUBAH
     useEffect(() => {
         applyAllFilters();
     }, [searchTerm, activeFilters]);
@@ -370,7 +368,6 @@ const ImpalaManagement = () => {
     const handleDelete = () => {
         if (selectedParticipant) {
             if (window.confirm(`Are you sure you want to delete ${selectedParticipant.full_name}?`)) {
-                console.log('Delete participant:', selectedParticipant);
                 setSelectedParticipant(null);
                 toast.success('Participant deleted successfully');
                 window.scrollTo({ top: 0, behavior: 'smooth' });

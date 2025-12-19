@@ -1,22 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Header from "../components/Layout/Header";
 import Sidebar from "../components/Layout/Sidebar";
 import FormBuilderWorkspace from '../components/FormBuilder/FormBuilderWorkspace';
-import FormPreview from '../components/FormBuilder/FormPreview';
 
 const FormBuilder = () => {
-    const [previewMode, setPreviewMode] = useState(false);
-    const [formConfig, setFormConfig] = useState(null);
-
-    if (previewMode && formConfig) {
-        return (
-            <FormPreview 
-                formConfig={formConfig} 
-                onBack={() => setPreviewMode(false)}
-            />
-        );
-    }
-
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
             <Sidebar />
