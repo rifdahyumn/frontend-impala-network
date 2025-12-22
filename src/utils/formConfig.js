@@ -124,29 +124,50 @@
                     ],
                     locked: true
                 },
+                
+                {
+                    id: 'province_id',
+                    name: 'province_id',
+                    label: 'Provinsi',
+                    type: 'select',
+                    required: true,
+                    placeholder: 'Select Province',
+                    options: []
+                },
+                {
+                    id: 'regency_id',
+                    name: 'regency_id',
+                    label: 'Kota / Kabupaten',
+                    type: 'select',
+                    required: true,
+                    placeholder: 'Select Regency',
+                    options: []
+                },
+                {
+                    id: 'district_id',
+                    name: 'district_id',
+                    label: 'Kecamatan',
+                    type: 'select',
+                    required: true,
+                    placeholder: 'Select District',
+                    options: [] 
+                },
+                {
+                    id: 'village_id',
+                    name: 'village_id',
+                    label: 'Kelurahan',
+                    type: 'select',
+                    required: true,
+                    placeholder: 'Select Village',
+                    options: [] 
+                },
                 {
                     id: 'address',
-                    type: 'textarea',
+                    type: 'text',
                     name: 'address',
                     label: 'Alamat Lengkap',
                     required: true,
                     placeholder: 'Jl. Contoh No. 123, Kota, Provinsi',
-                    locked: true
-                },
-                {
-                    id: 'city',
-                    type: 'text',
-                    name: 'city',
-                    label: 'Kota / Kabupaten',
-                    required: true,
-                    locked: true
-                },
-                {
-                    id: 'province', 
-                    type: 'text', 
-                    name: 'province', 
-                    label: 'Provinsi', 
-                    required: true,
                     locked: true
                 },
                 {

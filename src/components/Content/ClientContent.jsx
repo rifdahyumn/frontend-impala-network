@@ -48,6 +48,37 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
         }
     ];
 
+    const normalizeProgramName = (value) => {
+        if (!value) return '-';
+
+        let result = value
+
+        try {
+            if (typeof result === 'string' && result.startsWith('[')) {
+                result = JSON.parse(result)
+            }
+
+            if (Array.isArray(result)) {
+                result = result
+                    .map(item => {
+                        try {
+                            if (typeof item === 'string' && item.startsWith('[')) {
+                                const parsed = JSON.parse(item)
+                                return Array.isArray(parsed) ? parsed.join(', ') : parsed
+                            }
+                            return item
+                        } catch {
+                            return item
+                        }
+                    })
+                    .join(', ')
+            }
+            return result
+        } catch {
+            return value
+        }
+    }
+
     const getActiveCategoryData = () => {
         return detailFields.find(category => category.category === activeCategory);
     };
@@ -97,7 +128,10 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
                 <div className='grid grid-cols-2 gap-4'>
                     {activeCategoryData.fields.map((field, index) => {
                         const FieldIcon = field.icon
-                        const value = selectedMember[field.key] || selectedMember[field.key.toLowerCase()] || '-'
+                        const value = 
+                            field.key === 'program_name'
+                                ? normalizeProgramName(selectedMember[field.key])
+                                : selectedMember[field.key] || '-'
 
                         return (
                             <div key={index} className='flex items-start gap-3'>

@@ -28,7 +28,6 @@ const ImpalaManagement = () => {
     const [highlightDetail, setHighlightDetail] = useState(false);
     const participantDetailRef = useRef(null);
     
-    // STATE UNTUK FRONTEND FILTERING
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilters, setActiveFilters] = useState({
         gender: null,
@@ -37,7 +36,6 @@ const ImpalaManagement = () => {
     const [filteredParticipants, setFilteredParticipants] = useState([]);
     const [availableCategories, setAvailableCategories] = useState([]);
     
-    // STATE UNTUK IMPORT
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importFile, setImportFile] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
@@ -45,7 +43,6 @@ const ImpalaManagement = () => {
 
     const { participant, loading, error, pagination, handlePageChange, refreshData } = useImpala();
 
-    // Fungsi untuk handle select participant dengan auto-scroll
     const handleSelectParticipant = useCallback((participant) => {
         setSelectedParticipant(participant);
         setHighlightDetail(true);
@@ -396,7 +393,6 @@ const ImpalaManagement = () => {
         handlePageChange(page);
     }, [handlePageChange]);
 
-    // GET ACTIVE FILTERS COUNT
     const getActiveFiltersCount = () => {
         let count = 0;
         if (activeFilters.gender) count++;
@@ -404,7 +400,6 @@ const ImpalaManagement = () => {
         return count;
     };
 
-    // GET TOTAL ACTIVE CRITERIA (SEARCH + FILTERS) UNTUK DISPLAY
     const getTotalActiveCriteria = () => {
         let count = 0;
         if (searchTerm) count++;
@@ -413,14 +408,12 @@ const ImpalaManagement = () => {
         return count;
     };
 
-    // GET CATEGORY LABEL
     const getCategoryLabel = (categoryValue) => {
         if (!categoryValue || categoryValue === "all") return "All Categories";
         const category = availableCategories.find(c => c.value === categoryValue);
         return category ? category.original : categoryValue;
     };
 
-    // GET GENDER LABEL
     const getGenderLabel = (genderValue) => {
         if (!genderValue) return "";
         if (genderValue.toLowerCase() === 'laki-laki') return '👨 Laki-laki';
@@ -435,7 +428,6 @@ const ImpalaManagement = () => {
         detailTitle: "Participant Details"
     };
 
-    // FORMAT PARTICIPANT DARI filteredParticipants
     const formattedParticipants = filteredParticipants.map((participant, index) => {
         const currentPage = pagination.page;
         const itemsPerPage = pagination.limit;
@@ -814,11 +806,6 @@ const ImpalaManagement = () => {
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    <div className="text-sm text-gray-600">
-                                        Showing {filteredParticipants.length} of {participant.length} participants
-                                        {getTotalActiveCriteria() > 0 && " (filtered)"}
-                                    </div>
-                                    
                                     <Pagination 
                                         currentPage={pagination.page}
                                         totalPages={pagination.totalPages}

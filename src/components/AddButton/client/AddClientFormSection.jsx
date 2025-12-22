@@ -108,7 +108,8 @@ export const formSections = [
                 label: 'Program Name',
                 type: 'text',
                 required: false,
-                placeholder: 'Enter Program Name'
+                placeholder: 'Enter Program Name',
+                fullWidth: true
             },
         ]
     },
@@ -120,7 +121,8 @@ export const formSections = [
                 label: 'Address',
                 type: 'text',
                 required: true,
-                placeholder: 'Enter address'
+                placeholder: 'Enter address',
+                fullWidth: true
             },
             {
                 name: 'province_id',
@@ -164,7 +166,8 @@ export const formSections = [
                 label: 'Notes',
                 type: 'textarea',
                 required: false,
-                placeholder: 'Enter notes'
+                placeholder: 'Enter notes',
+                fullWidth: true
             },
         ]
     }

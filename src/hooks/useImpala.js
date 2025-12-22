@@ -21,7 +21,6 @@ export const useImpala = (initialFilters = {}) => {
     const [statsLoadingImpala, setStatsLoadingImpala] = useState(false)
     const [showAllOnSearch, setShowAllOnSearch] = useState(false)
 
-    // 🔴 PERBAIKAN: Gunakan ref untuk semua data yang tidak perlu UI update
     const filtersRef = useRef({
         search: '',
         gender: '',
@@ -29,10 +28,9 @@ export const useImpala = (initialFilters = {}) => {
         ...initialFilters
     })
     
-    const abortControllerRef = useRef(null) // 🔴 Untuk cancel request
-    const lastRequestIdRef = useRef(0) // 🔴 Track request terakhir
+    const abortControllerRef = useRef(null)
+    const lastRequestIdRef = useRef(0) 
     
-    // 🔴 PERBAIKAN: State filters untuk UI saja
     const [filters, setFilters] = useState({
         search: filtersRef.current.search,
         gender: filtersRef.current.gender,
@@ -66,13 +64,9 @@ export const useImpala = (initialFilters = {}) => {
 
             const result = await impalaService.fetchImpala(params)
 
-            if (currentRequestId !== lastRequestIdRef.current) {
-                return
-            }
-
             setParticipant(result.data || [])
             
-            const paginationData = result.metadata?.pagination || {}
+            const paginationData = result.metadata?.metadata?.pagination || {}
             setPagination(prev => ({
                 page: paginationData.page || page,
                 limit: paginationData.limit || pagination.limit,
@@ -82,6 +76,8 @@ export const useImpala = (initialFilters = {}) => {
                 showingAllResults: paginationData.showingAllResults || false,
                 searchTerm: currentFilters.search || ''
             }))
+
+            
 
             if (currentFilters.search && paginationData.showingAllResults) {
                 setShowAllOnSearch(true)
@@ -146,7 +142,6 @@ export const useImpala = (initialFilters = {}) => {
     const toggleShowAllOnSearch = useCallback((value) => {
         setShowAllOnSearch(value)
         
-        // Jika ada search term, refresh dengan setting baru
         if (filtersRef.current.search) {
             if (debouncedFetchRef.current) {
                 debouncedFetchRef.current(1, filtersRef.current, value)

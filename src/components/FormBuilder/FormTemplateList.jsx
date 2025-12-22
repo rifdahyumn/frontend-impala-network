@@ -143,11 +143,11 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
             )}
 
             <Card className='mb-4 min-h-screen border border-gray-200 shadow-sm'>
-                <CardHeader className='bg-gray-50 border-b border-gray-100'>
+                <CardHeader className='border-gray-100'>
                     <div className="flex justify-between items-center">
                         <div>
                             <CardTitle className='flex items-center gap-2.5 text-gray-800'>
-                                <div className="p-2 bg-blue-50 rounded-lg">
+                                <div className="p-2 rounded-lg">
                                     <FileText className="h-5 w-5 text-blue-600" />
                                 </div>
                                 Form Templates

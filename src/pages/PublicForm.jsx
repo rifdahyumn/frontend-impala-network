@@ -1,4 +1,3 @@
-// src/pages/PublicForm.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -9,6 +8,7 @@ import impalaService from '../services/impalaService';
 import { CheckCircle, Home, UserCheck, Mail, Phone, MessageCircle } from 'lucide-react';
 import { Label } from '../components/ui/label';
 import { Input } from '../components/ui/input';
+import locationService from '../services/locationService';
 
 const PublicForm = () => {
     const { slug } = useParams();
@@ -22,23 +22,28 @@ const PublicForm = () => {
     const [submissionSuccess, setSubmissionSuccess] = useState(false);
     const [submittedData, setSubmittedData] = useState(null);
     const { toast } = useToast();
-    const [isDisabilityChecked, setIsDisabilityChecked] = useState(false);
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [loadError, setLoadError] = useState(null);
     const [hasTimeout, setHasTimeout] = useState(false);
+    const [locationData, setLocationData] = useState({
+        provinces: [],
+        regencies: [],
+        districts: [],
+        villages: [],
+    })
+    const [loadingLocation, setLoadingLocation] = useState({
+        provinces: false,
+        regencies: false,
+        districts: false,
+        villages: false,
+    })
 
-    // const disabilityOptions = [
-    //     { value: 'tidak_ada', label: 'Tidak memiliki disabilitas' },
-    //     { value: 'fisik', label: 'Disabilitas Fisik/Motorik' },
-    //     { value: 'penglihatan', label: 'Disabilitas Penglihatan (Tuna Netra/Low Vision)' },
-    //     { value: 'pendengaran', label: 'Disabilitas Pendengaran (Tuna Rungu/Tuli)' },
-    //     { value: 'bicara', label: 'Disabilitas Bicara/Komunikasi' },
-    //     { value: 'intelektual', label: 'Disabilitas Intelektual' },
-    //     { value: 'mental_psikososial', label: 'Disabilitas Mental/Psikososial' },
-    //     { value: 'ganda', label: 'Disabilitas Ganda/Multiple' },
-    //     { value: 'neurologis', label: 'Disabilitas Neurologis/Perkembangan (Autisme, ADHD, dll)' },
-    //     { value: 'penyakit_kronis', label: 'Penyakit Kronis/Disabilitas Laten' }
-    // ];
+    // Tambahkan di awal component PublicForm.js
+    // useEffect(() => {
+    //     console.log('🔍 Debug - locationData:', locationData);
+    //     console.log('🔍 Debug - formData:', formData);
+    //     console.log('🔍 Debug - loadingLocation:', loadingLocation);
+    // }, [locationData, formData, loadingLocation]);
 
     useEffect(() => {
         if (template) {
@@ -76,6 +81,115 @@ const PublicForm = () => {
             document.title = `Pendaftaran Berhasil - ${submittedData.programName} | Impala Network`;
         }
     }, [submissionSuccess, submittedData]);
+
+    useEffect(() => {
+        const loadProvinces = async () => {
+            try {
+                setLoadingLocation(prev => ({ ...prev, provinces: true }))
+                const provincesData = await locationService.getProvinces()
+
+                if (provincesData && Array.isArray(provincesData)) {
+                    setLocationData(prev => ({ ...prev, provinces: provincesData }))
+                } else {
+                    console.error('Failed to load provinces')
+                }
+            } catch (error) {
+                console.error('Error loading provinces:', error)
+                toast({
+                    title: "Error",
+                    description: "Failed to load province data",
+                    variant: 'destructive'
+                })
+            } finally {
+                setLoadingLocation(prev => ({ ...prev, provinces: false }))
+            }
+        }
+
+        if (formConfig) {
+            loadProvinces()
+        }
+    }, [formConfig, toast])
+
+    useEffect(() => {
+        const loadRegencies = async () => {
+            if (!formData.province_id) {
+                setLocationData(prev => ({ ...prev, regencies: [], districts: [], villages: [] }))
+                return
+            }
+
+            try {
+                setLoadingLocation(prev => ({ ...prev, regencies: true }))
+                const regenciesData = await locationService.getRegencies(formData.province_id)
+
+                if (regenciesData && Array.isArray(regenciesData)) {
+                    setLocationData(prev => ({
+                        ...prev,
+                        regencies: regenciesData,
+                        districts: [],
+                        villages: []
+                    }))
+                }
+            } catch (error) {
+                console.error('Error loading regencies:', error)
+            } finally {
+                setLoadingLocation(prev => ({ ...prev, regencies: false }))
+            }
+        }
+
+        loadRegencies()
+    }, [formData.province_id])
+
+    useEffect(() => {
+        const loadDistricts = async () => {
+            if (!formData.regency_id) {
+                setLocationData(prev => ({ ...prev, districts: [], villages: [] }))
+                return
+            }
+
+            try {
+                setLoadingLocation(prev => ({ ...prev, districts: true }))
+                const districtsData = await locationService.getDistricts(formData.regency_id)
+
+                if (districtsData && Array.isArray(districtsData)) {
+                    setLocationData(prev => ({
+                        ...prev,
+                        districts: districtsData,
+                        villages: []
+                    }))
+                }
+            } catch (error) {
+                console.error('Error loading districts:', error)
+            } finally {
+                setLoadingLocation(prev => ({ ...prev, districts: false }))
+            }
+        }
+
+        loadDistricts()
+    }, [formData.regency_id])
+
+    useEffect(() => {
+        const loadVillages = async () => {
+            if (!formData.district_id) {
+                setLocationData(prev => ({ ...prev, villages: [] }))
+                return
+            }
+
+            try {
+                setLoadingLocation(prev => ({ ...prev, villages: true }))
+                const villagesData = await locationService.getVillages(formData.district_id)
+
+                if (villagesData && Array.isArray(villagesData)) {
+                    setLocationData(prev => ({ ...prev, villages: villagesData }))
+                }
+            } catch (error) {
+                console.error('Error loading villages:', error)
+            } finally {
+                setLoadingLocation(prev => ({ ...prev, villages: false }))
+            }
+        }
+
+        loadVillages()
+    }, [formData.district_id])
 
     useEffect(() => {
         let isMounted = true;
@@ -147,51 +261,6 @@ const PublicForm = () => {
         };
     }, [slug, toast]);
 
-    // useEffect(() => {
-    //     const getPersonalFields = () => {
-    //         if (formConfig?.sections?.personalInfo?.fields) {
-    //             return formConfig.sections.personalInfo.fields;
-    //         }
-    //         return [];
-    //     };
-
-    //     if (formConfig?.sections?.personalInfo) {
-    //         const personalFields = getPersonalFields();
-    //         const hasDisabilityField = personalFields?.some(f => f.id === 'disability_status');
-            
-    //         if (!hasDisabilityField) {
-    //             const updatedFormConfig = { ...formConfig };
-    //             const newPersonalFields = [...personalFields];
-    //             const educationIndex = newPersonalFields.findIndex(f => f.id === 'education');
-                
-    //             if (educationIndex !== -1) {
-    //                 const disabilityField = {
-    //                     id: 'disability_status',
-    //                     type: 'select',
-    //                     name: 'disability_status',
-    //                     label: 'Status Disabilitas',
-    //                     required: false,
-    //                     placeholder: 'Pilih status disabilitas Anda',
-    //                     options: disabilityOptions.map(opt => opt.label),
-    //                     locked: true
-    //                 };
-                    
-    //                 newPersonalFields.splice(educationIndex + 1, 0, disabilityField);
-
-    //                 updatedFormConfig.sections = {
-    //                     ...formConfig.sections,
-    //                     personalInfo: {
-    //                         ...formConfig.sections.personalInfo,
-    //                         fields: newPersonalFields
-    //                     }
-    //                 };
-                    
-    //                 setFormConfig(updatedFormConfig);
-    //             }
-    //         }
-    //     }
-    // }, [formConfig, disabilityOptions]);
-
     const getPersonalInfoFields = () => {
         if (!formConfig?.personalInfo?.fields) return [];
         
@@ -199,28 +268,34 @@ const PublicForm = () => {
         const allFields = formConfig.personalInfo.fields;
         
         const fieldOrder = [
-            'full_name',
-            'nik', 
-            'email',
-            'phone',
-            'gender',
-            'date_of_birth',
-            'education',
-            'disability_status',
-            'address',
-            'city',
-            'province',
-            'postal_code',
-            'reason'
+        'full_name', 'nik', 'email', 'phone', 'gender', 
+        'date_of_birth', 'education', 'disability_status', 
+        'address', 'province_id', 'regency_id', 'district_id', 
+        'village_id', 'postal_code', 'reason'
         ];
         
         fieldOrder.forEach(fieldId => {
             const field = allFields.find(f => f.id === fieldId);
             if (field) {
-                fields.push({
+                const enhancedField = {
                     ...field,
                     name: field.name || field.id
-                });
+                };
+                
+                if (fieldId === 'province_id') {
+                    enhancedField.options = locationData.provinces;
+                } else if (fieldId === 'regency_id') {
+                    enhancedField.options = locationData.regencies;
+                    enhancedField.disabled = !formData.province_id || locationData.regencies.length === 0;
+                } else if (fieldId === 'district_id') {
+                    enhancedField.options = locationData.districts;
+                    enhancedField.disabled = !formData.regency_id || locationData.districts.length === 0;
+                } else if (fieldId === 'village_id') {
+                    enhancedField.options = locationData.villages;
+                    enhancedField.disabled = !formData.district_id || locationData.villages.length === 0;
+                }
+                
+                fields.push(enhancedField);
             }
         });
         
@@ -320,7 +395,7 @@ const PublicForm = () => {
             return { disabled: true, tooltip: 'Anda harus menyetujui syarat dan ketentuan' };
         }
         
-        const requiredPersonalFields = ['full_name', 'email', 'phone', 'gender', 'date_of_birth', 'education', 'address', 'city', 'province', 'postal_code'];
+        const requiredPersonalFields = ['full_name', 'email', 'phone', 'gender', 'date_of_birth', 'education', 'address', 'province_id', 'regency_id', 'district_id', 'village_id', 'postal_code'];
         const missingFields = requiredPersonalFields.filter(field => {
             const value = formData[field];
             return !value || value.toString().trim() === '';
@@ -344,6 +419,26 @@ const PublicForm = () => {
 
     const handleInputChange = (fieldName, value) => {
         setFormData(prev => ({ ...prev, [fieldName]: value }));
+
+        if (fieldName === 'province_id') {
+            setFormData(prev => ({
+                ...prev,
+                regency_id: '',
+                district_id: '',
+                village_id: ''
+            }))
+        } else if (fieldName === 'regency_id') {
+            setFormData(prev => ({
+                ...prev,
+                district_id: '',
+                village_id: ''
+            }))
+        } else if (fieldName === 'district_id') {
+            setFormData(prev => ({
+                ...prev,
+                village_id: ''
+            }))
+        }
         
         if (fieldName === 'disability_status' && value !== 'Lainnya') {
             setFormData(prev => ({ ...prev, disability_type: '' }));
@@ -366,6 +461,11 @@ const PublicForm = () => {
         setIsSubmitting(true);
         try {
             const programName = getProgramName();
+            const provinceName = locationData.provinces.find(p => p.value === formData.province_id)?.label || '';
+            const regencyName = locationData.regencies.find(r => r.value === formData.regency_id)?.label || '';
+            const districtName = locationData.districts.find(d => d.value === formData.district_id)?.label || '';
+            const villageName = locationData.villages.find(v => v.value === formData.village_id)?.label || '';
+
             const submissionData = {
                 program_name: programName,
                 full_name: formData.full_name,
@@ -377,8 +477,14 @@ const PublicForm = () => {
                 education: formData.education,
                 disability_status: formData.disability_status || 'Tidak memiliki disabilitas',
                 address: formData.address,
-                city: formData.city,
-                province: formData.province,
+                province_id: formData.province_id,
+                province_name: provinceName,
+                regency_id: formData.regency_id,
+                regency_name: regencyName,
+                district_id: formData.district_id,
+                district_name: districtName,
+                village_id: formData.village_id,
+                village_name: villageName,
                 postal_code: formData.postal_code,
                 reason_join_program: formData.reason_join_program,
                 category: selectedCategory === 'umkm' ? 'UMKM' : 
@@ -439,7 +545,7 @@ const PublicForm = () => {
             }
 
             const cleanData = Object.fromEntries(
-                Object.entries(submissionData).filter(([_, value]) => value != null && value !== '')
+                Object.entries(submissionData).filter(([value]) => value != null && value !== '')
             );
 
             const response = await impalaService.createImpala(cleanData);
@@ -471,12 +577,34 @@ const PublicForm = () => {
         }
     };
 
+    const getWhatsappGroupLink = () => {
+        if (template?.whatsapp_group_link) {
+            return template.whatsapp_group_link
+        }
+
+        if (template?.program?.whatsapp_group_link) {
+            return template.program.whatsapp_group_link
+        }
+
+        return null
+    }
+
     const handleShare = async () => {
-        const waGroupLink = "https://chat.whatsapp.com/your-actual-group-link";
-        window.open(waGroupLink, '_blank');
+        const waGroupLink = getWhatsappGroupLink();
+        if (!waGroupLink) {
+            toast({
+                title: 'WhatsApp Link Not Available',
+                description: 'WhatsApp group link for this program is not yet provided.',
+                variant: 'destructive'
+            })
+            return
+        }
+
+        window.open(waGroupLink, '_blank')
+
         toast({
-            title: 'Group Whatsapp Dibuka',
-            description: 'Bergabung dengan group WhatsApp Program',
+            title: 'WhatsApp Group Opened',
+            description: "You will be directed to the program's WhatsApp group.",
             variant: 'default'
         });
     };
@@ -600,7 +728,7 @@ const PublicForm = () => {
                                     {/* Informasi Pribadi */}
                                     <div className="space-y-6 mb-8">
                                         <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                                            📝 Informasi Pribadi
+                                            Informasi Pribadi
                                         </h3>
                                         
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -619,7 +747,6 @@ const PublicForm = () => {
                                             ))}
                                         </div>
 
-                                        {/* Field tambahan untuk disabilitas jika memilih Lainnya */}
                                         {formData.disability_status === 'Lainnya' && (
                                             <div className="mt-2 md:col-span-2">
                                                 {renderCustomDisabilityField()}
@@ -630,7 +757,7 @@ const PublicForm = () => {
                                     {/* Pilih Kategori */}
                                     <div className="space-y-6 mb-8">
                                         <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                                            🏷️ Pilih Kategori Profil Anda
+                                            Pilih Kategori Profil Anda
                                         </h3>
                                         
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -741,7 +868,6 @@ const PublicForm = () => {
                                                 )}
                                             </Button>
                                             
-                                            {/* Tooltip jika button disabled */}
                                             {getSubmitButtonStatus().disabled && !isSubmitting && (
                                                 <div className="absolute -top-12 right-0 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap">
                                                     {getSubmitButtonStatus().tooltip}
@@ -828,14 +954,6 @@ const PublicForm = () => {
                                     <MessageCircle className="h-4 w-4" />
                                     Gabung Grup WhatsApp
                                 </Button>
-                                {/* <Button
-                                    onClick={() => navigate('/')}
-                                    variant="outline"
-                                    className="flex items-center gap-2"
-                                >
-                                    <Home className="h-4 w-4" />
-                                    Kembali ke Beranda
-                                </Button> */}
                             </div>
 
                             <div className="text-center mt-8 pt-6 border-t border-gray-200">

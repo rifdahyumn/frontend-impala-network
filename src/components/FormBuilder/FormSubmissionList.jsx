@@ -14,8 +14,6 @@ const FormSubmissionsList = () => {
     const [loadingTemplates, setLoadingTemplates] = useState(true);
     const [loadingSubmissions, setLoadingSubmissions] = useState(false);
     const [programStats, setProgramStats] = useState({});
-    // const [programs, setPrograms] = useState([])
-    // const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         loadAllPrograms();
@@ -89,7 +87,7 @@ const FormSubmissionsList = () => {
                     </CardHeader>
                     <CardContent>
                         {loadingTemplates ? (
-                            <div className="flex items-center justify-center h-40">
+                            <div className="flex items-center justify-center h-40 text-blue-600">
                                 <Loader2 className="h-8 w-8 animate-spin" />
                                 <span className="ml-2">Memuat daftar program...</span>
                             </div>
@@ -129,7 +127,7 @@ const FormSubmissionsList = () => {
                                                             </span>
                                                         </span>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
+                                                    {/* <div className="flex items-center gap-2">
                                                         <Calendar className="h-4 w-4 text-green-500" />
                                                         <span className="text-sm">
                                                             7 hari: 
@@ -137,7 +135,7 @@ const FormSubmissionsList = () => {
                                                                 {programStats[template.program_name]?.recent || 0}
                                                             </span>
                                                         </span>
-                                                    </div>
+                                                    </div> */}
                                                 </div>
                                                 
                                                 <Badge variant="outline" className="bg-green-50 text-green-700">
@@ -148,7 +146,7 @@ const FormSubmissionsList = () => {
                                             <Button 
                                                 variant="ghost" 
                                                 size="sm" 
-                                                className="w-full mt-4"
+                                                className="w-full mt-4 bg-amber-100 hover:bg-amber-200"
                                                 onClick={() => handleSelectProgram(template.program_name)}
                                             >
                                                 Lihat Data
@@ -184,11 +182,6 @@ const FormSubmissionsList = () => {
                                     {submissions.length} data ditemukan
                                 </p>
                             </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                            <Filter className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm text-gray-600">Data dari tabel impala_management</span>
                         </div>
                     </div>
                 </CardContent>
@@ -234,7 +227,7 @@ const FormSubmissionsList = () => {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>{formatDate(submission.created_at)}</TableCell>
-                                            <TableCell>{submission.city}</TableCell>
+                                            <TableCell>{submission.regency_name}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

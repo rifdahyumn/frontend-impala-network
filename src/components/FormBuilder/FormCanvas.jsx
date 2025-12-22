@@ -3,7 +3,7 @@ import { Loader2, AlertCircle, Users, MessageSquare, Link, Rocket } from 'lucide
 import { Button } from '../ui/button';
 
 const FormCanvas = ({ 
-    formConfig = {}, // ← BERI DEFAULT VALUE
+    formConfig = {},
     onProgramNameUpdate,
     onSettingsUpdate,
     onDirectPublish,

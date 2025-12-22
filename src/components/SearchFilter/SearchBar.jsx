@@ -9,7 +9,6 @@ const SearchBar = ({ onSearch, placeholder = "Search..." }) => {
         const value = e.target.value;
         setQuery(value);
         
-        // Kirim nilai search ke parent component
         if (onSearch) {
             onSearch(value);
         }
@@ -17,7 +16,6 @@ const SearchBar = ({ onSearch, placeholder = "Search..." }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Trigger search ketika user tekan Enter
         if (onSearch) {
             onSearch(query);
         }

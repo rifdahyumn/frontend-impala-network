@@ -19,7 +19,6 @@ const FormBuilderWorkspace = () => {
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [activeTab, setActiveTab] = useState('builder');
     const { toast } = useToast();
-    const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
     useEffect(() => {
         if (formConfig) {
@@ -438,26 +437,12 @@ const FormBuilderWorkspace = () => {
             </Card>
 
             {activeTab === 'links' && (
-                <Card>
-                    <CardHeader>
-                        <div className='flex justify-between items-center'>
-                            <div>
-                                <CardTitle>Form Builder</CardTitle>
-                                <CardDescription>
-                                    Buat dan Kelola Formulir Pendaftaran Program
-                                </CardDescription>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <FormTemplatesList 
-                            templates={formTemplates}
-                            selectedTemplate={selectedTemplate}
-                            onTemplateSelect={handleTemplateSelect}
-                            onDeleteTemplate={handleDeleteTemplate}
-                        />
-                    </CardContent>
-                </Card>
+                <FormTemplatesList 
+                    templates={formTemplates}
+                    selectedTemplate={selectedTemplate}
+                    onTemplateSelect={handleTemplateSelect}
+                    onDeleteTemplate={handleDeleteTemplate}
+                />
             )}
 
             {activeTab === 'builder' && (
@@ -493,23 +478,7 @@ const FormBuilderWorkspace = () => {
             )}
 
             {activeTab === 'submission' && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className='flex items-center gap-2'>
-                            Data Pengisian Form
-                            {loadingSubmissions && (
-                                <Loader2 className='h-4 w-4 animate-spin' />
-                            )}
-                        </CardTitle>
-                        <CardDescription>
-                            Lihat data pendaftar dari semua program yang sudah di publish
-                        </CardDescription>
-                    </CardHeader>
-
-                    <CardContent>
-                        <FormSubmissionsList />
-                    </CardContent>
-                </Card>
+                <FormSubmissionsList />
             )}
         </div>
     );

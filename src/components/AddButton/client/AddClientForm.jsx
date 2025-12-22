@@ -1,24 +1,24 @@
 import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import { Loader2 } from "lucide-react";
-import clientService from "../../services/clientService";
-import { formSections } from "./AddClientFormSections";
+import clientService from "../../../services/clientService";
+import { formSections } from "./AddClientFormSection";
 import { renderField } from "./AddClientFormFields";
 import { useLocationData } from "./AddClientLocation";
 import { validateForm } from "./AddClientValidation";
-import useClientSearch from "../../hooks/useClientSearch";
+import useClientSearch from "../../../hooks/useClientSearch";
 
 const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsAddUserModalOpen }) => {
     const [formData, setFormData] = useState(getInitialFormData(isEditMode, editData));
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [updateAllFields, setUpdateAllFields] = useState(false);
+    const [forceCreateNewClient, setForceCreateNewClient] = useState(false)
     
     const { 
         clientExists, 
         existingClientId, 
-        showClientInfo, 
         clientSearchResults, 
         showSearchResults, 
         searchingClient,
@@ -28,7 +28,7 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
         setExistingClientId,
         setShowClientInfo,
         setClientSearchResults,
-        setShowSearchResults
+        setShowSearchResults,
     } = useClientSearch(isEditMode);
     
     const searchTimeoutRef = useRef(null);
@@ -39,7 +39,6 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
         districts,
         villages,
         loadingLocation,
-        loadProvinces
     } = useLocationData(formData, setFormData);
 
     useEffect(() => {
@@ -64,13 +63,17 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
     const handleNameChange = (e) => {
         const { name, value } = e.target;
 
+        if (name === 'full_name') {
+            setForceCreateNewClient(false)
+        }
+
         setFormData(prev => ({ ...prev, [name]: value }));
 
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: '' }));
         }
 
-        if (!isEditMode && name === 'full_name') {
+        if (!isEditMode && name === 'full_name' && !forceCreateNewClient) {
             if (value.trim().length >= 3) {
                 if (searchTimeoutRef.current) {
                     clearTimeout(searchTimeoutRef.current);
@@ -83,6 +86,16 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
             }
         }
     };
+
+    const handleForceCreateNewClient = () => {
+        setForceCreateNewClient(true)
+        setClientExists(false)
+        setExistingClientId(null)
+        setClientSearchResults([])
+        setShowSearchResults(false)
+
+        toast.success('Client baru akan dibuat dengan nama ini')
+    }
 
     const resetClientSearch = () => {
         setClientSearchResults([]);
@@ -171,10 +184,50 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
         }
     };
 
+    const handleSelectClientAndFillForm = (client) => {
+        handleSelectClient(client);
+
+        setFormData(prev => ({
+            ...prev,
+            full_name: client.full_name || '',
+            email: client.email || '',
+            phone: client.phone || '',
+            company: client.company || '',
+            gender: client.gender || '',
+            business: client.business || '',
+            total_employee: client.total_employee || '',
+            position: client.position || '',
+            address: client.address || '',
+
+            province_id: client.province_id || '',
+            province_name: client.province_name || '',
+            regency_id: client.regency_id || '',
+            regency_name: client.regency_name || '',
+            district_id: client.district_id || '',
+            district_name: client.district_name || '',
+            village_id: client.village_id || '',
+            village_name: client.village_name || '',
+
+            existing_programs: Array.isArray(client.program_name)
+                ? client.program_name
+                : client.program_name
+                    ? [client.program_name]
+                    : [],
+            program_name: ''
+        }));
+
+        setErrors({});
+        setUpdateAllFields(false);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault()
 
-        if (!validateForm()) {
+        const isValid = validateForm(
+            formData, formSections, clientExists && !forceCreateNewClient, setErrors
+        )
+
+        if (!isValid) {
             toast.error('Please fix the errors in the form')
             return;
         }
@@ -242,7 +295,7 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
             delete clientData.existing_programs
             clientData.join_date = clientData.join_date || new Date().toISOString().split('T')[0]
 
-            if (clientExists && existingClientId) {
+            if (clientExists && existingClientId && !forceCreateNewClient) {
                 if (onEditClient) {
                     await onEditClient(existingClientId, clientData)
                 } else {
@@ -298,29 +351,36 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
                         </h3>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-4">
-                        {section.fields.map((field, index) => 
-                            renderField({
-                                field,
-                                index,
-                                formData,
-                                errors,
-                                isEditMode,
-                                updateAllFields,
-                                clientExists,
-                                clientSearchResults,
-                                showSearchResults,
-                                searchingClient,
-                                provinces,
-                                regencies,
-                                districts,
-                                villages,
-                                loadingLocation,
-                                handleInputChange,
-                                handleSelectChange,
-                                handleSelectClient
-                            })
-                        )}
+                    <div className="grid grid-cols-2 gap-4">
+                        {section.fields.map((field, index) => (
+                            <div 
+                                key={field.name} 
+                                className={field.fullWidth ? 'col-span-2' : 'col-span-1'}
+                            >
+                                {renderField({
+                                    field,
+                                    index,
+                                    formData,
+                                    errors,
+                                    isEditMode,
+                                    updateAllFields,
+                                    clientExists,
+                                    clientSearchResults,
+                                    showSearchResults,
+                                    searchingClient,
+                                    provinces,
+                                    regencies,
+                                    districts,
+                                    villages,
+                                    loadingLocation,
+                                    handleInputChange,
+                                    handleSelectChange,
+                                    handleForceCreateNewClient,
+                                    handleSelectClient: handleSelectClientAndFillForm
+                                })}
+                            </div>
+                        ))}
+
                     </div>
 
                     {sectionIndex < formSections.length - 1 && (

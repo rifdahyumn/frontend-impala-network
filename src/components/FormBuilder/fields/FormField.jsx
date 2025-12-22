@@ -1,10 +1,8 @@
-// src/components/FormBuilder/fields/FormField.jsx
 import React from 'react';
 
 const FormField = ({ field, value, onChange, isEditing = false }) => {
-    const { type, label, placeholder, required, options, id, name } = field;
+    const { type, label, placeholder, required, options, id, name, disabled = false } = field;
 
-    // Jika dalam mode editing (builder), tampilkan field yang bisa di-edit
     if (isEditing) {
         return (
             <div className="mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -23,7 +21,6 @@ const FormField = ({ field, value, onChange, isEditing = false }) => {
         );
     }
 
-    // Render field berdasarkan type untuk mode preview/submit
     const renderField = () => {
         switch (type) {
             case 'text':
@@ -53,22 +50,50 @@ const FormField = ({ field, value, onChange, isEditing = false }) => {
                     />
                 );
             
-            case 'select':
+            case 'select': {
+                const renderOptions = () => {
+                    if (!options || options.length === 0) {
+                        return <option value="">{disabled ? '' : 'Tidak ada opsi tersedia'}</option>;
+                    }
+
+                    const isObjectOptions = options[0] && typeof options[0] === 'object' && options[0].value !== undefined;
+                    if (isObjectOptions) {
+                        return (
+                            <>
+                                <option value="">Pilih {label}</option>
+                                {options.map((option, index) => (
+                                    <option key={index} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </>
+                        );
+                    } else {
+                        return (
+                            <>
+                                <option value="">Pilih {label}</option>
+                                {options.map((option, index) => (
+                                    <option key={index} value={option}>
+                                        {option}
+                                    </option>
+                                ))}
+                            </>
+                        );
+                    }
+                };
+                
                 return (
                     <select
                         value={value || ''}
                         onChange={(e) => onChange(e.target.value)}
                         required={required}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        disabled={disabled}
+                        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                     >
-                        <option value="">Pilih {label}</option>
-                        {options?.map((option, index) => (
-                            <option key={index} value={option}>
-                                {option}
-                            </option>
-                        ))}
+                        {renderOptions()}
                     </select>
                 );
+            }
             
             case 'radio':
                 return (

@@ -21,7 +21,6 @@ export const useClients = (initialFilters = {}) => {
     const [statsLoading, setStatsLoading] = useState(false)
     const [showAllOnSearch, setShowAllOnSearch] = useState(false)
 
-    // 🔴 PERBAIKAN: Gunakan ref untuk semua data yang tidak perlu UI update
     const filtersRef = useRef({
         search: '',
         status: '',
@@ -29,10 +28,9 @@ export const useClients = (initialFilters = {}) => {
         ...initialFilters
     })
     
-    const abortControllerRef = useRef(null) // 🔴 Untuk cancel request
-    const lastRequestIdRef = useRef(0) // 🔴 Track request terakhir
+    const abortControllerRef = useRef(null) 
+    const lastRequestIdRef = useRef(0) 
     
-    // 🔴 PERBAIKAN: State filters untuk UI saja
     const [filters, setFilters] = useState({
         search: filtersRef.current.search,
         status: filtersRef.current.status,
@@ -63,6 +61,7 @@ export const useClients = (initialFilters = {}) => {
                 ...(currentFilters.businessType && { businessType: currentFilters.businessType }),
                 ...(currentFilters.search && showAll && { showAllOnSearch: 'true' })
             }
+            
             const result = await clientService.fetchClients(params)
 
             setMembers(result.data || [])
