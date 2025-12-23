@@ -1,4 +1,3 @@
-// src/components/Home/QuarterSummaryCard.jsx
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { TrendingUp, TrendingDown, Minus, Users, DollarSign, ShoppingCart } from 'lucide-react';

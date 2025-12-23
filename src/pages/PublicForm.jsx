@@ -38,13 +38,6 @@ const PublicForm = () => {
         villages: false,
     })
 
-    // Tambahkan di awal component PublicForm.js
-    // useEffect(() => {
-    //     console.log('🔍 Debug - locationData:', locationData);
-    //     console.log('🔍 Debug - formData:', formData);
-    //     console.log('🔍 Debug - loadingLocation:', loadingLocation);
-    // }, [locationData, formData, loadingLocation]);
-
     useEffect(() => {
         if (template) {
             let tabTitle = 'Impala Network';
