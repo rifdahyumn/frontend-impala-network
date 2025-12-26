@@ -113,88 +113,123 @@ export const parseExcelData = (data) => {
     }
 };
 
-export const exportToExcel = async (members, format = 'excel', getBusinessDisplayName) => {
-    if (!members || members.length === 0) {
-        throw new Error('No data to export');
-    }
-    
-    const exportData = members.map((client, index) => ({
-        'No': index + 1,
-        'Full Name': client.full_name || '-',
-        'Email': client.email || '-',
-        'Phone': client.phone || '-',
-        'Company': client.company || '-',
-        'Business Type': getBusinessDisplayName(client.business) || '-',
-        'Program Name': client.program_name || '-',
-        'Status': client.status || '-',
-        'Address': client.address || '-',
-        'Notes': client.notes || '-',
-        'Created Date': client.created_at 
-        ? new Date(client.created_at).toLocaleDateString() 
-        : '-',
-        'Last Updated': client.updated_at 
-        ? new Date(client.updated_at).toLocaleDateString() 
-        : '-'
-    }));
+export const exportToExcel = async (currentFilters = {}, format = 'excel', getBusinessDisplayName) => {
+    try {
+        const params = new URLSearchParams()
 
-    if (format === 'excel') {
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        
-        const wscols = [
-        { wch: 5 },
-        { wch: 25 },
-        { wch: 30 },
-        { wch: 15 },
-        { wch: 30 },
-        { wch: 20 },
-        { wch: 25 },
-        { wch: 10 },
-        { wch: 40 },
-        { wch: 40 },
-        { wch: 12 },
-        { wch: 12 }
-        ];
-        ws['!cols'] = wscols;
-        
-        const range = XLSX.utils.decode_range(ws['!ref']);
-        for (let C = range.s.c; C <= range.e.c; ++C) {
-            const cell_address = { c: C, r: 0 };
-            const cell_ref = XLSX.utils.encode_cell(cell_address);
-            if (!ws[cell_ref]) continue;
-            ws[cell_ref].s = {
-                font: { bold: true },
-                fill: { fgColor: { rgb: "E0E0E0" } }
-            };
+        if (currentFilters.search?.trim()) {
+            params.append('search', currentFilters.search.trim())
         }
-        
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Clients");
-        
-        const dateStr = new Date().toISOString().split('T')[0];
-        const fileName = `clients_export_${dateStr}.xlsx`;
-        
-        XLSX.writeFile(wb, fileName);
-        
-        return `Exported ${exportData.length} clients to Excel`;
-    } else if (format === 'csv') {
-        const csvContent = [
-        Object.keys(exportData[0]).join(','),
-        ...exportData.map(row => Object.values(row).join(','))
-        ].join('\n');
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        
-        link.setAttribute("href", url);
-        link.setAttribute("download", `clients_export_${new Date().getTime()}.csv`);
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        return `Exported ${exportData.length} clients to CSV`;
+
+        if (currentFilters.status?.trim() && currentFilters.status !== 'all') {
+            params.append('status', currentFilters.status.trim())
+        }
+
+        if (currentFilters.business?.trim() && currentFilters.business !== 'all') {
+            params.append('business_type', currentFilters.business.trim())
+        }
+
+        const url = `/api/client/export?${params.toString()}`
+
+        const response = await fetch(url)
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch data: ${response.status}`)
+        }
+
+        const result = await response.json()
+
+        const members = result.data || []
+
+        if (!members || members.length === 0) {
+            throw new Error('No data to export')
+        }
+
+        const exportData = members.map((client, index) => ({
+            'No': index + 1,
+            'Full Name': client.full_name || '-',
+            'Email': client.email || '-',
+            'Phone': client.phone || '-',
+            'Gender': client.gender || '-',
+            'Company': client.company || '-',
+            'Position': client.position || '-',
+            'Total Employee': client.total_employee || '-',
+            'Business Type': getBusinessDisplayName(client.business) || '-',
+            'Program Name': client.program_name || '-',
+            'Status': client.status || '-',
+            'Address': client.address || '-',
+            'Join Date': client.join_date || '-',
+            'Notes': client.notes || '-',
+            'Created Date': client.created_at 
+            ? new Date(client.created_at).toLocaleDateString() 
+            : '-',
+            'Last Updated': client.updated_at 
+            ? new Date(client.updated_at).toLocaleDateString() 
+            : '-'
+        }));
+
+        if (format === 'excel') {
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            
+            const wscols = [
+            { wch: 5 },
+            { wch: 25 },
+            { wch: 30 },
+            { wch: 15 },
+            { wch: 30 },
+            { wch: 20 },
+            { wch: 25 },
+            { wch: 10 },
+            { wch: 40 },
+            { wch: 40 },
+            { wch: 12 },
+            { wch: 12 }
+            ];
+            ws['!cols'] = wscols;
+            
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell_address = { c: C, r: 0 };
+                const cell_ref = XLSX.utils.encode_cell(cell_address);
+                if (!ws[cell_ref]) continue;
+                ws[cell_ref].s = {
+                    font: { bold: true },
+                    fill: { fgColor: { rgb: "E0E0E0" } }
+                };
+            }
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Clients");
+            
+            const dateStr = new Date().toISOString().split('T')[0];
+            const fileName = `clients_export_${dateStr}.xlsx`;
+            
+            XLSX.writeFile(wb, fileName);
+            
+            return `Exported ${exportData.length} clients to Excel`;
+        } else if (format === 'csv') {
+            const csvContent = [
+            Object.keys(exportData[0]).join(','),
+            ...exportData.map(row => Object.values(row).join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", `clients_export_${new Date().getTime()}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            return `Exported ${exportData.length} clients to CSV`;
+        }
+    } catch (error) {
+        console.error('Export error:', error);
+        throw error;
     }
 };
 

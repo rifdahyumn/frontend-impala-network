@@ -78,14 +78,10 @@ const ProgramClient = () => {
         handleRemoveFile,
         getBusinessTypeLabel,
         getStatusLabel,
-        // getBusinessDisplayName,
-        
         showAllOnSearch,
         statusOptions,
-        
         addClient,
         updateClient,
-        // deleteClient,
         fetchClients,
         refreshData
     } = useProgramClient();
@@ -301,7 +297,7 @@ const ProgramClient = () => {
                         onClientUpdated={() => fetchClients(pagination.page, localFilters, showAllOnSearch)}
                         onClientDeleted={() => {
                             fetchClients(pagination.page, localFilters, showAllOnSearch);
-                            setSelectedMember(null);
+                            // setSelectedMember(null);
                         }}
                     />
                 </div>

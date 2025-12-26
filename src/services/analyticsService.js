@@ -485,7 +485,6 @@ class AnalyticsService {
         }));
     }
 
-    // PERBAIKAN: Method getMockYearlyComparisonDataWithQuarterly harus di luar formatBackendResponse
     getMockYearlyComparisonDataWithQuarterly() {
         const currentYear = new Date().getFullYear();
         const years = [currentYear - 2, currentYear - 1, currentYear];
