@@ -8,8 +8,14 @@ import { Plus, X, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import heteroBanyumasService from "../../services/heteroBanyumasService";
 
-const AddMemberSolo = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMember, editData = null, onEditMember }) => {
-    const isEditMode = !!editData
+const AddMemberBanyumas = ({ 
+    isAddMemberModalOpen, 
+    setIsAddMemberModalOpen, 
+    onAddMember, 
+    editData = null, 
+    onEditMember 
+}) => {
+    const isEditMode = !!editData;
 
     const [formData, setFormData] = useState({
         full_name: '',
@@ -42,8 +48,8 @@ const AddMemberSolo = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMem
     
     const [selectedAddOn, setSelectedAddOn] = useState('');
     const [newAddOn, setNewAddOn] = useState('');
-    const [errors, setErrors] = useState({})
-    const [loading, setLoading] = useState(false)
+    const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(false);
 
     const handleAddOn = () => {
         let addOnToAdd = '';
@@ -310,7 +316,7 @@ const AddMemberSolo = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMem
             title: "Additional Information",
             fields: [
                 {
-                    name: 'addI_information',
+                    name: 'add_information', // ← PERBAIKAN: nama field konsisten
                     label: 'How did you find out about Hetero?',
                     type: 'select',
                     required: true,
@@ -327,6 +333,7 @@ const AddMemberSolo = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMem
         }
     ];
 
+    // ========== PERBAIKAN 1: Dependency Array dengan kurung siku ==========
     useEffect(() => {
         if (isEditMode && editData) {
             setFormData({
@@ -346,10 +353,12 @@ const AddMemberSolo = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMem
                 space: editData.space || '',
                 start_date: editData.start_date || '',
                 end_date: editData.end_date || '',
-                add_on: editData.add_on || [],
-                add_information: editData.add_information || '',
-            })
+                add_on: Array.isArray(editData.add_on) ? editData.add_on : 
+                       (editData.add_on ? [editData.add_on] : []),
+                add_information: editData.add_information || '', // ← PERBAIKAN: field name konsisten
+            });
         } else {
+            // ========== PERBAIKAN 2: Reset add_on ke array kosong, bukan string ==========
             setFormData({
                 full_name: '',
                 nik: '',
@@ -367,12 +376,12 @@ const AddMemberSolo = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMem
                 space: '',
                 start_date: '',
                 end_date: '',
-                add_on: '',
+                add_on: [], // ← PERBAIKAN: dari '' menjadi []
                 add_information: '',
-            })
+            });
         }
-        setErrors({})
-    }, isEditMode, editData, isAddMemberModalOpen)
+        setErrors({});
+    }, [isEditMode, editData, isAddMemberModalOpen]); // ← PERBAIKAN: Tambah kurung siku []
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -392,12 +401,12 @@ const AddMemberSolo = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMem
             setErrors(prev => ({
                 ...prev,
                 [name]: ''
-            }))
+            }));
         }
     };
 
     const validateForm = () => {
-        const newErrors = {}
+        const newErrors = {};
 
         formSections.forEach(section => {
             if (section.fields && Array.isArray(section.fields)) {
@@ -405,26 +414,27 @@ const AddMemberSolo = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMem
                     if (field.required && field.name) {
                         const value = formData[field.name];
                         if (!value || value.toString().trim() === '') {
-                            newErrors[field.name] = `${field.label} is required`
+                            newErrors[field.name] = `${field.label} is required`;
                         }
                     }
-                })
+                });
             }
-        })
+        });
 
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
+    // ========== PERBAIKAN 3: Tambah tanda kurung pada validateForm() ==========
     const handleSubmit = async (e) => {
-        e.preventDefault()
+        e.preventDefault();
 
-        if(!validateForm){
-            toast.error('Please fix the error in the form')
-            return
+        if(!validateForm()){ // ← PERBAIKAN: validateForm() bukan validateForm
+            toast.error('Please fix the error in the form');
+            return;
         }
 
-        setLoading(true)
+        setLoading(true);
         
         try {
             const memberData = {
@@ -448,36 +458,35 @@ const AddMemberSolo = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMem
                 add_on: Array.isArray(formData.add_on) ? formData.add_on : [formData.add_on],
                 add_information: formData.add_information,
                 status: formData.status || 'Active'
-            }
+            };
 
             if (isEditMode) {
                 if (onEditMember) {
-                    await onEditMember(editData.id, memberData)
+                    await onEditMember(editData.id, memberData);
                 } else {
-                    await heteroBanyumasService.updateMemberHeteroBanyumas(editData.id, memberData)
-                    toast.success('Update successfully')
+                    await heteroBanyumasService.updateMemberHeteroBanyumas(editData.id, memberData);
+                    toast.success('Member updated successfully');
                 }
             } else {
                 if (onAddMember) {
-                    await onAddMember(memberData)
+                    await onAddMember(memberData);
                 } else {
-                    await heteroBanyumasService.addMemberHeteroBanyumas(memberData)
-                    toast.success('Added successfully')
+                    await heteroBanyumasService.addMemberHeteroBanyumas(memberData);
+                    toast.success('Member added successfully');
                 }
             }
 
-            handleCloseModal()
+            handleCloseModal();
         } catch (error) {
-            console.error(`Error ${isEditMode ? 'updating' : 'adding'} member: `, error)
-            toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'add'} member`)
+            toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'add'} member`);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
     };
 
     const handleCloseModal = () => {
-        setIsAddMemberModalOpen(false)
-        setErrors({})
+        setIsAddMemberModalOpen(false);
+        setErrors({});
     };
 
     const renderField = (field, index) => {
@@ -564,12 +573,12 @@ const AddMemberSolo = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMem
             <DialogContent className="max-h-[90vh] max-w-[900px] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
-                        {isEditMode ? 'Edit Member' : 'Add Member'}
+                        {isEditMode ? `Edit Member: ${formData.full_name || ''}` : 'Add New Member'}
                     </DialogTitle>
                     <DialogDescription>
                         {isEditMode
-                            ? 'Update the member information below'
-                            : 'Fill in the details below to add a new member to the system'
+                            ? `Update information for ${formData.full_name || 'this member'}`
+                            : 'Fill in the details below to add a new member'
                         }
                     </DialogDescription>
                 </DialogHeader>
@@ -598,11 +607,16 @@ const AddMemberSolo = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMem
                             type="button"
                             variant="outline"
                             onClick={handleCloseModal}
+                            disabled={loading}
                         >
                             Cancel
                         </Button>
-                        <Button type="submit">
-                            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                        <Button 
+                            type="submit" 
+                            disabled={loading}
+                            className={isEditMode ? "bg-amber-500 hover:bg-amber-300" : ""}
+                        >
+                            {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                             {loading 
                                 ? (isEditMode ? 'Updating Member...' : 'Adding Member...')
                                 : (isEditMode ? 'Update Member' : 'Add Member')
@@ -615,4 +629,4 @@ const AddMemberSolo = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMem
     );
 };
 
-export default AddMemberSolo;
+export default AddMemberBanyumas;

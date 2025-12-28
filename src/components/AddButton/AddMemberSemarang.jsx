@@ -8,8 +8,14 @@ import { Plus, X, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import heteroSemarangService from "../../services/heteroSemarangService";
 
-const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAddMember, editData = null, onEditMember }) => {
-    const isEditMode = !!editData
+const AddMemberSemarang = ({ 
+    isAddMemberModalOpen, 
+    setIsAddMemberModalOpen, 
+    onAddMember, 
+    editData = null, 
+    onEditMember 
+}) => {
+    const isEditMode = !!editData;
 
     const [formData, setFormData] = useState({
         full_name: '',
@@ -54,8 +60,8 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
     
     const [selectedAddOn, setSelectedAddOn] = useState('');
     const [newAddOn, setNewAddOn] = useState('');
-    const [errors, setErrors] = useState({})
-    const [loading, setLoading] = useState(false)
+    const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(false);
 
     const handleAddOn = () => {
         let addOnToAdd = '';
@@ -327,6 +333,8 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
         }
     ];
 
+    // ========== PERBAIKAN CRITICAL ==========
+    // BUG FIX 1: Tambahkan kurung siku pada dependency array
     useEffect(() => {
         if (isEditMode && editData) {
             setFormData({
@@ -346,9 +354,10 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
                 space: editData.space || '',
                 start_date: editData.start_date || '',
                 end_date: editData.end_date || '',
-                add_on: editData.add_on || [],
+                add_on: Array.isArray(editData.add_on) ? editData.add_on : 
+                       (editData.add_on ? [editData.add_on] : []),
                 add_information: editData.add_information || '',
-            })
+            });
         } else {
             setFormData({
                 full_name: '',
@@ -367,12 +376,12 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
                 space: '',
                 start_date: '',
                 end_date: '',
-                add_on: '',
+                add_on: [],
                 add_information: '',
-            })
+            });
         }
-        setErrors({})
-    }, isEditMode, editData, isAddMemberModalOpen)
+        setErrors({});
+    }, [isEditMode, editData, isAddMemberModalOpen]); // ← PERBAIKAN: [dependency1, dependency2]
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -392,12 +401,12 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
             setErrors(prev => ({
                 ...prev,
                 [name]: ''
-            }))
+            }));
         }
     };
 
     const validateForm = () => {
-        const newErrors = {}
+        const newErrors = {};
 
         formSections.forEach(section => {
             if (section.fields && Array.isArray(section.fields)) {
@@ -405,26 +414,27 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
                     if (field.required  && field.name) {
                         const value = formData[field.name];
                         if (!value || value.toString().trim() === '') {
-                            newErrors[field.name] = `${field.label} is required`
+                            newErrors[field.name] = `${field.label} is required`;
                         }
                     }
-                })
+                });
             }
-        })
+        });
 
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
+    // BUG FIX 2: Tambahkan tanda kurung pada validateForm()
     const handleSubmit = async (e) => {
-        e.preventDefault()
+        e.preventDefault();
 
-        if(!validateForm){
-            toast.error('Please fix the error in the form')
-            return
+        if(!validateForm()){ // ← PERBAIKAN: validateForm() bukan validateForm
+            toast.error('Please fix the error in the form');
+            return;
         }
 
-        setLoading(true)
+        setLoading(true);
         
         try {
             const memberData = {
@@ -447,36 +457,35 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
                 add_on: Array.isArray(formData.add_on) ? formData.add_on : [formData.add_on],
                 add_information: formData.add_information,
                 status: formData.status || 'Active'
-            }
+            };
 
             if (isEditMode) {
                 if (onEditMember) {
-                    await onEditMember(editData.id, memberData)
+                    await onEditMember(editData.id, memberData);
                 } else {
-                    await heteroSemarangService.updateMemberHeteroSemarang(editData.id, memberData)
-                    toast.success('Update successfully')
+                    await heteroSemarangService.updateMemberHeteroSemarang(editData.id, memberData);
+                    toast.success('Member updated successfully');
                 }
             } else {
                 if (onAddMember) {
-                    await onAddMember(memberData)
+                    await onAddMember(memberData);
                 } else {
-                    await heteroSemarangService.addMemberHeteroSemarang(memberData)
-                    toast.success('Added successfully')
+                    await heteroSemarangService.addMemberHeteroSemarang(memberData);
+                    toast.success('Member added successfully');
                 }
             }
 
-            handleCloseModal()
+            handleCloseModal();
         } catch (error) {
-            console.error(`Error ${isEditMode ? 'updating' : 'adding'} member: `, error)
-            toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'add'} member`)
+            toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'add'} member`);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
     };
 
     const handleCloseModal = () => {
-        setIsAddMemberModalOpen(false)
-        setErrors({})
+        setIsAddMemberModalOpen(false);
+        setErrors({});
     };
 
     const renderField = (field, index) => {
@@ -562,13 +571,17 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
         <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
             <DialogContent className="max-h-[90vh] max-w-[900px] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>
-                        {isEditMode ? 'Edit Member' : 'Add Member'}
-                    </DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                        {isEditMode ? (
+                            <>Edit Member: {formData.full_name || ''}</>
+                        ) : (
+                        <>Add New Member</>
+                        )}
+                        </DialogTitle>
                     <DialogDescription>
                         {isEditMode
-                            ? 'Update the member information below'
-                            : 'Fill in the details below to add a new member to the system'
+                            ? `Update information for ${formData.full_name || 'this member'}`
+                            : 'Fill in the details below to add a new member'
                         }
                     </DialogDescription>
                 </DialogHeader>
@@ -597,11 +610,16 @@ const AddMemberSemarang = ({ isAddMemberModalOpen, setIsAddMemberModalOpen, onAd
                             type="button"
                             variant="outline"
                             onClick={handleCloseModal}
+                            disabled={loading}
                         >
                             Cancel
                         </Button>
-                        <Button type="submit">
-                            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                        <Button 
+                            type="submit" 
+                            disabled={loading}
+                            className={isEditMode ? "bg-amber-500 hover:bg-amber-300" : ""}
+                        >
+                            {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                             {loading 
                                 ? (isEditMode ? 'Updating Member...' : 'Adding Member...')
                                 : (isEditMode ? 'Update Member' : 'Add Member')

@@ -1252,7 +1252,7 @@ const Program = () => {
                     ref={programDetailRef}
                     className={`
                         transition-all duration-500 ease-in-out
-                        ${highlightDetail ? 'ring-2 ring-blue-500 rounded-xl p-1 -m-1 bg-blue-50/50' : ''}
+                        ${highlightDetail ? 'rounded-xl p-1 -m-1 bg-blue-50/50' : ''}
                     `}
                 >
                     <ProgramContent
