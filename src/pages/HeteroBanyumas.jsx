@@ -11,24 +11,8 @@ import HeteroBanyumasContent from "../components/Content/HeteroBanyumasContent";
 import { useHeteroBanyumas } from "../hooks/useHeteroBanyumas";
 import toast from "react-hot-toast";
 import MemberStatsCards from "../MemberHetero/MemberStatsCard";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuGroup, 
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuCheckboxItem
-} from "../components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "../components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import * as XLSX from 'xlsx';
 
@@ -37,37 +21,25 @@ const HeteroBanyumas = () => {
     const [editingMember, setEditingMember] = useState(null)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
-    
-    // State untuk modal import (diperbarui)
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importFile, setImportFile] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [validationErrors, setValidationErrors] = useState([]);
     const [isDragging, setIsDragging] = useState(false);
-    
-    // Ref untuk upload input
     const fileInputRef = useRef(null);
     const dropZoneRef = useRef(null);
-    
-    // State untuk visual feedback auto-scroll
     const [highlightDetail, setHighlightDetail] = useState(false);
-    
-    // Ref untuk auto-scroll ke detail section
     const memberDetailRef = useRef(null);
-    
-    // STATE UNTUK FRONTEND FILTERING
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilters, setActiveFilters] = useState({
-        gender: null, // 'male', 'female', atau null
-        space: null, // space atau null
+        gender: null,
+        space: null, 
     });
     const [filteredMembers, setFilteredMembers] = useState([]);
     const [availableSpaces, setAvailableSpaces] = useState([]);
-
     const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroBanyumas, updateMemberHeteroBanyumas, deleteMemberHeteroBanyumas } = useHeteroBanyumas()
 
-    // Fungsi untuk handle select member dengan auto-scroll
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
         setHighlightDetail(true);
@@ -89,9 +61,6 @@ const HeteroBanyumas = () => {
         }, 150);
     }, []);
 
-    // ===================== IMPORT FUNCTIONS =====================
-
-    // Handle drag events
     const handleDragOver = useCallback((e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -114,7 +83,6 @@ const HeteroBanyumas = () => {
         }
     }, []);
 
-    // Handle file drop
     const handleDrop = useCallback((e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -127,7 +95,6 @@ const HeteroBanyumas = () => {
         }
     }, []);
 
-    // Process uploaded file
     const processFile = useCallback((file) => {
         setValidationErrors([]);
         
@@ -140,8 +107,7 @@ const HeteroBanyumas = () => {
         }
         
         setImportFile(file);
-        
-        // Read and parse file untuk validasi
+
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
@@ -169,7 +135,6 @@ const HeteroBanyumas = () => {
         reader.readAsArrayBuffer(file);
     }, []);
 
-    // Fungsi untuk handle file upload via input
     const handleFileUpload = useCallback((event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -792,7 +757,6 @@ const HeteroBanyumas = () => {
         }
     }, [members, extractSpaces]);
 
-    // APPLY FILTERS SETIAP MEMBERS BERUBAH
     useEffect(() => {
         if (members.length > 0) {
             setFilteredMembers(members);
@@ -800,7 +764,6 @@ const HeteroBanyumas = () => {
         }
     }, [members]);
 
-    // APPLY FILTERS SETIAP SEARCH ATAU FILTER BERUBAH
     useEffect(() => {
         applyAllFilters();
     }, [searchTerm, activeFilters]);
@@ -929,7 +892,6 @@ const HeteroBanyumas = () => {
         return count;
     };
 
-    // GET TOTAL ACTIVE CRITERIA (SEARCH + FILTERS) UNTUK DISPLAY
     const getTotalActiveCriteria = () => {
         let count = 0;
         if (searchTerm) count++;
@@ -938,7 +900,6 @@ const HeteroBanyumas = () => {
         return count;
     };
 
-    // GET GENDER LABEL
     const getGenderLabel = (genderValue) => {
         if (!genderValue) return "";
         if (genderValue === 'male') return '👨 Male';
@@ -953,7 +914,6 @@ const HeteroBanyumas = () => {
         detailTitle: "Member Details"
     }
 
-    // FORMAT MEMBER DARI filteredMembers
     const formattedMembers = filteredMembers.map((member, index) => {
         const currentPage = pagination.page
         const itemsPerPage = pagination.limit

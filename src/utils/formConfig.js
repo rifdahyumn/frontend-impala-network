@@ -73,6 +73,7 @@
                     type: 'number',
                     name: 'phone',
                     label: 'Nomor WhatsApp',
+                    placeholder: 'Masukkan No WhatsApp Anda',
                     required: true,
                     locked: true
                 },

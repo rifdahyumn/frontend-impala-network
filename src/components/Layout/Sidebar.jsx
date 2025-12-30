@@ -1,5 +1,5 @@
 import { Phone, ClipboardList, BarChart3, Building2, FileSpreadsheet, User, Home, ChevronDown, ChevronRight } from 'lucide-react';
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button } from '../ui/button';
 import { RiDashboardFill } from "react-icons/ri";
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -11,6 +11,24 @@ const Sidebar = () => {
     const navigate = useNavigate()
     const [isHeteroOpen, setIsHeteroOpen] = useState(false)
     const { user } = useAuth()
+
+    const pathToTitle = {
+        '/': 'Dashboard',
+        '/client': 'Client Management',
+        '/program': 'Program Management',
+        '/impala': 'Impala Management',
+        '/hetero/semarang': 'Hetero Semarang Management',
+        '/hetero/banyumas': 'Hetero Banyumas Management',
+        '/hetero/surakarta': 'Hetero Surakarta Management',
+        '/form-builder': 'Form Builder',
+        '/user': 'Account Management',
+    }
+
+    useEffect(() => {
+        const currentTitle = pathToTitle[location.pathname] || (location.pathname.startsWith('/hetero') ? 'Hetero Management' : 'Impala Network')
+
+        document.title = `${currentTitle} - Impala Network`
+    }, [location.pathname])
 
     const menuItems = 
         user?.role === 'komunitas'

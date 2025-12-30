@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, AlertCircle, Users, MessageSquare, Link, Rocket } from 'lucide-react';
+import { Loader2, AlertCircle, Users, MessageSquare, Link, Rocket, Building, CheckCircle, ExternalLink, Shield, FileText, Globe, Target } from 'lucide-react';
 import { Button } from '../ui/button';
 
 const FormCanvas = ({ 
@@ -21,10 +21,10 @@ const FormCanvas = ({
         if (safeFormConfig.settings) {
             setWhatsappLink(safeFormConfig.settings.whatsappGroupLink || "");
             setAfterSubmitMessage(safeFormConfig.settings.afterSubmitMessage || 
-                "Terima kasih telah mendaftar! ");
+                "Terima kasih telah mendaftar program kami. Tim kami akan menghubungi Anda dalam waktu 1x24 jam untuk proses selanjutnya.");
         } else {
             setWhatsappLink("");
-            setAfterSubmitMessage("Terima kasih telah mendaftar! ");
+            setAfterSubmitMessage("Terima kasih telah mendaftar program kami.");
         }
     }, [safeFormConfig.settings]);
 
@@ -98,194 +98,320 @@ const FormCanvas = ({
         );
 
         return (
-            <div 
-                className={`field-item p-4 border-2 ${
-                    hasSelectedProgram 
-                        ? 'border-gray-200 bg-white' 
-                        : 'border-blue-200 bg-blue-50'
-                } rounded-lg mb-4`}
-            >
-                <div className="field-header mb-3">
-                    <label className="block text-sm font-bold text-gray-800 mb-1">
-                        Nama Program
-                        {isRequired && <span className="text-red-500 ml-1">*</span>}
-                    </label>
-                    <p className="text-xs text-gray-500 mt-1">
-                        Pilih program dari daftar yang tersedia
-                    </p>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-600 font-bold text-sm">1</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Pilih Program Perusahaan</h3>
+                        <p className="text-sm text-gray-500">Pilih program yang akan digunakan untuk form pendaftaran</p>
+                    </div>
                 </div>
                 
-                <div className="relative">
-                    <select
-                        value={safeFormConfig.programName || ''}
-                        onChange={handleProgramNameChange}
-                        disabled={loadingPrograms || availablePrograms.length === 0}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-300 bg-white font-medium appearance-none"
-                    >
-                        <option value="">{loadingPrograms ? 'Memuat program...' : 'Pilih Program'}</option>
-                        {availablePrograms.map((program, index) => {
-                            const programName = getProgramName(program);
-                            const programId = getProgramId(program);
-                            
-                            return (
-                                <option 
-                                    key={programId || index} 
-                                    value={programName}
-                                    title={programName}
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Nama Program
+                            {isRequired && <span className="text-red-500 ml-1">*</span>}
+                        </label>
+                        
+                        <div className="relative">
+                            <div className="flex items-center">
+                                <Building className="absolute left-3 h-4 w-4 text-gray-400" />
+                                <select
+                                    value={safeFormConfig.programName || ''}
+                                    onChange={handleProgramNameChange}
+                                    disabled={loadingPrograms || availablePrograms.length === 0}
+                                    className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white font-medium appearance-none"
                                 >
-                                    {programName}
-                                </option>
-                            );
-                        })}
-                    </select>
+                                    <option value="">{loadingPrograms ? 'Memuat program...' : '-- Pilih Program Perusahaan --'}</option>
+                                    {availablePrograms.map((program, index) => {
+                                        const programName = getProgramName(program);
+                                        const programId = getProgramId(program);
+                                        
+                                        return (
+                                            <option 
+                                                key={programId || index} 
+                                                value={programName}
+                                                className="py-2"
+                                            >
+                                                {programName}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                                
+                                {loadingPrograms && (
+                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mt-3">
+                            <div className="flex items-center gap-2">
+                                {loadingPrograms ? (
+                                    <>
+                                        <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
+                                        <span className="text-xs text-blue-600">Memuat daftar program...</span>
+                                    </>
+                                ) : availablePrograms.length === 0 ? (
+                                    <>
+                                        <AlertCircle className="h-3 w-3 text-gray-400" />
+                                        <span className="text-xs text-gray-500">
+                                            Tidak ada program yang ditemukan
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Shield className="h-3 w-3 text-gray-400" />
+                                        <span className="text-xs text-gray-500">
+                                            {availablePrograms.length} program tersedia
+                                        </span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                     
-                    {loadingPrograms && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                    {hasSelectedProgram && selectedProgram && (
+                        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <CheckCircle className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="font-bold text-blue-900">Program Terpilih</h4>
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            <Target className="w-3 h-3 mr-1" /> Active
+                                        </span>
+                                    </div>
+                                    <p className="text-blue-800 font-medium mb-2">{safeFormConfig.programName}</p>
+                                    <p className="text-sm text-blue-600">
+                                        Form pendaftaran akan dikaitkan dengan program ini
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
-                
-                {loadingPrograms ? (
-                    <div className="flex items-center gap-2 mt-2 text-blue-600">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        <p className="text-xs">Memuat daftar program...</p>
-                    </div>
-                ) : availablePrograms.length === 0 ? (
-                    <div className="flex items-center gap-2 mt-2 text-red-600">
-                        <AlertCircle className="h-3 w-3" />
-                        <p className="text-xs">
-                            Tidak ada program yang ditemukan.
-                        </p>
-                    </div>
-                ) : (
-                    <p className="text-xs text-gray-500 mt-2">
-                        Ditemukan {availablePrograms.length} program
-                    </p>
-                )}
-                
-                {hasSelectedProgram && selectedProgram && (
-                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
-                        <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                                <span className="text-white text-xs">✓</span>
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold text-green-800">
-                                    Program Terpilih
-                                </p>
-                                <p className="text-sm text-green-700">
-                                    {safeFormConfig.programName}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
         );
     };
 
     const renderWhatsAppSettings = () => {
         return (
-            <div className="space-y-4 mt-6">
-                {/* WhatsApp Group Link */}
-                <div className="field-item p-4 border-2 border-gray-200 bg-white rounded-lg">
-                    <div className="field-header mb-3">
-                        <div className="flex items-center gap-2 mb-1">
-                            <Users className="w-5 h-5 text-black" />
-                            <label className="block text-sm font-bold text-black">
-                                WhatsApp Group Link
-                                <span className="text-red-500 ml-1">(Opsional)</span>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                        <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                            <span className="text-green-600 font-bold text-sm">2</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Konfigurasi Komunikasi</h3>
+                        <p className="text-sm text-gray-500">Atur saluran komunikasi dan pesan untuk peserta</p>
+                    </div>
+                </div>
+                
+                <div className="space-y-6">
+                    {/* WhatsApp Group Link */}
+                    <div>
+                        <div className="flex items-center gap-2 mb-3">
+                            <Users className="w-5 h-5 text-green-600" />
+                            <label className="block text-sm font-medium text-gray-700">
+                                Link Grup WhatsApp Perusahaan
+                                <span className="text-gray-500 font-normal ml-2">(Opsional)</span>
                             </label>
                         </div>
-                        <p className="text-xs text-gray-400 ml-7">
-                            Link grup WhatsApp untuk peserta yang telah berhasil mendaftar
-                        </p>
-                    </div>
-                    
-                    <div className="relative">
-                        <div className="flex items-center">
-                            <Link className="absolute left-3 h-4 w-4 text-gray-400" />
-                            <input
-                                type="url"
-                                placeholder="https://chat.whatsapp.com/..."
-                                value={whatsappLink}
-                                onChange={handleWhatsAppLinkChange}
-                                className="w-full pl-10 pr-3 py-2 border-2 border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white font-mono text-sm"
-                            />
-                        </div>
                         
-                        {whatsappLink && !whatsappLink.startsWith('https://') && (
-                            <p className="text-xs text-red-600 mt-2">
-                                Link harus dimulai dengan https://
-                            </p>
-                        )}
-                        
-                        {whatsappLink && whatsappLink.includes('chat.whatsapp.com') && (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                                <a
-                                    href={whatsappLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
-                                >
-                                    <Users className="w-4 h-4" />
-                                    Test WhatsApp Group Link
-                                </a>
-                                <p className="text-xs text-green-600 self-center">
-                                    Klik untuk membuka link di tab baru
-                                </p>
+                        <div className="relative">
+                            <div className="flex items-center">
+                                <Link className="absolute left-3 h-4 w-4 text-gray-400" />
+                                <input
+                                    type="url"
+                                    placeholder="https://chat.whatsapp.com/..."
+                                    value={whatsappLink}
+                                    onChange={handleWhatsAppLinkChange}
+                                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white font-mono text-sm"
+                                />
                             </div>
-                        )}
+                            
+                            {whatsappLink && !whatsappLink.startsWith('https://') && (
+                                <div className="mt-2 flex items-center gap-2 text-red-600 text-sm">
+                                    <AlertCircle className="w-4 h-4" />
+                                    Link harus dimulai dengan https://
+                                </div>
+                            )}
+                            
+                            {whatsappLink && whatsappLink.includes('chat.whatsapp.com') && (
+                                <div className="mt-4 flex items-center gap-3">
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        className="border-green-200 text-green-700 hover:bg-green-50"
+                                        onClick={() => window.open(whatsappLink, '_blank')}
+                                    >
+                                        <ExternalLink className="w-3 h-3 mr-2" />
+                                        Test Link
+                                    </Button>
+                                    <span className="text-xs text-green-600">
+                                        Link WhatsApp grup valid
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                {/* After Submit Message */}
-                <div className="field-item p-4 border-2 border-gray-200 bg-white rounded-lg">
-                    <div className="field-header mb-3">
-                        <div className="flex items-center gap-2 mb-1">
-                            <MessageSquare className="w-5 h-5 text-black" />
-                            <label className="block text-sm font-bold text-black">
-                                Custom Message After Submit
+                    {/* Divider */}
+                    <div className="h-px bg-gray-200"></div>
+
+                    {/* After Submit Message */}
+                    <div>
+                        <div className="flex items-center gap-2 mb-3">
+                            <MessageSquare className="w-5 h-5 text-purple-600" />
+                            <label className="block text-sm font-medium text-gray-700">
+                                Pesan Konfirmasi Pendaftaran
                             </label>
                         </div>
-                        <p className="text-xs text-black ml-7">
-                            Pesan yang akan ditampilkan setelah peserta berhasil submit form
+                        
+                        <div className="relative">
+                            <textarea
+                                placeholder="Contoh: Terima kasih telah mendaftar program [Nama Program]. Tim kami akan menghubungi Anda dalam 1x24 jam untuk proses selanjutnya."
+                                value={afterSubmitMessage}
+                                onChange={handleAfterSubmitMessageChange}
+                                rows={4}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white resize-none"
+                            />
+                            <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                                {afterSubmitMessage.length}/500 karakter
+                            </div>
+                        </div>
+                        
+                        <p className="text-xs text-gray-500 mt-2">
+                            Pesan ini akan ditampilkan setelah peserta menyelesaikan pendaftaran
                         </p>
                     </div>
-                    
-                    <textarea
-                        placeholder="Contoh: Terima kasih telah mendaftar! Silakan bergabung ke grup WhatsApp untuk informasi lebih lanjut."
-                        value={afterSubmitMessage}
-                        onChange={handleAfterSubmitMessageChange}
-                        rows={4}
-                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white resize-none"
-                    />
                 </div>
+            </div>
+        );
+    };
 
-                <div className='mt-8 pt-6 border-t border-gray-200'>
-                    <div className='flex flex-row justify-between items-center gap-4'>
-                        <div className='space-y-2'>
+    const renderPublishSection = () => {
+        const isFormReady = canPublish();
+
+        return (
+            <div className="mt-8 pt-8 border-t border-gray-200">
+                <div className="bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 p-6">
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
+                                    <Rocket className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-900">Publish Form Pendaftaran</h3>
+                                    <p className="text-sm text-gray-600">
+                                        {selectedTemplate && selectedTemplate.is_published 
+                                            ? "Form sudah terpublikasi. Update perubahan dan publish ulang untuk menyebarkan versi terbaru."
+                                            : "Publish form untuk membuatnya dapat diakses oleh publik melalui link unik."
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {safeFormConfig.programName && (
+                                <div className="flex flex-wrap gap-2">
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        <Building className="w-3 h-3 mr-1" />
+                                        Program: {safeFormConfig.programName}
+                                    </span>
+                                    {selectedTemplate?.is_published && (
+                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <Globe className="w-3 h-3 mr-1" />
+                                            Status: Live
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div>
                             <Button
                                 onClick={handlePublicClick}
-                                disabled={!canPublish() || isSaving}
-                                className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 w-auto"
+                                disabled={!isFormReady || isSaving}
                                 size="lg"
+                                className="flex items-center gap-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl px-8 py-6 text-base font-medium"
                             >
                                 {isSaving ? (
                                     <>
-                                        <Loader2 className='w-4 h-4 animate-spin' />
-                                        Processing...
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <span>Memproses...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Rocket className='w-4 h-4' />
-                                        {selectedTemplate && selectedTemplate.is_published ? 'Update & Republish' : 'Publish'}
+                                        <Rocket className="w-5 h-5" />
+                                        <span>
+                                            {selectedTemplate && selectedTemplate.is_published 
+                                                ? 'Update & Publish Ulang' 
+                                                : 'Publish Form'
+                                            }
+                                        </span>
                                     </>
                                 )}
                             </Button>
                         </div>
                     </div>
+                    
+                    {/* Requirements Status */}
+                    {/* <div className="mt-8 pt-6 border-t border-gray-200">
+                        <h4 className="text-sm font-medium text-gray-700 mb-4">Status Persyaratan:</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className={`flex items-center gap-3 p-3 rounded-lg ${safeFormConfig.programName ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gray-50 text-gray-500'}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${safeFormConfig.programName ? 'bg-green-500' : 'bg-gray-300'}`}>
+                                    {safeFormConfig.programName ? 
+                                        <CheckCircle className="w-4 h-4 text-white" /> : 
+                                        <span className="text-xs text-white">1</span>
+                                    }
+                                </div>
+                                <div>
+                                    <p className="font-medium text-sm">Program dipilih</p>
+                                    <p className="text-xs">{safeFormConfig.programName ? 'Siap' : 'Belum dipilih'}</p>
+                                </div>
+                            </div>
+                            
+                            <div className={`flex items-center gap-3 p-3 rounded-lg ${!whatsappLink || whatsappLink.startsWith('https://') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gray-50 text-gray-500'}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${!whatsappLink || whatsappLink.startsWith('https://') ? 'bg-green-500' : 'bg-gray-300'}`}>
+                                    {(!whatsappLink || whatsappLink.startsWith('https://')) ? 
+                                        <CheckCircle className="w-4 h-4 text-white" /> : 
+                                        <span className="text-xs text-white">2</span>
+                                    }
+                                </div>
+                                <div>
+                                    <p className="font-medium text-sm">Link WhatsApp</p>
+                                    <p className="text-xs">{whatsappLink ? 'Valid' : 'Opsional'}</p>
+                                </div>
+                            </div>
+                            
+                            <div className={`flex items-center gap-3 p-3 rounded-lg ${!isSaving ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${!isSaving ? 'bg-green-500' : 'bg-amber-500'}`}>
+                                    {!isSaving ? 
+                                        <CheckCircle className="w-4 h-4 text-white" /> : 
+                                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                                    }
+                                </div>
+                                <div>
+                                    <p className="font-medium text-sm">Sistem</p>
+                                    <p className="text-xs">{!isSaving ? 'Siap' : 'Memproses...'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div> */}
                 </div>
             </div>
         );
@@ -293,53 +419,108 @@ const FormCanvas = ({
 
     if (!formConfig) {
         return (
-            <div className="form-canvas p-8">
-                <div className="flex flex-col items-center justify-center h-64">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
-                    <p className="text-gray-600">Memuat konfigurasi form...</p>
-                </div>
+            <div className="flex flex-col items-center justify-center min-h-[400px] bg-white rounded-xl border border-gray-200 p-8">
+                <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Memuat Workspace</h3>
+                <p className="text-gray-600">Menyiapkan konfigurasi form...</p>
             </div>
         );
     }
 
     return (
-        <div className="form-canvas">
-            <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                    Konfigurasi Form Pendaftaran
-                </h3>
-                <p className="text-sm text-gray-600">
-                    Pilih program dan atur pengaturan WhatsApp untuk form pendaftaran
+        <div className="form-canvas space-y-6">
+            {/* Header */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Form Builder Workspace</h1>
+                <p className="text-gray-600">
+                    Konfigurasikan form pendaftaran untuk program perusahaan Anda
                 </p>
-            </div>
-            
-            <div className="canvas-content">
-                <div className="mb-6">
-                    <h4 className="text-md font-medium text-gray-700 mb-3 flex items-center gap-2">
-                        <div className="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center">
-                            <span className="text-amber-600 text-xs">1</span>
-                        </div>
-                        Pilih Program
-                    </h4>
-                    {renderProgramField()}
-                </div>
-
-                {safeFormConfig.programName && (
-                    <div className="mt-8 pt-6 border-t border-gray-200">
-                        <h4 className="text-md font-medium text-gray-700 mb-3 flex items-center gap-2">
-                            <div className="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center">
-                                <span className="text-amber-600 text-xs">2</span>
-                            </div>
-                            Pengaturan WhatsApp and Message
-                        </h4>
-                        <p className="text-sm text-gray-600 mb-4">
-                            Konfigurasi grup WhatsApp dan pesan setelah submit untuk program{" "}
-                            <span className="font-semibold text-amber-700">{safeFormConfig.programName}</span>
-                        </p>
-                        {renderWhatsAppSettings()}
+                {selectedTemplate && (
+                    <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
+                        <FileText className="w-3 h-3" />
+                        Editing: {selectedTemplate.program_name}
                     </div>
                 )}
             </div>
+            
+            {/* Main Content */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+                <div className="lg:col-span-2 space-y-6">
+                    {renderProgramField()}
+                    {safeFormConfig.programName && renderWhatsAppSettings()}
+                </div>
+         
+                <div className="space-y-6">
+                    {/* <div className="bg-white rounded-xl border border-gray-200 p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Form</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <div className="flex justify-between text-sm mb-2">
+                                    <span className="text-gray-600">Progress Konfigurasi</span>
+                                    <span className="font-medium text-blue-600">
+                                        {safeFormConfig.programName ? '75%' : '25%'}
+                                    </span>
+                                </div>
+                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div 
+                                        className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300"
+                                        style={{ width: safeFormConfig.programName ? '75%' : '25%' }}
+                                    ></div>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-gray-600">Program Selected</span>
+                                    {safeFormConfig.programName ? 
+                                        <CheckCircle className="w-5 h-5 text-green-500" /> : 
+                                        <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+                                    }
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-gray-600">Settings Configured</span>
+                                    {whatsappLink || afterSubmitMessage ? 
+                                        <CheckCircle className="w-5 h-5 text-green-500" /> : 
+                                        <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+                                    }
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-gray-600">Ready to Publish</span>
+                                    {canPublish() ? 
+                                        <CheckCircle className="w-5 h-5 text-green-500" /> : 
+                                        <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div> */}
+                    
+                    <div className="bg-blue-50 rounded-xl border border-blue-200 p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <Shield className="w-6 h-6 text-blue-600" />
+                            <h3 className="font-semibold text-blue-900">Tips Profesional</h3>
+                        </div>
+                        <ul className="space-y-3 text-sm text-blue-800">
+                            <li className="flex items-start gap-2">
+                                <div className="w-2 h-2 bg-blue-400 rounded-full mt-1 flex-shrink-0"></div>
+                                <span>Gunakan nama program yang jelas dan deskriptif</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <div className="w-2 h-2 bg-blue-400 rounded-full mt-1 flex-shrink-0"></div>
+                                <span>Pastikan link WhatsApp grup valid dan aktif</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <div className="w-2 h-2 bg-blue-400 rounded-full mt-1 flex-shrink-0"></div>
+                                <span>Pesan konfirmasi harus informatif dan profesional</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            {/* Publish Section */}
+            {safeFormConfig.programName && renderPublishSection()}
         </div>
     );
 };

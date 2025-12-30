@@ -254,6 +254,18 @@ const PublicForm = () => {
         };
     }, [slug, toast]);
 
+    const getAfterSubmitMessage = () => {
+        if (template?.after_submit_message) {
+            return template.after_submit_message
+        }
+
+        if (template?.form_config?.settings?.afterSubmitMessage) {
+            return template.form_config.settings.afterSubmitMessage
+        }
+
+        return "Terima kasih telah mendaftar program kami."
+    }
+
     const getPersonalInfoFields = () => {
         if (!formConfig?.personalInfo?.fields) return [];
         
@@ -582,6 +594,11 @@ const PublicForm = () => {
         return null
     }
 
+    const hasWhatsappGroup = () => {
+        const link = getWhatsappGroupLink()
+        return link && link.trim() !== '' && link.startsWith('https://')
+    }
+
     const handleShare = async () => {
         const waGroupLink = getWhatsappGroupLink();
         if (!waGroupLink) {
@@ -881,7 +898,7 @@ const PublicForm = () => {
                             </div>
                             <h1 className="text-3xl font-bold mb-2">Pendaftaran Berhasil! 🎉</h1>
                             <p className="text-green-100 text-lg">
-                                Terima kasih telah mendaftar program <strong>{submittedData?.programName || 'Program'}</strong>
+                                {getAfterSubmitMessage()}
                             </p>
                         </div>
 
@@ -907,10 +924,10 @@ const PublicForm = () => {
                                                 <span className="text-gray-600">Kategori:</span>
                                                 <span className="font-semibold">{submittedData.category}</span>
                                             </div>
-                                            <div className="flex justify-between">
+                                            {/* <div className="flex justify-between">
                                                 <span className="text-gray-600">Status Disabilitas:</span>
                                                 <span className="font-semibold">{submittedData.disability_status || 'Tidak memiliki disabilitas'}</span>
-                                            </div>
+                                            </div> */}
                                         </div>
                                         <div className="space-y-3">
                                             <div className="flex justify-between">
@@ -927,27 +944,33 @@ const PublicForm = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    {submittedData.disability_type && (
+                                    {/* {submittedData.disability_type && (
                                         <div className="mt-4 pt-4 border-t border-gray-200">
                                             <div className="flex justify-between">
                                                 <span className="text-gray-600">Jenis Disabilitas:</span>
                                                 <span className="font-semibold">{submittedData.disability_type}</span>
                                             </div>
                                         </div>
-                                    )}
+                                    )} */}
                                 </div>
                             )}
 
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                <Button
-                                    onClick={handleShare}
-                                    variant="outline"
-                                    className="flex items-center gap-2 bg-green-400 hover:bg-green-300"
-                                >
-                                    <MessageCircle className="h-4 w-4" />
-                                    Gabung Grup WhatsApp
-                                </Button>
-                            </div>
+                            {hasWhatsappGroup() ? (
+                                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                    <Button
+                                        onClick={handleShare}
+                                        variant="outline"
+                                        className="flex items-center gap-2 bg-green-400 hover:bg-green-300"
+                                    >
+                                        <MessageCircle className="h-4 w-4" />
+                                        Gabung Grup WhatsApp
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div>
+                                    
+                                </div>
+                            )}
 
                             <div className="text-center mt-8 pt-6 border-t border-gray-200">
                                 <p className="text-gray-600 mb-2">Butuh bantuan?</p>

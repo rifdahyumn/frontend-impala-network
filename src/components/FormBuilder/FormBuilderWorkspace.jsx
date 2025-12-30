@@ -21,20 +21,6 @@ const FormBuilderWorkspace = () => {
     const { toast } = useToast();
 
     useEffect(() => {
-        if (formConfig) {
-            if (selectedTemplate) {
-                document.title = `Edit "${formConfig.title || selectedTemplate.program_name}" - Form Builder | Impala Network`;
-            } else if (formConfig.programName) {
-                document.title = `Buat Form "${formConfig.programName}" - Form Builder | Impala Network`;
-            } else {
-                document.title = 'Form Builder - Impala Network';
-            }
-        } else {
-            document.title = 'Form Builder - Impala Network';
-        }
-    }, [formConfig, selectedTemplate]);
-
-    useEffect(() => {
         const loadFormTemplates = async () => {
             try {
                 const response = await formTemplateService.getAllFormTemplates();
@@ -470,6 +456,7 @@ const FormBuilderWorkspace = () => {
                                 selectedTemplate={selectedTemplate}
                                 availablePrograms={availablePrograms}
                                 loadingPrograms={loadingPrograms}
+                                // formTemplates={formTemplates}
                                 showOnlyProgramInfo={true}
                             />
                         </CardContent>
