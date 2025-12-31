@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, Loader2, DollarSign } from "lucide-react";
+import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, Loader2, DollarSign, XCircle, CheckCircle } from "lucide-react";
 import toast from 'react-hot-toast';
 
-const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal, onClientEdited }) => {
+const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal, onClientEdited, onStatusChange }) => {
     const [activeCategory, setActiveCategory] = useState('Personal Information');
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const [statusLoading, setStatusLoading] = useState(false)
 
     const detailFields = [
         {
@@ -111,6 +112,24 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
         }
     }
 
+    const handleStatusChange = async () => {
+        if (!selectedMember || !onStatusChange) return
+
+        const currentStatus = selectedMember.status || 'Active'
+        const isCurrentlyActive = currentStatus === 'Active'
+        const newStatus = isCurrentlyActive ? 'inactive' : 'active'
+
+        setStatusLoading(true)
+
+        try {
+            await onStatusChange(selectedMember.id, newStatus)
+        } catch (error) {
+            console.error('Error changing status:', error)
+        } finally {
+            setStatusLoading(false)
+        }
+    }
+
     const ActiveCategoryContent = () => {
         const activeCategoryData = getActiveCategoryData()
 
@@ -153,6 +172,8 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
         )
     }
 
+    const isActive = selectedMember?.status === 'Active'
+
     return (
         <Card>
             <CardHeader>
@@ -193,6 +214,28 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
                                         <Edit className="h-4 w-4" />
                                         Edit
                                     </Button>
+
+                                    <Button
+                                        variant={isActive ? "outline" : "default"}
+                                        size="sm"
+                                        className={`flex items-center gap-2 ${
+                                            isActive
+                                                ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-300'
+                                                : 'bg-green-600 hover:bg-green-700 text-white'
+                                        }`}
+                                        onClick={handleStatusChange}
+                                        disabled={statusLoading}
+                                    >
+                                        {statusLoading ? (
+                                            <Loader2 className='h-4 w-4 animate-spin' />
+                                        ) : isActive ? (
+                                            <XCircle className='h-4 w-4' />
+                                        ) : (
+                                            <CheckCircle className='h-4 w-4' />
+                                        )}
+                                        {statusLoading ? 'Updating...' : (isActive ? 'Set Inactive' : 'Set Active')}
+                                    </Button>
+
                                     <Button 
                                         variant="outline" 
                                         size="sm"

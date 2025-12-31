@@ -367,51 +367,6 @@ const FormCanvas = ({
                             </Button>
                         </div>
                     </div>
-                    
-                    {/* Requirements Status */}
-                    {/* <div className="mt-8 pt-6 border-t border-gray-200">
-                        <h4 className="text-sm font-medium text-gray-700 mb-4">Status Persyaratan:</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div className={`flex items-center gap-3 p-3 rounded-lg ${safeFormConfig.programName ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gray-50 text-gray-500'}`}>
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${safeFormConfig.programName ? 'bg-green-500' : 'bg-gray-300'}`}>
-                                    {safeFormConfig.programName ? 
-                                        <CheckCircle className="w-4 h-4 text-white" /> : 
-                                        <span className="text-xs text-white">1</span>
-                                    }
-                                </div>
-                                <div>
-                                    <p className="font-medium text-sm">Program dipilih</p>
-                                    <p className="text-xs">{safeFormConfig.programName ? 'Siap' : 'Belum dipilih'}</p>
-                                </div>
-                            </div>
-                            
-                            <div className={`flex items-center gap-3 p-3 rounded-lg ${!whatsappLink || whatsappLink.startsWith('https://') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gray-50 text-gray-500'}`}>
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${!whatsappLink || whatsappLink.startsWith('https://') ? 'bg-green-500' : 'bg-gray-300'}`}>
-                                    {(!whatsappLink || whatsappLink.startsWith('https://')) ? 
-                                        <CheckCircle className="w-4 h-4 text-white" /> : 
-                                        <span className="text-xs text-white">2</span>
-                                    }
-                                </div>
-                                <div>
-                                    <p className="font-medium text-sm">Link WhatsApp</p>
-                                    <p className="text-xs">{whatsappLink ? 'Valid' : 'Opsional'}</p>
-                                </div>
-                            </div>
-                            
-                            <div className={`flex items-center gap-3 p-3 rounded-lg ${!isSaving ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${!isSaving ? 'bg-green-500' : 'bg-amber-500'}`}>
-                                    {!isSaving ? 
-                                        <CheckCircle className="w-4 h-4 text-white" /> : 
-                                        <Loader2 className="w-4 h-4 text-white animate-spin" />
-                                    }
-                                </div>
-                                <div>
-                                    <p className="font-medium text-sm">Sistem</p>
-                                    <p className="text-xs">{!isSaving ? 'Siap' : 'Memproses...'}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div> */}
                 </div>
             </div>
         );
@@ -452,50 +407,6 @@ const FormCanvas = ({
                 </div>
          
                 <div className="space-y-6">
-                    {/* <div className="bg-white rounded-xl border border-gray-200 p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Form</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <div className="flex justify-between text-sm mb-2">
-                                    <span className="text-gray-600">Progress Konfigurasi</span>
-                                    <span className="font-medium text-blue-600">
-                                        {safeFormConfig.programName ? '75%' : '25%'}
-                                    </span>
-                                </div>
-                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                    <div 
-                                        className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300"
-                                        style={{ width: safeFormConfig.programName ? '75%' : '25%' }}
-                                    ></div>
-                                </div>
-                            </div>
-                            
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-600">Program Selected</span>
-                                    {safeFormConfig.programName ? 
-                                        <CheckCircle className="w-5 h-5 text-green-500" /> : 
-                                        <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
-                                    }
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-600">Settings Configured</span>
-                                    {whatsappLink || afterSubmitMessage ? 
-                                        <CheckCircle className="w-5 h-5 text-green-500" /> : 
-                                        <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
-                                    }
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-600">Ready to Publish</span>
-                                    {canPublish() ? 
-                                        <CheckCircle className="w-5 h-5 text-green-500" /> : 
-                                        <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div> */}
-                    
                     <div className="bg-blue-50 rounded-xl border border-blue-200 p-6">
                         <div className="flex items-center gap-3 mb-4">
                             <Shield className="w-6 h-6 text-blue-600" />

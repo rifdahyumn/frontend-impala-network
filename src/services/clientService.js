@@ -471,6 +471,37 @@ class ClientService {
             }))
         };
     }
+
+    async updateClientStatus(clientId, status) {
+        try {
+            if (!clientId) {
+                throw new Error('Client ID is required')
+            }
+
+            const validStatus = ['Active', 'Inactive'].includes(status)
+                ? status
+                : status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+
+            if (!['Active', 'Inactive'].includes(validStatus)) {
+                throw new Error('Status must be either "Active" or "Inactive"')
+            }
+
+            const response = await fetch(`${this.baseURL}/client/${clientId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: validStatus
+                })
+            })
+
+            return await this.handleResponse(response)
+        } catch (error) {
+            console.error('Error updating client status:', error)
+            throw error
+        }
+    }
 }
 
 export default new ClientService();

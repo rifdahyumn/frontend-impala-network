@@ -82,6 +82,7 @@ const ProgramClient = () => {
         statusOptions,
         addClient,
         updateClient,
+        updateClientStatus,
         fetchClients,
         refreshData
     } = useProgramClient();
@@ -172,9 +173,35 @@ const ProgramClient = () => {
         }
     };
 
+    const handleStatusChange = async (clientId, newStatus) => {
+        try {
+            if (!clientId || !newStatus) {
+                console.error('Invalid parameters');
+                return;
+            }
+            
+            const statusToUpdate = newStatus === 'active' ? 'Active' : 'Inactive';
+            
+            await updateClientStatus(clientId, statusToUpdate);
+
+            setTimeout(() => {
+                fetchClients(pagination.page, localFilters, showAllOnSearch);
+            }, 500);
+            
+        } catch (error) {
+            console.error('[ProgramClient] Status change error:', error);
+
+            try {
+                await fetchClients(pagination.page, localFilters, showAllOnSearch);
+            } catch (refreshError) {
+                console.error('Failed to refresh data:', refreshError);
+            }
+        }
+    };
+
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
-            <div className='flex-1 p-6 max-w-screen-2xl mx-auto w-full'>
+            <div className='flex-1 p-6'>
                 <Header />
                 <Card className='mb-6 max-w-none'>
                     <CardHeader>
@@ -292,12 +319,13 @@ const ProgramClient = () => {
                     <ClientContent
                         selectedMember={selectedMember}
                         onOpenEditModal={handleOpenEditModal}
+                        onStatusChange={handleStatusChange}
                         onDelete={handleDeleteClient}
                         detailTitle={tableConfig.detailTitle}
                         onClientUpdated={() => fetchClients(pagination.page, localFilters, showAllOnSearch)}
                         onClientDeleted={() => {
                             fetchClients(pagination.page, localFilters, showAllOnSearch);
-                            // setSelectedMember(null);
+                            
                         }}
                     />
                 </div>

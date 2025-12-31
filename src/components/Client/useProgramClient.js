@@ -13,6 +13,7 @@ import {
     formatMembersForTable
 } from './programClientUtils';
 import { statusOptions } from './constants/statusOptions';
+import clientService from '../../services/clientService';
 
 export const useProgramClient = () => {
 
@@ -52,6 +53,7 @@ export const useProgramClient = () => {
         updateClient,
         deleteClient,
         refreshData,
+        updateClientStatus: updateClientStatusFromHook
     } = useClients();
 
     const isInShowAllMode = false;
@@ -126,6 +128,47 @@ export const useProgramClient = () => {
             toast.error(error.message || 'Failed to delete client');
         }
     }, [selectedMember, deleteClient]);
+
+    const updateClientStatus = useCallback(async (clientId, status) => {
+        try {
+            const validStatus = ['Active', 'Inactive'].includes(status) 
+                ? status 
+                : status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+            
+            if (!['Active', 'Inactive'].includes(validStatus)) {
+                throw new Error('Status must be either "Active" or "Inactive"');
+            }
+
+            let updatedClient;
+            
+            if (updateClientStatusFromHook) {
+                updatedClient = await updateClientStatusFromHook(clientId, validStatus);
+            } else {
+                const result = await clientService.updateClientStatus(clientId, validStatus);
+                
+                if (!result.success || !result.data) {
+                    throw new Error(result.message || 'Failed to update status');
+                }
+
+                updatedClient = result.data;
+                
+                await refreshData();
+            }
+            
+            if (selectedMember && selectedMember.id === clientId) {
+                setSelectedMember(prev => ({
+                    ...prev,
+                    status: validStatus
+                }));
+            }
+            
+            return updatedClient;
+            
+        } catch (error) {
+            console.error('[useProgramClient] Error updating status:', error);
+            throw error;
+        }
+    }, [updateClientStatusFromHook, refreshData, selectedMember]);
 
     const handleRefreshWithReset = useCallback(() => {
         setSelectedMember(null); 
@@ -475,7 +518,8 @@ export const useProgramClient = () => {
         handleRemoveFile,
         getBusinessTypeLabel,
         getStatusLabel,
-        getBusinessDisplayName
+        getBusinessDisplayName,
+        updateClientStatus
     };
 };
 

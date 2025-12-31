@@ -304,13 +304,11 @@ export const useClients = (initialFilters = {}) => {
         }
     }, [members, pagination.showingAllResults, showAllOnSearch])
 
-    // 🔴 PERBAIKAN: CRUD functions dengan optimized updates
     const addClient = async (clientData) => {
         try {
             const result = await clientService.addClient(clientData)
             toast.success('Client added successfully')
             
-            // 🔴 PERBAIKAN: Refresh data tanpa loading state berlebihan
             await fetchClients(pagination.page, filtersRef.current, showAllOnSearch)
             await fetchClientStats()
             
@@ -327,7 +325,6 @@ export const useClients = (initialFilters = {}) => {
             const result = await clientService.updateClient(clientId, clientData)
             toast.success("Client updated successfully")
 
-            // 🔴 PERBAIKAN: Optimistic update untuk mengurangi re-render
             setMembers(prevMembers => 
                 prevMembers.map(member => 
                     member.id === clientId
@@ -350,7 +347,6 @@ export const useClients = (initialFilters = {}) => {
             setLoading(true)
             await clientService.deleteClient(clientId)
 
-            // 🔴 PERBAIKAN: Optimistic update
             setMembers(prevMembers =>
                 prevMembers.filter(members => members.id !== clientId)
             )
@@ -369,15 +365,59 @@ export const useClients = (initialFilters = {}) => {
         }
     }
 
+    const updateClientStatus = async (clientId, status) => {
+        try {
+            const validStatus = ['Active', 'Inactive'].includes(status)
+                ? status
+                : status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+
+            if (!['Active', 'Inactive'].includes(validStatus)) {
+                throw new Error('Status must be either "Active" of "Inactive"')
+            }
+
+            const result = await clientService.updateClientStatus(clientId, validStatus)
+
+            if (result.success) {
+                const updatedClient = result.data
+
+                setMembers(prevMembers => {
+                    if (!Array.isArray(prevMembers)) {
+                        console.warn('[useClients] prevMembers is not an array:', prevMembers);
+                        return prevMembers || [];
+                    }
+                    
+                    const updatedMembers = prevMembers.map(member => {
+                        if (member && member.id === clientId) {
+                            return { ...member, status: validStatus };
+                        }
+                        return member;
+                    });
+                    
+                    return updatedMembers;
+                });
+
+                toast.success(`Client status updated to ${updateClient.status}`)
+
+                await fetchClientStats()
+
+                return updatedClient
+            }
+        } catch (error) {
+            console.error('Error updating client status:', error)
+            toast.error(error.message || 'Failed to update status')
+
+            await fetchClients(pagination.page, filtersRef.current, showAllOnSearch)
+            throw error
+        }
+    }
+
     const getDisplayText = useCallback(() => {
         if (pagination.showingAllResults && filtersRef.current.search) {
             return `Showing all ${members.length} results for "${filtersRef.current.search}"`
         } else if (pagination.showingAllResults) {
             return `Showing all ${members.length} clients`
         } else {
-            // const start = ((pagination.page - 1) * pagination.limit) + 1
-            // const end = Math.min(pagination.page * pagination.limit, pagination.total)
-            // return `Showing ${start} to ${end} of ${pagination.total} clients`
+            //    
         }
     }, [pagination, members.length])
 
@@ -407,6 +447,7 @@ export const useClients = (initialFilters = {}) => {
         refreshData,
         addClient, 
         updateClient, 
+        updateClientStatus,
         deleteClient,
         exportClients,
         refetchStats: fetchClientStats
