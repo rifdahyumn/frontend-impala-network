@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Loader2 } from "lucide-react";
 import { toast } from 'react-hot-toast';
@@ -86,6 +86,23 @@ const ProgramClient = () => {
         fetchClients,
         refreshData
     } = useProgramClient();
+
+    console.log('Program Client - Search debug:', {
+        searchValue: localFilters.search,
+        showAllOnSearch: showAllOnSearch,
+        membersCount: members.length,
+        pagination: pagination,
+        loading: loading,
+        isInShowAllMode: isInShowAllMode
+    })
+
+    useEffect(() => {
+        console.log('localFilters updated:', localFilters)
+    }, [localFilters])
+
+    useEffect(() => {
+        console.log('Members updated:', members.length, 'items')
+    })
 
     const handleAddNewClient = async (clientData) => {
         try {

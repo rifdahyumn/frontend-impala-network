@@ -494,27 +494,26 @@ const Program = () => {
             }));
 
             if (format === 'excel') {
-                // Buat worksheet
+               
                 const ws = XLSX.utils.json_to_sheet(exportData);
                 
-                // Set column width
+                
                 const wscols = [
-                    { wch: 5 },   // No
-                    { wch: 25 },  // Program Name
-                    { wch: 20 },  // Category
-                    { wch: 10 },  // Status
-                    { wch: 15 },  // Duration
-                    { wch: 15 },  // Price
-                    { wch: 25 },  // Client
-                    { wch: 12 },  // Start Date
-                    { wch: 12 },  // End Date
-                    { wch: 40 },  // Description
-                    { wch: 12 },  // Created Date
-                    { wch: 12 }   // Last Updated
+                    { wch: 5 },   
+                    { wch: 25 },  
+                    { wch: 20 }, 
+                    { wch: 10 },  
+                    { wch: 15 },  
+                    { wch: 15 },  
+                    { wch: 25 }, 
+                    { wch: 12 },  
+                    { wch: 12 }, 
+                    { wch: 40 },  
+                    { wch: 12 }, 
+                    { wch: 12 }  
                 ];
                 ws['!cols'] = wscols;
-                
-                // Tambahkan styling untuk header
+
                 const range = XLSX.utils.decode_range(ws['!ref']);
                 for (let C = range.s.c; C <= range.e.c; ++C) {
                     const cell_address = { c: C, r: 0 };
@@ -567,7 +566,6 @@ const Program = () => {
         }
     }, [programs]);
 
-    // Prevent default drag behavior untuk seluruh window
     useEffect(() => {
         const preventDefaults = (e) => {
             e.preventDefault();
@@ -601,31 +599,26 @@ const Program = () => {
         }
     }, [programs]);
 
-    // STATUS OPTIONS
     const statusOptions = [
-        { value: 'Active', label: '🟢 Active', color: 'text-green-600 bg-green-50' },
-        { value: 'Inactive', label: '🔴 Inactive', color: 'text-red-600 bg-red-50' },
+        { value: 'Active', label: 'Active', color: 'text-green-600 bg-green-50' },
+        { value: 'Inactive', label: 'Inactive', color: 'text-red-600 bg-red-50' },
     ];
 
-    // Handle search dengan backend filtering
     const handleSearch = useCallback((term) => {
         setSearchTerm(term);
         searchPrograms(term, showAllOnSearch);
     }, [searchPrograms, showAllOnSearch]);
 
-    // Handle status filter change dengan backend
     const handleStatusFilterChange = useCallback((status) => {
         const newStatus = filters.status === status ? '' : status;
         updateFiltersAndFetch({ status: newStatus });
     }, [filters.status, updateFiltersAndFetch]);
 
-    // Handle category filter change dengan backend
     const handleCategoryFilterChange = useCallback((category) => {
         const newCategory = filters.category === category ? '' : category;
         updateFiltersAndFetch({ category: newCategory });
     }, [filters.category, updateFiltersAndFetch]);
 
-    // Clear all filters menggunakan fungsi dari hook
     const handleClearAllFilters = useCallback(() => {
         setSearchTerm("");
         clearFilters();
@@ -633,7 +626,6 @@ const Program = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [clearFilters]);
 
-    // Clear specific filter
     const clearFilter = useCallback((filterType) => {
         if (filterType === 'search') {
             setSearchTerm("");
@@ -645,12 +637,10 @@ const Program = () => {
         }
     }, [clearSearch, updateFiltersAndFetch]);
 
-    // Toggle show all on search
     const handleToggleShowAll = useCallback((checked) => {
         toggleShowAllOnSearch(checked);
     }, [toggleShowAllOnSearch]);
 
-    // Reset to pagination mode
     const handleResetToPagination = useCallback(() => {
         resetToPaginationMode();
     }, [resetToPaginationMode]);
@@ -740,7 +730,6 @@ const Program = () => {
         hookFetchPrograms(page);
     };
 
-    // Get active filters count sebagai value bukan function
     const getActiveFiltersCount = useMemo(() => {
         let count = 0;
         if (filters.status) count++;
@@ -748,7 +737,6 @@ const Program = () => {
         return count;
     }, [filters]);
 
-    // Get total active criteria termasuk search sebagai value
     const getTotalActiveCriteria = useMemo(() => {
         let count = 0;
         if (filters.search) count++;
@@ -757,18 +745,16 @@ const Program = () => {
         return count;
     }, [filters]);
 
-    // GET CATEGORY LABEL
     const getCategoryLabel = useCallback((categoryValue) => {
         if (!categoryValue || categoryValue === "all") return "All Categories";
         const category = availableCategories.find(c => c.value === categoryValue.toLowerCase());
         return category ? category.original : categoryValue;
     }, [availableCategories]);
 
-    // GET STATUS LABEL
     const getStatusLabel = useCallback((statusValue) => {
         if (!statusValue) return "";
-        if (statusValue === 'active') return '🟢 Active';
-        if (statusValue === 'inactive') return '🔴 Inactive';
+        if (statusValue === 'active') return 'Active';
+        if (statusValue === 'inactive') return 'Inactive';
         return statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
     }, []);
     
@@ -779,7 +765,6 @@ const Program = () => {
         detailTitle: "Program Details"
     };
 
-    // Format program untuk table - gunakan data dari backend yang sudah difilter
     const formattedPrograms = useMemo(() => {
         return programs.map((program, index) => {
             const itemNumber = isShowAllMode() 

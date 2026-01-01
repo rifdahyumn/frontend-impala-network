@@ -2,12 +2,11 @@ import { Search } from "lucide-react";
 import { Input } from "../ui/input";
 import React, { useState } from "react";
 
-const SearchBar = ({ onSearch, placeholder = "Search..." }) => {
-    const [query, setQuery] = useState("");
+const SearchBar = ({ onSearch, placeholder = "Search...", value }) => {
+    // const [query, setQuery] = useState("");
 
     const handleChange = (e) => {
         const value = e.target.value;
-        setQuery(value);
         
         if (onSearch) {
             onSearch(value);
@@ -17,7 +16,7 @@ const SearchBar = ({ onSearch, placeholder = "Search..." }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (onSearch) {
-            onSearch(query);
+            onSearch(value);
         }
     };
 
@@ -28,7 +27,7 @@ const SearchBar = ({ onSearch, placeholder = "Search..." }) => {
                 type="text"
                 placeholder={placeholder}
                 className="pl-10"
-                value={query}
+                value={value}
                 onChange={handleChange}
             />
         </form>

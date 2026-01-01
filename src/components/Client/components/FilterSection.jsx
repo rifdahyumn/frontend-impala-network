@@ -1,6 +1,4 @@
 import React from 'react';
-// import { Button } from "../../components/ui/button";
-// import { Filter } from "lucide-react";
 import SearchBar from '../../SearchFilter/SearchBar';
 import FilterDropdown from './FilterDropdown';
 
@@ -25,7 +23,7 @@ const FiltersSection = ({
                         onSearch={onSearch}
                         placeholder="Search clients..."
                         value={localFilters.search}
-                        onChange={(e) => onSearch(e.target.value)}
+                        // onChange={(e) => onSearch(e.target.value)}
                     />
                 </div>
                 

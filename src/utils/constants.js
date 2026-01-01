@@ -67,7 +67,7 @@ export const METRICS_CONFIG = {
 
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-export const YEARS = ['2025', '2024', '2023', '2022'];
+export const YEARS = ['2026', '2025', '2024', '2023', '2022'];
 
 export const DATA_TYPES = [
     { value: 'growth', label: 'Monthly Growth' },

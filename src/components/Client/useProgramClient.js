@@ -16,7 +16,6 @@ import { statusOptions } from './constants/statusOptions';
 import clientService from '../../services/clientService';
 
 export const useProgramClient = () => {
-
     const [selectedMember, setSelectedMember] = useState(null);
     const [editingClient, setEditingClient] = useState(null);
     const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
@@ -28,11 +27,6 @@ export const useProgramClient = () => {
     const [validationErrors, setValidationErrors] = useState([]);
     const [isDragging, setIsDragging] = useState(false);
     const [highlightDetail, setHighlightDetail] = useState(false);
-    const [localFilters, setLocalFilters] = useState({
-        search: '',
-        status: '',
-        businessType: '',
-    });
      const [availableBusinessTypes, setAvailableBusinessTypes] = useState([]);
   
     const fileInputRef = useRef(null);
@@ -44,9 +38,14 @@ export const useProgramClient = () => {
         loading,
         error,
         pagination,
+        filters,
+        showAllOnSearch,
         fetchClients,
+        updateFiltersAndFetch,
         clearFilters: hookClearFilters,
         clearSearch: hookClearSearch,
+        searchClients,
+        toggleShowAllOnSearch,
         resetToPaginationMode,
         handlePageChange: hookHandlePageChange,
         addClient,
@@ -59,44 +58,66 @@ export const useProgramClient = () => {
     const isInShowAllMode = false;
 
     const handleSearch = useCallback((term) => {
-        setLocalFilters(prev => ({ ...prev, search: term }));
-    }, []);
+        console.log('Search triggered:', term)
+
+        searchClients(term, showAllOnSearch)
+    }, [searchClients, showAllOnSearch]);
+
+    const [localFilters, setLocalFilters] = useState({
+        search: '',
+        status: '',
+        businessType: ''
+    })
+
+    useEffect(() => {
+        setLocalFilters(filters)
+    }, [filters])
 
     const handleStatusFilterChange = useCallback((status) => {
-        setLocalFilters(prev => ({
-            ...prev,
-            status: prev.status === status ? '' : status
-        }));
-    }, []);
+        console.log('Status filter changed:', status)
+        
+        const newStatus = localFilters.status === status ? '' : status
+        setLocalFilters(prev => ({ ...prev, status: newStatus }))
+        updateFiltersAndFetch({ status: newStatus }, showAllOnSearch)
+    }, [localFilters.status, updateFiltersAndFetch, showAllOnSearch]);
 
     const handleBusinessTypeFilterChange = useCallback((businessType) => {
-        setLocalFilters(prev => ({
-            ...prev,
-            businessType: prev.businessType === businessType ? '' : businessType
-        }));
-    }, []);
+        console.log('Business type filter changed:', businessType)
+
+        const newBusinessType = localFilters.businessType === businessType ? '' : businessType
+        setLocalFilters(prev => ({ ...prev, businessType: newBusinessType }))
+        updateFiltersAndFetch({ businessType: newBusinessType }, showAllOnSearch)
+    }, [localFilters.businessType, updateFiltersAndFetch, showAllOnSearch]);
+
+    const handleToggleShowAll = useCallback((checked) => {
+        console.log('Toggle show all:', checked)
+        toggleShowAllOnSearch(checked)
+    }, [toggleShowAllOnSearch])
 
     const clearFilter = useCallback((filterType) => {
+        console.log('Clearing filter:', filterType)
+
         if (filterType === 'search') {
-            setLocalFilters(prev => ({ ...prev, search: '' }));
-            hookClearSearch();
-            return;
+            hookClearSearch()
+            return
         }
-        
-        setLocalFilters(prev => ({ ...prev, [filterType]: '' }));
-    }, [hookClearSearch]);
+
+        if (filterType === 'status') {
+            updateFiltersAndFetch({ status: '' }, showAllOnSearch)
+        }
+
+        if (filterType === 'businessType') {
+            updateFiltersAndFetch({ businessType: '' }, showAllOnSearch)
+        }
+    }, [hookClearSearch, updateFiltersAndFetch, showAllOnSearch]);
 
     const clearAllFilters = useCallback(async () => {
-        setLocalFilters({
-            search: '',
-            status: '',
-            businessType: '',
-        });
-        setSelectedMember(null);
-        await hookClearFilters();
-        await fetchClients(1, {}, false);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [hookClearFilters, fetchClients]);
+        console.log('Clearing all filters')
+
+        await hookClearFilters()
+        setSelectedMember(null)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, [hookClearFilters]);
 
     const handleResetToPagination = useCallback(async () => {
         await resetToPaginationMode();
@@ -463,6 +484,7 @@ export const useProgramClient = () => {
         error,
         members,
         pagination,
+        showAllOnSearch,
         isInShowAllMode,
         getTotalActiveCriteria,
         getActiveFiltersCount,
@@ -497,6 +519,7 @@ export const useProgramClient = () => {
         handleSearch,
         handleStatusFilterChange,
         handleBusinessTypeFilterChange,
+        handleToggleShowAll,
         clearFilter,
         clearAllFilters,
         handleResetToPagination,
