@@ -23,14 +23,6 @@ const ImportModal = ({
     onImport
     
 }) => {
-    // Dalam ImportModal, sebelum return:
-console.log('ImportModal Props:', {
-    isOpen,
-    importFile: importFile?.name,
-    validationErrors,
-    isImporting,
-    onImport: typeof onImport // Harus 'function'
-});
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl w-[95vw] max-w-[800px]">

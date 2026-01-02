@@ -58,8 +58,6 @@ export const useProgramClient = () => {
     const isInShowAllMode = false;
 
     const handleSearch = useCallback((term) => {
-        console.log('Search triggered:', term)
-
         searchClients(term, showAllOnSearch)
     }, [searchClients, showAllOnSearch]);
 
@@ -74,29 +72,22 @@ export const useProgramClient = () => {
     }, [filters])
 
     const handleStatusFilterChange = useCallback((status) => {
-        console.log('Status filter changed:', status)
-        
         const newStatus = localFilters.status === status ? '' : status
         setLocalFilters(prev => ({ ...prev, status: newStatus }))
         updateFiltersAndFetch({ status: newStatus }, showAllOnSearch)
     }, [localFilters.status, updateFiltersAndFetch, showAllOnSearch]);
 
     const handleBusinessTypeFilterChange = useCallback((businessType) => {
-        console.log('Business type filter changed:', businessType)
-
         const newBusinessType = localFilters.businessType === businessType ? '' : businessType
         setLocalFilters(prev => ({ ...prev, businessType: newBusinessType }))
         updateFiltersAndFetch({ businessType: newBusinessType }, showAllOnSearch)
     }, [localFilters.businessType, updateFiltersAndFetch, showAllOnSearch]);
 
     const handleToggleShowAll = useCallback((checked) => {
-        console.log('Toggle show all:', checked)
         toggleShowAllOnSearch(checked)
     }, [toggleShowAllOnSearch])
 
     const clearFilter = useCallback((filterType) => {
-        console.log('Clearing filter:', filterType)
-
         if (filterType === 'search') {
             hookClearSearch()
             return
@@ -112,8 +103,6 @@ export const useProgramClient = () => {
     }, [hookClearSearch, updateFiltersAndFetch, showAllOnSearch]);
 
     const clearAllFilters = useCallback(async () => {
-        console.log('Clearing all filters')
-
         await hookClearFilters()
         setSelectedMember(null)
         window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -315,36 +304,26 @@ export const useProgramClient = () => {
     }, []);
 
     const handleImportExcel = useCallback(async () => {
-        console.log('🚀 handleImportExcel DIPANGGIL!');
-        console.log('📁 importFile:', importFile?.name);
-
         if (!importFile) {
             toast.error('Pilih file Excel terlebih dahulu');
             return;
         }
-        
-        console.log('⏳ Mulai import...');
+
         setIsImporting(true);
         
         try {
             const reader = new FileReader();
 
             reader.onload = async (e) => {
-                console.log('📖 FileReader onload triggered');
                 try {
                     const data = new Uint8Array(e.target.result);
-                    console.log('📊 Data array length:', data.length);
-                    const { data: parsedData, errors } = parseExcelData(data);
-                    console.log('✅ Data parsed:', parsedData?.length, 'rows');
-                    console.log('❌ Parse errors:', errors?.length);
+                    const { data: parsedData } = parseExcelData(data);
                     
                     if (parsedData.length === 0) {
                         toast.error('Tidak ada data yang bisa diimport');
                         setIsImporting(false);
                         return;
                     }
-
-                    console.log('📤 Mengirim ke API...');
 
                     const response = await fetch('/api/client/bulk-import', {
                         method: 'POST',
@@ -362,8 +341,6 @@ export const useProgramClient = () => {
                     if (!response.ok) {
                         throw new Error(result.message || 'Gagal mengimport clients')
                     }
-
-                    console.log('Import result:', result)
                     
                     setImportFile(null);
                     setValidationErrors([]);

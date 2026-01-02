@@ -87,14 +87,6 @@ const ProgramClient = () => {
         refreshData
     } = useProgramClient();
 
-    useEffect(() => {
-        console.log('localFilters updated:', localFilters)
-    }, [localFilters])
-
-    useEffect(() => {
-        console.log('Members updated:', members.length, 'items')
-    })
-
     const handleAddNewClient = async (clientData) => {
         try {
             if (!clientData.full_name || !clientData.email) {
