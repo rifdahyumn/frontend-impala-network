@@ -82,7 +82,6 @@ const UserAccountSettings = () => {
             .join(' ');
     };
 
-    // ✅ FUNGSI LOGOUT YANG SAMA DENGAN HEADER
     const handleLogout = async () => {
         try {
             await fetch("http://localhost:3000/api/auth/logout", {

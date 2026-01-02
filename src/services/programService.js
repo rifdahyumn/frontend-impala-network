@@ -5,6 +5,134 @@ class ProgramService {
         this.baseURL = API_BASE_URL
     }
 
+    formatInstructors(instructors) {
+        if (!instructors || instructors === 'null' || instructors === 'undefined' || instructors === '') {
+            return '';
+        }
+
+        if (Array.isArray(instructors)) {
+            return instructors
+                .filter(item => item && item.trim() && item !== 'null' && item !== 'undefined')
+                .map(item => item.trim()) 
+                .join(', ')
+        }
+
+        if (typeof instructors === 'string') {
+            const trimmed = instructors.trim()
+            if (!trimmed || trimmed === 'null' || trimmed === 'undefined') {
+                return '';
+            }
+
+            if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                try {
+                    const parsed = JSON.parse(trimmed)
+                    if (Array.isArray(parsed)) {
+                        return parsed
+                            .filter(item => item && item.trim() && item !== 'null' && item !== 'undefined' )
+                            .map(item => item.trim())
+                            .join(', ')
+                    }
+                } catch {
+                    //
+                }
+            }
+
+            const regex = /([A-Za-z.\s]+\([^)]+\)|[A-Za-z.\s]+)/g;
+            const matches = trimmed.match(regex)
+            if (matches && matches.length > 0) {
+                return matches
+                    .filter(item => item && item.trim())
+                    .map(item => item.trim())
+                    .join(', ')
+            }
+
+            if (trimmed.includes(',') || trimmed.includes(';')) {
+                const separator = trimmed.includes(',') ? ',' : ';';
+                return trimmed.split(separator)
+                    .map(item => item.trim())
+                    .filter(item => item && item !== 'null' && item !== 'undefined')
+                    .join(', ');
+            }
+
+            return trimmed
+        }
+
+        return String(instructors)
+    }
+
+    formatTags(tags) {
+        if (!tags || tags === 'null' || tags === 'undefined' || tags === '') {
+            return '';
+        }
+
+        if (Array.isArray(tags)) {
+            return tags
+                .filter(item => item && item.trim() && item !== 'null' && item !== 'undefined')
+                .map(item => item.trim())
+                .join(', ');
+        }
+
+        if (typeof tags === 'string') {
+            const trimmed = tags.trim();
+            if (!trimmed || trimmed === 'null' || trimmed === 'undefined') {
+                return '';
+            }
+
+            if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    if (Array.isArray(parsed)) {
+                        return parsed
+                            .filter(item => item && item.trim() && item !== 'null' && item !== 'undefined')
+                            .map(item => item.trim())
+                            .join(', ');
+                    }
+                } catch {
+                    // 
+                }
+            }
+
+            if (trimmed.includes(',') || trimmed.includes(';')) {
+                const separator = trimmed.includes(',') ? ',' : ';';
+                return trimmed.split(separator)
+                    .map(item => item.trim())
+                    .filter(item => item && item !== 'null' && item !== 'undefined')
+                    .join(', ');
+            }
+
+            if (!trimmed.includes(' ') && /[a-z][A-Z]/.test(trimmed)) {
+                // Split berdasarkan huruf kapital
+                const words = trimmed.split(/(?=[A-Z])/)
+                    .filter(word => word.trim() && word !== 'null' && word !== 'undefined');
+                if (words.length > 1) {
+                    return words.join(', ');
+                }
+            }
+            
+            return trimmed;
+        }
+
+        return String(tags)
+    }
+
+    formatProgramData(program) {
+        if (!program) return null
+
+        return {
+            ...program,
+            instructors: this.formatInstructors(program.instructors),
+            tags: this.formatTags(program.tags),
+            _raw_instructors: program.instructors,
+            _raw_tags: program.tags
+        }
+    }
+
+    formatProgramsData(programs) {
+        if (!Array.isArray(programs)) return [];
+        
+        return programs.map(program => this.formatProgramData(program));
+    }
+
     async handleResponse(response) {
         if (!response.ok) {
             const error = await response.text();
@@ -15,6 +143,14 @@ class ProgramService {
 
         if (!result.success) {
             throw new Error(result.message);
+        }
+
+        if (result.data) {
+            if (Array.isArray(result.data)) {
+                result.data = this.formatProgramsData(result.data)
+            } else {
+                result.data = this.formatProgramData(result.data)
+            }
         }
 
         return result;
@@ -122,6 +258,12 @@ class ProgramService {
                 throw new Error('Program name is required');
             }
 
+            const formattedData = {
+                ...programData,
+                instructors: this.prepareInstructorsForBackend(programData.instructors),
+                tags: this.prepareTagsForBackend(programData.tags)
+            }
+
             const response = await fetch(`${this.baseURL}/program`, {
                 method: 'POST',
                 headers: {
@@ -144,6 +286,15 @@ class ProgramService {
                 throw new Error('Program ID is required');
             }
 
+            const formattedData = {
+                ...programData,
+                instructors: programData._raw_instructors || this.prepareInstructorsForBackend(programData.instructors),
+                tags: programData._raw_tags || this.prepareTagsForBackend(programData.tags)
+            }
+
+            delete formattedData._raw_instructors
+            delete formattedData._raw_tags
+
             const response = await fetch(`${this.baseURL}/program/${programId}`, {
                 method: 'PUT',
                 headers: {
@@ -158,6 +309,46 @@ class ProgramService {
             console.error('Error updating program: ', error)
             throw error
         }
+    }
+
+    prepareInstructorsForBackend(instructors) {
+        if (!instructors) return null;
+        
+        if (Array.isArray(instructors)) {
+            return instructors.filter(item => item && item.trim());
+        }
+        
+        if (typeof instructors === 'string' && instructors.includes(',')) {
+            return instructors.split(',')
+                .map(item => item.trim())
+                .filter(item => item);
+        }
+        
+        if (typeof instructors === 'string' && instructors.trim()) {
+            return [instructors.trim()];
+        }
+        
+        return null;
+    }
+
+    prepareTagsForBackend(tags) {
+        if (!tags) return null;
+        
+        if (Array.isArray(tags)) {
+            return tags.filter(item => item && item.trim());
+        }
+        
+        if (typeof tags === 'string' && tags.includes(',')) {
+            return tags.split(',')
+                .map(item => item.trim())
+                .filter(item => item);
+        }
+        
+        if (typeof tags === 'string' && tags.trim()) {
+            return [tags.trim()];
+        }
+        
+        return null;
     }
 
     async deleteProgram(programId) {
@@ -587,6 +778,22 @@ class ProgramService {
             console.error(`Error getting distinct values for ${field}:`, error);
             return [];
         }
+    }
+
+    formatProgram(program) {
+        return this.formatProgramData(program)
+    }
+
+    formatPrograms(programs) {
+        return this.formatProgramsData(programs)
+    }
+
+    getFormattedInstructors(instructors) {
+        return this.formatInstructors(instructors);
+    }
+
+    getFormattedTags(tags) {
+        return this.formatTags(tags);
     }
 }
 

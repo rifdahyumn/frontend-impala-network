@@ -10,24 +10,8 @@ import ProgramContent from "../components/Content/ProgramClient";
 import toast from "react-hot-toast";
 import { usePrograms } from "../hooks/usePrograms";
 import AddProgram from "../components/AddButton/AddProgram";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuGroup, 
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuCheckboxItem
-} from "../components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "../components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import * as XLSX from 'xlsx';
 
@@ -36,8 +20,7 @@ const Program = () => {
     const [isAddProgramModalOpen, setIsAddProgramModalOpen] = useState(false)
     const [editingProgram, setEditingProgram] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    
-    // State untuk modal import (diperbarui)
+
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importFile, setImportFile] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
@@ -45,14 +28,11 @@ const Program = () => {
     const [validationErrors, setValidationErrors] = useState([]);
     const [isDragging, setIsDragging] = useState(false);
     
-    // Ref untuk upload input
     const fileInputRef = useRef(null);
     const dropZoneRef = useRef(null);
     
-    // State untuk visual feedback auto-scroll
     const [highlightDetail, setHighlightDetail] = useState(false);
     
-    // Ref untuk auto-scroll ke detail section
     const programDetailRef = useRef(null);
     
     const {
@@ -77,11 +57,9 @@ const Program = () => {
         refreshData
     } = usePrograms();
 
-    // State lokal hanya untuk UI control
     const [searchTerm, setSearchTerm] = useState("");
     const [availableCategories, setAvailableCategories] = useState([]);
 
-    // Fungsi untuk handle select program dengan auto-scroll
     const handleSelectProgram = useCallback((program) => {
         setSelectedProgram(program);
         setHighlightDetail(true);
@@ -103,9 +81,6 @@ const Program = () => {
         }, 150);
     }, []);
 
-    // ===================== IMPORT FUNCTIONS =====================
-
-    // Handle drag events
     const handleDragOver = useCallback((e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -128,7 +103,6 @@ const Program = () => {
         }
     }, []);
 
-    // Handle file drop
     const handleDrop = useCallback((e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -141,7 +115,6 @@ const Program = () => {
         }
     }, []);
 
-    // Process uploaded file
     const processFile = useCallback((file) => {
         setValidationErrors([]);
         
@@ -155,7 +128,6 @@ const Program = () => {
         
         setImportFile(file);
         
-        // Read and parse file untuk validasi
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
@@ -183,21 +155,18 @@ const Program = () => {
         reader.readAsArrayBuffer(file);
     }, []);
 
-    // Fungsi untuk handle file upload via input
     const handleFileUpload = useCallback((event) => {
         const file = event.target.files[0];
         if (!file) return;
         processFile(file);
     }, [processFile]);
 
-    // Fungsi untuk trigger file input click
     const handleTriggerFileInput = useCallback(() => {
         if (fileInputRef.current) {
             fileInputRef.current.click();
         }
     }, []);
 
-    // Fungsi untuk reset file dan kembali ke state awal
     const handleRemoveFile = useCallback(() => {
         setImportFile(null);
         setValidationErrors([]);
@@ -207,12 +176,10 @@ const Program = () => {
         }
     }, []);
 
-    // Fungsi untuk ganti file
     const handleChangeFile = useCallback(() => {
         handleTriggerFileInput();
     }, [handleTriggerFileInput]);
 
-    // Fungsi untuk download template Excel
     const handleDownloadTemplate = useCallback(() => {
         try {
             const templateData = [
@@ -230,8 +197,7 @@ const Program = () => {
             ];
             
             const headers = Object.keys(templateData[0]);
-            
-            // Buat worksheet dengan data template
+
             const wsData = [
                 headers.map(header => header.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())),
                 ...templateData.map(row => 
@@ -240,18 +206,15 @@ const Program = () => {
             ];
             
             const ws = XLSX.utils.aoa_to_sheet(wsData);
-            
-            // Set column width
+
             if (!ws['!cols']) ws['!cols'] = [];
             headers.forEach((_, i) => {
                 ws['!cols'][i] = { wch: 25 };
             });
-            
-            // Buat workbook dan download
+
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Template");
-            
-            // Generate Excel file
+
             XLSX.writeFile(wb, `program_import_template_${new Date().getTime()}.xlsx`);
             
             toast.success('Template Excel berhasil didownload');
@@ -261,11 +224,9 @@ const Program = () => {
         }
     }, []);
 
-    // Validasi file Excel
     const validateExcelFile = (file) => {
         const errors = [];
         
-        // Validasi ekstensi file
         const validExtensions = ['.xlsx', '.xls'];
         const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
         
@@ -273,12 +234,10 @@ const Program = () => {
             errors.push('File harus berformat Excel (.xlsx atau .xls)');
         }
         
-        // Validasi ukuran file (max 10MB)
         if (file.size > 10 * 1024 * 1024) {
             errors.push('File terlalu besar. Maksimal 10MB');
         }
         
-        // Validasi tipe MIME
         const validTypes = [
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'application/vnd.ms-excel',
@@ -294,11 +253,9 @@ const Program = () => {
         return errors;
     };
 
-    // Validasi row data
     const validateRowData = (row, rowIndex) => {
         const errors = [];
         
-        // Validasi kolom wajib
         if (!row.program_name || row.program_name.toString().trim() === '') {
             errors.push(`Baris ${rowIndex}: Kolom "program_name" wajib diisi`);
         }
@@ -310,30 +267,25 @@ const Program = () => {
         return errors;
     };
 
-    // Parse Excel file
     const parseExcel = (data) => {
         try {
             const workbook = XLSX.read(data, { type: 'array' });
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
             
-            // Convert to JSON
             const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
             
             if (jsonData.length === 0) {
                 throw new Error('File Excel tidak berisi data');
             }
-            
-            // Get headers from first row
+
             const headers = Object.keys(jsonData[0]).map(h => h.trim());
             
-            // Parse dan validasi data
             const dataRows = [];
             const errors = [];
             
             jsonData.forEach((row, index) => {
                 try {
-                    // Bersihkan data
                     const cleanRow = {};
                     headers.forEach(header => {
                         const value = row[header];
@@ -341,7 +293,6 @@ const Program = () => {
                             (typeof value === 'string' ? value.trim() : value.toString().trim()) : '';
                     });
                     
-                    // Skip contoh data dari template
                     if (Object.values(cleanRow).some(value => 
                         value.toString().includes('Contoh:') || 
                         value.toString().includes('CONTOH:') ||
@@ -350,12 +301,10 @@ const Program = () => {
                         return;
                     }
                     
-                    // Skip baris kosong
                     if (Object.values(cleanRow).every(value => value === '')) {
                         return;
                     }
                     
-                    // Validasi row data
                     const rowErrors = validateRowData(cleanRow, index + 1);
                     if (rowErrors.length > 0) {
                         errors.push(...rowErrors);
@@ -374,7 +323,6 @@ const Program = () => {
         }
     };
 
-    // Fungsi untuk import Excel
     const handleImportExcel = useCallback(async () => {
         if (!importFile) {
             toast.error('Pilih file Excel terlebih dahulu');
@@ -388,7 +336,7 @@ const Program = () => {
             reader.onload = async (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const { data: parsedData, errors } = parseExcel(data);
+                    const { data: parsedData} = parseExcel(data);
                     
                     if (parsedData.length === 0) {
                         toast.error('Tidak ada data yang bisa diimport');
@@ -396,7 +344,6 @@ const Program = () => {
                         return;
                     }
                     
-                    // Simpan ke localStorage
                     const existingPrograms = JSON.parse(localStorage.getItem('programs') || '[]');
                     const newPrograms = [
                         ...existingPrograms,
@@ -409,7 +356,6 @@ const Program = () => {
                     ];
                     localStorage.setItem('programs', JSON.stringify(newPrograms));
                     
-                    // Reset form
                     setImportFile(null);
                     setValidationErrors([]);
                     setIsDragging(false);
@@ -417,10 +363,8 @@ const Program = () => {
                         fileInputRef.current.value = '';
                     }
                     
-                    // Close modal
                     setIsImportModalOpen(false);
                     
-                    // Refresh data
                     await refreshData();
                     
                     toast.success(`Berhasil mengimport ${parsedData.length} program`);
@@ -440,7 +384,6 @@ const Program = () => {
         }
     }, [importFile, refreshData]);
 
-    // Fungsi untuk open import modal
     const handleOpenImportModal = useCallback(() => {
         setImportFile(null);
         setValidationErrors([]);
@@ -451,7 +394,6 @@ const Program = () => {
         setIsImportModalOpen(true);
     }, []);
 
-    // Reset import state
     const resetImportState = useCallback(() => {
         setImportFile(null);
         setValidationErrors([]);
@@ -461,9 +403,6 @@ const Program = () => {
         }
     }, []);
 
-    // ===================== EXPORT FUNCTIONS =====================
-
-    // Fungsi untuk export data ke Excel/CSV
     const handleExport = useCallback(async (format = 'excel') => {
         try {
             if (!programs || programs.length === 0) {
@@ -472,8 +411,7 @@ const Program = () => {
             }
             
             setIsExporting(true);
-            
-            // Format data untuk export
+
             const exportData = programs.map((program, index) => ({
                 'No': index + 1,
                 'Program Name': program.program_name || '-',
@@ -525,20 +463,16 @@ const Program = () => {
                     };
                 }
                 
-                // Buat workbook
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Programs");
                 
-                // Generate nama file
                 const dateStr = new Date().toISOString().split('T')[0];
                 const fileName = `programs_export_${dateStr}.xlsx`;
                 
-                // Export file
                 XLSX.writeFile(wb, fileName);
                 
                 toast.success(`Exported ${exportData.length} programs to Excel`);
             } else if (format === 'csv') {
-                // Untuk format CSV
                 const csvContent = [
                     Object.keys(exportData[0]).join(','),
                     ...exportData.map(row => Object.values(row).join(','))
@@ -591,7 +525,7 @@ const Program = () => {
             
             const formattedCategories = uniqueCategories.map(category => ({
                 value: category.toLowerCase(),
-                label: `🏷️ ${category}`,
+                label: `${category}`,
                 original: category
             }));
             
@@ -700,8 +634,7 @@ const Program = () => {
             await deleteProgram(programId);
             setSelectedProgram(null);
             toast.success('Program deleted successfully');
-            
-            // Scroll ke atas setelah delete
+
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
             console.error('Error deleting program:', error);
@@ -825,7 +758,6 @@ const Program = () => {
                             </div>
                         )}
 
-                        {/* SEARCH & FILTER SECTION */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2 items-center flex-wrap'>
                                 <SearchBar 
@@ -838,7 +770,6 @@ const Program = () => {
                                     }}
                                 />
                                 
-                                {/* Toggle Show All on Search */}
                                 {filters.search && filters.search.trim() !== '' && (
                                     <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
                                         <label className="flex items-center gap-2 cursor-pointer">
@@ -864,7 +795,6 @@ const Program = () => {
                                     </div>
                                 )}
                                 
-                                {/* FILTER DROPDOWN DENGAN WARNA AMBER */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button 
@@ -890,7 +820,6 @@ const Program = () => {
                                         <DropdownMenuLabel className="text-gray-700 font-semibold">Filter Options</DropdownMenuLabel>
                                         <DropdownMenuSeparator />
                                         
-                                        {/* STATUS FILTER */}
                                         <DropdownMenuGroup>
                                             <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
                                                 Status
@@ -909,19 +838,17 @@ const Program = () => {
                                         
                                         <DropdownMenuSeparator />
                                         
-                                        {/* CATEGORY FILTER */}
                                         <DropdownMenuGroup>
                                             <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
                                                 Category
                                             </DropdownMenuLabel>
                                             <div className="max-h-48 overflow-y-auto">
-                                                {/* ALL CATEGORIES OPTION */}
                                                 <DropdownMenuCheckboxItem
                                                     checked={filters.category === 'all'}
                                                     onCheckedChange={() => handleCategoryFilterChange('all')}
                                                     className="cursor-pointer hover:bg-gray-50"
                                                 >
-                                                    📋 All Categories
+                                                    All Categories
                                                 </DropdownMenuCheckboxItem>
                                                 
                                                 {availableCategories.map((category) => (
@@ -940,7 +867,6 @@ const Program = () => {
                                         
                                         <DropdownMenuSeparator />
                                         
-                                        {/* CLEAR FILTERS */}
                                         <DropdownMenuItem 
                                             onClick={() => {
                                                 updateFiltersAndFetch({ 
@@ -966,7 +892,6 @@ const Program = () => {
                                     {tableConfig.addButton}
                                 </Button>
                                 
-                                {/* Import Button dengan Dropdown (diperbarui) */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button
@@ -996,7 +921,6 @@ const Program = () => {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 
-                                {/* Export Button dengan Dropdown (diperbarui) */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button
@@ -1034,7 +958,6 @@ const Program = () => {
                             </div>
                         </div>
                         
-                        {/* Show All Mode Indicator */}
                         {isShowAllMode() && (
                             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                 <div className="flex items-center justify-between">
@@ -1055,12 +978,10 @@ const Program = () => {
                             </div>
                         )}
                         
-                        {/* ACTIVE FILTERS BADGES */}
                         {getTotalActiveCriteria > 0 && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
                                 <span className="text-sm text-gray-600">Active filters:</span>
                                 
-                                {/* SEARCH BADGE */}
                                 {filters.search && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <span>🔍 "{filters.search}"</span>
@@ -1073,7 +994,6 @@ const Program = () => {
                                     </span>
                                 )}
                                 
-                                {/* STATUS FILTER BADGE */}
                                 {filters.status && (
                                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         {getStatusLabel(filters.status)}
@@ -1086,7 +1006,6 @@ const Program = () => {
                                     </span>
                                 )}
                                 
-                                {/* CATEGORY FILTER BADGE */}
                                 {filters.category && filters.category !== 'all' && (
                                     <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Tag className="w-3 h-3" />
@@ -1100,7 +1019,6 @@ const Program = () => {
                                     </span>
                                 )}
                                 
-                                {/* ALL CATEGORIES BADGE */}
                                 {filters.category === 'all' && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Tag className="w-3 h-3" />
@@ -1114,7 +1032,6 @@ const Program = () => {
                                     </span>
                                 )}
                                 
-                                {/* CLEAR ALL */}
                                 <Button 
                                     variant="ghost" 
                                     onClick={handleClearAllFilters}
@@ -1210,7 +1127,6 @@ const Program = () => {
                                         {getTotalActiveCriteria > 0 && !isShowAllMode() && " (filtered)"}
                                     </div>
                                     
-                                    {/* Conditional rendering pagination */}
                                     {!isShowAllMode() && pagination.totalPages > 1 ? (
                                         <Pagination 
                                             currentPage={pagination.page}
@@ -1232,7 +1148,6 @@ const Program = () => {
                     </CardContent>
                 </Card>
 
-                {/* Wrap ProgramContent dengan div yang memiliki ref untuk auto-scroll */}
                 <div 
                     ref={programDetailRef}
                     className={`
@@ -1268,7 +1183,6 @@ const Program = () => {
                     onEditProgram={handleEditProgram}
                 />
 
-                {/* Modal Import Excel dengan Drag & Drop (diperbarui) */}
                 <Dialog open={isImportModalOpen} onOpenChange={(open) => {
                     if (!open) {
                         resetImportState();
@@ -1287,7 +1201,6 @@ const Program = () => {
                         </DialogHeader>
                         
                         <div className="space-y-4 py-4">
-                            {/* Petunjuk */}
                             <div className="bg-blue-50 p-4 rounded-lg">
                                 <h4 className="text-sm font-medium text-blue-800 mb-2">Instructions:</h4>
                                 <ul className="text-sm text-blue-600 space-y-1 list-disc list-inside">
@@ -1300,7 +1213,6 @@ const Program = () => {
                                 </ul>
                             </div>
                             
-                            {/* Upload Area dengan Drag & Drop */}
                             <div 
                                 ref={dropZoneRef}
                                 className={`
@@ -1379,7 +1291,6 @@ const Program = () => {
                                 )}
                             </div>
 
-                            {/* Error Messages */}
                             {validationErrors.length > 0 && (
                                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                                     <h4 className="text-sm font-medium text-red-800 mb-2 flex items-center gap-2">
