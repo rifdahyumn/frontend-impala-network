@@ -15,6 +15,7 @@ const ImportDropdown = ({
                     variant="outline"
                     className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50 whitespace-nowrap"
                     disabled={loading}
+                    onClick={onImport}
                 >
                     <Upload className="h-4 w-4" />
                     Import

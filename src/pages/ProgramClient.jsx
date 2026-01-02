@@ -87,15 +87,6 @@ const ProgramClient = () => {
         refreshData
     } = useProgramClient();
 
-    console.log('Program Client - Search debug:', {
-        searchValue: localFilters.search,
-        showAllOnSearch: showAllOnSearch,
-        membersCount: members.length,
-        pagination: pagination,
-        loading: loading,
-        isInShowAllMode: isInShowAllMode
-    })
-
     useEffect(() => {
         console.log('localFilters updated:', localFilters)
     }, [localFilters])

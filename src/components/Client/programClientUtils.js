@@ -38,13 +38,16 @@ export const validateExcelFile = (file) => {
 
 export const validateRowData = (row, rowIndex) => {
     const errors = [];
+
+    const fullNameValue = row.full_name
+    const emailValue = row.email
     
-    if (!row.full_name || row.full_name.toString().trim() === '') {
-        errors.push(`Baris ${rowIndex}: Kolom "full_name" wajib diisi`);
+    if (!fullNameValue || fullNameValue.toString().trim() === '') {
+        errors.push(`Baris ${rowIndex}: Kolom "Full Name" wajib diisi`);
     }
     
-    if (!row.email || row.email.toString().trim() === '') {
-        errors.push(`Baris ${rowIndex}: Kolom "email" wajib diisi`);
+    if (!emailValue || emailValue.toString().trim() === '') {
+        errors.push(`Baris ${rowIndex}: Kolom "Email" wajib diisi`);
     }
     
     if (row.email) {
@@ -70,6 +73,36 @@ export const parseExcelData = (data) => {
         }
         
         const headers = Object.keys(jsonData[0]).map(h => h.trim());
+
+        const headerMapping = {
+            'Full Name': 'full_name',
+            'Email': 'email',
+            'Phone': 'phone',
+            'Gender': 'gender',
+            'Company': 'company',
+            'Position': 'position',
+            'Total Employee': 'total_employee',
+            'Business': 'business',
+            'Program Name': 'program_name',
+            'Status': 'status',
+            'Address': 'address',
+            'Notes': 'notes',
+            'Join Date': 'join_date',
+
+            'full_name': 'full_name',
+            'email': 'email',
+            'phone': 'phone',
+            'gender': 'gender',
+            'company': 'company',
+            'position': 'position',
+            'total_employee': 'total_employee',
+            'business': 'business',
+            'program_name': 'program_name',
+            'status': 'status',
+            'address': 'address',
+            'notes': 'notes',
+            'join_date': 'join_date'
+        }
         
         const dataRows = [];
         const errors = [];
@@ -79,14 +112,15 @@ export const parseExcelData = (data) => {
                 const cleanRow = {};
                 headers.forEach(header => {
                     const value = row[header];
-                    cleanRow[header] = value !== undefined && value !== null ? 
+                    const cleanValue = value !== undefined && value !== null ? 
                         (typeof value === 'string' ? value.trim() : value.toString().trim()) : '';
+
+                    const normalizedHeader = headerMapping[header] || header
+                    cleanRow[normalizedHeader] = cleanValue
                 });
                 
                 if (Object.values(cleanRow).some(value => 
-                    value.toString().includes('Contoh:') || 
-                    value.toString().includes('CONTOH:') ||
-                    value.toString().includes('contoh:')
+                    value.toString().toLowerCase().includes('contoh')
                 )) {
                     return;
                 }
@@ -236,38 +270,97 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
 export const downloadTemplate = () => {
     const templateData = [
         {
-            'full_name': 'Contoh: John Doe',
-            'email': 'Contoh: john@example.com',
-            'phone': 'Contoh: 081234567890',
-            'company': 'Contoh: PT. Contoh Indonesia',
-            'business': 'Contoh: Technology',
-            'program_name': 'Contoh: Program Premium',
-            'status': 'Contoh: active',
-            'address': 'Contoh: Jl. Contoh No. 123',
-            'notes': 'Contoh: Catatan tambahan'
+            'Full Name': 'Contoh: John Doe',
+            'Email': 'Contoh: john@example.com',
+            'Phone': 'Contoh: 081234567890',
+            'Gender': 'Contoh: Male',
+            'Company': 'Contoh: PT. Contoh Indonesia',
+            'Position': 'Contoh: CO-Founder',
+            'Total Employee': 'Contoh: 50-100 employees',
+            'Business': 'Contoh: Technology',
+            'Program Name': 'Contoh: Program Premium',
+            'Status': 'Contoh: Active',
+            'Address': 'Contoh: Jl. Contoh No. 123',
+            'Join Date': 'Contoh: 2024-01-15',
+            'Notes': 'Contoh: Catatan tambahan'
         },
     ];
   
     const headers = Object.keys(templateData[0]);
+
+    const exampleData = [
+        {
+            'Full Name': 'Contoh: Jonathan Ardi Wijaya',
+            'Email': 'Contoh: jonathan.wijaya@auroratech.co.id',
+            'Phone': 'Contoh: +62 812 3456 7890',
+            'Gender': 'Contoh: Male',
+            'Company': 'Contoh: Aurora Tech Solutions',
+            'Position': 'Contoh: Head of Digital Transformation',
+            'Total Employee': 'Contoh: 50-100 employees',
+            'Business': 'Contoh: Technology',
+            'Program Name': 'Contoh: Enterprise Digital Acceleration 2025',
+            'Status': 'Contoh: Active',
+            'Address': 'Contoh: Jl. Jenderal Sudirman No. 88, Jakarta',
+            'Join Date': 'Contoh: 2025-12-30',
+            'Notes': 'Contoh: Client focused on modernizing internal systems'
+        }
+    ]
   
     const wsData = [
-        headers.map(header => header.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())),
-        ...templateData.map(row => 
-            headers.map(header => row[header] || '')
-        )
+        headers,
+        ...exampleData.map(row => headers.map(header => row[header] || ''))
     ];
   
     const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    const columnWidths = [
+        { wch: 25 }, 
+        { wch: 30 }, 
+        { wch: 20 }, 
+        { wch: 10 }, 
+        { wch: 25 },
+        { wch: 25 }, 
+        { wch: 20 },
+        { wch: 20 }, 
+        { wch: 35 },
+        { wch: 15 }, 
+        { wch: 40 }, 
+        { wch: 15 }, 
+        { wch: 40 } 
+    ]
+    ws['!cols'] = columnWidths
   
-    if (!ws['!cols']) ws['!cols'] = [];
-    headers.forEach((_, i) => {
-        ws['!cols'][i] = { wch: 25 };
-    });
+    const range = XLSX.utils.decode_range(ws['!ref'])
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cell_address = { c: C, r: 0 }
+        const cell_ref = XLSX.utils.encode_cell(cell_address)
+        if (ws[cell_ref]) {
+            ws[cell_ref].s = {
+                font: { bold: true, color: { rgb: 'FFFFFF' } },
+                fill: { fgColor: { rgb: '4F46E5' } },
+                alignment: { vertical: 'center', horizontal: 'center' }
+            }
+        }
+    }
+
+    for (let R = 1; R <= exampleData.length; R++) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cell_address = { c: C, r: R }
+            const cell_ref = XLSX.utils.encode_cell(cell_address)
+            if (ws[cell_ref]) {
+                ws[cell_ref].s = {
+                    fill: { fgColor: { rgb: 'F0F9FF' } },
+                    font: { color: { rgb: '475569' } }
+                }
+            }
+        }
+    }
     
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
     
-    XLSX.writeFile(wb, `client_import_template_${new Date().getTime()}.xlsx`);
+    const fileName = `client_import_template_${new Date().toISOString().split('T')[0]}.xlsx`
+    XLSX.writeFile(wb, fileName)
 };
 
 export const formatBusinessTypes = (members) => {

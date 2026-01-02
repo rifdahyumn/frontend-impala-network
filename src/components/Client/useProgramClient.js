@@ -315,37 +315,55 @@ export const useProgramClient = () => {
     }, []);
 
     const handleImportExcel = useCallback(async () => {
+        console.log('🚀 handleImportExcel DIPANGGIL!');
+        console.log('📁 importFile:', importFile?.name);
+
         if (!importFile) {
             toast.error('Pilih file Excel terlebih dahulu');
             return;
         }
         
+        console.log('⏳ Mulai import...');
         setIsImporting(true);
         
         try {
             const reader = new FileReader();
+
             reader.onload = async (e) => {
+                console.log('📖 FileReader onload triggered');
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const { data: parsedData } = parseExcelData(data);
+                    console.log('📊 Data array length:', data.length);
+                    const { data: parsedData, errors } = parseExcelData(data);
+                    console.log('✅ Data parsed:', parsedData?.length, 'rows');
+                    console.log('❌ Parse errors:', errors?.length);
                     
                     if (parsedData.length === 0) {
                         toast.error('Tidak ada data yang bisa diimport');
                         setIsImporting(false);
                         return;
                     }
-                    
-                    const existingClients = JSON.parse(localStorage.getItem('clients') || '[]');
-                    const newClients = [
-                        ...existingClients,
-                        ...parsedData.map((client, index) => ({
-                            id: Date.now() + index,
-                            ...client,
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString()
-                        }))
-                    ];
-                    localStorage.setItem('clients', JSON.stringify(newClients));
+
+                    console.log('📤 Mengirim ke API...');
+
+                    const response = await fetch('/api/client/bulk-import', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            clients: parsedData,
+                            mode: 'upsert'
+                        })
+                    })
+
+                    const result = await response.json()
+
+                    if (!response.ok) {
+                        throw new Error(result.message || 'Gagal mengimport clients')
+                    }
+
+                    console.log('Import result:', result)
                     
                     setImportFile(null);
                     setValidationErrors([]);
@@ -353,10 +371,35 @@ export const useProgramClient = () => {
                     if (fileInputRef.current) {
                         fileInputRef.current.value = '';
                     }
-                    
-                    setIsImportModalOpen(false);
-                    await refreshData();
-                    toast.success(`Berhasil mengimport ${parsedData.length} client`);
+
+                    if (result.success) {
+                        const { inserted = 0, updated = 0, totalProcessed = 0 } = result.data || {};
+
+                        let message = `${result.message}`;
+
+                        if (inserted > 0 && updated > 0) {
+                            message += ` (${inserted} data baru, ${updated} data diupdate)`;
+                        } else if (inserted > 0) {
+                            message += ` (${inserted} data baru)`;
+                        } else if (updated > 0) {
+                            message += ` (${updated} data diupdate)`;
+                        }
+
+                        toast.success(message)
+
+                        if (result.data?.errors && result.data.errors.length > 0) {
+                            setValidationErrors(result.data.errors)
+
+                            if (totalProcessed > 0) {
+                                setIsImportModalOpen(false)
+                                await refreshData()
+                            }
+                        } else {
+                            setIsImportModalOpen(false)
+                            await refreshData()
+                        }
+                    }
+
                 } catch (parseError) {
                     console.error('Parse error:', parseError);
                     toast.error('Format file Excel tidak valid');

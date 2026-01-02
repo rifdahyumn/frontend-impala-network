@@ -253,7 +253,10 @@ const ImportButton = ({
                             setTimeout(() => {
                                 resetImportState();
                                 setIsImportModalOpen(false);
-                            }, 3000);
+                            }, 2000);
+                        } else {
+                            toast.error('Import failed')
+                            setIsProcessing(false)
                         }
                     }
                 } catch (error) {
@@ -638,7 +641,7 @@ const ImportButton = ({
                                 </Button>
                                 <Button
                                     onClick={handleImport}
-                                    disabled={!importFile || isProcessing || validationErrors.length > 0}
+                                    disabled={!importFile || isProcessing}
                                     className="flex items-center gap-2"
                                 >
                                     {isProcessing ? (
