@@ -3,8 +3,6 @@ import programService from "../services/programService"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { debounce } from 'lodash'
 
-
-
 export const usePrograms = (initialFilters = {}) => {
     const [programs, setPrograms] = useState([])
     const [loading, setLoading] = useState(false)
@@ -25,6 +23,11 @@ export const usePrograms = (initialFilters = {}) => {
     const [showAllOnSearch, setShowAllOnSearch] = useState(false)
     const [allPrograms, setAllPrograms] = useState([])
     const [allProgramsLoading, setAllProgramsLoading] = useState(false)
+
+    const [isImporting, setIsImporting] = useState(false)
+    const [importProgress, setImportProgress] = useState(0);
+    const [importResult, setImportResult] = useState(null);
+    const [importError, setImportError] = useState(null);
 
     const filtersRef = useRef({
         search: '',
@@ -464,16 +467,263 @@ export const usePrograms = (initialFilters = {}) => {
         }
     }
 
+    const bulkImport = useCallback(async (programsData, options = {}) => {
+        const {
+            mode = 'create',
+            overwriteExisting = false,
+            chunkSize = 50,
+            onProgress
+        } = options
+
+        try {
+            setIsImporting(true);
+            setImportProgress(0);
+            setImportError(null);
+            setImportResult(null);
+
+            const progressInterval = setInterval(() => {
+                setImportProgress(prev => {
+                    const newProgress = Math.min(prev + 5, 90);
+                    if (onProgress) onProgress(newProgress);
+                    return newProgress;
+                });
+            }, 300)
+
+            const result = await programService.bulkImport(programsData, {
+                mode,
+                overwriteExisting,
+                chunkSize,
+                onProgress: (progressInfo) => {
+                    if (progressInfo && typeof progressInfo === 'object') {
+                        const actualProgress = Math.min(95, progressInfo.progress || importProgress);
+                        setImportProgress(actualProgress);
+                        if (onProgress) onProgress(actualProgress);
+                    }
+                }
+            })
+
+            clearInterval(progressInterval)
+            setImportProgress(100)
+
+            if (!result.success) {
+                throw new Error(result.message || 'Import failed');
+            }
+
+            setImportResult(result.data || result);
+
+            const successful = result.data?.successful || 0;
+            const failed = result.data?.failed || 0;
+
+            if (successful > 0) {
+                toast.success(`Successfully imported ${successful} programs`);
+            }
+            
+            if (failed > 0) {
+                toast.error(`${failed} programs failed to import`);
+            }
+
+            await refreshAllData();
+
+            return result;
+
+        } catch (error) {
+            console.error('Bulk import error:', error);
+            setImportError(error.message);
+            
+            if (error.message.includes('Validation')) {
+                toast.error(`Validation error: ${error.message.split(':')[1] || error.message}`);
+            } else {
+                toast.error(`Import failed: ${error.message}`);
+            }
+            
+            throw error;
+        } finally {
+            setIsImporting(false);
+        }
+    }, [refreshAllData])
+
+    const parseExcelFile = useCallback(async (file) => {
+        try {
+            if (!file) {
+                throw new Error('Please select an Excel file');
+            }
+
+            const validExtensions = ['.xlsx', '.xls'];
+            const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+            
+            if (!validExtensions.includes(fileExtension)) {
+                throw new Error('Only Excel files (.xlsx, .xls) are supported');
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                throw new Error('File size too large. Maximum 10MB');
+            }
+
+            const parsedData = await programService.parseImportFile(file);
+            
+            if (!parsedData || !Array.isArray(parsedData)) {
+                throw new Error('Failed to parse Excel file');
+            }
+            
+            if (parsedData.length === 0) {
+                throw new Error('No valid data found in Excel file');
+            }
+
+            return parsedData;
+
+        } catch (error) {
+            console.error('Parse Excel error in hook:', error);
+            throw error;
+        }
+    }, []);
+
+    const validateImportData = useCallback(async (data) => {
+        try {
+            if (!data || !Array.isArray(data)) {
+                throw new Error('Invalid data format');
+            }
+            const validationResult = programService.validateImportData(data);
+
+            if (!validationResult || typeof validationResult !== 'object') {
+                throw new Error('Invalid validation result structure');
+            }
+
+            return validationResult
+
+        } catch (error) {
+            console.error('Validation error:', error);
+            
+            const valid = data.filter(row => row.program_name && row.program_name.trim());
+            const invalid = data.filter(row => !row.program_name || !row.program_name.trim());
+
+            return {
+                valid,
+                invalid: invalid.map((row, index) => ({
+                    ...row,
+                    _rowNumber: index + 1,
+                    _errors: ['Program name is required'],
+                    _isValid: false
+                })),
+                errors: invalid.map((row, index) => ({
+                    row: index + 1,
+                    program_name: 'Unknown',
+                    errors: ['Program name is required']
+                }))
+            };
+        }
+    }, [])
+
+    const importFromFile = useCallback(async (file, options = {}) => {
+        const {
+            mode = 'create',
+            overwriteExisting = false,
+            chunkSize = 50,
+            onProgress
+        } = options;
+
+        try {
+            setIsImporting(true);
+            setImportProgress(0);
+            setImportError(null);
+            setImportResult(null);
+
+            const parsedData = await parseExcelFile(file);
+            
+            if (!parsedData || parsedData.length === 0) {
+                throw new Error('No valid data found in Excel file');
+            }
+
+            const validationResult = await validateImportData(parsedData);
+            
+            if (!validationResult) {
+                throw new Error('Validation failed');
+            }
+
+            if (!validationResult.valid || validationResult.valid.length === 0) {
+                const errorMsg = validationResult.invalid?.length > 0 
+                    ? `All ${validationResult.invalid.length} records failed validation`
+                    : 'No valid data to import';
+                throw new Error(errorMsg);
+            }
+
+            const importResult = await programService.bulkImport(
+                validationResult.valid, 
+                {
+                    mode,
+                    overwriteExisting,
+                    chunkSize,
+                    onProgress: (progressInfo) => {
+                        const progress = progressInfo?.progress || 0;
+                        setImportProgress(progress);
+                        if (onProgress) onProgress(progress);
+                    }
+                }
+            );
+
+            if (!importResult.success) {
+                throw new Error(importResult.message || 'Import failed');
+            }
+
+            setImportResult(importResult.data || importResult);
+            
+            const successful = importResult.data?.successful || 0;
+            const failed = importResult.data?.failed || 0;
+            
+            if (successful > 0) {
+                toast.success(`Successfully imported ${successful} programs`);
+            }
+            
+            if (failed > 0) {
+                toast.error(`${failed} programs failed to import`);
+            }
+
+            await refreshAllData();
+
+            return importResult;
+
+        } catch (error) {
+            console.error('Import from file error:', error);
+            setImportError(error.message);
+
+            if (error.message.includes('validation') || error.message.includes('Validation')) {
+                toast.error(`Validation error: ${error.message}`);
+            } else if (error.message.includes('parse') || error.message.includes('Parse')) {
+                toast.error(`File parsing error: ${error.message}`);
+            } else {
+                toast.error(`Import failed: ${error.message}`);
+            }
+            
+            throw error;
+            
+        } finally {
+            setIsImporting(false);
+            setImportProgress(100);
+        }
+    }, [parseExcelFile, validateImportData, refreshAllData]);
+
+    const downloadImportTemplate = useCallback(() => {
+        try {
+            programService.downloadExcelTemplate();
+            toast.success('Excel template downloaded successfully');
+        } catch (error) {
+            console.error('Download template error:', error);
+            toast.error(`Failed to download template: ${error.message}`);
+        }
+    }, [])
+
+    const resetImport = useCallback(() => {
+        setIsImporting(false);
+        setImportProgress(0);
+        setImportResult(null);
+        setImportError(null);
+    }, [])
+
     const getDisplayText = useCallback(() => {
         if (pagination.showingAllResults && filtersRef.current.search) {
             return `Showing all ${programs.length} results for "${filtersRef.current.search}"`
         } else if (pagination.showingAllResults) {
             return `Showing all ${programs.length} programs`
-        } else {
-            const start = ((pagination.page - 1) * pagination.limit) + 1
-            const end = Math.min(pagination.page * pagination.limit, pagination.total)
-            // return `Showing ${start} to ${end} of ${pagination.total} programs`
-        }
+        } 
     }, [pagination, programs.length])
 
     const refetch = useCallback(() => {
@@ -506,6 +756,14 @@ export const usePrograms = (initialFilters = {}) => {
         programStats, 
         priceStats,
         statsLoading,
+        
+        // Import related states
+        isImporting,
+        importProgress,
+        importResult,
+        importError,
+        
+        // Existing functions
         fetchPrograms: handlePageChange,
         updateFiltersAndFetch,
         clearFilters,
@@ -532,6 +790,14 @@ export const usePrograms = (initialFilters = {}) => {
         allPrograms,
         allProgramsLoading,
         fetchAllPrograms,
-        refreshAllData
+        refreshAllData,
+        
+        // NEW IMPORT FUNCTIONS
+        bulkImport,
+        parseExcelFile,
+        validateImportData,
+        importFromFile,
+        downloadImportTemplate,
+        resetImport
     }
 }

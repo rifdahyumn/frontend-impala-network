@@ -1,6 +1,6 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, RefreshCw, AlertCircle, Tag, Filter, X, CheckSquare, Download, Upload, FileText, FileSpreadsheet } from "lucide-react";
+import { Plus, Loader2, Users, RefreshCw, AlertCircle, Tag, Filter, X, CheckSquare, Download, Upload, FileText, FileSpreadsheet, CheckCircle } from "lucide-react";
 import { Button } from "../components/ui/button"
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import * as XLSX from 'xlsx';
+import { Progress } from "../components/ui/progress"; // Jika punya component Progress
 
 const Program = () => {
     const [selectedProgram, setSelectedProgram] = useState(null)
@@ -23,7 +24,6 @@ const Program = () => {
 
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importFile, setImportFile] = useState(null);
-    const [isImporting, setIsImporting] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [validationErrors, setValidationErrors] = useState([]);
     const [isDragging, setIsDragging] = useState(false);
@@ -54,7 +54,20 @@ const Program = () => {
         addProgram,
         updateProgram,
         deleteProgram,
-        refreshData
+        refreshData,
+        refreshAllData,
+        exportPrograms: hookExportPrograms,
+        
+        // IMPORT FUNCTIONS FROM HOOK
+        isImporting,
+        importProgress,
+        importResult,
+        importError,
+        importFromFile,
+        downloadImportTemplate,
+        parseExcelFile,
+        validateImportData,
+        resetImport
     } = usePrograms();
 
     const [searchTerm, setSearchTerm] = useState("");
@@ -81,6 +94,7 @@ const Program = () => {
         }, 150);
     }, []);
 
+    // ========== IMPORT FUNCTIONS ==========
     const handleDragOver = useCallback((e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -97,8 +111,7 @@ const Program = () => {
         e.preventDefault();
         e.stopPropagation();
         
-        if (dropZoneRef.current && 
-            !dropZoneRef.current.contains(e.relatedTarget)) {
+        if (dropZoneRef.current && !dropZoneRef.current.contains(e.relatedTarget)) {
             setIsDragging(false);
         }
     }, []);
@@ -111,55 +124,56 @@ const Program = () => {
         const files = e.dataTransfer.files;
         if (files && files.length > 0) {
             const file = files[0];
-            processFile(file);
+            handleFileUpload({ target: { files: [file] } });
         }
     }, []);
 
-    const processFile = useCallback((file) => {
+    const handleFileUpload = useCallback(async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        
         setValidationErrors([]);
         
+        // Validasi file
         const errors = validateExcelFile(file);
         if (errors.length > 0) {
             setValidationErrors(errors);
-            setImportFile(null);
             toast.error('File tidak valid');
             return;
         }
         
         setImportFile(file);
         
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const { data: parsedData, errors } = parseExcel(data);
-                
-                if (errors.length > 0) {
-                    setValidationErrors(errors);
-                    if (parsedData.length === 0) {
-                        toast.error('Tidak ada data valid yang ditemukan dalam file');
-                    } else {
-                        toast.error(`Terdapat ${errors.length} error dalam file`);
-                    }
-                }
-                
-                if (parsedData.length > 0) {
-                    toast.success(`File berhasil diupload: ${parsedData.length} data valid ditemukan`);
-                }
-            } catch (error) {
-                setValidationErrors([error.message]);
-                toast.error('Gagal membaca file Excel');
+        try {
+            // Coba parse file untuk preview
+            const parsedData = await parseExcelFile(file);
+            
+            if (parsedData && parsedData.length > 0) {
+                toast.success(`File berhasil diupload: ${parsedData.length} data ditemukan`);
             }
-        };
-        
-        reader.readAsArrayBuffer(file);
-    }, []);
+        } catch (error) {
+            console.error('Parse file error:', error);
+            setValidationErrors([error.message]);
+            toast.error('Gagal membaca file Excel');
+        }
+    }, [parseExcelFile]);
 
-    const handleFileUpload = useCallback((event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        processFile(file);
-    }, [processFile]);
+    const validateExcelFile = (file) => {
+        const errors = [];
+        
+        const validExtensions = ['.xlsx', '.xls'];
+        const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        
+        if (!validExtensions.includes(fileExtension)) {
+            errors.push('File harus berformat Excel (.xlsx atau .xls)');
+        }
+        
+        if (file.size > 10 * 1024 * 1024) {
+            errors.push('File terlalu besar. Maksimal 10MB');
+        }
+        
+        return errors;
+    };
 
     const handleTriggerFileInput = useCallback(() => {
         if (fileInputRef.current) {
@@ -181,147 +195,8 @@ const Program = () => {
     }, [handleTriggerFileInput]);
 
     const handleDownloadTemplate = useCallback(() => {
-        try {
-            const templateData = [
-                {
-                    'program_name': 'Contoh: Program Premium',
-                    'category': 'Contoh: Technology',
-                    'status': 'Contoh: active',
-                    'duration': 'Contoh: 30 days',
-                    'price': 'Contoh: 5000000',
-                    'client': 'Contoh: John Doe',
-                    'start_date': 'Contoh: 2024-01-01',
-                    'end_date': 'Contoh: 2024-01-30',
-                    'description': 'Contoh: Program training premium untuk client'
-                },
-            ];
-            
-            const headers = Object.keys(templateData[0]);
-
-            const wsData = [
-                headers.map(header => header.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())),
-                ...templateData.map(row => 
-                    headers.map(header => row[header] || '')
-                )
-            ];
-            
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-            if (!ws['!cols']) ws['!cols'] = [];
-            headers.forEach((_, i) => {
-                ws['!cols'][i] = { wch: 25 };
-            });
-
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Template");
-
-            XLSX.writeFile(wb, `program_import_template_${new Date().getTime()}.xlsx`);
-            
-            toast.success('Template Excel berhasil didownload');
-        } catch (error) {
-            console.error('Download template error:', error);
-            toast.error('Gagal mendownload template');
-        }
-    }, []);
-
-    const validateExcelFile = (file) => {
-        const errors = [];
-        
-        const validExtensions = ['.xlsx', '.xls'];
-        const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-        
-        if (!validExtensions.includes(fileExtension)) {
-            errors.push('File harus berformat Excel (.xlsx atau .xls)');
-        }
-        
-        if (file.size > 10 * 1024 * 1024) {
-            errors.push('File terlalu besar. Maksimal 10MB');
-        }
-        
-        const validTypes = [
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/vnd.ms-excel',
-            'application/excel',
-            'application/x-excel',
-            'application/x-msexcel'
-        ];
-        
-        if (!validTypes.includes(file.type) && file.type !== '') {
-            errors.push('Tipe file tidak valid. Hanya file Excel yang diperbolehkan');
-        }
-        
-        return errors;
-    };
-
-    const validateRowData = (row, rowIndex) => {
-        const errors = [];
-        
-        if (!row.program_name || row.program_name.toString().trim() === '') {
-            errors.push(`Baris ${rowIndex}: Kolom "program_name" wajib diisi`);
-        }
-        
-        if (!row.category || row.category.toString().trim() === '') {
-            errors.push(`Baris ${rowIndex}: Kolom "category" wajib diisi`);
-        }
-        
-        return errors;
-    };
-
-    const parseExcel = (data) => {
-        try {
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-            
-            if (jsonData.length === 0) {
-                throw new Error('File Excel tidak berisi data');
-            }
-
-            const headers = Object.keys(jsonData[0]).map(h => h.trim());
-            
-            const dataRows = [];
-            const errors = [];
-            
-            jsonData.forEach((row, index) => {
-                try {
-                    const cleanRow = {};
-                    headers.forEach(header => {
-                        const value = row[header];
-                        cleanRow[header] = value !== undefined && value !== null ? 
-                            (typeof value === 'string' ? value.trim() : value.toString().trim()) : '';
-                    });
-                    
-                    if (Object.values(cleanRow).some(value => 
-                        value.toString().includes('Contoh:') || 
-                        value.toString().includes('CONTOH:') ||
-                        value.toString().includes('contoh:')
-                    )) {
-                        return;
-                    }
-                    
-                    if (Object.values(cleanRow).every(value => value === '')) {
-                        return;
-                    }
-                    
-                    const rowErrors = validateRowData(cleanRow, index + 1);
-                    if (rowErrors.length > 0) {
-                        errors.push(...rowErrors);
-                        return;
-                    }
-                    
-                    dataRows.push(cleanRow);
-                } catch (error) {
-                    errors.push(`Baris ${index + 1}: ${error.message}`);
-                }
-            });
-            
-            return { data: dataRows, errors, headers };
-        } catch (error) {
-            throw new Error(`Gagal membaca file Excel: ${error.message}`);
-        }
-    };
+        downloadImportTemplate();
+    }, [downloadImportTemplate]);
 
     const handleImportExcel = useCallback(async () => {
         if (!importFile) {
@@ -329,60 +204,28 @@ const Program = () => {
             return;
         }
         
-        setIsImporting(true);
-        
-        try {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const { data: parsedData} = parseExcel(data);
-                    
-                    if (parsedData.length === 0) {
-                        toast.error('Tidak ada data yang bisa diimport');
-                        setIsImporting(false);
-                        return;
-                    }
-                    
-                    const existingPrograms = JSON.parse(localStorage.getItem('programs') || '[]');
-                    const newPrograms = [
-                        ...existingPrograms,
-                        ...parsedData.map((program, index) => ({
-                            id: Date.now() + index,
-                            ...program,
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString()
-                        }))
-                    ];
-                    localStorage.setItem('programs', JSON.stringify(newPrograms));
-                    
-                    setImportFile(null);
-                    setValidationErrors([]);
-                    setIsDragging(false);
-                    if (fileInputRef.current) {
-                        fileInputRef.current.value = '';
-                    }
-                    
-                    setIsImportModalOpen(false);
-                    
-                    await refreshData();
-                    
-                    toast.success(`Berhasil mengimport ${parsedData.length} program`);
-                } catch (parseError) {
-                    console.error('Parse error:', parseError);
-                    toast.error('Format file Excel tidak valid');
-                } finally {
-                    setIsImporting(false);
-                }
-            };
+        try {            
+            setImportFile(null);
+            setValidationErrors([]);
+            setIsDragging(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
             
-            reader.readAsArrayBuffer(importFile);
+            setIsImportModalOpen(false);
+            
         } catch (error) {
-            console.error('Import error:', error);
-            toast.error('Gagal mengimport data');
-            setIsImporting(false);
+            console.error('Import failed:', error);
+
+            if (error.message.includes('Validation failed')) {
+                const errorLines = error.message.split('\n');
+                setValidationErrors(errorLines.slice(1));
+            } else {
+                setValidationErrors([error.message]);
+            }
+
         }
-    }, [importFile, refreshData]);
+    }, [importFile, importFromFile]);
 
     const handleOpenImportModal = useCallback(() => {
         setImportFile(null);
@@ -401,8 +244,10 @@ const Program = () => {
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
-    }, []);
+        resetImport();
+    }, [resetImport]);
 
+    // ========== EXPORT FUNCTIONS ==========
     const handleExport = useCallback(async (format = 'excel') => {
         try {
             if (!programs || programs.length === 0) {
@@ -412,17 +257,25 @@ const Program = () => {
             
             setIsExporting(true);
 
+            // Jika ingin menggunakan hook export (yang sudah ada di usePrograms)
+            // await hookExportPrograms(format);
+            
+            // Atau gunakan implementasi langsung seperti sebelumnya
             const exportData = programs.map((program, index) => ({
                 'No': index + 1,
                 'Program Name': program.program_name || '-',
                 'Category': program.category || '-',
                 'Status': program.status || '-',
                 'Duration': program.duration || '-',
+                'Location': program.location || '-',
+                'capacity': program.capacity || '-',
                 'Price': program.price || '-',
                 'Client': program.client || '-',
                 'Start Date': program.start_date || '-',
                 'End Date': program.end_date || '-',
                 'Description': program.description || '-',
+                'Instructur': program.instructors || '-',
+                'Tags': program.tags || '-',
                 'Created Date': program.created_at 
                     ? new Date(program.created_at).toLocaleDateString() 
                     : '-',
@@ -432,23 +285,13 @@ const Program = () => {
             }));
 
             if (format === 'excel') {
-               
                 const ws = XLSX.utils.json_to_sheet(exportData);
                 
-                
                 const wscols = [
-                    { wch: 5 },   
-                    { wch: 25 },  
-                    { wch: 20 }, 
-                    { wch: 10 },  
-                    { wch: 15 },  
-                    { wch: 15 },  
-                    { wch: 25 }, 
-                    { wch: 12 },  
-                    { wch: 12 }, 
-                    { wch: 40 },  
-                    { wch: 12 }, 
-                    { wch: 12 }  
+                    { wch: 5 }, { wch: 25 }, { wch: 20 }, 
+                    { wch: 10 }, { wch: 15 }, { wch: 15 }, 
+                    { wch: 25 }, { wch: 12 }, { wch: 12 }, 
+                    { wch: 40 }, { wch: 12 }, { wch: 12 }
                 ];
                 ws['!cols'] = wscols;
 
@@ -500,6 +343,7 @@ const Program = () => {
         }
     }, [programs]);
 
+    // ========== OTHER EFFECTS ==========
     useEffect(() => {
         const preventDefaults = (e) => {
             e.preventDefault();
@@ -615,7 +459,6 @@ const Program = () => {
             setIsAddProgramModalOpen(false);
             toast.success('Program added successfully');
             
-            // Scroll ke atas setelah add program
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
             console.error('Error adding program:', error);
@@ -725,6 +568,32 @@ const Program = () => {
         <div className='flex pt-20 min-h-screen bg-gray-100'>
             <div className='flex-1 p-6'>
                 <Header />
+                
+                {/* Progress Bar untuk Import */}
+                {isImporting && (
+                    <div className="mb-6 bg-white rounded-lg shadow-md border border-blue-200 p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                                <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                                <span className="font-medium text-blue-700">Importing Programs...</span>
+                            </div>
+                            <span className="text-sm font-medium text-blue-600">{importProgress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div 
+                                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                                style={{ width: `${importProgress}%` }}
+                            />
+                        </div>
+                        {importResult && importResult.successful > 0 && (
+                            <div className="mt-2 text-sm text-green-600 flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4" />
+                                {importResult.successful} programs imported successfully
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <Card className='mb-6'>
                     <CardHeader>
                         <CardTitle className='text-xl'>{tableConfig.title}</CardTitle>
@@ -897,7 +766,7 @@ const Program = () => {
                                         <Button
                                             variant="outline"
                                             className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
-                                            disabled={loading}
+                                            disabled={loading || isImporting}
                                         >
                                             <Upload className="h-4 w-4" />
                                             Import
@@ -926,7 +795,7 @@ const Program = () => {
                                         <Button
                                             variant="outline"
                                             className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
-                                            disabled={loading || programs.length === 0 || isExporting}
+                                            disabled={loading || programs.length === 0 || isExporting || isImporting}
                                         >
                                             {isExporting ? (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -939,7 +808,7 @@ const Program = () => {
                                     <DropdownMenuContent className="w-48">
                                         <DropdownMenuItem 
                                             onClick={() => handleExport('excel')}
-                                            disabled={programs.length === 0 || isExporting}
+                                            disabled={programs.length === 0 || isExporting || isImporting}
                                             className="flex items-center gap-2 cursor-pointer"
                                         >
                                             <FileSpreadsheet className="h-4 w-4" />
@@ -947,7 +816,7 @@ const Program = () => {
                                         </DropdownMenuItem>
                                         <DropdownMenuItem 
                                             onClick={() => handleExport('csv')}
-                                            disabled={programs.length === 0 || isExporting}
+                                            disabled={programs.length === 0 || isExporting || isImporting}
                                             className="flex items-center gap-2 cursor-pointer"
                                         >
                                             <FileText className="h-4 w-4" />
@@ -1102,7 +971,7 @@ const Program = () => {
                                         members={formattedPrograms}
                                         onSelectMember={handleSelectProgram}
                                         headers={tableConfig.headers}
-                                        isLoading={loading}
+                                        isLoading={loading || isImporting}
                                         formatFields={{
                                             price: (value) => {
                                                 if (!value) return '-';
@@ -1122,11 +991,6 @@ const Program = () => {
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    <div className="text-sm text-gray-600">
-                                        {getDisplayText()}
-                                        {getTotalActiveCriteria > 0 && !isShowAllMode() && " (filtered)"}
-                                    </div>
-                                    
                                     {!isShowAllMode() && pagination.totalPages > 1 ? (
                                         <Pagination 
                                             currentPage={pagination.page}
@@ -1134,7 +998,7 @@ const Program = () => {
                                             totalItems={pagination.total}
                                             itemsPerPage={pagination.limit}
                                             onPageChange={handlePageChange}
-                                            disabled={loading}
+                                            disabled={loading || isImporting}
                                         />
                                     ) : isShowAllMode() ? (
                                         <div className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full flex items-center gap-2">
@@ -1312,13 +1176,40 @@ const Program = () => {
                                     </ul>
                                 </div>
                             )}
+
+                            {/* Import Progress di dalam modal */}
+                            {isImporting && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                                            <span className="text-sm font-medium text-blue-700">Importing...</span>
+                                        </div>
+                                        <span className="text-sm font-medium text-blue-600">{importProgress}%</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div 
+                                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                            style={{ width: `${importProgress}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         
                         <DialogFooter className="flex flex-col sm:flex-row gap-3">
                             <Button
+                                variant="outline"
+                                onClick={() => setIsImportModalOpen(false)}
+                                disabled={isImporting}
+                                className="flex-1"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
                                 onClick={handleImportExcel}
                                 disabled={!importFile || isImporting}
-                                className="flex items-center gap-2 px-6 py-2 w-full justify-center"
+                                className="flex items-center gap-2 px-6 py-2 flex-1"
                             >
                                 {isImporting ? (
                                     <>

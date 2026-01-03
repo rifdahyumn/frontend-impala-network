@@ -43,10 +43,6 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
 
     useEffect(() => {
         if (isEditMode && editData) {
-            console.log('Edit Data:', editData);
-            console.log('Business value:', editData.business);
-            console.log('Total Employee value:', editData.total_employee);
-
             const updatedFormData = getEditFormData(editData);
             setFormData(updatedFormData);
             setClientExists(true);
