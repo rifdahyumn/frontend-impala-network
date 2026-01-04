@@ -24,7 +24,7 @@ class ClientService {
         try {
             const {
                 page = 1,
-                limit = 10,
+                limit = 20,
                 search = '',
                 status = '',
                 businessType = '',

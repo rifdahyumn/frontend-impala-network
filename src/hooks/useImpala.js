@@ -9,7 +9,7 @@ export const useImpala = (initialFilters = {}) => {
     const [error, setError] = useState(null)
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 20,
         total: 0,
         totalPages: 0,
         isShowAllMode: false,
@@ -217,7 +217,6 @@ export const useImpala = (initialFilters = {}) => {
         fetchImpala(1, filtersRef.current, false)
     }, [])
 
-    // 🔴 PERBAIKAN: Effect untuk fetch stats
     const fetchImpalaStats = useCallback(async () => {
         try {
             setStatsLoadingImpala(true)
@@ -226,7 +225,6 @@ export const useImpala = (initialFilters = {}) => {
             if (result.success) {
                 setImpalaStats(result.data)
             } else {
-                // 🔴 PERBAIKAN: Fallback stats jika API error
                 setImpalaStats({
                     title: 'Total Participant',
                     value: participant.length.toString() || "0",

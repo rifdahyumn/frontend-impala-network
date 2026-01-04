@@ -9,19 +9,11 @@ import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from "../components/Pagination/Pagination";
 import ImpalaContent from '../components/Content/ImpalaContent';
 import { useImpala } from "../hooks/useImpala";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuGroup, 
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuCheckboxItem
-} from "../components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem} from "../components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { toast } from 'react-hot-toast';
+import * as XLSX from 'xlsx'
 
 const ImpalaManagement = () => {
     const [selectedParticipant, setSelectedParticipant] = useState(null);
@@ -64,7 +56,6 @@ const ImpalaManagement = () => {
         }, 150);
     }, []);
 
-    // Fungsi untuk download template CSV
     const handleDownloadTemplate = useCallback(() => {
         try {
             const templateData = [
@@ -440,39 +431,125 @@ const ImpalaManagement = () => {
         };
     });
 
-    const handleExport = useCallback(async () => {
+    const handleExport = useCallback(async (exportAll = false) => {
         try {
-            const exportData = filteredParticipants.map(p => ({
-                'Nama': p.full_name,
-                'Email': p.email,
-                'Gender': p.gender,
-                'Category': p.category,
-                'Program': p.program_name,
-                'Entity': p.business,
-                'Phone': p.phone
+            toast.loading(exportAll
+                ? 'Fetching ALL data from database...'
+                : 'Preparing export data...'
+            )
+
+            let dataToExport;
+            let filenamePrefix;
+
+            if (exportAll) {
+                const response = await fetch(`/api/impala/export?exportType=all`)
+
+                if (!response.ok) {
+                    const errorData = await response.json()
+                    throw new Error(errorData.error || 'Failed to fetch all data')
+                }
+
+                const result = await response.json()
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Export Failed')
+                }
+
+                dataToExport = result.data
+                filenamePrefix = 'impala_management'
+            } else {
+                dataToExport = filteredParticipants
+                filenamePrefix = 'impala_management_filter'
+            }
+
+            if (!dataToExport || dataToExport.length === 0) {
+                toast.dismiss()
+                toast.error('No data to export')
+                return
+            }
+
+            const exportData = dataToExport.map((p, index) => ({
+                'No': index + 1,
+                'Nama Lengkap': p.full_name || '',
+                'Email': p.email || '',
+                'Nomor Telepon': p.phone || '',
+                'Jenis Kelamin': p.gender || '',
+                'Kategori': p.category || '',
+                'Program': p.program_name || '',
+                'Tanggal Lahir': p.date_of_birth || '',
+                'Usia': p.age || '',
+                'Alamat': p.address || '',
+                'Kota/Kabupaten': p.regency_name || '',
+                'Provinsi': p.province_name || '',
+                'Pendidikan': p.education || '',
+                'NIK': p.nik || '',
+                'Kode Pos': p.postal_code || '',
+                'Status Disabilitas': p.disability_status || '',
+                'Alasan Bergabung': p.reason_join_program || '',
+                'Tanggal Dibuat': p.created_at ? new Date(p.created_at).toLocaleDateString('id-ID') : '',
+                'Tanggal Diperbarui': p.updated_at ? new Date(p.updated_at).toLocaleDateString('id-ID') : '',
+                
+                'Nama Usaha': p.business_name || '',
+                'Jenis Usaha': p.business_type || '',
+                'Alamat Usaha': p.business_address || '',
+                'Bentuk Usaha': p.business_form || '',
+                'Tahun Berdiri': p.established_year || '',
+                'Pendapatan Bulanan': p.monthly_revenue || '',
+                'Jumlah Karyawan': p.employee_count || '',
+                'Sertifikasi': p.certifications || '',
+                
+                'Institusi': p.institution || '',
+                'Jurusan': p.major || '',
+                'Semester': p.semester || '',
+                'Tahun Masuk': p.enrollment_year || '',
+                'Minat Karir': p.career_interest || '',
+                'Kompetensi Inti': p.core_competency || '',
+                
+                'Tempat Kerja': p.workplace || '',
+                'Posisi': p.position || '',
+                'Lama Bekerja': p.work_duration || '',
+                'Sektor Industri': p.industry_sector || '',
+                'Keahlian': p.skills || '',
+                
+                'Nama Komunitas': p.community_name || '',
+                'Bidang Fokus': p.focus_area || '',
+                'Jumlah Anggota': p.member_count || '',
+                'Area Operasional': p.operational_area || '',
+                'Peran dalam Komunitas': p.community_role || '',
+                
+                'Media Sosial': p.social_media || '',
+                'Marketplace': p.marketplace || '',
+                'Website': p.website || ''
             }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData)
+
+            const wscols = [
+                { wch: 5 },    { wch: 10 },   { wch: 25 },   { wch: 30 },
+                { wch: 15 },   { wch: 15 },   { wch: 20 },   { wch: 30 },
+                { wch: 15 },   { wch: 8 },    { wch: 40 },   { wch: 20 },
+                { wch: 20 },   { wch: 20 },   { wch: 20 },   { wch: 20 },
+                { wch: 20 },   { wch: 10 },   { wch: 25 },   { wch: 40 },
+                { wch: 15 },   { wch: 15 },   { wch: 25 },   { wch: 20 },
+                { wch: 40 },   { wch: 20 },   { wch: 15 },   { wch: 10 },
+                { wch: 15 },   { wch: 25 },   { wch: 20 },   { wch: 15 },
+                { wch: 20 },   { wch: 30 },   { wch: 25 },   { wch: 30 },
+                { wch: 15 },   { wch: 20 },   { wch: 25 },   { wch: 30 },
+                { wch: 25 },   { wch: 25 }    
+            ];
+            worksheet['!cols'] = wscols
             
-            const headers = Object.keys(exportData[0]);
-            const csvContent = [
-                headers.join(','),
-                ...exportData.map(row => 
-                    headers.map(header => 
-                        `"${row[header] || ''}"`
-                    ).join(',')
-                )
-            ].join('\n');
+            const workbook = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Beneficiaries')
+
+            const timestamp = new Date().toString()
+                .replace(/[:.]/g, '-')
+                .replace('T', '-')
+                .split('.')[0]
             
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `impala_participants_${new Date().getTime()}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-            
-            toast.success('Data berhasil diexport');
+            XLSX.writeFile(workbook, `impala_management_${timestamp}.xlsx`)
+
+            toast.success(`Successfully exported ${filteredParticipants.length} beneficiaries to excel`)
         } catch (error) {
             console.error('Export failed:', error);
             toast.error('Failed to export participants');
