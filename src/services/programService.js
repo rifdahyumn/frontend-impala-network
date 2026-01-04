@@ -231,7 +231,7 @@ class ProgramService {
                 'Description': '5-day intensive leadership training program',
                 'Instructors': 'John Doe, Jane Smith',
                 'Tags': 'leadership,management,training',
-                'Status': 'Active'
+                // 'Status': 'Active'
             },
             {
                 'Program Name': 'Digital Marketing Workshop',
@@ -245,7 +245,7 @@ class ProgramService {
                 'Description': '2-day digital marketing workshop',
                 'Instructors': 'Michael Chen',
                 'Tags': 'marketing,digital,workshop',
-                'Status': 'Active'
+                // 'Status': 'Active'
             },
         ]
 

@@ -105,12 +105,10 @@ export const useClients = (initialFilters = {}) => {
 
     useEffect(() => {
         return () => {
-            // Cancel semua pending requests
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort()
             }
             
-            // Cancel debounced calls
             if (debouncedFetchRef.current) {
                 debouncedFetchRef.current.cancel()
             }
@@ -126,6 +124,7 @@ export const useClients = (initialFilters = {}) => {
         filtersRef.current = updatedFilters
 
         setFilters(prev => ({
+            ...prev,
             search: updatedFilters.search,
             status: updatedFilters.status,
             businessType: updatedFilters.businessType

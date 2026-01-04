@@ -14,7 +14,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import * as XLSX from 'xlsx';
-import { Progress } from "../components/ui/progress"; // Jika punya component Progress
 
 const Program = () => {
     const [selectedProgram, setSelectedProgram] = useState(null)
@@ -47,7 +46,7 @@ const Program = () => {
         toggleShowAllOnSearch,
         clearFilters,
         clearSearch,
-        getDisplayText,
+        // getDisplayText,
         isShowAllMode,
         resetToPaginationMode,
         fetchPrograms: hookFetchPrograms,
@@ -55,18 +54,18 @@ const Program = () => {
         updateProgram,
         deleteProgram,
         refreshData,
-        refreshAllData,
-        exportPrograms: hookExportPrograms,
+        // refreshAllData,
+        // exportPrograms: hookExportPrograms,
         
         // IMPORT FUNCTIONS FROM HOOK
         isImporting,
         importProgress,
         importResult,
-        importError,
+        // importError,
         importFromFile,
         downloadImportTemplate,
         parseExcelFile,
-        validateImportData,
+        // validateImportData,
         resetImport
     } = usePrograms();
 
@@ -94,7 +93,6 @@ const Program = () => {
         }, 150);
     }, []);
 
-    // ========== IMPORT FUNCTIONS ==========
     const handleDragOver = useCallback((e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -204,7 +202,9 @@ const Program = () => {
             return;
         }
         
-        try {            
+        try {       
+            const result = await importFromFile(importFile)
+            
             setImportFile(null);
             setValidationErrors([]);
             setIsDragging(false);
@@ -213,6 +213,12 @@ const Program = () => {
             }
             
             setIsImportModalOpen(false);
+
+            if (result && result.successful > 0) {
+                toast.success(`Successfully imported ${result.successful} programs`);
+            }
+
+            refreshData();
             
         } catch (error) {
             console.error('Import failed:', error);
@@ -247,21 +253,24 @@ const Program = () => {
         resetImport();
     }, [resetImport]);
 
-    // ========== EXPORT FUNCTIONS ==========
     const handleExport = useCallback(async (format = 'excel') => {
         try {
-            if (!programs || programs.length === 0) {
-                toast.error('No data to export');
-                return;
-            }
-            
-            setIsExporting(true);
+            setIsExporting(true)
 
-            // Jika ingin menggunakan hook export (yang sudah ada di usePrograms)
-            // await hookExportPrograms(format);
-            
-            // Atau gunakan implementasi langsung seperti sebelumnya
-            const exportData = programs.map((program, index) => ({
+            const response = await fetch(`/api/program?limit=10000&page=1`);
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch data from server');
+            }
+
+            const result = await response.json()
+            const allPrograms = result.data || result.programs || []
+
+            if (!allPrograms || allPrograms.length === 0) {
+                toast.error('No data to export')
+            }
+
+            const exportData = allPrograms.map((program, index) => ({
                 'No': index + 1,
                 'Program Name': program.program_name || '-',
                 'Category': program.category || '-',
@@ -274,8 +283,8 @@ const Program = () => {
                 'Start Date': program.start_date || '-',
                 'End Date': program.end_date || '-',
                 'Description': program.description || '-',
-                'Instructur': program.instructors || '-',
-                'Tags': program.tags || '-',
+                'Instructur': formatInstructorsForExport(program.instructors),
+                'Tags': formatTagsForExport(program.tags),
                 'Created Date': program.created_at 
                     ? new Date(program.created_at).toLocaleDateString() 
                     : '-',
@@ -343,7 +352,69 @@ const Program = () => {
         }
     }, [programs]);
 
-    // ========== OTHER EFFECTS ==========
+    const formatInstructorsForExport = (instructors) => {
+        try {
+            if (!instructors) return '-'
+
+            if (typeof instructors === 'string') {
+                if (instructors.startsWith('[') || instructors.startsWith('{')) {
+                    try {
+                        const parsed = JSON.parse(instructors)
+                        if (Array.isArray(parsed)) {
+                            return parsed.filter(i => i).join(', ')
+                        }
+                    } catch {
+                        //
+                    }
+                }
+
+                return instructors
+            }
+
+            if (Array.isArray(instructors)) {
+                return instructors
+                    .filter(instructor => instructor && instructor.trim() !== '')
+                    .join(', ')
+            }
+
+            return '-'
+        } catch (error) {
+            console.error('Error formatting instructors:', error)
+        }
+    }
+
+    const formatTagsForExport = (tags) => {
+        try {
+            if (!tags) return '-'
+
+            if (typeof tags === 'string') {
+                if (tags.startsWith('[')) {
+                    try {
+                        const parsed = JSON.parse(tags)
+                        if (Array.isArray(parsed)) {
+                            return parsed.filter(t => t).join(', ')
+                        }
+                    } catch {
+                        //
+                    }
+                }
+
+                return tags
+            }
+
+            if (Array.isArray(tags)) {
+                return tags
+                    .filter(tag => tag && tag.trim() !== '')
+                    .join(', ') 
+            }
+
+            return '-'
+        } catch (error) {
+            console.error('Error formatting tags:', error)
+            return '-'
+        }
+    }
+
     useEffect(() => {
         const preventDefaults = (e) => {
             e.preventDefault();
@@ -794,35 +865,18 @@ const Program = () => {
                                     <DropdownMenuTrigger asChild>
                                         <Button
                                             variant="outline"
+                                            onClick={() => handleExport('excel', true)}
                                             className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
-                                            disabled={loading || programs.length === 0 || isExporting || isImporting}
+                                            disabled={isExporting || isImporting}
                                         >
                                             {isExporting ? (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
                                             ) : (
                                                 <Download className="h-4 w-4" />
                                             )}
-                                            Export {isShowAllMode() ? 'All' : ''}
+                                            Export
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-48">
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('excel')}
-                                            disabled={programs.length === 0 || isExporting || isImporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileSpreadsheet className="h-4 w-4" />
-                                            Export as Excel
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('csv')}
-                                            disabled={programs.length === 0 || isExporting || isImporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileText className="h-4 w-4" />
-                                            Export as CSV
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
                         </div>
@@ -1177,7 +1231,6 @@ const Program = () => {
                                 </div>
                             )}
 
-                            {/* Import Progress di dalam modal */}
                             {isImporting && (
                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                     <div className="flex items-center justify-between mb-2">

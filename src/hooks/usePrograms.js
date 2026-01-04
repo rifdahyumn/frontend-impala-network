@@ -101,6 +101,7 @@ export const usePrograms = (initialFilters = {}) => {
             
             const paginationData = result.metadata?.pagination || {}
             setPagination(prev => ({
+                ...prev,
                 page: paginationData.page || page,
                 limit: paginationData.limit || pagination.limit,
                 total: paginationData.total || 0,
@@ -156,6 +157,7 @@ export const usePrograms = (initialFilters = {}) => {
         filtersRef.current = updatedFilters
         
         setFilters(prev => ({
+            ...prev,
             search: updatedFilters.search,
             status: updatedFilters.status,
             category: updatedFilters.category,
@@ -757,13 +759,11 @@ export const usePrograms = (initialFilters = {}) => {
         priceStats,
         statsLoading,
         
-        // Import related states
         isImporting,
         importProgress,
         importResult,
         importError,
         
-        // Existing functions
         fetchPrograms: handlePageChange,
         updateFiltersAndFetch,
         clearFilters,
@@ -792,7 +792,6 @@ export const usePrograms = (initialFilters = {}) => {
         fetchAllPrograms,
         refreshAllData,
         
-        // NEW IMPORT FUNCTIONS
         bulkImport,
         parseExcelFile,
         validateImportData,
