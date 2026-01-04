@@ -188,7 +188,7 @@ const renderFullNameField = (
     handleSelectClient, 
     handleForceCreateNewClient 
 ) => {
-    const isDisabled = isEditMode && !updateAllFields;
+    const isDisabled = false
     
     return (
         <div className="space-y-2 relative">

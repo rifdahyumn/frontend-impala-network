@@ -48,7 +48,7 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
             setClientExists(true);
             setExistingClientId(editData.id);
             setShowClientInfo(true);
-            setUpdateAllFields(true);
+            setUpdateAllFields(false);
         }
     }, [isEditMode, editData]);
 
@@ -73,7 +73,7 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
             setErrors(prev => ({ ...prev, [name]: '' }));
         }
 
-        if (!isEditMode && name === 'full_name' && !forceCreateNewClient) {
+        if ((!isEditMode || updateAllFields )&& name === 'full_name' && !forceCreateNewClient) {
             if (value.trim().length >= 3) {
                 if (searchTimeoutRef.current) {
                     clearTimeout(searchTimeoutRef.current);
@@ -224,7 +224,7 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
         e.preventDefault()
 
         const isValid = validateForm(
-            formData, formSections, clientExists && !forceCreateNewClient, setErrors
+            formData, formSections, clientExists && !forceCreateNewClient, setErrors, isEditMode, updateAllFields
         )
 
         if (!isValid) {
@@ -243,6 +243,7 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
                 province_name: formData.province_name,
                 regency_id: formData.regency_id,
                 regency_name: formData.regency_name,
+                // city: formData.regency_name,
                 district_id: formData.district_id,
                 district_name: formData.district_name,
                 village_id: formData.village_id,
@@ -262,6 +263,10 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
 
                 if (isEditMode && !updateAllFields) {
                     clientData = {
+                        full_name: formData.full_name, 
+                        email: formData.email || '',    
+                        phone: formData.phone || '',    
+                        company: formData.company || '', 
                         program_name: programData,
                         updated_at: new Date().toISOString(),
                         ...locationData

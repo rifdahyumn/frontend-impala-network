@@ -1,7 +1,7 @@
 import toast from "react-hot-toast"
 import programService from "../services/programService"
 import { useState, useEffect, useCallback, useRef } from "react"
-import { debounce } from 'lodash'
+import { debounce, initial } from 'lodash'
 
 export const usePrograms = (initialFilters = {}) => {
     const [programs, setPrograms] = useState([])
@@ -9,7 +9,7 @@ export const usePrograms = (initialFilters = {}) => {
     const [error, setError] = useState(null)
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 20,
         total: 0,
         totalPages: 0,
         isShowAllMode: false,
@@ -28,6 +28,11 @@ export const usePrograms = (initialFilters = {}) => {
     const [importProgress, setImportProgress] = useState(0);
     const [importResult, setImportResult] = useState(null);
     const [importError, setImportError] = useState(null);
+
+    const lastFetchTimeRef = useRef(0)
+    const lastStatsFetchTimeRef = useRef(0)
+    const isMountedRef = useRef(true)
+    const initialFetchDoneRef = useRef(false)
 
     const filtersRef = useRef({
         search: '',
@@ -50,8 +55,15 @@ export const usePrograms = (initialFilters = {}) => {
     const fetchAllPrograms = useCallback(async () => {
         try {
             setAllProgramsLoading(true)
+
+            const now = Date.now()
+            if (now - lastFetchTimeRef.current < 2000) {
+                await new Promise(resolve => setTimeout(resolve, 2000))
+            }
             
             const result = await programService.fetchAllPrograms()
+
+            lastFetchTimeRef.current = Date.now()
             
             setAllPrograms(result.data || [])
             return result.data || []
@@ -67,6 +79,11 @@ export const usePrograms = (initialFilters = {}) => {
 
     const fetchPrograms = useCallback(async (page = 1, customFilters = null, showAll = false, requestId = null) => {
         try {
+            const now = Date.now()
+            if (now - lastFetchTimeRef.current < 1000) {
+                await new Promise(resolve => setTimeout(resolve, 1000 - (now - lastFetchTimeRef.current)))
+            }
+
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort()
             }
@@ -123,6 +140,19 @@ export const usePrograms = (initialFilters = {}) => {
             }
             
             console.error(' Error fetching programs:', error)
+
+            if (error.response?.status === 429 || error.message?.includes('rate limit')) {
+                const retryAfter = error.response?.headers?.['retry-after'] || 5
+                toast.error(`Too many requests. Please wait ${retryAfter} seconds`)
+
+                setTimeout(() => {
+                    if (isMountedRef.current) {
+                        fetchPrograms(page, customFilters, showAll, requestId)
+                    }
+                }, retryAfter * 1000)
+                return
+            }
+
             setError(error.message)
             toast.error('Failed to load programs')
         } finally {
@@ -134,11 +164,15 @@ export const usePrograms = (initialFilters = {}) => {
         debounce((page, customFilters, showAll) => {
             const requestId = Date.now()
             fetchPrograms(page, customFilters, showAll, requestId)
-        }, 500)
+        }, 800)
     )
 
     useEffect(() => {
+        isMountedRef.current = true
+
         return () => {
+            isMountedRef.current = false
+
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort()
             }
@@ -148,6 +182,29 @@ export const usePrograms = (initialFilters = {}) => {
             }
         }
     }, [])
+
+    useEffect(() => {
+        if (!initialFetchDoneRef.current && isMountedRef.current) {
+            initialFetchDoneRef.current = true
+
+            const initialFetch = async () => {
+                await new Promise(resolve => setTimeout(resolve, 500))
+
+                if (isMountedRef.current) {
+                    try {
+                        await Promise.all([
+                            fetchPrograms(1, filtersRef.current, false),
+                            fetchAllPrograms()
+                        ])
+                    } catch (error) {
+                        console.error('Initial fetch error:', error)
+                    }
+                }
+            }
+
+            initialFetch()
+        }
+    }, [fetchPrograms, fetchAllPrograms])
 
     const updateFiltersAndFetch = useCallback((newFilters, showAll = false) => {
         const updatedFilters = {
@@ -331,11 +388,23 @@ export const usePrograms = (initialFilters = {}) => {
 
     const fetchAllStats = useCallback(async () => {
         try {
+            const now = Date.now()
+
+            if (now - lastStatsFetchTimeRef.current < 30000) {
+                console.log('Skipping stats fetch - too recent')
+                return
+            }
+
             setStatsLoading(true)
+
+            await new Promise(resolve => setTimeout(resolve, 500))
+
             await Promise.all([
                 fetchProgramsStats(),
                 fetchPriceStats()
             ])
+
+            lastStatsFetchTimeRef.current = Date.now()
         } catch (error) {
             console.error('Error fetching all stats:', error)
         } finally {
@@ -344,12 +413,32 @@ export const usePrograms = (initialFilters = {}) => {
     }, [fetchProgramsStats, fetchPriceStats])
 
     useEffect(() => {
-        fetchAllStats()
+        if (!isMountedRef.current) return
+
+        const fetchStatsOnMount = async () => {
+            await new Promise(resolve => setTimeout(resolve, 1000))
+
+            if (isMountedRef.current) {
+                await fetchAllStats()
+            }
+        }
+
+        fetchStatsOnMount()
+
+        const statsInterval = setInterval(() => {
+            if (isMountedRef.current) {
+                fetchAllStats()
+            }
+        }, 5 * 60 * 1000)
+
+        return () => clearInterval(statsInterval)
     }, [fetchAllStats])
 
     const exportPrograms = useCallback(async (format = 'csv') => {
         try {
             setLoading(true)
+
+            await new Promise(resolve => setTimeout(resolve, 1000))
 
             let dataToExport
             
@@ -370,8 +459,15 @@ export const usePrograms = (initialFilters = {}) => {
                 
                 toast.success(`Exported ${dataToExport.length} programs to CSV`)
             } else {
-                const result = await programService.fetchAllPrograms(filtersRef.current)
-                dataToExport = result.data || []
+                if (allPrograms.length > 0 && !allProgramsLoading) {
+                    dataToExport = allPrograms
+                    console.log('Using cached data for export')
+                } else {
+                    await new Promise(resolve => setTimeout(resolve, 1500))
+
+                    const result = await programService.fetchAllPrograms(filtersRef.current)
+                    dataToExport = result.data || []
+                }
                 
                 if (format === 'csv') {
                     const csvContent = programService.convertToCSV(dataToExport)
@@ -396,12 +492,18 @@ export const usePrograms = (initialFilters = {}) => {
             return dataToExport
         } catch (error) {
             console.error('Error exporting programs:', error)
-            toast.error('Failed to export programs')
+            
+            if (error.response?.status === 429) {
+                toast.error('Too many export requests. PLease wait a minute')
+            } else {
+                toast.error('Failed to export programs')
+            }
+
             throw error
         } finally {
             setLoading(false)
         }
-    }, [programs, pagination.showingAllResults, showAllOnSearch])
+    }, [programs, pagination.showingAllResults, showAllOnSearch, allPrograms, allProgramsLoading])
 
     const addProgram = async (programData) => {
         try {
@@ -629,31 +731,51 @@ export const usePrograms = (initialFilters = {}) => {
             setImportError(null);
             setImportResult(null);
 
+            await new Promise(resolve => setTimeout(resolve, 500));
+
             const parsedData = await parseExcelFile(file);
             
             if (!parsedData || parsedData.length === 0) {
                 throw new Error('No valid data found in Excel file');
             }
 
-            const validationResult = await validateImportData(parsedData);
+            const validationChunks = [];
+            const chunkSizeValidation = 100;
             
-            if (!validationResult) {
-                throw new Error('Validation failed');
+            for (let i = 0; i < parsedData.length; i += chunkSizeValidation) {
+                validationChunks.push(parsedData.slice(i, i + chunkSizeValidation));
             }
 
-            if (!validationResult.valid || validationResult.valid.length === 0) {
-                const errorMsg = validationResult.invalid?.length > 0 
-                    ? `All ${validationResult.invalid.length} records failed validation`
-                    : 'No valid data to import';
-                throw new Error(errorMsg);
+            let allValidData = [];
+            let allErrors = [];
+
+            for (let i = 0; i < validationChunks.length; i++) {
+                const chunk = validationChunks[i];
+                
+                if (i > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                const validationResult = await validateImportData(chunk);
+                
+                if (validationResult?.valid) {
+                    allValidData.push(...validationResult.valid);
+                }
+                if (validationResult?.errors) {
+                    allErrors.push(...validationResult.errors);
+                }
+            }
+
+            if (allValidData.length === 0) {
+                throw new Error('No valid data to import');
             }
 
             const importResult = await programService.bulkImport(
-                validationResult.valid, 
+                allValidData, 
                 {
                     mode,
                     overwriteExisting,
-                    chunkSize,
+                    chunkSize: Math.min(chunkSize, 20), 
                     onProgress: (progressInfo) => {
                         const progress = progressInfo?.progress || 0;
                         setImportProgress(progress);
@@ -679,6 +801,7 @@ export const usePrograms = (initialFilters = {}) => {
                 toast.error(`${failed} programs failed to import`);
             }
 
+            await new Promise(resolve => setTimeout(resolve, 1000));
             await refreshAllData();
 
             return importResult;
@@ -687,7 +810,9 @@ export const usePrograms = (initialFilters = {}) => {
             console.error('Import from file error:', error);
             setImportError(error.message);
 
-            if (error.message.includes('validation') || error.message.includes('Validation')) {
+            if (error.message.includes('rate limit') || error.response?.status === 429) {
+                toast.error('Import rate limited. Please try again in a minute.');
+            } else if (error.message.includes('validation') || error.message.includes('Validation')) {
                 toast.error(`Validation error: ${error.message}`);
             } else if (error.message.includes('parse') || error.message.includes('Parse')) {
                 toast.error(`File parsing error: ${error.message}`);

@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../ui/button";
 
-const Pagination = ({ currentPage, totalPages, totalItems, itemsPerPage = 10, onPageChange, disabled = false }) => {
+const Pagination = ({ currentPage, totalPages, totalItems, itemsPerPage = 20, onPageChange, disabled = false }) => {
     const handlePageChange = (page) => {
         if (!disabled && page >= 1 && page <= totalPages) {
             onPageChange(page)

@@ -1,4 +1,4 @@
-export const validateForm = (formData, formSections, clientExists, setErrors) => {
+export const validateForm = (formData, formSections, clientExists, setErrors, isEditMode = false, updateAllFields = false) => {
     const newErrors = {};
 
     if (!Array.isArray(formSections)) {
@@ -14,13 +14,20 @@ export const validateForm = (formData, formSections, clientExists, setErrors) =>
         }
 
         section.fields.forEach(field => {
-            if (!field.required || field.disabled) {
+            if (field.disabled) {
                 return;
             }
 
-            const value = formData[field.name];
-            if (!value || value.toString().trim() === '') {
-                newErrors[field.name] = `${field.label} is required`;
+            if (field.required) {
+                const value = formData[field.name]
+
+                if (isEditMode && clientExists && !updateAllFields && isLocationField(field.name)) {
+                    return
+                }
+
+                if (!value || value.toString().trim() === '') {
+                    newErrors[field.name] = `${field.label} is required`;
+                }
             }
         });
     });
@@ -33,17 +40,19 @@ export const validateForm = (formData, formSections, clientExists, setErrors) =>
         newErrors.phone = 'Phone number is too short';
     }
 
-    if (!formData.province_id) {
-        newErrors.province_id = 'Province is required';
-    }
-    if (!formData.regency_id) {
-        newErrors.regency_id = 'City/Regency is required';
-    }
-    if (!formData.district_id) {
-        newErrors.district_id = 'District is required';
-    }
-    if (!formData.village_id) {
-        newErrors.village_id = 'Village is required';
+    if ((!isEditMode && !clientExists) || (isEditMode && updateAllFields)) {
+        if (!formData.province_id) {
+            newErrors.province_id = 'Province is required';
+        }
+        if (!formData.regency_id) {
+            newErrors.regency_id = 'City/Regency is required';
+        }
+        if (!formData.district_id) {
+            newErrors.district_id = 'District is required';
+        }
+        if (!formData.village_id) {
+            newErrors.village_id = 'Village is required';
+        }
     }
 
     if (!clientExists && !formData.program_name?.trim()) {
@@ -52,4 +61,13 @@ export const validateForm = (formData, formSections, clientExists, setErrors) =>
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+};
+
+const isLocationField = (fieldName) => {
+    const locationFields = [
+        'address', 'province_id', 'province_name',
+        'regency_id', 'regency_name', 'district_id',
+        'district_name', 'village_id', 'village_name'
+    ];
+    return locationFields.includes(fieldName);
 };
