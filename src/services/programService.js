@@ -628,8 +628,8 @@ class ProgramService {
 
             for (let i = 0; i < trimmed.length; i++) {
                 const char = trimmed[i]
-                const prevChar = i > 0 ? trimmed[i - 1] : '';
-                const nextChar = i < trimmed.length - 1 ? trimmed[i + 1] : ''
+                // const prevChar = i > 0 ? trimmed[i - 1] : '';
+                // const nextChar = i < trimmed.length - 1 ? trimmed[i + 1] : ''
 
                 if (char === '(') inParenthesis++
                 if (char === ')') inParenthesis--

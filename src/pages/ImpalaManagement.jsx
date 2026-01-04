@@ -108,7 +108,6 @@ const ImpalaManagement = () => {
         }
     }, []);
 
-    // Fungsi untuk handle file upload
     const handleFileUpload = useCallback((event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -126,7 +125,6 @@ const ImpalaManagement = () => {
         setImportFile(file);
     }, []);
 
-    // Fungsi untuk import CSV
     const handleImportCSV = useCallback(async () => {
         if (!importFile) {
             toast.error('Pilih file CSV terlebih dahulu');
@@ -283,7 +281,6 @@ const ImpalaManagement = () => {
         setFilteredParticipants(result);
     };
 
-    // HANDLE SEARCH
     const handleSearch = (term) => {
         setSearchTerm(term);
         const lowerTerm = term.toLowerCase();
@@ -295,7 +292,6 @@ const ImpalaManagement = () => {
         }
     };
 
-    // HANDLE GENDER FILTER CHANGE
     const handleGenderFilterChange = (gender) => {
         setActiveFilters(prev => ({
             ...prev,
@@ -303,7 +299,6 @@ const ImpalaManagement = () => {
         }));
     };
 
-    // HANDLE CATEGORY FILTER CHANGE
     const handleCategoryFilterChange = (category) => {
         setActiveFilters(prev => ({
             ...prev,
@@ -311,7 +306,6 @@ const ImpalaManagement = () => {
         }));
     };
 
-    // CLEAR ALL FILTERS
     const clearAllFilters = () => {
         setSearchTerm("");
         setActiveFilters({
@@ -320,7 +314,6 @@ const ImpalaManagement = () => {
         });
     };
 
-    // CLEAR SPECIFIC FILTER
     const clearFilter = (filterType) => {
         if (filterType === 'gender') {
             setActiveFilters(prev => ({ ...prev, gender: null }));
@@ -331,7 +324,6 @@ const ImpalaManagement = () => {
         }
     };
 
-    // INITIALIZE CATEGORIES
     useEffect(() => {
         if (participant.length > 0) {
             const normalizedParticipants = participant.map(p => ({
@@ -450,7 +442,6 @@ const ImpalaManagement = () => {
 
     const handleExport = useCallback(async () => {
         try {
-            // Simulasi export (ganti dengan implementasi sesungguhnya)
             const exportData = filteredParticipants.map(p => ({
                 'Nama': p.full_name,
                 'Email': p.email,
@@ -490,7 +481,7 @@ const ImpalaManagement = () => {
 
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
-            <div className='flex-1 p-6 max-w-screen-2xl mx-auto w-full'>
+            <div className='flex-1 p-6'>
                 <Header />
                 <Card className='mb-6 max-w-none'>
                     <CardHeader>
@@ -504,7 +495,6 @@ const ImpalaManagement = () => {
                         )}
                     </CardHeader>
                     <CardContent>
-                        {/* ERROR MESSAGE */}
                         {error && (
                             <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
                                 <div className="flex items-start gap-3">
@@ -526,7 +516,6 @@ const ImpalaManagement = () => {
                             </div>
                         )}
 
-                        {/* SEARCH & FILTER SECTION */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
                                 <div className="w-full sm:w-auto min-w-[250px]">
@@ -538,7 +527,6 @@ const ImpalaManagement = () => {
                                     />
                                 </div>
                                 
-                                {/* FILTER DROPDOWN DENGAN WARNA AMBER */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button 
@@ -564,7 +552,6 @@ const ImpalaManagement = () => {
                                         <DropdownMenuLabel className="text-gray-700 font-semibold">Filter Options</DropdownMenuLabel>
                                         <DropdownMenuSeparator />
                                         
-                                        {/* GENDER FILTER */}
                                         <DropdownMenuGroup>
                                             <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
                                                 Gender
@@ -677,7 +664,6 @@ const ImpalaManagement = () => {
                             </div>
                         </div>
                         
-                        {/* ACTIVE FILTERS BADGES */}
                         {getTotalActiveCriteria() > 0 && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
                                 <span className="text-sm text-gray-600">Active filters:</span>

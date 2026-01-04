@@ -454,7 +454,6 @@ const AddMemberBanyumas = ({
                 space: formData.space,
                 start_date: formData.start_date,
                 end_date: formData.end_date,
-                // duration: formData.duration,
                 add_on: Array.isArray(formData.add_on) ? formData.add_on : [formData.add_on],
                 add_information: formData.add_information,
                 status: formData.status || 'Active'

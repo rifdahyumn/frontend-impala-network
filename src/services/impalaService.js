@@ -20,7 +20,6 @@ class ImpalaService {
         return result;
     }
 
-    // 🔴 DIUBAH: Tambahkan parameter filter yang sama dengan clientService
     async fetchImpala(params = {}) {
         try {
             const {

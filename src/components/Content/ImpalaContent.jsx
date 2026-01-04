@@ -22,21 +22,17 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
         return detailFields.find(category => category.category === activeCategory);
     };
 
-    // Handle Edit Button Click
     const handleEditClick = () => {
         if (!selectedMember) return;
         
-        // Set data awal untuk editing
         setEditedMember({ ...selectedMember });
         setIsEditModalOpen(true);
     };
 
-    // Handle Save in Modal
     const handleSaveEdit = async () => {
         try {
             setIsSubmitting(true);
             
-            // Validasi field wajib sesuai dengan formulir
             const requiredFields = ['full_name', 'email', 'phone', 'gender', 'date_of_birth', 'education', 'address', 'city', 'province', 'postal_code'];
             const missingFields = requiredFields.filter(field => {
                 const value = editedMember[field];
@@ -53,13 +49,11 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
                 return;
             }
 
-            // Validasi jika memilih disabilitas "Lainnya" tapi tidak mengisi detail
             if (editedMember.disability_status === 'Lainnya' && (!editedMember.disability_type || editedMember.disability_type.trim() === '')) {
                 toast.error('Harap jelaskan jenis disabilitas Anda');
                 return;
             }
 
-            // Kirim ke parent component
             if (onMemberUpdated) {
                 await onMemberUpdated(editedMember);
                 toast.success('Data member berhasil diperbarui');
@@ -74,26 +68,22 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
         }
     };
 
-    // Handle Cancel Edit
     const handleCancelEdit = () => {
         setIsEditModalOpen(false);
         setEditedMember({});
     };
 
-    // Handle Field Change in Modal
     const handleFieldChange = (fieldKey, value) => {
         setEditedMember(prev => ({
             ...prev,
             [fieldKey]: value
         }));
         
-        // Reset disability_type jika tidak memilih "Lainnya"
         if (fieldKey === 'disability_status' && value !== 'Lainnya') {
             setEditedMember(prev => ({ ...prev, disability_type: '' }));
         }
     };
 
-    // Options untuk select fields
     const disabilityOptions = [
         'Tidak memiliki disabilitas',
         'Disabilitas Fisik/Motorik',
@@ -121,7 +111,6 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
 
     const genderOptions = ['Laki-laki', 'Perempuan'];
 
-    // Render field input berdasarkan tipe field
     const renderFieldInput = (fieldKey, fieldConfig, value) => {
         const commonProps = {
             value: value || '',
@@ -130,10 +119,8 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
             className: "w-full"
         };
 
-        // Tentukan tipe field berdasarkan config atau key
         let fieldType = fieldConfig.type || 'text';
         
-        // Override berdasarkan key tertentu
         if (fieldKey === 'disability_status') fieldType = 'select';
         if (fieldKey === 'education') fieldType = 'select';
         if (fieldKey === 'gender') fieldType = 'select';
@@ -152,7 +139,7 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
                     />
                 );
             
-            case 'select':
+            case 'select':{
                 let options = [];
                 if (fieldKey === 'disability_status') options = disabilityOptions;
                 else if (fieldKey === 'education') options = educationOptions;
@@ -176,7 +163,8 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
                         </SelectContent>
                     </Select>
                 );
-            
+            }
+
             case 'date':
                 return (
                     <Input
@@ -214,7 +202,6 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
         }
     };
 
-    // Render Modal Edit
     const EditMemberModal = () => {
         if (!isEditModalOpen || !selectedMember) return null;
 
@@ -491,7 +478,6 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
                 </CardContent>
             </Card>
 
-            {/* Edit Modal (Rendered conditionally) */}
             <EditMemberModal />
         </>
     )
