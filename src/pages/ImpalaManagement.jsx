@@ -4,7 +4,6 @@ import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X, RefreshCw, Download,
 import { Button } from "../components/ui/button"
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
-import ExportButton from "../components/ActionButton/ExportButton";
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from "../components/Pagination/Pagination";
 import ImpalaContent from '../components/Content/ImpalaContent';
@@ -60,39 +59,177 @@ const ImpalaManagement = () => {
         try {
             const templateData = [
                 {
-                    'full_name': 'Contoh: John Doe',
-                    'email': 'Contoh: john@example.com',
-                    'gender': 'Contoh: Laki-laki',
-                    'phone': 'Contoh: 081234567890',
-                    'category': 'Contoh: Mahasiswa',
-                    'program_name': 'Contoh: Program Impala',
-                    'entity': 'Contoh: Universitas Indonesia',
-                    'address': 'Contoh: Jl. Contoh No. 123',
-                    'notes': 'Contoh: Catatan tambahan'
+                    'Nama Lengkap': 'Contoh: John Doe',
+                    'NIK': 'Contoh: 3275031201990001',
+                    'Email': 'Contoh: john@example.com',
+                    'Nomor Telepon': 'Contoh: 081234567890',
+                    'Jenis Kelamin': 'Contoh: Laki-laki',
+                    'Tanggal Lahir': 'Contoh: 1990-01-01',
+                    'Pendidikan': 'Contoh: Sarjana (S1)',
+                    'Status Disabilitas': 'Contoh: Tidak memiliki disabilitas',
+                    'Program': 'Contoh: Enterprise Digital Acceleration 2025',
+                    'Alamat': 'Contoh: Jl. Contoh No. 123',
+                    'Provinsi': 'Contoh: JAWA BARAT',
+                    'Kota/Kabupaten': 'Contoh: KOTA BANDUNG',
+                    'Kecamatan': 'Contoh: Batealit',
+                    'Kelurahan/Desa': 'Contoh: Bantrung',
+                    'Kode Pos': 'Contoh: 40115',
+                    'Kategori': 'Contoh: Mahasiswa/UMKM/Profesional/Komunitas',
+                    'Alasan Bergabung': 'Contoh: Ingin menambah wawasan dan keterampilan digital',
+
+                    // UMKM 
+                    'Nama Usaha': 'Contoh: Toko ABC',
+                    'Jenis Usaha': 'Contoh: Retail',
+                    'Alamat Usaha': 'Contoh: Jl. Usaha No. 45',
+                    'Bentuk Usaha': 'Contoh: Perorangan',
+                    'Tahun Berdiri': 'Contoh: 2018',
+                    'Pendapatan Bulanan': 'Contoh: 10000000',
+                    'Jumlah Karyawan': 'Contoh: 5',
+                    'Sertifikasi': 'Contoh: ISO 9001, Halal',
+                    'Media Sosial': 'Contoh: Instagram: @johndoe, Facebook: John Doe',
+                    'Marketplace': 'Contoh: Tokopedia: tokopedia.com/johndoe, Shopee: shopee.co.id/johndoe',
+                    'Website': 'Contoh: johndoe.com, portfolio.johndoe.com',
+
+                    // mahasiswa
+                    'Institusi': 'Contoh: Universitas Indonesia',
+                    'Jurusan': 'Contoh: Teknik Informatika',
+                    'Semester': 'Contoh: 6',
+                    'Tahun Masuk': 'Contoh: 2020',
+                    'Minat Karir': 'Contoh: Software Development',
+                    'Kompetensi Inti': 'Contoh: Programming, Database',
+
+                    // Profesional
+                    'Tempat Kerja': 'Contoh: PT. Contoh',
+                    'Posisi': 'Contoh: Software Engineer',
+                    'Lama Bekerja': 'Contoh: 3 tahun',
+                    'Sektor Industri': 'Contoh: Teknologi',
+                    'Keahlian': 'Contoh: JavaScript, React, Node.js',
+
+                    // komunitas
+                    'Nama Komunitas': 'Contoh: Komunitas Digital Kreatif',
+                    'Bidang Fokus': 'Contoh: Teknologi, Pendidikan',
+                    'Jumlah Anggota': 'Contoh: 50',
+                    'Area Operasional': 'Contoh: Lokal',
+                    'Peran dalam Komunitas': 'Contoh: Koordinator',
                 },
             ];
             
-            const headers = Object.keys(templateData[0]);
-            const csvContent = [
-                headers.join(','),
-                ...templateData.map(row => 
-                    headers.map(header => 
-                        `"${row[header] || ''}"`
-                    ).join(',')
-                )
-            ].join('\n');
+            const dataWorksheet = XLSX.utils.json_to_sheet(templateData)
+
+            const wscols = [
+                { wch: 5 },    { wch: 10 },   { wch: 25 },   { wch: 30 },
+                { wch: 15 },   { wch: 15 },   { wch: 20 },   { wch: 30 },
+                { wch: 15 },   { wch: 8 },    { wch: 40 },   { wch: 20 },
+                { wch: 20 },   { wch: 20 },   { wch: 20 },   { wch: 20 },
+                { wch: 20 },   { wch: 10 },   { wch: 25 },   { wch: 40 },
+                { wch: 15 },   { wch: 15 },   { wch: 25 },   { wch: 20 },
+                { wch: 40 },   { wch: 20 },   { wch: 15 },   { wch: 10 },
+                { wch: 15 },   { wch: 25 },   { wch: 20 },   { wch: 15 },
+                { wch: 20 },   { wch: 30 },   { wch: 25 },   { wch: 30 },
+                { wch: 15 },   { wch: 20 },   { wch: 25 },   { wch: 20 },
+                { wch: 30 },   { wch: 30 }    
+            ]
+            dataWorksheet[!'cols'] = wscols
+
+            const instructionData = [
+                { 'KOLOM': 'DESKRIPSI', 'CONTOH': 'FORMAT', 'CATATAN': 'KETERANGAN' },
+                { 'KOLOM': 'Nama Lengkap', 'CONTOH': 'John Doe', 'CATATAN': 'Wajib diisi' },
+                { 'KOLOM': 'Email', 'CONTOH': 'john@example.com', 'CATATAN': 'Wajib diisi, format email valid' },
+                { 'KOLOM': 'Nomor Telepon', 'CONTOH': '081234567890', 'CATATAN': 'Wajib diisi, format angka' },
+                { 'KOLOM': 'Jenis Kelamin', 'CONTOH': 'Laki-laki', 'CATATAN': 'Pilihan: Laki-laki, Perempuan' },
+                { 'KOLOM': 'Kategori', 'CONTOH': 'Mahasiswa', 'CATATAN': 'Pilihan: Mahasiswa, UMKM, Profesional, Komunitas' },
+                { 'KOLOM': 'Program', 'CONTOH': 'Enterprise Digital Acceleration 2025', 'CATATAN': 'Nama program yang diikuti' },
+                { 'KOLOM': 'Tanggal Lahir', 'CONTOH': '1990-01-01', 'CATATAN': 'Format: YYYY-MM-DD' },
+                { 'KOLOM': 'Usia', 'CONTOH': '34', 'CATATAN': 'Akan dihitung otomatis jika tanggal lahir diisi' },
+                { 'KOLOM': 'Alamat', 'CONTOH': 'Jl. Contoh No. 123', 'CATATAN': 'Alamat lengkap' },
+                { 'KOLOM': 'Kota/Kabupaten', 'CONTOH': 'KOTA BANDUNG', 'CATATAN': 'Nama kota atau kabupaten' },
+                { 'KOLOM': 'Provinsi', 'CONTOH': 'JAWA BARAT', 'CATATAN': 'Nama provinsi' },
+                { 'KOLOM': 'Pendidikan', 'CONTOH': 'Sarjana (S1)', 'CATATAN': 'Pilihan: SD/Sederajat, SMP/Sederajat, SMA/Sederajat, Diploma, Sarjana, Magister, Doktor' },
+                { 'KOLOM': 'NIK', 'CONTOH': '3275031201990001', 'CATATAN': '16 digit NIK' },
+                { 'KOLOM': 'Kode Pos', 'CONTOH': '40115', 'CATATAN': '5 digit kode pos' },
+                { 'KOLOM': 'Status Disabilitas', 'CONTOH': 'Tidak memiliki disabilitas', 'CATATAN': 'Opsional' },
+                { 'KOLOM': 'Alasan Bergabung', 'CONTOH': 'Ingin menambah wawasan', 'CATATAN': 'Alasan mengikuti program' },
+                { 'KOLOM': 'Media Sosial', 'CONTOH': 'Instagram: @johndoe, Facebook: John Doe', 'CATATAN': 'Pisahkan dengan koma untuk multiple' },
+                { 'KOLOM': 'Marketplace', 'CONTOH': 'Tokopedia: tokopedia.com/johndoe', 'CATATAN': 'Pisahkan dengan koma untuk multiple' },
+                { 'KOLOM': 'Website', 'CONTOH': 'johndoe.com', 'CATATAN': 'Pisahkan dengan koma untuk multiple' }
+            ];
+
+            const instructionWorksheet = XLSX.utils.json_to_sheet(instructionData)
+
+            const instructionCols = [
+                { wch: 25 },  
+                { wch: 40 },  
+                { wch: 30 },   
+                { wch: 50 }
+            ]
+
+            instructionWorksheet['!cols'] = instructionCols
+
+            const categoryData = [
+                { 'KATEGORI': 'FIELD YANG WAJIB DIISI', 'KETERANGAN': '' },
+                { 'KATEGORI': 'Mahasiswa', 'KETERANGAN': 'Institusi, Jurusan, Semester, Tahun Masuk' },
+                { 'KATEGORI': 'UMKM', 'KETERANGAN': 'Nama Usaha, Jenis Usaha, Alamat Usaha' },
+                { 'KATEGORI': 'Profesional', 'KETERANGAN': 'Tempat Kerja, Posisi, Lama Bekerja' },
+                { 'KATEGORI': 'Komunitas', 'KETERANGAN': 'Nama Komunitas, Bidang Fokus, Jumlah Anggota' }
+            ]
             
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `impala_import_template_${new Date().getTime()}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-            
-            toast.success('Template CSV berhasil didownload');
+            const categoryWorksheet = XLSX.utils.json_to_sheet(categoryData)
+            const categoryCols = [
+                { wch: 25 },
+                { wch: 50 }
+            ]
+
+            categoryWorksheet['!cols'] = categoryCols
+
+            const workbook = XLSX.utils.book_new()
+
+            XLSX.utils.book_append_sheet(workbook, dataWorksheet, 'Template data')
+            XLSX.utils.book_append_sheet(workbook, instructionWorksheet, 'Instruksi')
+            XLSX.utils.book_append_sheet(workbook, categoryWorksheet, 'Kategori')
+
+            const formData = [
+                { 'JENIS DATA': 'FORMAT', 'CONTOH': 'PENJELASAN' },
+                { 'JENIS DATA': 'Tanggal', 'CONTOH': '2024-01-15', 'PENJELASAN': 'YYYY-MM-DD (Tahun-Bulan-Tanggal)' },
+                { 'JENIS DATA': 'Angka', 'CONTOH': '1000000', 'PENJELASAN': 'Tanpa titik atau koma pemisah ribuan' },
+                { 'JENIS DATA': 'Array/Multiple', 'CONTOH': 'value1, value2, value3', 'PENJELASAN': 'Pisahkan dengan koma untuk multiple values' },
+                { 'JENIS DATA': 'Email', 'CONTOH': 'nama@domain.com', 'PENJELASAN': 'Format email yang valid' },
+                { 'JENIS DATA': 'Telepon', 'CONTOH': '081234567890', 'PENJELASAN': 'Format angka, tanpa tanda + atau -' }
+            ]
+
+            const formatWorksheet = XLSX.utils.json_to_sheet(formData)
+            const formatCols = [
+                { wch: 20 },
+                { wch: 20 },
+                { wch: 40 }
+            ]
+
+            formatWorksheet['!cols'] = formatCols;
+            XLSX.utils.book_append_sheet(workbook, formatWorksheet, 'Format data')
+
+            const emptyData = templateData.map(row => {
+                const emptyRow = {}
+                Object.keys(row).forEach(key => {
+                    emptyRow[key]
+                })
+
+                return emptyRow
+            })
+
+            const emptyWorksheet = XLSX.utils.json_to_sheet(emptyData)
+            emptyWorksheet['!cols'] = wscols
+            XLSX.utils.book_append_sheet(workbook, emptyWorksheet, 'Isi data disini')
+
+            if (!dataWorksheet['A1']) dataWorksheet['A1'] = {}
+            if (!dataWorksheet['A1'].s) dataWorksheet['A1'].s = {}
+            dataWorksheet['A1'].s = {
+                fill: { fgColor: { rgb: '#FFFF0000' } },
+                font: { color: { rgb: '#FFFFFFFF' }, bold: true }
+            }
+
+            XLSX.writeFile(workbook, 'impala_management_template.xlsx')
+
+            toast.success('Template excel berhasil didownload')
+
         } catch (error) {
             console.error('Download template error:', error);
             toast.error('Gagal mendownload template');
@@ -101,72 +238,188 @@ const ImpalaManagement = () => {
 
     const handleFileUpload = useCallback((event) => {
         const file = event.target.files[0];
-        if (!file) return;
-        
-        if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
-            toast.error('Hanya file CSV yang diperbolehkan');
+
+        if (!file) {
+            toast.error('Tidak ada file yang dipilih');
             return;
         }
+
+        const allowedExtensions = ['.xlsx', '.xls']
+        const allowedTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+        ]
         
-        if (file.size > 5 * 1024 * 1024) {
-            toast.error('File terlalu besar. Maksimal 5MB');
-            return;
+        const fileExtension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
+
+        if (!allowedExtensions.includes(fileExtension) && !allowedTypes.includes(file.type)) {
+            toast.error('Hanya file Excel (.xlsx, .xls) atau csv yang diperbolehkan')
+            return
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error('File terlalu besar. Max 10mb')
+            return
         }
         
         setImportFile(file);
     }, []);
 
-    const handleImportCSV = useCallback(async () => {
+    const handleImportExcel = useCallback(async () => {
         if (!importFile) {
-            toast.error('Pilih file CSV terlebih dahulu');
+            toast.error('Pilih file Excel terlebih dahulu');
             return;
         }
         
         setIsImporting(true);
+        toast.loading('Mengimport data dari Excel...');
         
         try {
             const reader = new FileReader();
+            
             reader.onload = async (e) => {
                 try {
-                    const csvText = e.target.result;
-                    const rows = csvText.split('\n');
-                    const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                    const data = e.target.result;
                     
-                    const importedParticipants = [];
-                    for (let i = 1; i < rows.length; i++) {
-                        if (!rows[i].trim()) continue;
-                        
-                        const values = rows[i].split(',').map(v => v.trim().replace(/"/g, ''));
-                        const participant = {};
-                        
-                        headers.forEach((header, index) => {
-                            participant[header] = values[index] || '';
-                        });
-
-                        if (participant.full_name?.includes('Contoh:')) continue;
-                        if (participant.email?.includes('Contoh:')) continue;
-
-                        if (participant.full_name && participant.email) {
-                            importedParticipants.push(participant);
-                        }
-                    }
+                    const workbook = XLSX.read(data, { type: 'binary' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
                     
-                    if (importedParticipants.length === 0) {
-                        toast.error('Tidak ada data valid yang ditemukan dalam file');
+                    if (jsonData.length === 0) {
+                        toast.dismiss();
+                        toast.error('Tidak ada data yang ditemukan dalam file Excel');
                         return;
                     }
-
-                    const existingParticipants = JSON.parse(localStorage.getItem('impala_participants') || '[]');
-                    const newParticipants = [
-                        ...existingParticipants,
-                        ...importedParticipants.map((participant, index) => ({
-                            id: Date.now() + index,
-                            ...participant,
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString()
-                        }))
-                    ];
-                    localStorage.setItem('impala_participants', JSON.stringify(newParticipants));
+                    
+                    const importedParticipants = jsonData
+                        .filter(row => {
+                            const name = row['Nama Lengkap'] || row['full_name'] || '';
+                            const email = row['Email'] || row['email'] || '';
+                            return name && email && 
+                                !name.toString().includes('Contoh:') && 
+                                !email.toString().includes('Contoh:');
+                        })
+                        .map(row => {
+                            const participant = {
+                                full_name: row['Nama Lengkap'] || row['full_name'] || '',
+                                email: row['Email'] || row['email'] || '',
+                                phone: row['Nomor Telepon'] || row['phone'] || '',
+                                gender: row['Jenis Kelamin'] || row['gender'] || '',
+                                category: row['Kategori'] || row['category'] || '',
+                                program_name: row['Program'] || row['program_name'] || '',
+                                date_of_birth: row['Tanggal Lahir'] || row['date_of_birth'] || '',
+                                address: row['Alamat'] || row['address'] || '',
+                                regency_name: row['Kota/Kabupaten'] || row['regency_name'] || '',
+                                province_name: row['Provinsi'] || row['province_name'] || '',
+                                education: row['Pendidikan'] || row['education'] || '',
+                                nik: row['NIK'] || row['nik'] || '',
+                                postal_code: row['Kode Pos'] || row['postal_code'] || '',
+                                disability_status: row['Status Disabilitas'] || row['disability_status'] || '',
+                                reason_join_program: row['Alasan Bergabung'] || row['reason_join_program'] || '',
+                                
+                                // Business Information
+                                business_name: row['Nama Usaha'] || row['business_name'] || '',
+                                business_type: row['Jenis Usaha'] || row['business_type'] || '',
+                                business_address: row['Alamat Usaha'] || row['business_address'] || '',
+                                business_form: row['Bentuk Usaha'] || row['business_form'] || '',
+                                established_year: row['Tahun Berdiri'] || row['established_year'] || '',
+                                monthly_revenue: row['Pendapatan Bulanan'] || row['monthly_revenue'] || '',
+                                employee_count: row['Jumlah Karyawan'] || row['employee_count'] || '',
+                                
+                                // Academic Information
+                                institution: row['Institusi'] || row['institution'] || '',
+                                major: row['Jurusan'] || row['major'] || '',
+                                semester: row['Semester'] || row['semester'] || '',
+                                enrollment_year: row['Tahun Masuk'] || row['enrollment_year'] || '',
+                                career_interest: row['Minat Karir'] || row['career_interest'] || '',
+                                core_competency: row['Kompetensi Inti'] || row['core_competency'] || '',
+                                
+                                // Professional Information
+                                workplace: row['Tempat Kerja'] || row['workplace'] || '',
+                                position: row['Posisi'] || row['position'] || '',
+                                work_duration: row['Lama Bekerja'] || row['work_duration'] || '',
+                                industry_sector: row['Sektor Industri'] || row['industry_sector'] || '',
+                                
+                                // Community Information
+                                community_name: row['Nama Komunitas'] || row['community_name'] || '',
+                                focus_area: row['Bidang Fokus'] || row['focus_area'] || '',
+                                member_count: row['Jumlah Anggota'] || row['member_count'] || '',
+                                operational_area: row['Area Operasional'] || row['operational_area'] || '',
+                                community_role: row['Peran dalam Komunitas'] || row['community_role'] || '',
+                            };
+                            
+                            // Handle array fields - konversi string ke array
+                            const processArrayField = (value) => {
+                                if (!value) return [];
+                                if (Array.isArray(value)) return value;
+                                if (typeof value === 'string') {
+                                    return value.split(',')
+                                        .map(item => item.trim())
+                                        .filter(item => item && !item.includes('Contoh:'));
+                                }
+                                return [String(value)];
+                            };
+                            
+                            // Process certifications
+                            const certValue = row['Sertifikasi'] || row['certifications'];
+                            participant.certifications = processArrayField(certValue);
+                            
+                            // Process skills
+                            const skillsValue = row['Keahlian'] || row['skills'];
+                            participant.skills = processArrayField(skillsValue);
+                            
+                            // Process social media
+                            const smValue = row['Media Sosial'] || row['social_media'];
+                            participant.social_media = processArrayField(smValue);
+                            
+                            // Process marketplace
+                            const mpValue = row['Marketplace'] || row['marketplace'];
+                            participant.marketplace = processArrayField(mpValue);
+                            
+                            // Process website
+                            const webValue = row['Website'] || row['website'];
+                            participant.website = processArrayField(webValue);
+                            
+                            // Tambahkan timestamp
+                            participant.created_at = new Date().toISOString();
+                            participant.updated_at = new Date().toISOString();
+                            
+                            return participant;
+                        });
+                    
+                    if (importedParticipants.length === 0) {
+                        toast.dismiss();
+                        toast.error('Tidak ada data valid yang ditemukan dalam file Excel');
+                        return;
+                    }
+                    
+                    // Validasi data wajib
+                    const invalidParticipants = importedParticipants.filter(p => 
+                        !p.full_name || !p.email || !p.phone || !p.gender || !p.category
+                    );
+                    
+                    if (invalidParticipants.length > 0) {
+                        toast.dismiss();
+                        toast.error(`${invalidParticipants.length} data tidak valid (nama, email, telepon, gender, atau kategori kosong)`);
+                        return;
+                    }
+                    
+                    toast.loading(`Mengirim ${importedParticipants.length} data ke server...`);
+                    
+                    const response = await fetch('/api/impala/import', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ participants: importedParticipants })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Gagal mengimport data ke server');
+                    }
+                    
                     
                     setImportFile(null);
                     if (fileInputRef.current) {
@@ -177,17 +430,22 @@ const ImpalaManagement = () => {
                     
                     await refreshData();
                     
-                    toast.success(`Berhasil mengimport ${importedParticipants.length} participant`);
+                    toast.dismiss();
+                    toast.success(`Berhasil mengimport ${importedParticipants.length} peserta dari Excel`);
+                    
                 } catch (parseError) {
                     console.error('Parse error:', parseError);
-                    toast.error('Format file CSV tidak valid');
+                    toast.dismiss();
+                    toast.error('Format file Excel tidak valid atau struktur kolom tidak sesuai');
                 }
             };
             
-            reader.readAsText(importFile);
+            reader.readAsBinaryString(importFile);
+            
         } catch (error) {
             console.error('Import error:', error);
-            toast.error('Gagal mengimport data');
+            toast.dismiss();
+            toast.error(error.message || 'Gagal mengimport data dari Excel');
         } finally {
             setIsImporting(false);
         }
@@ -297,13 +555,13 @@ const ImpalaManagement = () => {
         }));
     };
 
-    const clearAllFilters = () => {
+    const clearAllFilters = useCallback(() => {
         setSearchTerm("");
         setActiveFilters({
             gender: null,
             category: null,
         });
-    };
+    });
 
     const clearFilter = (filterType) => {
         if (filterType === 'gender') {
@@ -439,7 +697,7 @@ const ImpalaManagement = () => {
             )
 
             let dataToExport;
-            let filenamePrefix;
+            // let filenamePrefix;
 
             if (exportAll) {
                 const response = await fetch(`/api/impala/export?exportType=all`)
@@ -456,16 +714,57 @@ const ImpalaManagement = () => {
                 }
 
                 dataToExport = result.data
-                filenamePrefix = 'impala_management'
+                // filenamePrefix = 'impala_management'
             } else {
                 dataToExport = filteredParticipants
-                filenamePrefix = 'impala_management_filter'
+                // filenamePrefix = 'impala_management_filter'
             }
 
             if (!dataToExport || dataToExport.length === 0) {
                 toast.dismiss()
                 toast.error('No data to export')
                 return
+            }
+
+            const formatArrayField = (fieldValue) => {
+                if (!fieldValue) return '';
+                if (Array.isArray(fieldValue)) {
+                    return fieldValue.join(', ')
+                }
+
+                if (typeof fieldValue === 'string') {
+                    try {
+                        const parsed = JSON.parse(fieldValue)
+                        if (Array.isArray(parsed)) {
+                            return parsed.join(', ')
+                        }
+
+                    } catch {
+                        //
+                    }
+
+                    return fieldValue
+                }
+
+                return String(fieldValue)
+            }
+
+            const formatFieldValue = (fieldValue, fieldName) => {
+                if (fieldValue === null || fieldValue === undefined) return ''
+
+                if (['social_media', 'marketplace', 'website', 'skills', 'certifications'].includes(fieldName)) {
+                    return formatArrayField(fieldValue)
+                }
+
+                if (fieldName.includes('date') || fieldName.includes('created') || fieldName.includes('updated')) {
+                    try {
+                        return new Date(fieldValue).toLocaleDateString('id-ID')
+                    } catch {
+                        return fieldValue
+                    }
+                }
+
+                return String(fieldValue)
             }
 
             const exportData = dataToExport.map((p, index) => ({
@@ -486,8 +785,8 @@ const ImpalaManagement = () => {
                 'Kode Pos': p.postal_code || '',
                 'Status Disabilitas': p.disability_status || '',
                 'Alasan Bergabung': p.reason_join_program || '',
-                'Tanggal Dibuat': p.created_at ? new Date(p.created_at).toLocaleDateString('id-ID') : '',
-                'Tanggal Diperbarui': p.updated_at ? new Date(p.updated_at).toLocaleDateString('id-ID') : '',
+                'Tanggal Dibuat': formatFieldValue(p.created_at, 'created_at'),
+                'Tanggal Diperbarui': formatFieldValue(p.updated_at, 'updated_at'),
                 
                 'Nama Usaha': p.business_name || '',
                 'Jenis Usaha': p.business_type || '',
@@ -496,7 +795,7 @@ const ImpalaManagement = () => {
                 'Tahun Berdiri': p.established_year || '',
                 'Pendapatan Bulanan': p.monthly_revenue || '',
                 'Jumlah Karyawan': p.employee_count || '',
-                'Sertifikasi': p.certifications || '',
+                'Sertifikasi': formatFieldValue(p.certifications, 'certifications'),
                 
                 'Institusi': p.institution || '',
                 'Jurusan': p.major || '',
@@ -509,7 +808,7 @@ const ImpalaManagement = () => {
                 'Posisi': p.position || '',
                 'Lama Bekerja': p.work_duration || '',
                 'Sektor Industri': p.industry_sector || '',
-                'Keahlian': p.skills || '',
+                'Keahlian': formatFieldValue(p.skills, 'skills'),
                 
                 'Nama Komunitas': p.community_name || '',
                 'Bidang Fokus': p.focus_area || '',
@@ -517,9 +816,9 @@ const ImpalaManagement = () => {
                 'Area Operasional': p.operational_area || '',
                 'Peran dalam Komunitas': p.community_role || '',
                 
-                'Media Sosial': p.social_media || '',
-                'Marketplace': p.marketplace || '',
-                'Website': p.website || ''
+                'Media Sosial': formatFieldValue(p.social_media, 'social_media'),
+                'Marketplace': formatFieldValue(p.marketplace, 'marketplace'),
+                'Website': formatFieldValue(p.website, 'website')
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(exportData)
@@ -534,10 +833,12 @@ const ImpalaManagement = () => {
                 { wch: 40 },   { wch: 20 },   { wch: 15 },   { wch: 10 },
                 { wch: 15 },   { wch: 25 },   { wch: 20 },   { wch: 15 },
                 { wch: 20 },   { wch: 30 },   { wch: 25 },   { wch: 30 },
-                { wch: 15 },   { wch: 20 },   { wch: 25 },   { wch: 30 },
-                { wch: 25 },   { wch: 25 }    
+                { wch: 15 },   { wch: 20 },   { wch: 25 },   { wch: 20 },
+                { wch: 30 },   { wch: 30 }    
             ];
             worksheet['!cols'] = wscols
+
+            worksheet['!autofilter'] = { ref: "A1:AQ1" };
             
             const workbook = XLSX.utils.book_new()
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Beneficiaries')
@@ -904,10 +1205,10 @@ const ImpalaManagement = () => {
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2 text-xl">
                                 <FileSpreadsheet className="h-5 w-5 text-blue-600" />
-                                Import Participants from CSV
+                                Import Participants from Excel
                             </DialogTitle>
                             <DialogDescription className="text-base">
-                                Upload a CSV file to import multiple participants at once.
+                                Upload a Excel file to import multiple participants at once.
                             </DialogDescription>
                         </DialogHeader>
                         
@@ -948,12 +1249,12 @@ const ImpalaManagement = () => {
                                     <>
                                         <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                                         <p className="text-base text-gray-600 mb-3 px-2">
-                                            <strong>Drag & drop your CSV file here, or click to browse</strong>
+                                            <strong>Drag & drop your Excel file here, or click to browse</strong>
                                         </p>
                                         <Input
                                             ref={fileInputRef}
                                             type="file"
-                                            accept=".csv"
+                                            accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                                             onChange={handleFileUpload}
                                             className="hidden"
                                             id="csv-upload"
@@ -972,7 +1273,7 @@ const ImpalaManagement = () => {
                         
                         <DialogFooter className="flex flex-col sm:flex-row gap-3">
                             <Button
-                                onClick={handleImportCSV}
+                                onClick={handleImportExcel}
                                 disabled={!importFile || isImporting}
                                 className="flex items-center gap-2 px-6 py-2 w-full sm:w-auto justify-center"
                             >

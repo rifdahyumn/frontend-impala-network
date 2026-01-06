@@ -391,7 +391,6 @@ export const usePrograms = (initialFilters = {}) => {
             const now = Date.now()
 
             if (now - lastStatsFetchTimeRef.current < 30000) {
-                console.log('Skipping stats fetch - too recent')
                 return
             }
 
@@ -461,7 +460,6 @@ export const usePrograms = (initialFilters = {}) => {
             } else {
                 if (allPrograms.length > 0 && !allProgramsLoading) {
                     dataToExport = allPrograms
-                    console.log('Using cached data for export')
                 } else {
                     await new Promise(resolve => setTimeout(resolve, 1500))
 

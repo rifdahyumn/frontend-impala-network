@@ -40,7 +40,6 @@ export const updateExpiredPrograms = async (programs, updateProgram) => {
     for (const program of expiredPrograms) {
         try {
             await updateProgram(program.id, { status: 'Inactive' });
-            console.log(`Program "${program.program_name}" status updated to Inactive`);
         } catch (error) {
             console.error('Error updating program status:', error);
         }
