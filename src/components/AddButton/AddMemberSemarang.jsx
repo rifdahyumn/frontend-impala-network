@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Plus, X, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import heteroSemarangService from "../../services/heteroSemarangService";
+import locationService from "../../services/locationService";
 
 const AddMemberSemarang = ({ 
     isAddMemberModalOpen, 
@@ -27,9 +28,14 @@ const AddMemberSemarang = ({
         education: '',
         company: '',
         address: '',
-        district: '',
-        city: '',
-        province: '',
+        province_id: '',
+        province_name: '',
+        regency_id: '',
+        regency_name: '',
+        district_id: '',
+        district_name: '',
+        village_id: '',
+        village_name: '',
         postal_code: '',
         space: '',
         add_on: [],
@@ -62,6 +68,279 @@ const AddMemberSemarang = ({
     const [newAddOn, setNewAddOn] = useState('');
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+
+    const [provinces, setProvinces] = useState([])
+    const [regencies, setRegencies] = useState([])
+    const [districts, setDistricts] = useState([])
+    const [villages, setVillages] = useState([])
+    const [loadingLocations, setLoadingLocations] = useState({
+        provinces: false,
+        regencies: false,
+        districts: false,
+        villages: false
+    })
+
+    useEffect(() => {
+        const fetchProvinces = async () => {
+            setLoadingLocations(prev => ({ ...prev, provinces: true }))
+
+            try {
+                const data = await locationService.getProvinces()
+                setProvinces(data)
+            } catch (error) {
+                console.error('Error fetching provinces:', error)
+                toast.error('Failed to load provinces data')
+            } finally {
+                setLoadingLocations(prev => ({ ...prev, provinces: false }))
+            }
+        }
+
+        if (isAddMemberModalOpen) {
+            fetchProvinces()
+        }
+    }, [isAddMemberModalOpen])
+
+    useEffect(() => {
+        const fetchRegencies = async () => {
+            if (!formData.province_id) {
+                setRegencies([])
+                setFormData(prev => ({
+                    ...prev,
+                    regency_id: '',
+                    regency_name: '',
+                    district_id: '',
+                    district_name: '',
+                    village_id: '',
+                    village_name: ''
+                }))
+
+                return
+            }
+
+            setLoadingLocations(prev => ({ ...prev, regencies: true }))
+
+            try {
+                const data = await locationService.getRegencies(formData.province_id)
+
+                setRegencies(data)
+                setDistricts([])
+                setVillages([])
+                setFormData(prev => ({
+                    ...prev,
+                    regency_id: '',
+                    regency_name: '',
+                    district_id: '',
+                    district_name: '',
+                    village_id: '',
+                    village_name: ''
+                }))
+            } catch (error) {
+                console.error('Error fetching regenices:', error)
+                toast.error('Failed to load regenices data')
+            } finally {
+                setLoadingLocations(prev => ({ ...prev, regencies: false }))
+            }
+        }
+
+        fetchRegencies()
+    }, [formData.province_id])
+
+    useEffect(() => {
+        const fetchDistrics = async () => {
+            if (!formData.regency_id) {
+                setDistricts([])
+                setFormData(prev => ({
+                    ...prev,
+                    district_id: '',
+                    district_name: '',
+                    village_id: '',
+                    village_name: ''
+                }))
+
+                return
+            }
+
+            setLoadingLocations(prev => ({ ...prev, districts: true }))
+
+            try {
+                const data = await locationService.getDistricts(formData.regency_id)
+
+                setDistricts(data)
+                setVillages([])
+                setFormData(prev => ({
+                    ...prev,
+                    district_id: '',
+                    district_name: '',
+                    village_id: '',
+                    village_name: '',
+                }))
+            } catch (error) {
+                console.error('Error fetching districts:', error)
+                toast.error('Failed to load districts data')
+            } finally {
+                setLoadingLocations(prev => ({ ...prev, districts: false }))
+            }
+        }
+
+        fetchDistrics()
+    }, [formData.regency_id])
+
+    useEffect(() => {
+        const fetchVillages = async () => {
+            if (!formData.district_id) {
+                setVillages([])
+                setFormData(prev => ({
+                    ...prev,
+                    village_id: '',
+                    village_name: ''
+                }))
+
+                return
+            }
+
+            setLoadingLocations(prev => ({ ...prev, villages: true }))
+
+            try {
+                const data = await locationService.getVillages(formData.district_id)
+
+                setVillages(data)
+                setFormData(prev => ({
+                    ...prev,
+                    village_id: '',
+                    village_name: ''
+                }))
+            } catch (error) {
+                console.error('Error fetching villages:', error)
+                toast.error('Failed to load villages data')
+            } finally {
+                setLoadingLocations(prev => ({ ...prev, villages: false }))
+            }
+        }
+
+        fetchVillages()
+    }, [formData.district_id])
+
+    useEffect(() => {
+        if (isEditMode && editData) {
+            setFormData({
+                full_name: editData.full_name || '',
+                nik: editData.nik || '',
+                email: editData.email || '',
+                phone: editData.phone || '',
+                gender: editData.gender || '',
+                date_of_birth: editData.date_of_birth || '',
+                education: editData.education || '',
+                address: editData.address || '',
+                province_id: editData.province_id || '',
+                province_name: editData.province_name || '',
+                regency_id: editData.regency_id || '',
+                regency_name: editData.regency_name || '',
+                district_id: editData.district_id || '',
+                district_name: editData.district_name || '',
+                village_id: editData.village_id || '',
+                village_name: editData.village_name || '',
+                postal_code: editData.postal_code || '',
+                company: editData.company || '',
+                space: editData.space || '',
+                start_date: editData.start_date || '',
+                end_date: editData.end_date || '',
+                add_on: Array.isArray(editData.add_on) ? editData.add_on : 
+                       (editData.add_on ? [editData.add_on] : []),
+                add_information: editData.add_information || '',
+            })
+        } else {
+            setFormData({
+                full_name: '',
+                nik: '',
+                email: '',
+                phone: '',
+                gender: '',
+                date_of_birth: '',
+                education: '',
+                address: '',
+                province_id: '',
+                province_name: '',
+                regency_id: '',
+                regency_name: '',
+                district_id: '',
+                district_name: '',
+                village_id: '',
+                village_name: '',
+                postal_code: '',
+                company: '',
+                space: '',
+                start_date: '',
+                end_date: '',
+                add_on: [],
+                add_information: '',
+            })
+        }
+        setErrors({})
+    }, [isEditMode, editData, isAddMemberModalOpen])
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }))
+    }
+
+    const handleSelectChange = (name, value) => {
+        if (name === 'province_id') {
+            const selectedProvince = provinces.find(p => p.value === value)
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                province_name: selectedProvince?.label || '',
+                regency_id: '',
+                regency_name: '',
+                district_id: '',
+                district_name: '',
+                village_id: '',
+                village_name: ''
+            }))
+        } else if (name === 'regency_id') {
+            const selectedRegency = regencies.find(r => r.value === value)
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                regency_name: selectedRegency?.label || '',
+                district_id: '',
+                district_name: '',
+                village_id: '',
+                village_name: ''
+            }))
+        } else if (name === 'district_id') {
+            const selectedDistrict = districts.find(d => d.value === value)
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                district_name: selectedDistrict?.label || '',
+                village_id: '',
+                village_name: ''
+            }))
+        } else if (name === 'village_id') {
+            const selectedVillage = villages.find(v => v.value === value)
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                village_name: selectedVillage?.label || ''
+            }))
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }))
+        }
+
+        if (errors[name]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }))
+        }
+    }
 
     const handleAddOn = () => {
         let addOnToAdd = '';
@@ -175,28 +454,46 @@ const AddMemberSemarang = ({
                     label: 'Complete Address',
                     type: 'text',
                     required: true,
-                    placeholder: 'Enter complete address'
+                    placeholder: 'Enter complete address (street, building, etc)'
                 },
                 {
-                    name: 'district',
-                    label: 'District / Sub District',
-                    type: 'text',
-                    required: true,
-                    placeholder: 'Enter district / sub district',
-                },
-                {
-                    name: 'city',
-                    label: 'City / Regency',
-                    type: 'text',
-                    required: true,
-                    placeholder: 'Enter city'
-                },
-                {
-                    name: 'province',
+                    name: 'province_id',
                     label: 'Province',
-                    type: 'text',
+                    type: 'select',
                     required: true,
-                    placeholder: 'Enter province'
+                    placeholder: loadingLocations.provinces ? 'Loading provinces...' : 'Select Province',
+                    options: provinces,
+                    loading: loadingLocations.provinces
+                },
+                {
+                    name: 'regency_id',
+                    label: 'City / Regency',
+                    type: 'select',
+                    required: true,
+                    placeholder: loadingLocations.regencies ? 'Loading regenices...' : 'Select City/Regency',
+                    options: regencies,
+                    loading: loadingLocations.regencies,
+                    disabled: !formData.province_id
+                },
+                {
+                    name: 'district_id',
+                    label: 'Distric',
+                    type: 'select',
+                    required: true,
+                    placeholder: loadingLocations.districts ? 'Loading district...' : 'Select District',
+                    options: districts,
+                    loading: loadingLocations.districts,
+                    disabled: !formData.regency_id
+                },
+                {
+                    name: 'village_id',
+                    label: 'Village',
+                    type: 'select',
+                    required: true,
+                    placeholder: loadingLocations.villages ? 'Loading villages...' : 'Select Village',
+                    options: villages,
+                    loading: loadingLocations.villages,
+                    disabled: !formData.district_id
                 },
                 {
                     name: 'postal_code',
@@ -333,78 +630,6 @@ const AddMemberSemarang = ({
         }
     ];
 
-    // ========== PERBAIKAN CRITICAL ==========
-    // BUG FIX 1: Tambahkan kurung siku pada dependency array
-    useEffect(() => {
-        if (isEditMode && editData) {
-            setFormData({
-                full_name: editData.full_name || '',
-                nik: editData.nik || '',
-                email: editData.email || '',
-                phone: editData.phone || '',
-                gender: editData.gender || '',
-                date_of_birth: editData.date_of_birth || '',
-                education: editData.education || '',
-                address: editData.address || '',
-                district: editData.district || '',
-                city: editData.city || '',
-                province: editData.province || '',
-                postal_code: editData.postal_code || '',
-                company: editData.company || '',
-                space: editData.space || '',
-                start_date: editData.start_date || '',
-                end_date: editData.end_date || '',
-                add_on: Array.isArray(editData.add_on) ? editData.add_on : 
-                       (editData.add_on ? [editData.add_on] : []),
-                add_information: editData.add_information || '',
-            });
-        } else {
-            setFormData({
-                full_name: '',
-                nik: '',
-                email: '',
-                phone: '',
-                gender: '',
-                date_of_birth: '',
-                education: '',
-                address: '',
-                district: '',
-                city: '',
-                province: '',
-                postal_code: '',
-                company: '',
-                space: '',
-                start_date: '',
-                end_date: '',
-                add_on: [],
-                add_information: '',
-            });
-        }
-        setErrors({});
-    }, [isEditMode, editData, isAddMemberModalOpen]); // ← PERBAIKAN: [dependency1, dependency2]
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleSelectChange = (name, value) => {
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-
-        if (errors[name]) {
-            setErrors(prev => ({
-                ...prev,
-                [name]: ''
-            }));
-        }
-    };
-
     const validateForm = () => {
         const newErrors = {};
 
@@ -425,11 +650,10 @@ const AddMemberSemarang = ({
         return Object.keys(newErrors).length === 0;
     };
 
-    // BUG FIX 2: Tambahkan tanda kurung pada validateForm()
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if(!validateForm()){ // ← PERBAIKAN: validateForm() bukan validateForm
+        if(!validateForm()){ 
             toast.error('Please fix the error in the form');
             return;
         }
@@ -446,9 +670,14 @@ const AddMemberSemarang = ({
                 date_of_birth: formData.date_of_birth,
                 education: formData.education,
                 address: formData.address,
-                district: formData.district,
-                city: formData.city,
-                province: formData.province,
+                province_id: formData.province_id,
+                province_name: formData.province_name,
+                regency_id: formData.regency_id,
+                regency_name: formData.regency_name,
+                district_id: formData.district_id,
+                district_name: formData.district_name,
+                village_id: formData.village_id,
+                village_name: formData.village_name,
                 postal_code: formData.postal_code,
                 company: formData.company,
                 space: formData.space,
@@ -486,6 +715,9 @@ const AddMemberSemarang = ({
     const handleCloseModal = () => {
         setIsAddMemberModalOpen(false);
         setErrors({});
+        setRegencies([])
+        setDistricts([])
+        setVillages([])
     };
 
     const renderField = (field, index) => {
@@ -508,19 +740,29 @@ const AddMemberSemarang = ({
                         value={formData[field.name] || ''}
                         onValueChange={(value) => handleSelectChange(field.name, value)}
                         required={field.required}
+                        disabled={field.disabled || field.loading}
                     >
                         <SelectTrigger>
-                            <SelectValue placeholder={field.placeholder} />
+                            {field.loading ? (
+                                <div className="flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <span>{field.placeholder}</span>
+                                </div>
+                            ) : (
+                                <SelectValue placeholder={field.placeholder} />
+                            )}
                         </SelectTrigger>
                         <SelectContent>
-                            {field.options.map((option) => (
-                                <SelectItem 
-                                    key={`${field.name}-${option.value}`}
-                                    value={option.value}
-                                >
-                                    {option.label}
-                                </SelectItem>
-                            ))}
+                            <SelectGroup>
+                                {field.options.map((option) => (
+                                    <SelectItem 
+                                        key={`${field.name}-${option.value}`}
+                                        value={option.value}
+                                    >
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
                         </SelectContent>
                     </Select>
                 </div>

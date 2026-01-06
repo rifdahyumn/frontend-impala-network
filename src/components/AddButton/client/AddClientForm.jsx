@@ -243,7 +243,6 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
                 province_name: formData.province_name,
                 regency_id: formData.regency_id,
                 regency_name: formData.regency_name,
-                // city: formData.regency_name,
                 district_id: formData.district_id,
                 district_name: formData.district_name,
                 village_id: formData.village_id,

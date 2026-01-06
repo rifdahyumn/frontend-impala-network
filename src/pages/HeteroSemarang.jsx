@@ -11,24 +11,8 @@ import HeteroContent from "../components/Content/HeteroSemarangContent";
 import { useHeteroSemarang } from "../hooks/useHeteroSemarang";
 import toast from "react-hot-toast";
 import MemberStatsCards from "../MemberHetero/MemberStatsCard";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuGroup, 
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuCheckboxItem
-} from "../components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "../components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import * as XLSX from 'xlsx';
 
@@ -38,7 +22,6 @@ const HeteroSemarang = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
     
-    // State untuk modal import (diperbarui)
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importFile, setImportFile] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
@@ -46,28 +29,23 @@ const HeteroSemarang = () => {
     const [validationErrors, setValidationErrors] = useState([]);
     const [isDragging, setIsDragging] = useState(false);
     
-    // Ref untuk upload input
     const fileInputRef = useRef(null);
     const dropZoneRef = useRef(null);
     
-    // State untuk visual feedback auto-scroll
     const [highlightDetail, setHighlightDetail] = useState(false);
     
-    // Ref untuk auto-scroll ke detail section
     const memberDetailRef = useRef(null);
     
-    // STATE UNTUK FRONTEND FILTERING
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilters, setActiveFilters] = useState({
-        gender: null, // 'male', 'female', atau null
-        space: null, // space atau null
+        gender: null,
+        space: null,
     });
     const [filteredMembers, setFilteredMembers] = useState([]);
     const [availableSpaces, setAvailableSpaces] = useState([]);
 
     const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroSemarang, updateMemberHeteroSemarang, deleteMemberHeteroSemarang } = useHeteroSemarang()
 
-    // Fungsi untuk handle select member dengan auto-scroll
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
         setHighlightDetail(true);
@@ -603,7 +581,6 @@ const HeteroSemarang = () => {
         { value: 'female', label: '👩 Female' },
     ];
 
-    // EKSTRAK SPACE YANG ADA DI DATA + TAMBAHKAN YANG BELUM ADA
     const extractSpaces = useMemo(() => {
         return (membersList) => {
             if (!membersList.length) return allSpaceOptions;
@@ -664,19 +641,16 @@ const HeteroSemarang = () => {
         };
     }, []);
 
-    // FUNGSI UNTUK GET SPACE LABEL
-    const getSpaceLabel = (spaceValue) => {
+    const getSpaceLabel = useCallback((spaceValue) => {
         if (!spaceValue || spaceValue === "all") return "All Spaces";
         const space = allSpaceOptions.find(s => s.value === spaceValue) || 
                      availableSpaces.find(s => s.value === spaceValue);
         return space ? space.original : spaceValue;
-    };
+    });
 
-    // FUNGSI UNTUK APPLY SEARCH & FILTER
     const applyAllFilters = () => {
         let result = [...members];
         
-        // 1. Apply Search
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase();
             result = result.filter(member =>
@@ -688,7 +662,6 @@ const HeteroSemarang = () => {
             );
         }
         
-        // 2. Apply Gender Filter
         if (activeFilters.gender) {
             result = result.filter(member => {
                 const memberGender = member.gender?.toLowerCase();
@@ -696,16 +669,13 @@ const HeteroSemarang = () => {
             });
         }
         
-        // 3. Apply Space Filter
         if (activeFilters.space && activeFilters.space !== 'all') {
             result = result.filter(member => {
                 const memberSpace = member.space?.toLowerCase();
                 if (!memberSpace) return false;
                 
-                // Cek kesamaan langsung
                 if (memberSpace === activeFilters.space) return true;
                 
-                // Cek apakah mengandung atau dikandung
                 return memberSpace.includes(activeFilters.space) || 
                        activeFilters.space.includes(memberSpace);
             });
@@ -854,7 +824,7 @@ const HeteroSemarang = () => {
             await addMemberHeteroSemarang(memberData)
             setIsAddMemberModalOpen(false)
             toast.success('Member added successfully')
-            fetchMembers(pagination.page);
+            await fetchMembers(pagination.page);
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
@@ -1307,16 +1277,6 @@ const HeteroSemarang = () => {
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    <div className="text-sm text-gray-600">
-                                        Showing {filteredMembers.length} of {members.length} members
-                                        {getTotalActiveCriteria() > 0 && " (filtered)"}
-                                        {activeFilters.space && activeFilters.space !== 'all' && (
-                                            <span className="ml-1 px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs">
-                                                in {getSpaceLabel(activeFilters.space)}
-                                            </span>
-                                        )}
-                                    </div>
-                                    
                                     <Pagination 
                                         currentPage={pagination.page}
                                         totalPages={pagination.totalPages}
@@ -1331,7 +1291,6 @@ const HeteroSemarang = () => {
                     </CardContent>
                 </Card>
 
-                {/* Wrap HeteroContent dengan div yang memiliki ref untuk auto-scroll */}
                 <div 
                     ref={memberDetailRef}
                     className={`
