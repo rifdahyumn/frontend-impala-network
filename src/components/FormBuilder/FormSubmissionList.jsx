@@ -127,15 +127,7 @@ const FormSubmissionsList = () => {
                                                             </span>
                                                         </span>
                                                     </div>
-                                                    {/* <div className="flex items-center gap-2">
-                                                        <Calendar className="h-4 w-4 text-green-500" />
-                                                        <span className="text-sm">
-                                                            7 hari: 
-                                                            <span className="font-bold ml-1">
-                                                                {programStats[template.program_name]?.recent || 0}
-                                                            </span>
-                                                        </span>
-                                                    </div> */}
+                                                    
                                                 </div>
                                                 
                                                 <Badge variant="outline" className="bg-green-50 text-green-700">

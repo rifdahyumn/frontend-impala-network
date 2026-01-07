@@ -8,6 +8,27 @@ const HeteroSemarangContent = ({ selectedMember, onOpenEditModal, onDelete, deta
     const [activeCategory, setActiveCategory] = useState('Personal Information');
     const [deleteLoading, setDeleteLoading] = useState(false)
 
+    const formatArrayField = (value) => {
+        if (!value) return '-'
+
+        if (Array.isArray(value)) {
+            return value.join(', ')
+        }
+
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value)
+                if (Array.isArray(parsed)) {
+                    return parsed.join(', ')
+                }
+            } catch {
+                //
+            }
+        }
+
+        return value || '-'
+    }
+
     const detailFields = [
         {
             category: 'Personal Information',
@@ -28,9 +49,10 @@ const HeteroSemarangContent = ({ selectedMember, onOpenEditModal, onDelete, deta
             icon: Home,
             fields: [
                 { key: 'address', label: 'Address', icon: MapPin },
-                { key: 'district', label: 'District / Sub District', icon: MapPin },
-                { key: 'city', label: 'City / Regency', icon: MapPin },
-                { key: 'province', label: 'Province', icon: MapPin },
+                { key: 'village_name', label: 'Village', icon: MapPin },
+                { key: 'district_name', label: 'District / Sub District', icon: MapPin },
+                { key: 'regency_name', label: 'City / Regency', icon: MapPin },
+                { key: 'province_name', label: 'Province', icon: MapPin },
                 { key: 'postal_code', label: 'Postal Code', icon: MapPin }
             ]
         },
@@ -102,7 +124,8 @@ const HeteroSemarangContent = ({ selectedMember, onOpenEditModal, onDelete, deta
                 <div className='grid grid-cols-2 gap-4'>
                     {activeCategoryData.fields.map((field, index) => {
                         const FieldIcon = field.icon
-                        const value = selectedMember[field.key] || selectedMember[field.key.toLowerCase()] || '-'
+                        let value = selectedMember[field.key] || selectedMember[field.key.toLowerCase()]
+                        value = formatArrayField(value)
 
                         return (
                             <div key={index} className='flex items-start gap-3'>

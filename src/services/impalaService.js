@@ -117,7 +117,6 @@ class ImpalaService {
 
     async createImpala(participantData) {
         try {
-            // 🔴 DIUBAH: Tambahkan validasi
             if (!participantData.full_name || !participantData.email) {
                 throw new Error('Full name and email are required');
             }
@@ -138,10 +137,8 @@ class ImpalaService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Update participant
     async updateImpala(participantId, participantData) {
         try {
-            // 🔴 VALIDASI: Pastikan participantId valid
             if (!participantId) {
                 throw new Error('Participant ID is required');
             }
@@ -218,29 +215,23 @@ class ImpalaService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Helper untuk konversi ke CSV
     convertToCSV(data) {
         if (!data || data.length === 0) return '';
 
-        // 🔴 Tentukan headers berdasarkan data pertama
         const headers = Object.keys(data[0] || {});
         
-        // 🔴 Siapkan rows
         const csvRows = [
-            headers.join(','), // Header row
+            headers.join(','), 
             ...data.map(row => 
                 headers.map(header => {
                     const value = row[header];
                     
-                    // 🔴 Handle berbagai tipe data
                     if (value === null || value === undefined) {
                         return '';
                     }
                     
-                    // 🔴 Escape quotes dan convert ke string
                     const stringValue = String(value).replace(/"/g, '""');
                     
-                    // 🔴 Wrap dalam quotes jika mengandung comma, newline, atau quotes
                     if (stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('"')) {
                         return `"${stringValue}"`;
                     }

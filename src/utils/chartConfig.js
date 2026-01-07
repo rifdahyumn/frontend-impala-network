@@ -1,4 +1,3 @@
-// utils/chartConfig.js
 import { METRICS_CONFIG, getQuarterLabel, getMonthsInQuarter } from "./constants";
 
 export const getChartOptions = (metric, dataType) => {

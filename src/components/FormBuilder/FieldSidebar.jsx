@@ -1,7 +1,6 @@
-// src/components/FormBuilder/FieldSidebar.jsx
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'; // Diperbaiki
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'; 
 
 const DraggableField = ({ type, label, icon }) => {
     const { attributes, listeners, setNodeRef, transform } = useDraggable({

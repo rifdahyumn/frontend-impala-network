@@ -55,10 +55,6 @@ const useFormData = (template, formConfig, toast) => {
             return { disabled: true, tooltip: `Harap lengkapi: ${missingFields.map(f => fieldLabels[f]).join(', ')}` };
         }
 
-        // if (formData.disability_status === 'Lainnya' && (!formData.disability_type || formData.disability_type.trim() === '')) {
-        //     return { disabled: true, tooltip: 'Harap jelaskan jenis disabilitas Anda' };
-        // }
-
         return { disabled: false, tooltip: 'Kirim formulir pendaftaran' };
     }, [selectedCategory, termsAccepted, formData]);
 

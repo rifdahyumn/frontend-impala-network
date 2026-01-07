@@ -23,7 +23,6 @@ const FiltersSection = ({
                         onSearch={onSearch}
                         placeholder="Search clients..."
                         value={localFilters.search}
-                        // onChange={(e) => onSearch(e.target.value)}
                     />
                 </div>
                 

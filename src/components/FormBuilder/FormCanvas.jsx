@@ -220,7 +220,6 @@ const FormCanvas = ({
                 </div>
                 
                 <div className="space-y-6">
-                    {/* WhatsApp Group Link */}
                     <div>
                         <div className="flex items-center gap-2 mb-3">
                             <Users className="w-5 h-5 text-green-600" />
@@ -268,10 +267,8 @@ const FormCanvas = ({
                         </div>
                     </div>
 
-                    {/* Divider */}
                     <div className="h-px bg-gray-200"></div>
 
-                    {/* After Submit Message */}
                     <div>
                         <div className="flex items-center gap-2 mb-3">
                             <MessageSquare className="w-5 h-5 text-purple-600" />
@@ -384,7 +381,6 @@ const FormCanvas = ({
 
     return (
         <div className="form-canvas space-y-6">
-            {/* Header */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">Form Builder Workspace</h1>
                 <p className="text-gray-600">
@@ -398,7 +394,6 @@ const FormCanvas = ({
                 )}
             </div>
             
-            {/* Main Content */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
                 <div className="lg:col-span-2 space-y-6">
@@ -430,7 +425,6 @@ const FormCanvas = ({
                 </div>
             </div>
 
-            {/* Publish Section */}
             {safeFormConfig.programName && renderPublishSection()}
         </div>
     );

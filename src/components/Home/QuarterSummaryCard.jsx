@@ -104,7 +104,6 @@ const QuarterSummaryCard = ({ quarter, data }) => {
             
             <CardContent>
                 <div className="space-y-4">
-                    {/* Pendapatan */}
                     <div className="p-3 bg-gradient-to-r from-blue-50 to-white rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
@@ -123,7 +122,6 @@ const QuarterSummaryCard = ({ quarter, data }) => {
                         </div>
                     </div>
 
-                    {/* Pelanggan */}
                     <div className="p-3 bg-gradient-to-r from-green-50 to-white rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
@@ -142,7 +140,6 @@ const QuarterSummaryCard = ({ quarter, data }) => {
                         </div>
                     </div>
 
-                    {/* Rata-rata Transaksi */}
                     <div className="p-3 bg-gradient-to-r from-purple-50 to-white rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
@@ -158,7 +155,6 @@ const QuarterSummaryCard = ({ quarter, data }) => {
                         </div>
                     </div>
 
-                    {/* Status Kinerja */}
                     <div className="pt-3 border-t border-gray-200">
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-600">Status Kinerja</span>
@@ -181,7 +177,6 @@ const QuarterSummaryCard = ({ quarter, data }) => {
                             </Badge>
                         </div>
                         
-                        {/* Progress Bar */}
                         <div className="mt-2">
                             <div className="flex justify-between text-xs text-gray-500 mb-1">
                                 <span>Target</span>

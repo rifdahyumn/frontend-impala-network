@@ -52,7 +52,6 @@ class UserService {
             const response = await fetch(`${this.baseURL}/user`, {
                 method: 'POST',
                 headers: {
-                    // 'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body:formData

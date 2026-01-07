@@ -11,8 +11,6 @@ class FormSubmissionService {
                 search = '',
                 showAllOnSearch = 'false'
             } = options;
-
-            // const encodedProgramName = encodeURIComponent(programName);
             
             const params = new URLSearchParams();
             params.append('program', programName);
@@ -46,12 +44,10 @@ class FormSubmissionService {
             });
 
             clearTimeout(timeoutId);
-            // const contentType = response.headers.get('content-type') || '';
             const rawText = await response.text();
             if (rawText.includes('<!DOCTYPE') || rawText.includes('<html') || rawText.includes('<!doctype')) {
                 console.error('[Service] ERROR: Server returned HTML instead of JSON!');
                 console.error('Full response start:', rawText.substring(0, 500));
-                // const baseUrl = `${API_BASE_URL}/impala`;
                 throw new Error(`Server returned HTML. Endpoint mungkin tidak ada. URL: ${url}`);
             }
         

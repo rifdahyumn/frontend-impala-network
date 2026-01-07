@@ -456,7 +456,6 @@ const FormBuilderWorkspace = () => {
                                 selectedTemplate={selectedTemplate}
                                 availablePrograms={availablePrograms}
                                 loadingPrograms={loadingPrograms}
-                                // formTemplates={formTemplates}
                                 showOnlyProgramInfo={true}
                             />
                         </CardContent>

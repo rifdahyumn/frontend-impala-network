@@ -3,7 +3,7 @@ import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Plus, Loader2, Users, UserCheck, AlertCircle, Tag, X, Filter, Briefcase } from "lucide-react";
 import { Button } from "../components/ui/button"
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'; // 🔴 TAMBAHKAN useRef
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'; 
 import SearchBar from '../components/SearchFilter/SearchBar';
 import ExportButton from '../components/ActionButton/ExportButton';
 import MemberTable from '../components/MemberTable/MemberTable';
@@ -19,7 +19,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
-  DropdownMenuTrigger // ⭐⭐ TAMBAHKAN INI
+  DropdownMenuTrigger 
 } from "../components/ui/dropdown-menu";
 
 const Account = () => {
@@ -28,31 +28,24 @@ const Account = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     
-    // 🔴 TAMBAHKAN: State untuk visual feedback auto-scroll
     const [highlightDetail, setHighlightDetail] = useState(false);
     
-    // 🔴 TAMBAHKAN: Ref untuk auto-scroll ke detail section
     const userDetailRef = useRef(null);
     
-    // ⭐⭐ STATE UNTUK FRONTEND FILTERING (disesuaikan dengan ImpalaManagement)
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilters, setActiveFilters] = useState({
-        position: null, // 'director', 'manager', atau null
-        role: null, // 'admin', 'user', 'superadmin', atau null
+        position: null, 
+        role: null, 
     });
     const [filteredUsers, setFilteredUsers] = useState([]);
 
     const { users, loading, error, pagination, filters, setFilters, fetchUser, addUser, updateUser, deleteUser, activateUser } = useUsers()
 
-    // 🔴 TAMBAHKAN: Fungsi untuk handle select user dengan auto-scroll
     const handleSelectUser = useCallback((user) => {
-        // Set selected user
         setSelectedUser(user);
         
-        // Trigger highlight effect
         setHighlightDetail(true);
         
-        // Auto-scroll ke user detail section
         setTimeout(() => {
             if (userDetailRef.current) {
                 userDetailRef.current.scrollIntoView({ 
@@ -61,18 +54,15 @@ const Account = () => {
                     inline: 'nearest'
                 });
                 
-                // Tambahkan smooth transition effect
                 userDetailRef.current.style.transition = 'all 0.5s ease';
                 
-                // Remove highlight after 2 seconds
                 setTimeout(() => {
                     setHighlightDetail(false);
                 }, 2000);
             }
-        }, 150); // Delay sedikit untuk memastikan DOM sudah update
+        }, 150); 
     }, []);
 
-    // ⭐⭐ POSITION OPTIONS (disesuaikan dengan genderOptions di ImpalaManagement)
     const positionOptions = [
         { value: 'managing director', label: '👑 Managing Director' },
         { value: 'director', label: '🎯 Director' },
@@ -87,14 +77,12 @@ const Account = () => {
         { value: 'creative', label: '🎨 Creative' }
     ];
 
-    // ⭐⭐ ROLE OPTIONS (disesuaikan dengan categoryOptions di ImpalaManagement)
     const roleOptions = [
         { value: 'admin', label: '🔧 Admin' },
         { value: 'user', label: '👤 User' },
         { value: 'superadmin', label: '👑 Super Admin' }
     ];
 
-    // ⭐⭐ DAFTAR STATUS OPTIONS (untuk statistik saja, bukan untuk filter button)
     const statusOptions = [
         { value: "all", label: "📊 All Status" },
         { value: "active", label: "🟢 Active", original: "Active" },
@@ -102,21 +90,18 @@ const Account = () => {
         { value: "pending", label: "🟡 Pending", original: "Pending" }
     ];
 
-    // ⭐⭐ FUNGSI UNTUK GET LABEL
     const getLabel = (value, options) => {
         if (!value) return "";
         const option = options.find(opt => opt.value === value);
         return option ? option.label : value;
     };
 
-    // ⭐⭐ FUNGSI UNTUK GET ORIGINAL LABEL
     const getOriginalLabel = (value, options) => {
         if (!value) return "";
         const option = options.find(opt => opt.value === value);
         return option ? option.original || option.label : value;
     };
 
-    // ⭐⭐ STATISTIK USER
     const userStats = useMemo(() => {
         const totalUsers = filteredUsers.length;
         const activeUsers = filteredUsers.filter(user => user.status === 'active').length;
@@ -163,11 +148,9 @@ const Account = () => {
         ];
     }, [filteredUsers, activeFilters.position, activeFilters.role]);
 
-    // ⭐⭐ FUNGSI UNTUK APPLY SEARCH & FILTER
     const applyAllFilters = () => {
         let result = [...users];
         
-        // 1. Apply Search
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase();
             result = result.filter(user =>
@@ -179,7 +162,6 @@ const Account = () => {
             );
         }
         
-        // 2. Apply Position Filter
         if (activeFilters.position) {
             result = result.filter(user => {
                 const userPosition = user.position?.toLowerCase();
@@ -191,7 +173,6 @@ const Account = () => {
             });
         }
         
-        // 3. Apply Role Filter
         if (activeFilters.role) {
             result = result.filter(user => {
                 const userRole = user.role?.toLowerCase();
@@ -204,13 +185,11 @@ const Account = () => {
         setFilteredUsers(result);
     };
 
-    // ⭐⭐ HANDLE SEARCH
     const handleSearch = (term) => {
         setSearchTerm(term);
         setFilters({ ...filters, search: term });
     };
 
-    // ⭐⭐ HANDLE POSITION FILTER CHANGE
     const handlePositionFilterChange = (position) => {
         setActiveFilters(prev => ({
             ...prev,
@@ -219,7 +198,6 @@ const Account = () => {
         setFilters({ ...filters, position: position });
     };
 
-    // ⭐⭐ HANDLE ROLE FILTER CHANGE
     const handleRoleFilterChange = (role) => {
         setActiveFilters(prev => ({
             ...prev,
@@ -228,7 +206,6 @@ const Account = () => {
         setFilters({ ...filters, role: role });
     };
 
-    // ⭐⭐ CLEAR ALL FILTERS
     const clearAllFilters = useCallback(() => {
         setSearchTerm("");
         setActiveFilters({
@@ -237,11 +214,10 @@ const Account = () => {
         });
         setFilters({ search: "", position: "", role: "", status: "" });
         setFilteredUsers(users);
-        setSelectedUser(null); // Reset selected user saat clear filter
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll ke atas
+        setSelectedUser(null); 
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [users, setFilters]);
 
-    // ⭐⭐ CLEAR SPECIFIC FILTER
     const clearFilter = (filterType) => {
         if (filterType === 'position') {
             setActiveFilters(prev => ({ ...prev, position: null }));
@@ -255,7 +231,6 @@ const Account = () => {
         }
     };
 
-    // ⭐⭐ APPLY FILTERS SETIAP USERS BERUBAH
     useEffect(() => {
         if (users.length > 0) {
             setFilteredUsers(users);
@@ -263,7 +238,6 @@ const Account = () => {
         }
     }, [users]);
 
-    // ⭐⭐ APPLY FILTERS SETIAP SEARCH ATAU FILTER BERUBAH
     useEffect(() => {
         applyAllFilters();
     }, [searchTerm, activeFilters]);
@@ -279,10 +253,9 @@ const Account = () => {
             toast.success('User added successfully');
             fetchUser(pagination.page);
             
-            // Scroll ke atas setelah add user
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
-            // Error sudah dihandle di hook
+            // 
         }
     };
 
@@ -326,7 +299,6 @@ const Account = () => {
             toast.success('User deleted successfully')
             fetchUser(pagination.page);
             
-            // Scroll ke atas setelah delete
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
             //
@@ -349,7 +321,6 @@ const Account = () => {
             if (currentSelected) {
                 setSelectedUser(currentSelected)
             } else {
-                // Jika user tidak ditemukan (mungkin dihapus atau difilter)
                 setSelectedUser(null);
             }
         }
@@ -365,7 +336,6 @@ const Account = () => {
         fetchUser(page);
     };
 
-    // ⭐⭐ GET ACTIVE FILTERS COUNT - HANYA POSITION DAN ROLE
     const getActiveFiltersCount = () => {
         let count = 0;
         if (activeFilters.position) count++;
@@ -373,7 +343,6 @@ const Account = () => {
         return count;
     };
 
-    // ⭐⭐ GET TOTAL ACTIVE CRITERIA (SEARCH + FILTERS) UNTUK DISPLAY
     const getTotalActiveCriteria = () => {
         let count = 0;
         if (searchTerm) count++;
@@ -389,7 +358,6 @@ const Account = () => {
         detailTitle: 'User Details'
     }
 
-    // ⭐⭐ FORMAT USER DARI filteredUsers
     const formattedUsers = filteredUsers.map((user, index) => {
         const currentPage = pagination.page
         const itemsPerPage = pagination.limit
@@ -413,7 +381,6 @@ const Account = () => {
         }
     })
 
-    // ⭐⭐ KOMPONEN STATS CARDS
     const UserStatsCards = ({ statsData }) => {
         return (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -452,7 +419,6 @@ const Account = () => {
             <div className='flex-1 p-6'>
                 <Header />
                 
-                {/* Stats Cards */}
                 <UserStatsCards statsData={userStats} />
 
                 <Card className='mb-6'>
@@ -486,7 +452,6 @@ const Account = () => {
                             </div>
                         )}
 
-                        {/* ⭐⭐ SEARCH & FILTER SECTION - DIUBAH SEPERTI IMPALAMANAGEMENT */}
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2 items-center'>
                                 <SearchBar 
@@ -494,7 +459,6 @@ const Account = () => {
                                     placeholder="Search..."
                                 />
                                 
-                                {/* ⭐⭐ FILTER DROPDOWN DENGAN WARNA AMBER - SEPERTI IMPALAMANAGEMENT */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button 
@@ -520,7 +484,6 @@ const Account = () => {
                                         <DropdownMenuLabel className="text-gray-700 font-semibold">Filter Options</DropdownMenuLabel>
                                         <DropdownMenuSeparator />
                                         
-                                        {/* ⭐⭐ POSITION FILTER (SEPERTI GENDER DI IMPALAMANAGEMENT) */}
                                         <DropdownMenuGroup>
                                             <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
                                                 Position
@@ -539,13 +502,11 @@ const Account = () => {
                                         
                                         <DropdownMenuSeparator />
                                         
-                                        {/* ⭐⭐ ROLE FILTER (SEPERTI CATEGORY DI IMPALAMANAGEMENT) */}
                                         <DropdownMenuGroup>
                                             <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
                                                 Role
                                             </DropdownMenuLabel>
                                             <div className="max-h-48 overflow-y-auto">
-                                                {/* ALL ROLES OPTION */}
                                                 <DropdownMenuCheckboxItem
                                                     checked={activeFilters.role === 'all'}
                                                     onCheckedChange={() => handleRoleFilterChange('all')}
@@ -569,7 +530,6 @@ const Account = () => {
                                         
                                         <DropdownMenuSeparator />
                                         
-                                        {/* CLEAR FILTERS - HANYA CLEAR POSITION & ROLE */}
                                         <DropdownMenuItem 
                                             onClick={() => {
                                                 setActiveFilters({
@@ -599,12 +559,10 @@ const Account = () => {
                             </div>
                         </div>
                         
-                        {/* ⭐⭐ ACTIVE FILTERS BADGES - TAMPILKAN JIKA ADA SEARCH ATAU FILTER */}
                         {getTotalActiveCriteria() > 0 && (
                             <div className="mb-4 flex flex-wrap items-center gap-2">
                                 <span className="text-sm text-gray-600">Active filters:</span>
                                 
-                                {/* SEARCH BADGE */}
                                 {searchTerm && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <span>🔍 "{searchTerm}"</span>
@@ -617,7 +575,6 @@ const Account = () => {
                                     </span>
                                 )}
                                 
-                                {/* POSITION FILTER BADGE */}
                                 {activeFilters.position && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Briefcase className="w-3 h-3" />
@@ -631,7 +588,6 @@ const Account = () => {
                                     </span>
                                 )}
                                 
-                                {/* ROLE FILTER BADGE */}
                                 {activeFilters.role && activeFilters.role !== 'all' && (
                                     <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Users className="w-3 h-3" />
@@ -645,7 +601,6 @@ const Account = () => {
                                     </span>
                                 )}
                                 
-                                {/* ALL ROLES BADGE */}
                                 {activeFilters.role === 'all' && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Users className="w-3 h-3" />
@@ -659,7 +614,6 @@ const Account = () => {
                                     </span>
                                 )}
                                 
-                                {/* CLEAR ALL - CLEARS BOTH SEARCH AND FILTERS */}
                                 <Button 
                                     variant="ghost" 
                                     onClick={clearAllFilters}
@@ -671,7 +625,6 @@ const Account = () => {
                             </div>
                         )}
 
-                        {/* ⭐⭐ FILTER STATUS INFO (DIHAPUS ATAU DISEDERHANAKAN) */}
                         {getTotalActiveCriteria() > 0 && (
                             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                                 <div className="flex items-center justify-between">
@@ -748,10 +701,10 @@ const Account = () => {
                                         </div>
                                     )}
                                     
-                                    {/* 🔴 MODIFIKASI: Gunakan handleSelectUser untuk auto-scroll */}
+                                    
                                     <MemberTable
                                         members={formattedUsers}
-                                        onSelectMember={handleSelectUser} // ← Ganti dengan fungsi baru
+                                        onSelectMember={handleSelectUser} 
                                         headers={tableConfig.headers}
                                         isLoading={loading}
                                     />
@@ -778,7 +731,6 @@ const Account = () => {
                     </CardContent>
                 </Card>
 
-                {/* 🔴 MODIFIKASI: Wrap AccountContent dengan div yang memiliki ref untuk auto-scroll */}
                 <div 
                     ref={userDetailRef}
                     className={`
@@ -800,7 +752,6 @@ const Account = () => {
                     />
                 </div>
                 
-                {/* Add User Modal */}
                 <AddUser 
                     isAddUserModalOpen={isAddUserModalOpen || isEditModalOpen} 
                     setIsAddUserModalOpen={(open) => {

@@ -210,7 +210,6 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
         return (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-                    {/* Modal Header */}
                     <div className="p-6 border-b">
                         <div className="flex items-center justify-between">
                             <div>
@@ -231,10 +230,8 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
                         </div>
                     </div>
 
-                    {/* Modal Body - Scrollable */}
                     <div className="flex-1 overflow-y-auto p-6">
                         <div className="space-y-6">
-                            {/* Tabs untuk kategori */}
                             <div className="flex flex-wrap gap-2 mb-6">
                                 {allCategories.map((category, index) => {
                                     const CategoryIcon = category.icon;
@@ -254,7 +251,6 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
                                 })}
                             </div>
 
-                            {/* Content per kategori */}
                             {allCategories.map((category, catIndex) => {
                                 const CategoryIcon = category.icon;
                                 
@@ -292,7 +288,6 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
                                             })}
                                         </div>
 
-                                        {/* Field khusus untuk disability_type jika memilih Lainnya */}
                                         {category.category === 'Personal Information' && 
                                          editedMember.disability_status === 'Lainnya' && (
                                             <div className="mt-4 pt-4 border-t border-gray-200 md:col-span-2">
@@ -319,7 +314,6 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
                         </div>
                     </div>
 
-                    {/* Modal Footer */}
                     <div className="p-6 border-t bg-gray-50">
                         <div className="flex justify-between items-center">
                             <div className="text-sm text-gray-500">
@@ -417,7 +411,6 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
 
     return (
         <>
-            {/* Main Content */}
             <Card>
                 <CardHeader>
                     <CardTitle>{detailTitle}</CardTitle>

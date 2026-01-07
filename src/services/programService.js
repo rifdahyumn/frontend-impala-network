@@ -231,7 +231,6 @@ class ProgramService {
                 'Description': '5-day intensive leadership training program',
                 'Instructors': 'John Doe, Jane Smith',
                 'Tags': 'leadership,management,training',
-                // 'Status': 'Active'
             },
             {
                 'Program Name': 'Digital Marketing Workshop',
@@ -245,7 +244,6 @@ class ProgramService {
                 'Description': '2-day digital marketing workshop',
                 'Instructors': 'Michael Chen',
                 'Tags': 'marketing,digital,workshop',
-                // 'Status': 'Active'
             },
         ]
 
@@ -401,7 +399,6 @@ class ProgramService {
             }
 
             if (!trimmed.includes(' ') && /[a-z][A-Z]/.test(trimmed)) {
-                // Split berdasarkan huruf kapital
                 const words = trimmed.split(/(?=[A-Z])/)
                     .filter(word => word.trim() && word !== 'null' && word !== 'undefined');
                 if (words.length > 1) {
@@ -628,8 +625,6 @@ class ProgramService {
 
             for (let i = 0; i < trimmed.length; i++) {
                 const char = trimmed[i]
-                // const prevChar = i > 0 ? trimmed[i - 1] : '';
-                // const nextChar = i < trimmed.length - 1 ? trimmed[i + 1] : ''
 
                 if (char === '(') inParenthesis++
                 if (char === ')') inParenthesis--

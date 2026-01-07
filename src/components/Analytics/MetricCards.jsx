@@ -1,9 +1,7 @@
-// src/components/Analytics/MetricCards.jsx
 import { Card, CardContent } from "../ui/card";
 import { TrendingUp, Users, Target, DollarSign, FileText } from "lucide-react";
 import { METRICS_CONFIG } from "../../utils/constants";
 
-// Icon mapping
 const ICON_MAP = {
     Users: Users,
     Target: Target,

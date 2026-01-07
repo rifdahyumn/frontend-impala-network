@@ -283,7 +283,6 @@ export const useImpala = (initialFilters = {}) => {
                 
                 toast.success(`Exported ${dataToExport.length} participants to CSV`)
             } else {
-                // Fetch semua data dengan filter
                 const result = await impalaService.fetchAllImpala(currentFilters)
                 dataToExport = result.data || []
                 
@@ -317,13 +316,11 @@ export const useImpala = (initialFilters = {}) => {
         }
     }, [participant, pagination.showingAllResults, showAllOnSearch])
 
-    // 🔴 PERBAIKAN: CRUD functions dengan optimized updates
     const addParticipant = async (participantData) => {
         try {
             const result = await impalaService.createImpala(participantData)
             toast.success('Participant added successfully')
             
-            // 🔴 PERBAIKAN: Refresh data tanpa loading state berlebihan
             await fetchImpala(pagination.page, filtersRef.current, showAllOnSearch)
             await fetchImpalaStats()
             
@@ -340,7 +337,6 @@ export const useImpala = (initialFilters = {}) => {
             const result = await impalaService.updateImpala(participantId, participantData)
             toast.success("Participant updated successfully")
 
-            // 🔴 PERBAIKAN: Optimistic update untuk mengurangi re-render
             setParticipant(prevParticipants => 
                 prevParticipants.map(participant => 
                     participant.id === participantId
@@ -363,7 +359,6 @@ export const useImpala = (initialFilters = {}) => {
             setLoading(true)
             await impalaService.deleteImpala(participantId)
 
-            // 🔴 PERBAIKAN: Optimistic update
             setParticipant(prevParticipants =>
                 prevParticipants.filter(participant => participant.id !== participantId)
             )

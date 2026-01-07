@@ -15,14 +15,14 @@ const FilterButton = ({
     filterOptions, 
     activeFilter,
     buttonText = "Filter",
-    variant = "default" // ✅ Tambah prop untuk variant
+    variant = "default" 
 }) => {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button 
                     className='flex items-center gap-2 transition-all duration-200' 
-                    variant={activeFilter ? "default" : variant} // ✅ Ubah variant jika filter aktif
+                    variant={activeFilter ? "default" : variant} 
                     size="default"
                 >
                     <Filter className="h-4 w-4" />
@@ -39,7 +39,6 @@ const FilterButton = ({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 
-                {/* All Items */}
                 <DropdownMenuItem 
                     onClick={() => onFilterChange(null)}
                     className={`flex items-center gap-2 cursor-pointer transition-colors ${
@@ -52,7 +51,6 @@ const FilterButton = ({
                     All Items
                 </DropdownMenuItem>
                 
-                {/* Dynamic Filter Options */}
                 {filterOptions?.map((option) => (
                     <DropdownMenuItem 
                         key={option.value}
@@ -70,7 +68,6 @@ const FilterButton = ({
                     </DropdownMenuItem>
                 ))}
                 
-                {/* Clear Filter Option */}
                 {activeFilter && (
                     <>
                         <DropdownMenuSeparator />

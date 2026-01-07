@@ -349,7 +349,6 @@ const ImpalaManagement = () => {
                                 community_role: row['Peran dalam Komunitas'] || row['community_role'] || '',
                             };
                             
-                            // Handle array fields - konversi string ke array
                             const processArrayField = (value) => {
                                 if (!value) return [];
                                 if (Array.isArray(value)) return value;
@@ -361,27 +360,21 @@ const ImpalaManagement = () => {
                                 return [String(value)];
                             };
                             
-                            // Process certifications
                             const certValue = row['Sertifikasi'] || row['certifications'];
                             participant.certifications = processArrayField(certValue);
                             
-                            // Process skills
                             const skillsValue = row['Keahlian'] || row['skills'];
                             participant.skills = processArrayField(skillsValue);
                             
-                            // Process social media
                             const smValue = row['Media Sosial'] || row['social_media'];
                             participant.social_media = processArrayField(smValue);
                             
-                            // Process marketplace
                             const mpValue = row['Marketplace'] || row['marketplace'];
                             participant.marketplace = processArrayField(mpValue);
                             
-                            // Process website
                             const webValue = row['Website'] || row['website'];
                             participant.website = processArrayField(webValue);
                             
-                            // Tambahkan timestamp
                             participant.created_at = new Date().toISOString();
                             participant.updated_at = new Date().toISOString();
                             
@@ -394,7 +387,6 @@ const ImpalaManagement = () => {
                         return;
                     }
                     
-                    // Validasi data wajib
                     const invalidParticipants = importedParticipants.filter(p => 
                         !p.full_name || !p.email || !p.phone || !p.gender || !p.category
                     );
@@ -464,7 +456,6 @@ const ImpalaManagement = () => {
         { value: 'perempuan', label: '👩 Perempuan' },
     ];
 
-    // EKSTRAK SEMUA CATEGORY UNIK DARI DATA PARTICIPANT
     const extractCategories = useMemo(() => {
         return (participants) => {
             if (!participants.length) return [];
@@ -495,7 +486,6 @@ const ImpalaManagement = () => {
         };
     }, []);
 
-    // FUNGSI UNTUK APPLY SEARCH & FILTER
     const applyAllFilters = () => {
         let result = [...participant];
         
@@ -697,7 +687,6 @@ const ImpalaManagement = () => {
             )
 
             let dataToExport;
-            // let filenamePrefix;
 
             if (exportAll) {
                 const response = await fetch(`/api/impala/export?exportType=all`)
@@ -714,10 +703,8 @@ const ImpalaManagement = () => {
                 }
 
                 dataToExport = result.data
-                // filenamePrefix = 'impala_management'
             } else {
                 dataToExport = filteredParticipants
-                // filenamePrefix = 'impala_management_filter'
             }
 
             if (!dataToExport || dataToExport.length === 0) {
@@ -948,7 +935,6 @@ const ImpalaManagement = () => {
                                         
                                         <DropdownMenuSeparator />
                                         
-                                        {/* CATEGORY FILTER */}
                                         <DropdownMenuGroup>
                                             <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
                                                 Category
@@ -959,7 +945,7 @@ const ImpalaManagement = () => {
                                                     onCheckedChange={() => handleCategoryFilterChange('all')}
                                                     className="cursor-pointer hover:bg-gray-50"
                                                 >
-                                                    👥 All Categories
+                                                    All Categories
                                                 </DropdownMenuCheckboxItem>
                                                 
                                                 {availableCategories.map((category) => (
@@ -977,7 +963,6 @@ const ImpalaManagement = () => {
                                         
                                         <DropdownMenuSeparator />
                                         
-                                        {/* CLEAR FILTERS */}
                                         <DropdownMenuItem 
                                             onClick={() => {
                                                 setActiveFilters({
@@ -995,7 +980,6 @@ const ImpalaManagement = () => {
                             </div>
 
                             <div className='flex flex-wrap gap-2'>
-                                {/* Import Button dengan Dropdown */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button

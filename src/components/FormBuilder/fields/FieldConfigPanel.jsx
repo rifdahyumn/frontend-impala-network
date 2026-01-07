@@ -71,7 +71,6 @@ const FieldConfigPanel = ({
             </div>
 
             <div className="space-y-4">
-                {/* Tipe Field */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Tipe Field
@@ -89,7 +88,6 @@ const FieldConfigPanel = ({
                     </select>
                 </div>
 
-                {/* Label */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Label *
@@ -103,7 +101,6 @@ const FieldConfigPanel = ({
                     />
                 </div>
 
-                {/* Placeholder */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Placeholder
@@ -117,7 +114,6 @@ const FieldConfigPanel = ({
                     />
                 </div>
 
-                {/* Field Name/ID */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Field Name *
@@ -134,7 +130,6 @@ const FieldConfigPanel = ({
                     </p>
                 </div>
 
-                {/* Required */}
                 <div className="flex items-center">
                     <input
                         type="checkbox"
@@ -148,7 +143,6 @@ const FieldConfigPanel = ({
                     </label>
                 </div>
 
-                {/* Options untuk select, radio, checkbox */}
                 {(selectedField.type === 'select' || selectedField.type === 'radio') && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -184,7 +178,6 @@ const FieldConfigPanel = ({
                     </div>
                 )}
 
-                {/* Preview */}
                 <div className="pt-4 border-t border-gray-200">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Preview:</h4>
                     <div className="p-3 bg-gray-50 rounded border">

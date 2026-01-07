@@ -3,8 +3,6 @@ import { Input } from "../ui/input";
 import React, { useState } from "react";
 
 const SearchBar = ({ onSearch, placeholder = "Search...", value }) => {
-    // const [query, setQuery] = useState("");
-
     const handleChange = (e) => {
         const value = e.target.value;
         

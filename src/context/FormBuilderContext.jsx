@@ -6,7 +6,6 @@ export const FormBuilderProvider = ({ children }) => {
     const [formData, setFormData] = useState({
         programName: '',
         fields: [],
-        // ... data form lainnya
     });
 
     const updateFormData = (newData) => {
@@ -22,7 +21,6 @@ export const FormBuilderProvider = ({ children }) => {
             type: fieldType,
             label: '',
             required: false,
-            // ... properti field lainnya
         };
         
         setFormData(prev => ({
@@ -36,7 +34,6 @@ export const FormBuilderProvider = ({ children }) => {
             formData,
             updateFormData,
             addField,
-            // ... fungsi lainnya
         }}>
             {children}
         </FormBuilderContext.Provider>
