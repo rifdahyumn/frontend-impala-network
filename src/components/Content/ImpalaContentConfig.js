@@ -190,10 +190,21 @@ const memberTypeConfigs = {
             icon: MapPin,
             fields: [
                 { key: 'address', label: 'Address', icon: MapPin },
-                { key: 'city', label: 'City', icon: MapPin },
-                { key: 'province', label: 'Province', icon: MapPin }
+                { key: 'village_name', label: 'Village', icon: MapPin },
+                { key: 'district_name', label: 'District', icon: MapPin },
+                { key: 'regency_name', label: 'City', icon: MapPin },
+                { key: 'province_name', label: 'Province', icon: MapPin },
             ]
         },
+        {
+            category: 'General Information',
+            icon: UsersIcon,
+            fields: [
+                { key: 'areas_interest', label: 'Area Interest', icon: UsersIcon },
+                { key: 'background', label: 'Background', icon: Award },
+                { key: 'experience_level', label: 'Experience Level', icon: Users },
+            ]
+        }
     ]
 };
 
@@ -217,6 +228,10 @@ export const useDetailFields = () => {
         
         if (category?.includes('Komunitas') || category?.includes('Asosiasi') || category?.includes('Organisasi')) {
             return memberTypeConfigs.komunitas;
+        }
+
+        if (category?.includes('Umum')) {
+            return memberTypeConfigs.umum;
         }
         
         return memberTypeConfigs.umkm;

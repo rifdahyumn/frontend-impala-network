@@ -484,9 +484,35 @@
                         name: 'areas_interest',
                         label: 'Bidang Minat',
                         required: false,
-                        options: ['Teknologi & Informatika', 'Bisnis & Manajemen', 'Keuangan & Akuntansi', 'Desain & Kreatif', 'Ilmu Sosial & Humaniora', 'Sains & Teknik', 'Kesehatan', 'Pendidikan', 'Bahasa & Komunikasi', 'Hukum & Administrasi Publik'],
+                        options: ['Teknologi & Informatika', 'Bisnis & Manajemen', 'Keuangan & Akuntansi', 'Desain & Kreatif', 'Ilmu Sosial & Humaniora', 'Sains & Teknik', 'Kesehatan', 'Pendidikan', 'Bahasa & Komunikasi', 'Hukum & Administrasi Publik', 'Lainnya'],
                         locked: true
                     },
+                    {
+                        id: 'background',
+                        type: 'select',
+                        name: 'background',
+                        label: 'Latar Belakang',
+                        required: false,
+                        options: [
+                            'Pencari Kerja',
+                            'Fresh Graduate',
+                            'Pekerja Lepas/Freelancer',
+                            'Ibu Rumah Tangga',
+                            'Pelajar Non-Mahasiswa',
+                            'Umum'
+                        ],      
+                        locked: true
+                    },
+                    {
+                        id: 'experience_level',
+                        type: 'select',
+                        name: 'experience_level',
+                        label: 'Tingkat Pengalaman Terkait Program',
+                        required: false,
+                        helperText: 'Pengalaman Anda pada bidang program yang dipilih',
+                        options: ['Pemula', 'Menengah', 'Lanjutan'],
+                        locked: true
+                    }
                 ]
             }
         }

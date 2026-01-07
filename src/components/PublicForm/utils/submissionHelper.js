@@ -80,6 +80,8 @@ export const prepareSubmissionData = (formData, selectedCategory, locationData, 
 
     if (selectedCategory === 'umum') {
         submissionData.areas_interest = formData.areas_interest;
+        submissionData.background = formData.background;
+        submissionData.experience_level = formData.experience_level;
     }
 
     const cleanData = Object.fromEntries(

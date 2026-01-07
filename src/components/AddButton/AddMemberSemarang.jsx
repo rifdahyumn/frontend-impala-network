@@ -68,6 +68,7 @@ const AddMemberSemarang = ({
     const [newAddOn, setNewAddOn] = useState('');
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     const [provinces, setProvinces] = useState([])
     const [regencies, setRegencies] = useState([])
@@ -80,145 +81,118 @@ const AddMemberSemarang = ({
         villages: false
     })
 
-    useEffect(() => {
-        const fetchProvinces = async () => {
-            setLoadingLocations(prev => ({ ...prev, provinces: true }))
-
-            try {
-                const data = await locationService.getProvinces()
-                setProvinces(data)
-            } catch (error) {
-                console.error('Error fetching provinces:', error)
-                toast.error('Failed to load provinces data')
-            } finally {
-                setLoadingLocations(prev => ({ ...prev, provinces: false }))
-            }
+    const loadProvinces = async () => {
+        setLoadingLocations(prev => ({ ...prev, provinces: true }));
+        try {
+            const provincesData = await locationService.getProvinces();
+            setProvinces(provincesData || []);
+        } catch (error) {
+            console.error('Error fetching provinces:', error);
+            toast.error('Gagal memuat data provinsi');
+        } finally {
+            setLoadingLocations(prev => ({ ...prev, provinces: false }));
         }
-
-        if (isAddMemberModalOpen) {
-            fetchProvinces()
-        }
-    }, [isAddMemberModalOpen])
+    };
 
     useEffect(() => {
-        const fetchRegencies = async () => {
+        loadProvinces()
+    }, [])
+
+    useEffect(() => {
+        const loadRegencies = async () => {
             if (!formData.province_id) {
-                setRegencies([])
-                setFormData(prev => ({
-                    ...prev,
-                    regency_id: '',
-                    regency_name: '',
-                    district_id: '',
-                    district_name: '',
-                    village_id: '',
-                    village_name: ''
-                }))
-
-                return
+                setRegencies([]);
+                return;
             }
 
-            setLoadingLocations(prev => ({ ...prev, regencies: true }))
-
+            setLoadingLocations(prev => ({ ...prev, regencies: true }));
             try {
-                const data = await locationService.getRegencies(formData.province_id)
-
-                setRegencies(data)
-                setDistricts([])
-                setVillages([])
+                const regenciesData = await locationService.getRegencies(formData.province_id);
+                setRegencies(regenciesData || []);
+                
                 setFormData(prev => ({
                     ...prev,
                     regency_id: '',
-                    regency_name: '',
                     district_id: '',
-                    district_name: '',
                     village_id: '',
+                    regency_name: '',
+                    district_name: '',
                     village_name: ''
-                }))
+                }));
+                setDistricts([]);
+                setVillages([]);
             } catch (error) {
-                console.error('Error fetching regenices:', error)
-                toast.error('Failed to load regenices data')
+                console.error(`Error fetching regencies:`, error);
+                toast.error('Error loading regency');
+                setRegencies([]);
             } finally {
-                setLoadingLocations(prev => ({ ...prev, regencies: false }))
+                setLoadingLocations(prev => ({ ...prev, regencies: false }));
             }
-        }
+        };
 
-        fetchRegencies()
-    }, [formData.province_id])
+        loadRegencies();
+    }, [formData.province_id]);
 
     useEffect(() => {
-        const fetchDistrics = async () => {
+        const loadDistricts = async () => {
             if (!formData.regency_id) {
-                setDistricts([])
-                setFormData(prev => ({
-                    ...prev,
-                    district_id: '',
-                    district_name: '',
-                    village_id: '',
-                    village_name: ''
-                }))
-
-                return
+                setDistricts([]);
+                return;
             }
 
-            setLoadingLocations(prev => ({ ...prev, districts: true }))
-
+            setLoadingLocations(prev => ({ ...prev, districts: true }));
             try {
-                const data = await locationService.getDistricts(formData.regency_id)
-
-                setDistricts(data)
-                setVillages([])
+                const districtsData = await locationService.getDistricts(formData.regency_id);
+                setDistricts(districtsData || []);
+                
                 setFormData(prev => ({
                     ...prev,
                     district_id: '',
-                    district_name: '',
                     village_id: '',
-                    village_name: '',
-                }))
+                    district_name: '',
+                    village_name: ''
+                }));
+                setVillages([]);
             } catch (error) {
-                console.error('Error fetching districts:', error)
-                toast.error('Failed to load districts data')
+                console.error(`Error fetching districts:`, error);
+                toast.error('Gagal memuat data kecamatan');
+                setDistricts([]);
             } finally {
-                setLoadingLocations(prev => ({ ...prev, districts: false }))
+                setLoadingLocations(prev => ({ ...prev, districts: false }));
             }
-        }
+        };
 
-        fetchDistrics()
-    }, [formData.regency_id])
+        loadDistricts();
+    }, [formData.regency_id]);
 
     useEffect(() => {
-        const fetchVillages = async () => {
+        const loadVillages = async () => {
             if (!formData.district_id) {
-                setVillages([])
-                setFormData(prev => ({
-                    ...prev,
-                    village_id: '',
-                    village_name: ''
-                }))
-
-                return
+                setVillages([]);
+                return;
             }
 
-            setLoadingLocations(prev => ({ ...prev, villages: true }))
-
+            setLoadingLocations(prev => ({ ...prev, villages: true }));
             try {
-                const data = await locationService.getVillages(formData.district_id)
-
-                setVillages(data)
+                const villagesData = await locationService.getVillages(formData.district_id);
+                setVillages(villagesData || []);
+                
                 setFormData(prev => ({
                     ...prev,
                     village_id: '',
                     village_name: ''
-                }))
+                }));
             } catch (error) {
-                console.error('Error fetching villages:', error)
-                toast.error('Failed to load villages data')
+                console.error(`Error fetching villages:`, error);
+                toast.error('Gagal memuat data desa/kelurahan');
+                setVillages([]);
             } finally {
-                setLoadingLocations(prev => ({ ...prev, villages: false }))
+                setLoadingLocations(prev => ({ ...prev, villages: false }));
             }
-        }
+        };
 
-        fetchVillages()
-    }, [formData.district_id])
+        loadVillages();
+    }, [formData.district_id]);
 
     useEffect(() => {
         if (isEditMode && editData) {
@@ -447,14 +421,14 @@ const AddMemberSemarang = ({
             ]
         },
         {
-            title: "Residential Address",
+            title: "Address",
             fields: [
                 {
                     name: 'address',
-                    label: 'Complete Address',
+                    label: 'Address',
                     type: 'text',
                     required: true,
-                    placeholder: 'Enter complete address (street, building, etc)'
+                    placeholder: 'Enter complete address'
                 },
                 {
                     name: 'province_id',
@@ -647,6 +621,7 @@ const AddMemberSemarang = ({
         });
 
         setErrors(newErrors);
+        console.log('Validation errors:', newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
