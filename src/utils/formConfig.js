@@ -47,7 +47,7 @@
                     name: 'full_name',
                     label: 'Nama Lengkap',
                     required: true,
-                    placeholder: 'Masukkan nama lengkap sesuai KTP',
+                    placeholder: 'Masukkan nama lengkap',
                     locked: true
                 },
                 { 
