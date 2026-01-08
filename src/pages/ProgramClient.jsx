@@ -87,21 +87,8 @@ const ProgramClient = () => {
         updateClientStatus,
         fetchClients,
         refreshData,
-        // TAMBAHKAN INI: getFilteredCounts dari useProgramClient
         getFilteredCounts
     } = useProgramClient();
-
-    // TAMBAHKAN: Debug log untuk cek apakah fungsi ada
-    useEffect(() => {
-        console.log('🔍 [ProgramClient] Functions available:', {
-            hasHandleGenderFilterChange: !!handleGenderFilterChange,
-            hasHandleApplyFilters: !!handleApplyFilters,
-            hasGetFilteredCounts: !!getFilteredCounts, // ← TAMBAHKAN INI
-            typeHandleGenderFilterChange: typeof handleGenderFilterChange,
-            typeHandleApplyFilters: typeof handleApplyFilters,
-            typeGetFilteredCounts: typeof getFilteredCounts // ← TAMBAHKAN INI
-        });
-    }, [handleGenderFilterChange, handleApplyFilters, getFilteredCounts]);
 
     const handleAddNewClient = async (clientData) => {
         try {
@@ -215,17 +202,13 @@ const ProgramClient = () => {
         }
     };
 
-    // TAMBAHKAN: Fallback functions jika dari useProgramClient tidak ada
     const handleGenderFilterChangeFallback = (gender) => {
-        console.log('🎯 [ProgramClient Fallback] Gender filter changed:', gender);
         
-        // Update localFilters dan fetch data baru
         const updatedFilters = {
             ...localFilters,
             gender: gender || undefined
         };
         
-        // Panggil fetchClients dengan filter baru
         fetchClients(pagination.page, updatedFilters, showAllOnSearch);
         
         if (gender) {
@@ -236,17 +219,10 @@ const ProgramClient = () => {
     };
 
     const handleApplyFiltersFallback = (newFilters) => {
-        console.log('🎯 [ProgramClient Fallback] Applying all filters:', newFilters);
-        
-        // Update semua filter sekaligus
         fetchClients(pagination.page, newFilters, showAllOnSearch);
     };
 
-    // TAMBAHKAN: Fallback untuk getFilteredCounts jika tidak ada
     const getFilteredCountsFallback = () => {
-        console.log('📊 [ProgramClient Fallback] Using fallback counts');
-        
-        // Hitung sederhana dari data yang ada
         const totalCount = members.length;
         const activeCount = members.filter(m => m.status === 'active').length;
         const inactiveCount = members.filter(m => m.status === 'inactive').length;

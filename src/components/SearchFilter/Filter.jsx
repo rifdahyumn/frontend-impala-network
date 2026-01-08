@@ -15,11 +15,7 @@ const FilterButton = ({
     filterOptions, 
     activeFilter,
     buttonText = "Filter",
-<<<<<<< HEAD
     variant = "default"
-=======
-    variant = "default" 
->>>>>>> c51e5c1beb7040812bb33a425fd6cdfc5b58ac6f
 }) => {
     return (
         <DropdownMenu>
@@ -27,11 +23,7 @@ const FilterButton = ({
                 {/* ✅ TOMBOL HARUS ADA DI SINI */}
                 <Button 
                     className='flex items-center gap-2 transition-all duration-200' 
-<<<<<<< HEAD
                     variant={activeFilter ? "default" : variant}
-=======
-                    variant={activeFilter ? "default" : variant} 
->>>>>>> c51e5c1beb7040812bb33a425fd6cdfc5b58ac6f
                     size="default"
                 >
                     <Filter className="h-4 w-4" />
@@ -43,9 +35,6 @@ const FilterButton = ({
                 align="end" 
                 className="w-56 border shadow-lg"
             >
-<<<<<<< HEAD
-                {/* ... konten dropdown lainnya ... */}
-=======
                 <DropdownMenuLabel className="font-semibold text-gray-900">
                     Filter Options
                 </DropdownMenuLabel>
@@ -92,7 +81,6 @@ const FilterButton = ({
                         </DropdownMenuItem>
                     </>
                 )}
->>>>>>> c51e5c1beb7040812bb33a425fd6cdfc5b58ac6f
             </DropdownMenuContent>
         </DropdownMenu>
     );

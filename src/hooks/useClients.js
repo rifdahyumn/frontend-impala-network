@@ -21,86 +21,114 @@ export const useClients = (initialFilters = {}) => {
     const [statsLoading, setStatsLoading] = useState(false)
     const [showAllOnSearch, setShowAllOnSearch] = useState(false)
 
-    // PERBAIKAN: Tambahkan gender ke filtersRef
     const filtersRef = useRef({
         search: '',
         status: '',
         businessType: '',
-        gender: '', // ← TAMBAHKAN INI
+        gender: '',
         ...initialFilters
     })
     
     const abortControllerRef = useRef(null) 
     const lastRequestIdRef = useRef(0) 
     
-    // PERBAIKAN: Tambahkan gender ke state filters
     const [filters, setFilters] = useState({
         search: filtersRef.current.search,
         status: filtersRef.current.status,
         businessType: filtersRef.current.businessType,
-        gender: filtersRef.current.gender // ← TAMBAHKAN INI
+        gender: filtersRef.current.gender 
     })
+
+    const paginationLimitRef = useRef(20);
 
     const fetchClients = useCallback(async (page = 1, customFilters = null, showAll = false, requestId = null) => {
         try {
+            
             if (abortControllerRef.current) {
-                abortControllerRef.current.abort()
+                abortControllerRef.current.abort();
             }
             
-            abortControllerRef.current = new AbortController()
+            abortControllerRef.current = new AbortController();
+            const currentRequestId = requestId || Date.now();
+            lastRequestIdRef.current = currentRequestId;
             
-            const currentRequestId = requestId || Date.now()
-            lastRequestIdRef.current = currentRequestId
-            
-            setLoading(true)
-            setError(null)
+            setLoading(true);
+            setError(null);
 
-            const currentFilters = customFilters || filtersRef.current
+            const currentFilters = customFilters || filtersRef.current;
 
-            // PERBAIKAN: Tambahkan gender ke params
             const params = {
                 page,
-                limit: pagination.limit,
+                limit: paginationLimitRef.current,
                 ...(currentFilters.search && { search: currentFilters.search }),
                 ...(currentFilters.status && { status: currentFilters.status }),
                 ...(currentFilters.businessType && { businessType: currentFilters.businessType }),
-                ...(currentFilters.gender && { gender: currentFilters.gender }), // ← TAMBAHKAN INI
+                ...(currentFilters.gender && { gender: currentFilters.gender }),
                 ...(currentFilters.search && showAll && { showAllOnSearch: 'true' })
+            };
+
+            const apiPromise = clientService.fetchClients(params);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('API timeout after 10s')), 10000)
+            );
+            
+            const result = await Promise.race([apiPromise, timeoutPromise]);
+            
+            if (result.metadata?.pagination?.limit) {
+                paginationLimitRef.current = result.metadata.pagination.limit;
             }
             
-            const result = await clientService.fetchClients(params)
-
-            setMembers(result.data || [])
+            setMembers([...(result.data || [])]);
             
-            const paginationData = result.metadata?.pagination || {}
+            const paginationData = result.metadata?.pagination || {};
             setPagination(prev => ({
                 page: paginationData.page || page,
-                limit: paginationData.limit || pagination.limit,
+                limit: paginationData.limit || prev.limit,
                 total: paginationData.total || 0,
                 totalPages: paginationData.totalPages || 0,
                 isShowAllMode: paginationData.isShowAllMode || false,
                 showingAllResults: paginationData.showingAllResults || false,
                 searchTerm: currentFilters.search || ''
-            }))
-
+            }));
+            
             if (currentFilters.search && paginationData.showingAllResults) {
-                setShowAllOnSearch(true)
+                setShowAllOnSearch(true);
             } else if (!currentFilters.search) {
-                setShowAllOnSearch(false)
+                setShowAllOnSearch(false);
             }
 
         } catch (error) {
             if (error.name === 'AbortError') {
-                return
+                return;
             }
             
-            console.error('Error fetching clients:', error)
-            setError(error.message)
-            toast.error('Failed to load clients')
+            console.error('[useClients] FETCH ERROR:', {
+                message: error.message,
+                stack: error.stack
+            });
+            
+            setError(error.message);
+            toast.error(`Failed to load clients: ${error.message}`);
+            
+            setMembers(() => []);
+            
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [pagination.limit])
+    }, []);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchClients(1, filtersRef.current, false).then(() => {
+            }).catch(err => {
+                console.error('Initial fetch error:', err);
+            });
+        }, 100);
+        
+        return () => {
+            clearTimeout(timer);
+        };
+    }, [fetchClients]);
 
     const debouncedFetchRef = useRef(
         debounce((page, customFilters, showAll) => {
@@ -122,30 +150,24 @@ export const useClients = (initialFilters = {}) => {
     }, [])
 
     const updateFiltersAndFetch = useCallback((newFilters, showAll = false) => {
-        // PERBAIKAN: Update filtersRef dengan gender
         const updatedFilters = {
             ...filtersRef.current,
             ...newFilters
-        }
-        filtersRef.current = updatedFilters
-
-        // PERBAIKAN: Update state filters dengan gender
-        setFilters(prev => ({
-            ...prev,
-            search: updatedFilters.search,
-            status: updatedFilters.status,
-            businessType: updatedFilters.businessType,
-            gender: updatedFilters.gender // ← TAMBAHKAN INI
-        }))
+        };
+        
+        filtersRef.current = updatedFilters;
+        setFilters(updatedFilters);
 
         if (!newFilters.search && showAllOnSearch) {
-            setShowAllOnSearch(false)
+            setShowAllOnSearch(false);
         }
 
         if (debouncedFetchRef.current) {
-            debouncedFetchRef.current(1, updatedFilters, showAll)
+            debouncedFetchRef.current(1, updatedFilters, showAll);
+        } else {
+            fetchClients(1, updatedFilters, showAll);
         }
-    }, [showAllOnSearch])
+    }, [showAllOnSearch, fetchClients]);
 
     const toggleShowAllOnSearch = useCallback((value) => {
         setShowAllOnSearch(value)
@@ -158,21 +180,19 @@ export const useClients = (initialFilters = {}) => {
     }, [])
 
     const clearFilters = useCallback(() => {
-        // PERBAIKAN: Clear gender juga
         const clearedFilters = {
             search: '',
             status: '',
             businessType: '',
-            gender: '' // ← TAMBAHKAN INI
-        }
+            gender: ''
+        };
         
-        filtersRef.current = clearedFilters
+        filtersRef.current = clearedFilters;
+        setFilters(clearedFilters);
+        setShowAllOnSearch(false);
         
-        setFilters(clearedFilters)
-        setShowAllOnSearch(false)
-        
-        fetchClients(1, clearedFilters, false)
-    }, [fetchClients])
+        fetchClients(1, clearedFilters, false);
+    }, [fetchClients]); // ← Hanya depend on fetchClients
 
     const clearSearch = useCallback(() => {
         const updatedFilters = {
@@ -232,16 +252,20 @@ export const useClients = (initialFilters = {}) => {
     }, [])
 
     const refreshData = useCallback(() => {
-        fetchClients(pagination.page, filtersRef.current, showAllOnSearch)
-    }, [fetchClients, pagination.page, showAllOnSearch])
+        fetchClients(pagination.page || 1, filtersRef.current, showAllOnSearch);
+    }, [fetchClients, pagination.page, showAllOnSearch]);
 
     const handlePageChange = useCallback((newPage) => {
-        fetchClients(newPage, filtersRef.current, showAllOnSearch)
-    }, [fetchClients, showAllOnSearch])
+        fetchClients(newPage, filtersRef.current, showAllOnSearch);
+    }, [fetchClients, showAllOnSearch]);
 
     useEffect(() => {
-        fetchClients(1, filtersRef.current, false)
-    }, []) 
+        fetchClients(1, filtersRef.current, false).then(() => {
+        }).catch(err => {
+            console.error('[useClients] Initial fetch failed:', err);
+        });
+        
+    }, []);
 
     const fetchClientStats = useCallback(async () => {
         try {

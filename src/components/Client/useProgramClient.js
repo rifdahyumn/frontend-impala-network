@@ -15,11 +15,9 @@ import {
 import { statusOptions } from './constants/statusOptions';
 import clientService from '../../services/clientService';
 
-// Import constants untuk business types
 import { BUSINESS_TYPES_FOR_FILTER } from './constants/businessTypes';
 
 export const useProgramClient = () => {
-    // ============= 1. SEMUA useState HARUS DIPANGGIL PERTAMA =============
     const [selectedMember, setSelectedMember] = useState(null);
     const [editingClient, setEditingClient] = useState(null);
     const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
@@ -33,7 +31,6 @@ export const useProgramClient = () => {
     const [highlightDetail, setHighlightDetail] = useState(false);
     const [availableBusinessTypes, setAvailableBusinessTypes] = useState([]);
     
-    // PERBAIKAN: Pindahkan localFilters ke sini
     const [localFilters, setLocalFilters] = useState({
         search: '',
         status: '',
@@ -41,7 +38,6 @@ export const useProgramClient = () => {
         gender: ''
     });
 
-    // ============= 2. SEMUA useRef =============
     const fileInputRef = useRef(null);
     const dropZoneRef = useRef(null);
     const clientDetailRef = useRef(null);
@@ -71,24 +67,33 @@ export const useProgramClient = () => {
 
     const isInShowAllMode = false;
 
-    // ============= 4. BARU SEKARANG useCallback =============
-    // PERBAIKAN: Fungsi normalisasi gender dipindahkan ke sini
     const normalizeGenderForFilter = useCallback((gender) => {
         if (!gender || gender === '') return '';
         
         try {
             const genderString = gender.toString().toLowerCase().trim();
             
-            // Standardisasi ke male/female untuk filter
-            if (genderString.includes('male') || genderString.includes('laki') || genderString.includes('pria')) {
-                return 'male';
-            }
-            
-            if (genderString.includes('female') || genderString.includes('perempuan') || genderString.includes('wanita')) {
+            // PERBAIKAN TOTAL: Gunakan regex atau cek eksak
+            // Cara 1: Regex pattern
+            if (/^(female|f|perempuan|wanita|woman|women)$/i.test(genderString)) {
                 return 'female';
             }
             
-            // Jika tidak cocok dengan pattern, kembalikan original (lowercase)
+            if (/^(male|m|laki|laki-laki|pria|man|men)$/i.test(genderString)) {
+                return 'male';
+            }
+            
+            // Cara 2: Cek eksak dulu
+            if (genderString === 'female' || genderString === 'f') return 'female';
+            if (genderString === 'male' || genderString === 'm') return 'male';
+            
+            // Cara 3: Cek contains dengan hati-hati
+            if (genderString.includes('female')) return 'female';
+            if (genderString.includes('male') && !genderString.includes('female')) return 'male';
+            
+            if (genderString.includes('perempuan') || genderString.includes('wanita')) return 'female';
+            if (genderString.includes('laki') || genderString.includes('pria')) return 'male';
+            
             return genderString;
         } catch (error) {
             console.error('Error normalizing gender:', error, 'value:', gender);
@@ -96,15 +101,10 @@ export const useProgramClient = () => {
         }
     }, []);
 
-    // ============= TAMBAHKAN: Fungsi getFilteredCounts =============
     const getFilteredCounts = useCallback((currentFilters = localFilters) => {
         try {
-            console.log('🔢 [useProgramClient] Calculating filter counts for:', currentFilters);
-            
-            // Filter members berdasarkan filter yang diberikan
             let filteredMembers = [...members];
             
-            // Filter by search
             if (currentFilters.search) {
                 const searchLower = currentFilters.search.toLowerCase();
                 filteredMembers = filteredMembers.filter(member =>
@@ -115,14 +115,12 @@ export const useProgramClient = () => {
                 );
             }
             
-            // Filter by status
             if (currentFilters.status) {
                 filteredMembers = filteredMembers.filter(member =>
                     member.status?.toLowerCase() === currentFilters.status.toLowerCase()
                 );
             }
             
-            // Filter by gender
             if (currentFilters.gender) {
                 const normalizedFilterGender = normalizeGenderForFilter(currentFilters.gender);
                 filteredMembers = filteredMembers.filter(member => {
@@ -131,21 +129,16 @@ export const useProgramClient = () => {
                 });
             }
             
-            // Filter by business type
             if (currentFilters.businessType && currentFilters.businessType !== 'all') {
                 filteredMembers = filteredMembers.filter(member =>
                     member.business_type?.toLowerCase() === currentFilters.businessType.toLowerCase()
                 );
             }
-            
-            console.log('🔢 Filtered members count:', filteredMembers.length, 'from total:', members.length);
-            
-            // Hitung counts berdasarkan filtered members
+
             const statusCounts = {};
             const genderCounts = {};
             const businessTypeCounts = {};
             
-            // Status counts
             statusOptions.forEach(option => {
                 if (option && option.value) {
                     const count = filteredMembers.filter(member =>
@@ -154,8 +147,7 @@ export const useProgramClient = () => {
                     statusCounts[option.value] = count;
                 }
             });
-            
-            // Gender counts
+
             const genderOptions = ['male', 'female'];
             genderOptions.forEach(gender => {
                 const count = filteredMembers.filter(member => {
@@ -165,10 +157,8 @@ export const useProgramClient = () => {
                 genderCounts[gender] = count;
             });
             
-            // All genders (total)
             genderCounts[''] = filteredMembers.length;
             
-            // Business type counts
             const uniqueBusinessTypes = [...new Set([
                 ...availableBusinessTypes.map(bt => bt.value).filter(Boolean),
                 ...filteredMembers.map(m => m.business_type?.toLowerCase()).filter(Boolean)
@@ -183,10 +173,8 @@ export const useProgramClient = () => {
                 }
             });
             
-            // "All" business types
             businessTypeCounts['all'] = filteredMembers.length;
             
-            // Pastikan semua business type dari availableBusinessTypes ada
             availableBusinessTypes.forEach(type => {
                 if (type.value && !businessTypeCounts[type.value]) {
                     businessTypeCounts[type.value] = 0;
@@ -199,13 +187,11 @@ export const useProgramClient = () => {
                 businessType: businessTypeCounts
             };
             
-            console.log('🔢 Calculated counts:', result);
             return result;
             
         } catch (error) {
             console.error('Error calculating filter counts:', error);
             
-            // Fallback to safe defaults
             return {
                 status: { active: 0, inactive: 0, pending: 0 },
                 gender: { male: 0, female: 0, '': 0 },
@@ -237,35 +223,60 @@ export const useProgramClient = () => {
         }, 150);
     }, []);
 
-    // PERBAIKAN: Handler untuk gender filter
     const handleGenderFilterChange = useCallback((gender) => {
-        console.log('🎯 [useProgramClient] handleGenderFilterChange called with:', gender);
+        if (loading) {
+            return;
+        }
         
         const isSameGender = localFilters.gender === gender;
         const newGender = isSameGender ? '' : gender;
         
-        console.log('🎯 New gender filter value:', newGender);
-        
-        setLocalFilters(prev => ({ 
-            ...prev, 
-            gender: newGender 
-        }));
-        
+        if (newGender === localFilters.gender) {
+            return;
+        }
+
+        setLocalFilters(prev => ({ ...prev, gender: newGender }));
+
         const normalizedGender = newGender ? normalizeGenderForFilter(newGender) : '';
-        
-        console.log('🎯 Normalized gender for API:', normalizedGender);
-        
-        updateFiltersAndFetch({ 
-            gender: normalizedGender 
-        }, showAllOnSearch);
-        
+
+        let loadingToastId;
         if (newGender) {
             const displayGender = newGender === 'male' ? 'Male' : 'Female';
-            toast.success(`Filtered by gender: ${displayGender}`);
-        } else {
-            toast.success('Gender filter cleared');
+            loadingToastId = toast.loading(`Applying ${displayGender} filter...`);
         }
-    }, [localFilters.gender, updateFiltersAndFetch, showAllOnSearch, normalizeGenderForFilter]);
+
+        const timer = setTimeout(() => {
+            try {
+                updateFiltersAndFetch({ 
+                    gender: normalizedGender 
+                }, showAllOnSearch);
+
+                if (newGender) {
+                    const displayGender = newGender === 'male' ? 'Male' : 'Female';
+                    toast.success(`Filtered by: ${displayGender}`, {
+                        id: loadingToastId,
+                        duration: 3000
+                    });
+                } else {
+                    toast.success('Filter cleared', {
+                        id: loadingToastId,
+                        duration: 2000
+                    });
+                }
+                
+            } catch (error) {
+                console.error('❌ Filter error:', error);
+                toast.error('Failed to apply filter', {
+                    id: loadingToastId
+                });
+                
+                setLocalFilters(prev => ({ ...prev, gender: localFilters.gender }));
+            }
+        }, 150);
+        
+        return () => clearTimeout(timer);
+        
+    }, [localFilters.gender, updateFiltersAndFetch, showAllOnSearch, normalizeGenderForFilter, loading]);
 
     const handleStatusFilterChange = useCallback((status) => {
         const newStatus = localFilters.status === status ? '' : status;
@@ -280,18 +291,14 @@ export const useProgramClient = () => {
     }, [localFilters.businessType, updateFiltersAndFetch, showAllOnSearch]);
 
     const handleApplyFilters = useCallback((newFilters) => {
-        console.log('[useProgramClient] handleApplyFilters called with:', newFilters);
-        
         const normalizedFilters = { ...newFilters };
         
         if (normalizedFilters.gender) {
             normalizedFilters.gender = normalizeGenderForFilter(normalizedFilters.gender);
-            console.log('🎯 Normalized gender filter:', normalizedFilters.gender);
         }
         
         setLocalFilters(newFilters);
         
-        console.log('🎯 Sending to updateFiltersAndFetch:', normalizedFilters);
         updateFiltersAndFetch(normalizedFilters, showAllOnSearch);
         
     }, [updateFiltersAndFetch, showAllOnSearch, normalizeGenderForFilter]);
@@ -301,8 +308,6 @@ export const useProgramClient = () => {
     }, [toggleShowAllOnSearch]);
 
     const clearFilter = useCallback((filterType) => {
-        console.log('🗑️ clearFilter called for:', filterType);
-        
         if (filterType === 'search') {
             hookClearSearch();
             return;
@@ -321,17 +326,16 @@ export const useProgramClient = () => {
         }
 
         if (filterType === 'gender') {
-            console.log('🗑️ Clearing gender filter');
             setLocalFilters(prev => ({ ...prev, gender: '' }));
+            
             updateFiltersAndFetch({ gender: '' }, showAllOnSearch);
+            
             toast.success('Gender filter cleared');
             return;
         }
     }, [hookClearSearch, updateFiltersAndFetch, showAllOnSearch]);
 
     const clearAllFilters = useCallback(async () => {
-        console.log('🗑️ Clearing all filters');
-        
         setLocalFilters({
             search: '',
             status: '',
@@ -645,7 +649,6 @@ export const useProgramClient = () => {
         }
     }, [processFile]);
 
-    // ============= 5. SEMUA useMemo =============
     const getTotalActiveCriteria = useCallback(() => {
         return countActiveFilters(localFilters);
     }, [localFilters]);
@@ -655,13 +658,6 @@ export const useProgramClient = () => {
         if (localFilters.status) count++;
         if (localFilters.businessType && localFilters.businessType !== 'all') count++;
         if (localFilters.gender) count++;
-        
-        console.log('🔢 Active filters count:', { 
-            count, 
-            status: localFilters.status,
-            businessType: localFilters.businessType,
-            gender: localFilters.gender 
-        });
         
         return count;
     }, [localFilters]);
@@ -693,9 +689,40 @@ export const useProgramClient = () => {
         return formatStatuses(members);
     }, [members]);
 
+    // const filteredMembers = useMemo(() => {
+    //     let data = [...members];
+
+    //     if (localFilters.gender) {
+    //         const targetGender = normalizeGenderForFilter(localFilters.gender);
+
+    //         data = data.filter(member =>
+    //         normalizeGenderForFilter(member.gender) === targetGender
+    //         );
+    //     }
+
+    //     return data;
+    // }, [members, localFilters.gender, normalizeGenderForFilter]);
+
+
     const formattedMembers = useMemo(() => {
-        return formatMembersForTable(members, pagination, isInShowAllMode, getBusinessDisplayName);
-    }, [members, pagination, isInShowAllMode, getBusinessDisplayName]);
+        
+        let dataToFormat = [...members];
+        
+        // Apply gender filter di frontend juga
+        if (localFilters.gender) {
+            const targetGender = normalizeGenderForFilter(localFilters.gender);
+            
+            dataToFormat = dataToFormat.filter(member => {
+                const memberGender = normalizeGenderForFilter(member.gender);
+                const matches = memberGender === targetGender;
+                
+                return matches;
+            });
+        }
+        
+        return formatMembersForTable(dataToFormat, pagination, isInShowAllMode, getBusinessDisplayName);
+        
+    }, [members, localFilters.gender, pagination, isInShowAllMode, getBusinessDisplayName, normalizeGenderForFilter]);
 
     const tableConfig = useMemo(() => ({
         headers: ['No', 'Full Name', 'Email', 'Gender', 'Company', 'Business Type', 'Program Name', 'Status', 'Action'],
@@ -704,31 +731,23 @@ export const useProgramClient = () => {
         detailTitle: "Client Details"
     }), []);
 
-    // ============= 6. SEMUA useEffect =============
-    // PERBAIKAN: Sync filters dengan benar termasuk gender
     useEffect(() => {
-        console.log('🔄 [useProgramClient] Syncing filters from hook:', {
-            hookFilters: filters,
-            currentLocalFilters: localFilters
-        });
-        
-        const newLocalFilters = {
-            search: filters.search || '',
-            status: filters.status || '',
-            businessType: filters.businessType || '',
-            gender: filters.gender || ''
-        };
-        
-        if (JSON.stringify(newLocalFilters) !== JSON.stringify(localFilters)) {
-            console.log('🔄 Updating local filters:', newLocalFilters);
-            setLocalFilters(newLocalFilters);
+        if (members.length > 0 || filters.search || filters.status || filters.businessType || filters.gender) {
+            const newLocalFilters = {
+                search: filters.search || '',
+                status: filters.status || '',
+                businessType: filters.businessType || '',
+                gender: filters.gender || ''
+            };
+            
+            if (JSON.stringify(newLocalFilters) !== JSON.stringify(localFilters)) {
+                setLocalFilters(newLocalFilters);
+            }
         }
-    }, [filters]);
+    }, [filters, localFilters, members.length]);
 
-    // DEBUG: Cek data gender
     useEffect(() => {
         if (members.length > 0) {
-            console.log('🔍 [useProgramClient] Data gender analysis:');
             
             const genderStats = {
                 total: members.length,
@@ -740,7 +759,7 @@ export const useProgramClient = () => {
                 null: 0
             };
             
-            members.forEach((client, index) => {
+            members.forEach((client) => {
                 const hasGenderField = 'gender' in client;
                 const genderValue = client.gender;
                 const genderLower = genderValue?.toLowerCase()?.trim() || '';
@@ -758,19 +777,12 @@ export const useProgramClient = () => {
                 } else {
                     genderStats.other++;
                 }
-                
-                if (index < 3) {
-                    console.log(`  Sample ${index + 1}: ${client.full_name} - gender: "${genderValue}" → normalized: "${normalizeGenderForFilter(genderValue)}"`);
-                }
             });
             
-            console.log('📊 Gender statistics:', genderStats);
-            console.log('📋 All unique gender values:', [...new Set(members.map(m => m.gender).filter(g => g !== null && g !== undefined && g !== ''))]);
         }
     }, [members, normalizeGenderForFilter]);
 
     useEffect(() => {
-        // Gunakan business types dari constants file
         setAvailableBusinessTypes(BUSINESS_TYPES_FOR_FILTER);
         
         if (members.length > 0) {
@@ -823,66 +835,31 @@ export const useProgramClient = () => {
         };
     }, []);
 
-    // Debug untuk state changes
-    useEffect(() => {
-        console.log('🔍 [useProgramClient] State updated:', {
-            localFilters,
-            membersCount: members.length,
-            filtersFromHook: filters,
-            pagination: pagination.currentPage
-        });
-        
-        if (localFilters.gender || filters.gender) {
-            console.log('🎯 Gender filter analysis:', {
-                localGender: localFilters.gender,
-                hookGender: filters.gender,
-                normalizedLocal: normalizeGenderForFilter(localFilters.gender),
-                normalizedHook: normalizeGenderForFilter(filters.gender)
-            });
+    // useEffect(() => {    
+    //     if (localFilters.gender || filters.gender) {
             
-            if (members.length > 0) {
-                const normalizedFilter = normalizeGenderForFilter(localFilters.gender || filters.gender);
-                const matchingClients = members.filter(member => {
-                    const clientGender = normalizeGenderForFilter(member.gender);
-                    return clientGender === normalizedFilter;
-                });
-                
-                console.log('📊 Gender filter results:', {
-                    filter: normalizedFilter,
-                    totalClients: members.length,
-                    matchingClients: matchingClients.length,
-                    matchSample: matchingClients.slice(0, 3).map(c => ({
-                        name: c.full_name,
-                        originalGender: c.gender,
-                        normalizedGender: normalizeGenderForFilter(c.gender)
-                    }))
-                });
-            }
-        }
-    }, [localFilters, members, filters, pagination, normalizeGenderForFilter]);
+    //         if (members.length > 0) {
+    //             const normalizedFilter = normalizeGenderForFilter(localFilters.gender || filters.gender);
+    //             const matchingClients = members.filter(member => {
+    //                 const clientGender = normalizeGenderForFilter(member.gender);
+    //                 return clientGender === normalizedFilter;
+    //             });
+    //         }
+    //     }
+    // }, [localFilters, members, filters, pagination, normalizeGenderForFilter]);
 
     // PERBAIKAN: Debug untuk API calls dan filter matching
-    useEffect(() => {
-        console.log('🔄 [useProgramClient] Data and filters updated:', {
-            localFilters,
-            hookFilters: filters,
-            membersLength: members.length,
-            hasSelectedMember: !!selectedMember
-        });
-        
+    useEffect(() => { 
         if (filters.gender && !localFilters.gender) {
-            console.log('🔄 Syncing gender from hook to local:', filters.gender);
             setLocalFilters(prev => ({ ...prev, gender: filters.gender }));
         }
         
         if (!filters.gender && localFilters.gender) {
-            console.log('🔄 Clearing local gender filter because hook has none');
             setLocalFilters(prev => ({ ...prev, gender: '' }));
         }
         
     }, [localFilters, filters, members, selectedMember]);
 
-    // ============= 7. RETURN VALUE =============
     return {
         selectedMember,
         localFilters,

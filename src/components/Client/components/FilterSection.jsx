@@ -3,7 +3,7 @@ import SearchBar from '../../SearchFilter/SearchBar';
 import FilterDropdown from './FilterDropdown';
 
 const FiltersSection = ({
-    localFilters = {}, // ← BERIKAN DEFAULT VALUE
+    localFilters = {}, 
     showAllOnSearch,
     isInShowAllMode,
     onSearch,
@@ -11,22 +11,13 @@ const FiltersSection = ({
     onResetToPagination,
     onStatusFilterChange,
     onBusinessTypeFilterChange,
-    onGenderFilterChange, // ← TAMBAHKAN INI
-    onApplyFilters, // ← TAMBAHKAN INI (opsional, tapi recommended)
+    onGenderFilterChange, 
+    onApplyFilters, 
     availableBusinessTypes,
     statusOptions,
     getActiveFiltersCount,
-    // TAMBAHKAN PROP BARU INI
     getFilteredCounts
 }) => {
-    console.log('🔍 [FiltersSection] Props received:', {
-        hasOnGenderFilterChange: !!onGenderFilterChange,
-        hasOnApplyFilters: !!onApplyFilters,
-        typeOnGenderFilterChange: typeof onGenderFilterChange,
-        hasGetFilteredCounts: !!getFilteredCounts // ← TAMBAHKAN DEBUG UNTUK getFilteredCounts
-    });
-    
-    // AMBIL SEARCH VALUE DENGAN SAFE ACCESS
     const searchValue = localFilters?.search || '';
     
     return (
@@ -35,17 +26,12 @@ const FiltersSection = ({
                 <div className="w-full sm:w-auto min-w-[250px]">
                     <SearchBar 
                         onSearch={onSearch}
-<<<<<<< HEAD
                         placeholder="Search.."
-                        value={searchValue} // ← GUNAKAN VALUE YANG AMAN
-=======
-                        placeholder="Search clients..."
-                        value={localFilters.search}
->>>>>>> c51e5c1beb7040812bb33a425fd6cdfc5b58ac6f
+                        value={searchValue} 
                     />
                 </div>
                 
-                {searchValue.trim() !== '' && ( // ← SEKARANG AMAN KARENA searchValue SELALU STRING
+                {searchValue.trim() !== '' && ( 
                     <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
                         <label className="flex items-center gap-2 cursor-pointer">
                         <input
