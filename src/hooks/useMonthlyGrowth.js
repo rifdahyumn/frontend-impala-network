@@ -1,4 +1,3 @@
-// hooks/useMonthlyGrowth.js
 import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import AnalyticsService from '../services/analyticsService'

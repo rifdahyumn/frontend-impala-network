@@ -9,7 +9,7 @@ export const useImpala = (initialFilters = {}) => {
     const [error, setError] = useState(null)
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 20,
         total: 0,
         totalPages: 0,
         isShowAllMode: false,
@@ -217,7 +217,6 @@ export const useImpala = (initialFilters = {}) => {
         fetchImpala(1, filtersRef.current, false)
     }, [])
 
-    // 🔴 PERBAIKAN: Effect untuk fetch stats
     const fetchImpalaStats = useCallback(async () => {
         try {
             setStatsLoadingImpala(true)
@@ -226,7 +225,6 @@ export const useImpala = (initialFilters = {}) => {
             if (result.success) {
                 setImpalaStats(result.data)
             } else {
-                // 🔴 PERBAIKAN: Fallback stats jika API error
                 setImpalaStats({
                     title: 'Total Participant',
                     value: participant.length.toString() || "0",
@@ -285,7 +283,6 @@ export const useImpala = (initialFilters = {}) => {
                 
                 toast.success(`Exported ${dataToExport.length} participants to CSV`)
             } else {
-                // Fetch semua data dengan filter
                 const result = await impalaService.fetchAllImpala(currentFilters)
                 dataToExport = result.data || []
                 
@@ -319,13 +316,11 @@ export const useImpala = (initialFilters = {}) => {
         }
     }, [participant, pagination.showingAllResults, showAllOnSearch])
 
-    // 🔴 PERBAIKAN: CRUD functions dengan optimized updates
     const addParticipant = async (participantData) => {
         try {
             const result = await impalaService.createImpala(participantData)
             toast.success('Participant added successfully')
             
-            // 🔴 PERBAIKAN: Refresh data tanpa loading state berlebihan
             await fetchImpala(pagination.page, filtersRef.current, showAllOnSearch)
             await fetchImpalaStats()
             
@@ -342,7 +337,6 @@ export const useImpala = (initialFilters = {}) => {
             const result = await impalaService.updateImpala(participantId, participantData)
             toast.success("Participant updated successfully")
 
-            // 🔴 PERBAIKAN: Optimistic update untuk mengurangi re-render
             setParticipant(prevParticipants => 
                 prevParticipants.map(participant => 
                     participant.id === participantId
@@ -365,7 +359,6 @@ export const useImpala = (initialFilters = {}) => {
             setLoading(true)
             await impalaService.deleteImpala(participantId)
 
-            // 🔴 PERBAIKAN: Optimistic update
             setParticipant(prevParticipants =>
                 prevParticipants.filter(participant => participant.id !== participantId)
             )

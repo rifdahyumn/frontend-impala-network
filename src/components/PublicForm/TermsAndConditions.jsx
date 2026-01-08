@@ -27,7 +27,6 @@ const TermsAndConditions = ({ termsAccepted, setTermsAccepted, programName }) =>
                 </div>
             </div>
             
-            {/* Status terms */}
             <div className={`mt-3 ml-7 text-sm ${
                 termsAccepted ? 'text-green-600' : 'text-yellow-600'
             }`}>

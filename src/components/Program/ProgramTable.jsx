@@ -15,7 +15,6 @@ const ProgramTable = ({
     handlePageChange,
     handleClearAllFilters,
     filters,
-    // availableCategories,
     getDisplayStatus
 }) => {
     const formattedPrograms = useMemo(() => {
@@ -29,7 +28,7 @@ const ProgramTable = ({
                 no: itemNumber,
                 program_name: program.program_name,
                 category: program.category,
-                status: getDisplayStatus(program), // Gunakan status yang sudah ditentukan
+                status: getDisplayStatus(program), 
                 duration: program.duration,
                 start_date: program.start_date,
                 end_date: program.end_date,
@@ -90,7 +89,7 @@ const ProgramTable = ({
                 ) : (
                     <Button 
                         className="flex items-center gap-2"
-                        onClick={() => {}} // Ini akan dihandle oleh parent
+                        onClick={() => {}} 
                         variant="outline"
                     >
                         <Plus className="h-4 w-4" />

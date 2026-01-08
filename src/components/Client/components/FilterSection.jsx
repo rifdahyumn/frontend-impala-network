@@ -35,8 +35,13 @@ const FiltersSection = ({
                 <div className="w-full sm:w-auto min-w-[250px]">
                     <SearchBar 
                         onSearch={onSearch}
+<<<<<<< HEAD
                         placeholder="Search.."
                         value={searchValue} // ← GUNAKAN VALUE YANG AMAN
+=======
+                        placeholder="Search clients..."
+                        value={localFilters.search}
+>>>>>>> c51e5c1beb7040812bb33a425fd6cdfc5b58ac6f
                     />
                 </div>
                 

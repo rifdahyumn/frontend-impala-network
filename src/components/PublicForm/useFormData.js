@@ -10,6 +10,7 @@ const useFormData = (template, formConfig, toast) => {
     const [submissionSuccess, setSubmissionSuccess] = useState(false);
     const [submittedData, setSubmittedData] = useState(null);
     const [termsAccepted, setTermsAccepted] = useState(false);
+    const [isAutoFilling, setIsAutoFilling] = useState(false)
     
     const { 
         locationData, 
@@ -17,7 +18,146 @@ const useFormData = (template, formConfig, toast) => {
         handleLocationChange 
     } = useLocationData(formConfig, toast);
 
-    const handleInputChange = useCallback((fieldName, value) => {
+    const formatAutoFillData = (apiData) => {
+        if (!apiData) return {}
+
+        return {
+            full_name: apiData.full_name || '',
+            nik: apiData.nik || '',
+            email: apiData.email || '',
+            phone: apiData.phone || '',
+            gender: apiData.gender || '',
+            date_of_birth: apiData.date_of_birth || '',
+            education: apiData.education || '',
+            disability_status: apiData.disability_status || '',
+            disability_type: apiData.disability_type || '',
+            address: apiData.address || '',
+            postal_code: apiData.postal_code || '',
+            reason_join_program: apiData.reason_join_program || '',
+
+            province_name: apiData.province_name || '',
+            regency_name: apiData.regency_name || '',
+            district_name: apiData.district_name || '',
+            village_name: apiData.village_name || '',
+
+            category: apiData.category || '',
+
+            // business_name: apiData.business_name || '',
+            // business_type: apiData.business_type || '',
+            // business_form: apiData.business_form || '',
+            // business_address: apiData.business_address || '',
+            // established_year: apiData.established_year || '',
+            // monthly_revenue: apiData.monthly_revenue || '',
+            // employee_count: apiData.employee_count || '',
+            // certifications: apiData.certifications || '',
+            // social_media: apiData.social_media || '',
+            // marketplace: apiData.marketplace || '',
+            // website: apiData.website || '',
+
+            // institution: apiData.institution || '',
+            // major: apiData.major || '',
+            // enrollment_year: apiData.enrollment_year || '',
+            // semester: apiData.semester || '',
+            // career_interest: apiData.career_interest || '',
+            // core_competency: apiData.core_competency || '',
+
+            // workplace: apiData.workplace || '',
+            // position: apiData.position || '',
+            // work_duration: apiData.work_duration || '',
+            // industry_sector: apiData.industry_sector || '',
+            // skills: apiData.skills || '',
+
+            // community_name: apiData.community_name || '',
+            // community_role: apiData.community_role || '',
+            // member_count: apiData.member_count || '',
+            // focus_area: apiData.focus_area || '',
+            // operational_area: apiData.operational_area || '',
+
+            // areas_interest: apiData.areas_interest || '',
+            // background: apiData.background || '',
+            // experience_level: apiData.experience_level || '',
+        }
+    }
+
+    const handleAutoFillByNik = useCallback(async (nik) => {
+        if (!nik || nik.length !== 16) return false
+
+        setIsAutoFilling(true)
+        try {
+            const participantData = await impalaService.autoFillByNik(nik)
+            if (participantData) {
+                const formattedData = formatAutoFillData(participantData)
+
+                setFormData(prev => {
+                    const updates = {}
+                    Object.keys(formattedData).forEach(key => {
+                        if (formattedData[key] && !prev[key]) {
+                            updates[key] = formattedData[key]
+                        }
+                    })
+
+                    // if (formattedData.category && !selectedCategory) {
+                    //     setSelectedCategory(formattedData.category)
+                    // }
+
+                    return { ...prev, ...updates }
+                })
+
+                toast({
+                    title: "Data ditemukan",
+                    description: 'Form telah diisi otomatis dari database',
+                    duration: 3000
+                })
+                return true
+            }
+        } catch (error) {
+            console.error('Auto fill by NIK error:', error)
+        } finally {
+            setIsAutoFilling(false)
+        }
+        return false
+    }, [selectedCategory, toast])
+
+    const handleAutoFillByEmail = useCallback(async (email) => {
+        if (!email || !email.includes('@')) return false
+
+        setIsAutoFilling(true)
+        try {
+            const participantData = await impalaService.autoFillByEmail(email)
+            if (participantData) {
+                const formattedData = formatAutoFillData(participantData)
+
+                setFormData(prev => {
+                    const updates = {}
+                    Object.keys(formattedData).forEach(key => {
+                        if (formattedData[key] && !prev[key]) {
+                            updates[key] = formattedData[key]
+                        }
+                    })
+
+                    if (formattedData.category && !selectedCategory) {
+                        setSelectedCategory(formattedData.category)
+                    }
+
+                    return { ...prev, ...updates }
+                })
+
+                toast({
+                    title: 'Data ditemukan',
+                    description: 'Form elah diisi otomatis dari database',
+                    duration: 3000
+                })
+                return true
+            }
+        } catch (error) {
+            console.error('Auto-fill by email error:', error)
+        } finally {
+            setIsAutoFilling(false)
+        }
+        return false
+    }, [selectedCategory, toast])
+
+    const handleInputChange = useCallback(async (fieldName, value) => {
         setFormData(prev => {
             const newData = { ...prev, [fieldName]: value };
             return handleLocationChange(fieldName, value, newData);
@@ -26,7 +166,15 @@ const useFormData = (template, formConfig, toast) => {
         if (fieldName === 'disability_status' && value !== 'Lainnya') {
             setFormData(prev => ({ ...prev, disability_type: '' }));
         }
-    }, [handleLocationChange]);
+
+        if (fieldName === 'nik' && value.length === 16) {
+            await handleAutoFillByNik(value)
+        }
+
+        if (fieldName === 'email' && value.includes('@')) {
+            await handleAutoFillByEmail(value);
+        }
+    }, [handleLocationChange, handleAutoFillByNik, handleAutoFillByEmail]);
 
     const handleCategorySelect = useCallback((categoryType) => {
         setSelectedCategory(categoryType);
@@ -54,10 +202,6 @@ const useFormData = (template, formConfig, toast) => {
             };
             return { disabled: true, tooltip: `Harap lengkapi: ${missingFields.map(f => fieldLabels[f]).join(', ')}` };
         }
-
-        // if (formData.disability_status === 'Lainnya' && (!formData.disability_type || formData.disability_type.trim() === '')) {
-        //     return { disabled: true, tooltip: 'Harap jelaskan jenis disabilitas Anda' };
-        // }
 
         return { disabled: false, tooltip: 'Kirim formulir pendaftaran' };
     }, [selectedCategory, termsAccepted, formData]);
@@ -122,10 +266,13 @@ const useFormData = (template, formConfig, toast) => {
         setTermsAccepted,
         locationData,
         loadingLocation,
+        isAutoFilling,
         handleInputChange,
         handleCategorySelect,
         handleSubmit,
-        getSubmitButtonStatus
+        getSubmitButtonStatus,
+        handleAutoFillByNik,
+        handleAutoFillByEmail
     };
 };
 

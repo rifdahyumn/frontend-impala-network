@@ -36,11 +36,9 @@ export const locationService = {
                 return formattedData;
             } else {
                 console.error('Invalid API response:', data);
-                // return getFallbackProvinces();
             }
         } catch (error) {
             console.error('Error fetching provinces:', error.message);
-            // return getFallbackProvinces();
         }
     },
 

@@ -240,7 +240,6 @@ const ProgramFilters = ({
                         </DropdownMenuContent>
                     </DropdownMenu>
                     
-                    {/* Export Button */}
                     {exportComponent}
                 </div>
             </div>

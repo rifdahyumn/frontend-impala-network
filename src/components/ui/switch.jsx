@@ -1,4 +1,3 @@
-// src/components/ui/switch.jsx
 import React from "react"
 
 const Switch = React.forwardRef(({ className, checked, onCheckedChange, ...props }, ref) => {

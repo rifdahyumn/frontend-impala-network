@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
-import { X, FileText, Calendar, ExternalLink, Copy, Loader2, Trash2, AlertCircle, Info } from 'lucide-react';
+import { FileText, Calendar, ExternalLink, Copy, Loader2, Trash2, AlertCircle, Info } from 'lucide-react';
 
 const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCopyLink, onDeleteTemplate }) => {
     const [deletingId, setDeletingId] = useState(null)
@@ -56,7 +56,6 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
 
     return (
         <>
-            {/* Modal Konfirmasi Delete */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all duration-300">
                     <div 
@@ -64,7 +63,6 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="p-6">
-                            {/* Header */}
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="flex-shrink-0 h-14 w-14 flex items-center justify-center rounded-full bg-red-50 border border-red-100">
                                     <AlertCircle className="h-7 w-7 text-red-500" />
@@ -79,7 +77,6 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                 </div>
                             </div>
                             
-                            {/* Form Info */}
                             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
                                 <div className="flex items-start">
                                     <Info className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
@@ -101,7 +98,6 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                 </div>
                             </div>
 
-                            {/* Warning Message */}
                             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                                 <div className="flex">
                                     <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -118,7 +114,6 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                 </div>
                             </div>
 
-                            {/* Action Buttons */}
                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                                 <Button
                                     type="button"

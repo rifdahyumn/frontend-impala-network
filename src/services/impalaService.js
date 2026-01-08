@@ -5,6 +5,123 @@ class ImpalaService {
         this.baseURL = API_BASE_URL
     }
 
+    async autoFillByNik(nik) {
+        try {
+            if (!nik || nik.length !== 16) {
+                console.log('NIK harus 16 digit')
+                return null
+            }
+
+            const response = await fetch(`${this.baseURL}/impala/by-nik/${nik}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            if (response.status === 404) {
+                console.log('Data tidak ditemukan untuk NIK: ', nik)
+                return null
+            }
+
+            const result = await response.json()
+            return result.success ? result.data : null
+        } catch (error) {
+            console.error('Error auto-fill by nik:', error)
+            return null
+        }
+    }
+
+    async autoFillByEmail(email) {
+        try {
+            if (!email || !email.includes('@')) {
+                console.log('Format email tidak valid')
+                return null
+            }
+
+            const encodedEmail = encodeURIComponent(email)
+            const response = await fetch(`${this.baseURL}/impala/by-email/${encodedEmail}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            if (response.status === 404) {
+                console.log('Data tidak ditemukan untuk email:', email)
+                return null
+            }
+
+            const result = await response.json()
+            return result.success ? result.data : null
+        } catch (error) {
+            console.error('Error auto-fill by email:', error)
+            return null
+        }
+    }
+
+    formatDataForForm(apiData) {
+        if (!apiData) return {}
+
+        return {
+            full_name: apiData.full_name || '',
+            nik: apiData.nik || '',
+            email: apiData.email || '',
+            phone: apiData.phone || '',
+            gender: apiData.gender || '',
+            date_of_birth: apiData.date_of_birth || '',
+            education: apiData.education || '',
+            address: apiData.address || '',
+            postal_code: apiData.postal_code || '',
+            reason_join_program: apiData.reason_join_program || '',
+            disability_status: apiData.disability_status || '',
+            disability_type: apiData.disability_type || '',
+            
+            category: apiData.category || '',
+            program_name: apiData.program_name || '',
+            
+            business_name: apiData.business_name || '',
+            business_type: apiData.business_type || '',
+            business_form: apiData.business_form || '',
+            business_address: apiData.business_address || '',
+            established_year: apiData.established_year || '',
+            monthly_revenue: apiData.monthly_revenue || '',
+            employee_count: apiData.employee_count || '',
+            certifications: apiData.certifications || '',
+            social_media: apiData.social_media || '',
+            marketplace: apiData.marketplace || '',
+            website: apiData.website || '',
+            
+            institution: apiData.institution || '',
+            major: apiData.major || '',
+            enrollment_year: apiData.enrollment_year || '',
+            semester: apiData.semester || '',
+            career_interest: apiData.career_interest || '',
+            core_competency: apiData.core_competency || '',
+            
+            workplace: apiData.workplace || '',
+            position: apiData.position || '',
+            work_duration: apiData.work_duration || '',
+            industry_sector: apiData.industry_sector || '',
+            skills: apiData.skills || '',
+            
+            community_name: apiData.community_name || '',
+            community_role: apiData.community_role || '',
+            member_count: apiData.member_count || '',
+            focus_area: apiData.focus_area || '',
+            operational_area: apiData.operational_area || '',
+            
+            areas_interest: apiData.areas_interest || '',
+            background: apiData.background || '',
+            experience_level: apiData.experience_level || '',
+            
+            province_name: apiData.province_name || '',
+            regency_name: apiData.regency_name || '',
+            district_name: apiData.district_name || '',
+            village_name: apiData.village_name || ''
+        }
+    }
+
     async handleResponse(response) {
         if (!response.ok) {
             const error = await response.text();
@@ -20,12 +137,11 @@ class ImpalaService {
         return result;
     }
 
-    // 🔴 DIUBAH: Tambahkan parameter filter yang sama dengan clientService
     async fetchImpala(params = {}) {
         try {
             const {
                 page = 1,
-                limit = 10,
+                limit = 20,
                 search = '',
                 gender = '',
                 category = '',
@@ -118,7 +234,6 @@ class ImpalaService {
 
     async createImpala(participantData) {
         try {
-            // 🔴 DIUBAH: Tambahkan validasi
             if (!participantData.full_name || !participantData.email) {
                 throw new Error('Full name and email are required');
             }
@@ -139,10 +254,8 @@ class ImpalaService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Update participant
     async updateImpala(participantId, participantData) {
         try {
-            // 🔴 VALIDASI: Pastikan participantId valid
             if (!participantId) {
                 throw new Error('Participant ID is required');
             }
@@ -219,29 +332,23 @@ class ImpalaService {
         }
     }
 
-    // 🔴 FUNGSI BARU: Helper untuk konversi ke CSV
     convertToCSV(data) {
         if (!data || data.length === 0) return '';
 
-        // 🔴 Tentukan headers berdasarkan data pertama
         const headers = Object.keys(data[0] || {});
         
-        // 🔴 Siapkan rows
         const csvRows = [
-            headers.join(','), // Header row
+            headers.join(','), 
             ...data.map(row => 
                 headers.map(header => {
                     const value = row[header];
                     
-                    // 🔴 Handle berbagai tipe data
                     if (value === null || value === undefined) {
                         return '';
                     }
                     
-                    // 🔴 Escape quotes dan convert ke string
                     const stringValue = String(value).replace(/"/g, '""');
                     
-                    // 🔴 Wrap dalam quotes jika mengandung comma, newline, atau quotes
                     if (stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('"')) {
                         return `"${stringValue}"`;
                     }

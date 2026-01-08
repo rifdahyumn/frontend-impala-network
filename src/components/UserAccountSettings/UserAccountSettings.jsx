@@ -1,4 +1,3 @@
-// src/components/UserAccountSettings/UserAccountSettings.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "../ui/button";
@@ -30,7 +29,7 @@ const UserAccountSettings = () => {
     const [avatarPreview, setAvatarPreview] = useState(null);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-    // Close dropdown when clicking outside
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -44,7 +43,6 @@ const UserAccountSettings = () => {
         };
     }, []);
 
-    // Helper functions
     const getInitials = (name) => {
         if (!name) return 'U';
         return name
@@ -218,7 +216,6 @@ const UserAccountSettings = () => {
         navigate(-1);
     };
 
-    // ✅ RENDER FIELD FUNCTION
     const renderField = (field) => {
         if (field.type === 'file') {
             return (
@@ -331,18 +328,14 @@ const UserAccountSettings = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-amber-50 to-yellow-50">
-            {/* Header dengan Dropdown */}
             <header className="bg-white/80 backdrop-blur-sm border-b border-amber-100 shadow-sm">
                 <div className="container mx-auto px-6 py-4">
                     <div className="flex justify-between items-center">
-                        {/* Left Side - Title */}
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900">Account Settings</h1>
                         </div>
                         
-                        {/* Right Side - User Info dengan Dropdown */}
                         <div className="relative" ref={dropdownRef}>
-                            {/* Dropdown Trigger */}
                             <div 
                                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-amber-50 cursor-pointer transition-colors"
                                 onClick={toggleDropdown}
@@ -366,10 +359,8 @@ const UserAccountSettings = () => {
                                 </div>
                             </div>
 
-                            {/* Dropdown Menu */}
                             {isDropdownOpen && (
                                 <div className="absolute right-0 top-full mt-2 w-64 bg-white/95 backdrop-blur-sm border border-amber-100 shadow-xl rounded-xl z-50">
-                                    {/* User Info Section */}
                                     <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-xl border-b border-amber-100">
                                         <Avatar className="h-12 w-12 border-2 border-amber-200">
                                             <AvatarImage alt="profile" src={user?.avatar} />
@@ -390,9 +381,7 @@ const UserAccountSettings = () => {
                                         </div>
                                     </div>
 
-                                    {/* Dropdown Items - HANYA LOGOUT seperti pada gambar */}
                                     <div className="p-2">
-                                        {/* Log Out Item - PERBAIKAN: Gunakan button yang proper */}
                                         <button
                                             className="flex items-center gap-3 w-full py-3 px-3 cursor-pointer text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left"
                                             onClick={(e) => {
@@ -411,7 +400,6 @@ const UserAccountSettings = () => {
                 </div>
             </header>
 
-            {/* Main Content */}
             <div className="container mx-auto px-6 py-8">
                 <div className="mb-8 text-center">
                     <p className="text-gray-600">Manage your account settings and preferences</p>
@@ -419,7 +407,6 @@ const UserAccountSettings = () => {
 
                 <div className="max-w-4xl mx-auto">
                     <form onSubmit={handleSubmit} className="space-y-6 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-amber-100 p-6">
-                        {/* Form Sections */}
                         {formSections.map((section, sectionIndex) => (
                             <div key={section.title} className="space-y-4">
                                 <div className="border-b border-amber-100 pb-3">
@@ -431,7 +418,6 @@ const UserAccountSettings = () => {
                                     )}
                                 </div>
 
-                                {/* Change Password Toggle */}
                                 {section.title === "Account Information" && (
                                     <div className="flex items-center mb-4 p-3 bg-amber-50 rounded-lg border border-amber-100">
                                         <input
@@ -447,7 +433,6 @@ const UserAccountSettings = () => {
                                     </div>
                                 )}
 
-                                {/* Password Fields */}
                                 {section.title === "Account Information" && changePassword && (
                                     <div className="space-y-4 bg-amber-50 p-4 rounded-lg border border-amber-200">
                                         <div className="space-y-2">
@@ -505,7 +490,6 @@ const UserAccountSettings = () => {
                             </div>
                         ))}
 
-                        {/* Action Buttons */}
                         <div className="flex justify-between pt-6 border-t border-amber-100">
                             <Button
                                 type="button"

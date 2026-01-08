@@ -323,7 +323,6 @@ const ImportButton = ({
 
     return (
         <>
-        {/* Import Button dengan Dropdown */}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button
@@ -359,7 +358,6 @@ const ImportButton = ({
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Import Modal */}
             <Dialog open={isImportModalOpen} onOpenChange={(open) => {
                 if (!open) {
                 resetImportState();
@@ -377,7 +375,6 @@ const ImportButton = ({
                         </DialogDescription>
                     </DialogHeader>
                     
-                    {/* Step Indicator */}
                     <div className="flex items-center justify-between mb-6">
                         <div className={`flex items-center gap-2 ${importFile ? 'text-blue-600' : 'text-gray-400'}`}>
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${importFile ? 'bg-blue-100 border-2 border-blue-600' : 'bg-gray-100 border-2 border-gray-300'}`}>
@@ -394,7 +391,6 @@ const ImportButton = ({
                         </div>
                     </div>
 
-                    {/* Upload Section */}
                     {!importSummary && (
                         <div className="space-y-4">
                         
@@ -428,7 +424,6 @@ const ImportButton = ({
                                             </div>
                                         </div>
                                         
-                                        {/* Preview Data */}
                                         {importPreview && importPreview.sampleData.length > 0 && (
                                             <div className="mt-4 border rounded-lg overflow-hidden">
                                                 <div className="bg-gray-50 px-4 py-2 border-b">
@@ -556,7 +551,6 @@ const ImportButton = ({
                         </div>
                     )}
 
-                    {/* Import Summary */}
                     {importSummary && (
                         <div className="space-y-6">
                             <div className={`${importSummary.successful > 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} border rounded-xl p-6 text-center`}>

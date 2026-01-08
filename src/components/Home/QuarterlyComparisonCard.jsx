@@ -85,13 +85,11 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
         return totals;
     }, [preCalculated, quarterlyData]);
     
-    // Max value dari preCalculated
     const maxQuarterValue = useMemo(() => 
         preCalculated?.maxValue || Math.max(...Object.values(quarterTotals)),
         [preCalculated, quarterTotals]
     );
-    
-    // Selected quarter data
+
     const selectedQuarterData = useMemo(() => 
         quarterlyData?.[selectedQuarter],
         [quarterlyData, selectedQuarter]
@@ -102,15 +100,13 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
         [selectedQuarterData]
     );
     
-    // Format function dengan cache
     const formatNumber = useCallback((num) => {
         if (metric.id === 'revenue') {
             return formatRevenue(num);
         }
         return formatCount(num);
     }, [metric.id]);
-    
-    // Quarter buttons - sederhana tanpa object complex
+
     const quarterButtons = allQuarters.map(quarter => ({
         quarter,
         label: quarter.toUpperCase(),
@@ -124,7 +120,6 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
     
     const hasDataInSelectedQuarter = latestValue > 0;
     
-    // QoQ Growth (hitung minimal)
     const quarterOverQuarterGrowth = useMemo(() => {
         const quarterIndex = allQuarters.indexOf(selectedQuarter);
         if (quarterIndex <= 0) return { percentage: '0%', isPositive: false };
@@ -148,7 +143,6 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
     
     return (
         <div className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
-            {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <div className="p-2 rounded-lg" style={{ backgroundColor: `${metric.color}20` }}>
@@ -160,7 +154,6 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
                 </div>
             </div>
             
-            {/* Quarter Selector */}
             <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                     <div className="text-xs text-gray-500 font-medium">Select Quarter:</div>
@@ -183,7 +176,6 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
                 </div>
             </div>
             
-            {/* Selected Quarter Details */}
             <div className="mb-6 p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                     <div>
@@ -214,7 +206,6 @@ const QuarterlyComparisonCard = memo(({ metric, yearlyData, years, preCalculated
                 )}
             </div>
             
-            {/* Quarter Breakdown - SIMPLIFIED */}
             <div>
                 <div className="text-xs text-gray-500 font-medium mb-2">Quarterly Breakdown:</div>
                 <div className="space-y-3">

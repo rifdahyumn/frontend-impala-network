@@ -77,6 +77,7 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Price': 'price',
             'Capacity': 'capacity',
             'Instructors': 'Instructor',
+            'Age': 'age',
             'Location': 'location',
             'Description': 'description',
             'Tags': 'tags',

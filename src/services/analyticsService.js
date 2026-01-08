@@ -166,7 +166,6 @@ class AnalyticsService {
                 queryParams.append('includeQuarterly', 'true');
             }
 
-            // PERBAIKAN: Tambahkan endpoint yang benar
             const response = await fetch(`${this.baseURL}/analytics/yearly-comparison?${queryParams}`, {
                 method: 'GET',
                 headers: {
