@@ -21,20 +21,24 @@ export const useClients = (initialFilters = {}) => {
     const [statsLoading, setStatsLoading] = useState(false)
     const [showAllOnSearch, setShowAllOnSearch] = useState(false)
 
+    // PERBAIKAN: Tambahkan gender ke filtersRef
     const filtersRef = useRef({
         search: '',
         status: '',
         businessType: '',
+        gender: '', // ← TAMBAHKAN INI
         ...initialFilters
     })
     
     const abortControllerRef = useRef(null) 
     const lastRequestIdRef = useRef(0) 
     
+    // PERBAIKAN: Tambahkan gender ke state filters
     const [filters, setFilters] = useState({
         search: filtersRef.current.search,
         status: filtersRef.current.status,
-        businessType: filtersRef.current.businessType
+        businessType: filtersRef.current.businessType,
+        gender: filtersRef.current.gender // ← TAMBAHKAN INI
     })
 
     const fetchClients = useCallback(async (page = 1, customFilters = null, showAll = false, requestId = null) => {
@@ -53,12 +57,14 @@ export const useClients = (initialFilters = {}) => {
 
             const currentFilters = customFilters || filtersRef.current
 
+            // PERBAIKAN: Tambahkan gender ke params
             const params = {
                 page,
                 limit: pagination.limit,
                 ...(currentFilters.search && { search: currentFilters.search }),
                 ...(currentFilters.status && { status: currentFilters.status }),
                 ...(currentFilters.businessType && { businessType: currentFilters.businessType }),
+                ...(currentFilters.gender && { gender: currentFilters.gender }), // ← TAMBAHKAN INI
                 ...(currentFilters.search && showAll && { showAllOnSearch: 'true' })
             }
             
@@ -116,18 +122,20 @@ export const useClients = (initialFilters = {}) => {
     }, [])
 
     const updateFiltersAndFetch = useCallback((newFilters, showAll = false) => {
-
+        // PERBAIKAN: Update filtersRef dengan gender
         const updatedFilters = {
             ...filtersRef.current,
             ...newFilters
         }
         filtersRef.current = updatedFilters
 
+        // PERBAIKAN: Update state filters dengan gender
         setFilters(prev => ({
             ...prev,
             search: updatedFilters.search,
             status: updatedFilters.status,
-            businessType: updatedFilters.businessType
+            businessType: updatedFilters.businessType,
+            gender: updatedFilters.gender // ← TAMBAHKAN INI
         }))
 
         if (!newFilters.search && showAllOnSearch) {
@@ -150,11 +158,12 @@ export const useClients = (initialFilters = {}) => {
     }, [])
 
     const clearFilters = useCallback(() => {
-        
+        // PERBAIKAN: Clear gender juga
         const clearedFilters = {
             search: '',
             status: '',
-            businessType: ''
+            businessType: '',
+            gender: '' // ← TAMBAHKAN INI
         }
         
         filtersRef.current = clearedFilters
@@ -181,6 +190,23 @@ export const useClients = (initialFilters = {}) => {
         
         fetchClients(1, updatedFilters, false)
     }, [fetchClients])
+
+    // TAMBAHKAN: Fungsi untuk clear gender filter secara spesifik
+    const clearGenderFilter = useCallback(() => {
+        const updatedFilters = {
+            ...filtersRef.current,
+            gender: ''
+        }
+        
+        filtersRef.current = updatedFilters
+
+        setFilters(prev => ({
+            ...prev,
+            gender: ''
+        }))
+        
+        fetchClients(1, updatedFilters, showAllOnSearch)
+    }, [fetchClients, showAllOnSearch])
 
     const searchClients = useCallback((searchTerm, showAll = false) => {
         const searchFilters = {
@@ -270,6 +296,7 @@ export const useClients = (initialFilters = {}) => {
                 
                 toast.success(`Exported ${dataToExport.length} clients to CSV`)
             } else {
+                // PERBAIKAN: Kirim gender filter ke fetchAllClients
                 const result = await clientService.fetchAllClients(filtersRef.current)
                 dataToExport = result.data || []
                 
@@ -395,7 +422,7 @@ export const useClients = (initialFilters = {}) => {
                     return updatedMembers;
                 });
 
-                toast.success(`Client status updated to ${updateClient.status}`)
+                toast.success(`Client status updated to ${validStatus}`)
 
                 await fetchClientStats()
 
@@ -416,13 +443,20 @@ export const useClients = (initialFilters = {}) => {
         } else if (pagination.showingAllResults) {
             return `Showing all ${members.length} clients`
         } else {
-            //    
+            // Return empty string for normal pagination mode
+            return '';
         }
     }, [pagination, members.length])
 
     const refetch = useCallback(() => {
         fetchClients(pagination.page, filtersRef.current, showAllOnSearch)
     }, [fetchClients, pagination.page, showAllOnSearch])
+
+    // TAMBAHKAN: Fungsi untuk reset ke pagination mode
+    const resetToPaginationMode = useCallback(() => {
+        setShowAllOnSearch(false);
+        fetchClients(1, filtersRef.current, false);
+    }, [fetchClients]);
 
     return {
         members, 
@@ -437,8 +471,10 @@ export const useClients = (initialFilters = {}) => {
         updateFiltersAndFetch,
         clearFilters,
         clearSearch,
+        clearGenderFilter, // ← TAMBAHKAN INI (opsional)
         searchClients,
         toggleShowAllOnSearch,
+        resetToPaginationMode, // ← TAMBAHKAN INI
         isShowAllMode: () => pagination.showingAllResults || false,
         getDisplayText,
         refetch, 

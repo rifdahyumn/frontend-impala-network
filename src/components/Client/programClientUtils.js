@@ -57,6 +57,16 @@ export const validateRowData = (row, rowIndex) => {
         }
     }
     
+    // TAMBAHKAN: Validasi untuk gender
+    if (row.gender) {
+        const genderValue = row.gender.toString().toLowerCase().trim();
+        if (!['male', 'female', 'laki-laki', 'perempuan', 'pria', 'wanita'].some(g => 
+            genderValue.includes(g)
+        )) {
+            errors.push(`Baris ${rowIndex}: Gender harus "Male" atau "Female"`);
+        }
+    }
+    
     return errors;
 };
 
@@ -115,8 +125,22 @@ export const parseExcelData = (data) => {
                     const cleanValue = value !== undefined && value !== null ? 
                         (typeof value === 'string' ? value.trim() : value.toString().trim()) : '';
 
-                    const normalizedHeader = headerMapping[header] || header
-                    cleanRow[normalizedHeader] = cleanValue
+                    const normalizedHeader = headerMapping[header] || header;
+                    
+                    // Standardisasi gender value
+                    if (normalizedHeader === 'gender' && cleanValue) {
+                        const genderLower = cleanValue.toLowerCase().trim();
+                        // Standardize gender values
+                        if (genderLower.includes('male') || genderLower.includes('laki') || genderLower.includes('pria')) {
+                            cleanRow[normalizedHeader] = 'male';
+                        } else if (genderLower.includes('female') || genderLower.includes('perempuan') || genderLower.includes('wanita')) {
+                            cleanRow[normalizedHeader] = 'female';
+                        } else {
+                            cleanRow[normalizedHeader] = genderLower; // keep as is for now
+                        }
+                    } else {
+                        cleanRow[normalizedHeader] = cleanValue;
+                    }
                 });
                 
                 if (Object.values(cleanRow).some(value => 
@@ -161,6 +185,11 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
 
         if (currentFilters.business?.trim() && currentFilters.business !== 'all') {
             params.append('business_type', currentFilters.business.trim())
+        }
+
+        // TAMBAHKAN: Parameter gender untuk export
+        if (currentFilters.gender?.trim()) {
+            params.append('gender', currentFilters.gender.trim())
         }
 
         const url = `/api/client/export?${params.toString()}`
@@ -395,12 +424,54 @@ export const formatStatuses = (members) => {
     }));
 };
 
+// TAMBAHKAN: Fungsi untuk format genders
+export const formatGenders = (members) => {
+    if (!members || members.length === 0) return [];
+    
+    const allGenders = members
+        .map(client => client.gender)
+        .filter(gender => gender && gender.trim() !== "");
+    
+    const uniqueGenders = [...new Set(allGenders)].sort();
+    
+    // Standardize gender values
+    const standardizedGenders = uniqueGenders.map(gender => {
+        const genderLower = gender.toLowerCase().trim();
+        if (genderLower.includes('male') || genderLower.includes('laki') || genderLower.includes('pria')) {
+            return 'male';
+        } else if (genderLower.includes('female') || genderLower.includes('perempuan') || genderLower.includes('wanita')) {
+            return 'female';
+        }
+        return genderLower;
+    });
+    
+    const finalUniqueGenders = [...new Set(standardizedGenders)].sort();
+    
+    return finalUniqueGenders.map(gender => ({
+        value: gender.toLowerCase(),
+        label: gender === 'male' ? 'Male' : gender === 'female' ? 'Female' : gender.charAt(0).toUpperCase() + gender.slice(1),
+        original: gender
+    }));
+};
+
+// PERBAIKI: countActiveFilters untuk include gender
 export const countActiveFilters = (filters) => {
     let count = 0;
-    if (filters.search) count++;
-    if (filters.status) count++;
-    if (filters.businessType) count++;
+    if (filters.search && filters.search.trim() !== '') count++;
+    if (filters.status && filters.status.trim() !== '') count++;
+    if (filters.businessType && filters.businessType.trim() !== '' && filters.businessType !== 'all') count++;
+    if (filters.gender && filters.gender.trim() !== '') count++; // ← TAMBAHKAN INI
     return count;
+};
+
+// TAMBAHKAN: Fungsi untuk mendapatkan label gender
+export const getGenderLabel = (genderValue) => {
+    if (!genderValue || genderValue.trim() === '') return '';
+    
+    const genderLower = genderValue.toLowerCase().trim();
+    if (genderLower === 'male') return 'Male';
+    if (genderLower === 'female') return 'Female';
+    return genderValue.charAt(0).toUpperCase() + genderValue.slice(1);
 };
 
 export const formatMembersForTable = (members, pagination, isInShowAllMode, getBusinessDisplayName) => {
@@ -418,6 +489,7 @@ export const formatMembersForTable = (members, pagination, isInShowAllMode, getB
             fullName: client.full_name,
             email: client.email,
             phone: client.phone,
+            gender: client.gender, // ← TAMBAHKAN INI jika ingin menampilkan gender di table
             company: client.company,
             business: getBusinessDisplayName(client.business),
             programName: client.program_name,

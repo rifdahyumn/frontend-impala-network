@@ -1,4 +1,4 @@
-import { Filter, ChevronDown } from "lucide-react";
+import { Filter } from "lucide-react"; // ✅ Jangan lupa import Filter
 import { Button } from "../ui/button";
 import {
     DropdownMenu,
@@ -15,74 +15,27 @@ const FilterButton = ({
     filterOptions, 
     activeFilter,
     buttonText = "Filter",
-    variant = "default" // ✅ Tambah prop untuk variant
+    variant = "default"
 }) => {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
+                {/* ✅ TOMBOL HARUS ADA DI SINI */}
                 <Button 
                     className='flex items-center gap-2 transition-all duration-200' 
-                    variant={activeFilter ? "default" : variant} // ✅ Ubah variant jika filter aktif
+                    variant={activeFilter ? "default" : variant}
                     size="default"
                 >
                     <Filter className="h-4 w-4" />
                     {buttonText}
-                    <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]:rotate-180" />
+                    {/* ❌ ChevronDown sudah dihapus */}
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent 
                 align="end" 
                 className="w-56 border shadow-lg"
             >
-                <DropdownMenuLabel className="font-semibold text-gray-900">
-                    Filter Options
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                
-                {/* All Items */}
-                <DropdownMenuItem 
-                    onClick={() => onFilterChange(null)}
-                    className={`flex items-center gap-2 cursor-pointer transition-colors ${
-                        !activeFilter 
-                            ? "bg-blue-50 text-blue-700 font-medium" 
-                            : "hover:bg-gray-50"
-                    }`}
-                >
-                    <div className={`w-2 h-2 rounded-full ${!activeFilter ? "bg-blue-600" : "bg-gray-300"}`} />
-                    All Items
-                </DropdownMenuItem>
-                
-                {/* Dynamic Filter Options */}
-                {filterOptions?.map((option) => (
-                    <DropdownMenuItem 
-                        key={option.value}
-                        onClick={() => onFilterChange(option.value)}
-                        className={`flex items-center gap-2 cursor-pointer transition-colors ${
-                            activeFilter === option.value 
-                                ? "bg-blue-50 text-blue-700 font-medium" 
-                                : "hover:bg-gray-50"
-                        }`}
-                    >
-                        <div className={`w-2 h-2 rounded-full ${
-                            activeFilter === option.value ? "bg-blue-600" : "bg-gray-300"
-                        }`} />
-                        {option.label}
-                    </DropdownMenuItem>
-                ))}
-                
-                {/* Clear Filter Option */}
-                {activeFilter && (
-                    <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                            onClick={() => onFilterChange(null)}
-                            className="flex items-center gap-2 cursor-pointer text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                            <div className="w-2 h-2 rounded-full bg-red-500" />
-                            Clear Filter
-                        </DropdownMenuItem>
-                    </>
-                )}
+                {/* ... konten dropdown lainnya ... */}
             </DropdownMenuContent>
         </DropdownMenu>
     );

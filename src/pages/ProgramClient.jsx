@@ -55,7 +55,9 @@ const ProgramClient = () => {
         handleSelectMember,
         handleSearch,
         handleStatusFilterChange,
+        handleGenderFilterChange,
         handleBusinessTypeFilterChange,
+        handleApplyFilters,
         clearFilter,
         clearAllFilters,
         handleToggleShowAll,
@@ -84,8 +86,22 @@ const ProgramClient = () => {
         updateClient,
         updateClientStatus,
         fetchClients,
-        refreshData
+        refreshData,
+        // TAMBAHKAN INI: getFilteredCounts dari useProgramClient
+        getFilteredCounts
     } = useProgramClient();
+
+    // TAMBAHKAN: Debug log untuk cek apakah fungsi ada
+    useEffect(() => {
+        console.log('🔍 [ProgramClient] Functions available:', {
+            hasHandleGenderFilterChange: !!handleGenderFilterChange,
+            hasHandleApplyFilters: !!handleApplyFilters,
+            hasGetFilteredCounts: !!getFilteredCounts, // ← TAMBAHKAN INI
+            typeHandleGenderFilterChange: typeof handleGenderFilterChange,
+            typeHandleApplyFilters: typeof handleApplyFilters,
+            typeGetFilteredCounts: typeof getFilteredCounts // ← TAMBAHKAN INI
+        });
+    }, [handleGenderFilterChange, handleApplyFilters, getFilteredCounts]);
 
     const handleAddNewClient = async (clientData) => {
         try {
@@ -199,6 +215,77 @@ const ProgramClient = () => {
         }
     };
 
+    // TAMBAHKAN: Fallback functions jika dari useProgramClient tidak ada
+    const handleGenderFilterChangeFallback = (gender) => {
+        console.log('🎯 [ProgramClient Fallback] Gender filter changed:', gender);
+        
+        // Update localFilters dan fetch data baru
+        const updatedFilters = {
+            ...localFilters,
+            gender: gender || undefined
+        };
+        
+        // Panggil fetchClients dengan filter baru
+        fetchClients(pagination.page, updatedFilters, showAllOnSearch);
+        
+        if (gender) {
+            toast.success(`Filtered by gender: ${gender === 'male' ? 'Male' : 'Female'}`);
+        } else {
+            toast.success('Gender filter cleared');
+        }
+    };
+
+    const handleApplyFiltersFallback = (newFilters) => {
+        console.log('🎯 [ProgramClient Fallback] Applying all filters:', newFilters);
+        
+        // Update semua filter sekaligus
+        fetchClients(pagination.page, newFilters, showAllOnSearch);
+    };
+
+    // TAMBAHKAN: Fallback untuk getFilteredCounts jika tidak ada
+    const getFilteredCountsFallback = () => {
+        console.log('📊 [ProgramClient Fallback] Using fallback counts');
+        
+        // Hitung sederhana dari data yang ada
+        const totalCount = members.length;
+        const activeCount = members.filter(m => m.status === 'active').length;
+        const inactiveCount = members.filter(m => m.status === 'inactive').length;
+        const maleCount = members.filter(m => {
+            const gender = m.gender?.toLowerCase() || '';
+            return gender.includes('male') || gender.includes('laki') || gender.includes('pria');
+        }).length;
+        const femaleCount = members.filter(m => {
+            const gender = m.gender?.toLowerCase() || '';
+            return gender.includes('female') || gender.includes('perempuan') || gender.includes('wanita');
+        }).length;
+        
+        const businessTypeCounts = {};
+        availableBusinessTypes.forEach(type => {
+            if (type.value) {
+                businessTypeCounts[type.value] = members.filter(m => 
+                    m.business_type?.toLowerCase() === type.value.toLowerCase()
+                ).length;
+            }
+        });
+        
+        return {
+            status: {
+                active: activeCount,
+                inactive: inactiveCount,
+                pending: members.filter(m => m.status === 'pending').length
+            },
+            gender: {
+                male: maleCount,
+                female: femaleCount,
+                '': totalCount
+            },
+            businessType: {
+                ...businessTypeCounts,
+                all: totalCount
+            }
+        };
+    };
+
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
             <div className='flex-1 p-6'>
@@ -230,9 +317,13 @@ const ProgramClient = () => {
                                 onResetToPagination={handleResetToPagination}
                                 onStatusFilterChange={handleStatusFilterChange}
                                 onBusinessTypeFilterChange={handleBusinessTypeFilterChange}
+                                onGenderFilterChange={handleGenderFilterChange || handleGenderFilterChangeFallback}
+                                onApplyFilters={handleApplyFilters || handleApplyFiltersFallback}
                                 availableBusinessTypes={availableBusinessTypes}
                                 statusOptions={statusOptions}
                                 getActiveFiltersCount={getActiveFiltersCount}
+                                // TAMBAHKAN INI: Kirim getFilteredCounts ke FiltersSection
+                                getFilteredCounts={getFilteredCounts || getFilteredCountsFallback}
                             />
 
                             <ActionButtons
@@ -325,7 +416,6 @@ const ProgramClient = () => {
                         onClientUpdated={() => fetchClients(pagination.page, localFilters, showAllOnSearch)}
                         onClientDeleted={() => {
                             fetchClients(pagination.page, localFilters, showAllOnSearch);
-                            
                         }}
                     />
                 </div>
