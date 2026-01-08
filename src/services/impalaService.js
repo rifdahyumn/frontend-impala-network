@@ -8,7 +8,6 @@ class ImpalaService {
     async autoFillByNik(nik) {
         try {
             if (!nik || nik.length !== 16) {
-                console.log('NIK harus 16 digit')
                 return null
             }
 
@@ -20,7 +19,6 @@ class ImpalaService {
             })
 
             if (response.status === 404) {
-                console.log('Data tidak ditemukan untuk NIK: ', nik)
                 return null
             }
 
@@ -35,7 +33,6 @@ class ImpalaService {
     async autoFillByEmail(email) {
         try {
             if (!email || !email.includes('@')) {
-                console.log('Format email tidak valid')
                 return null
             }
 
@@ -48,7 +45,6 @@ class ImpalaService {
             })
 
             if (response.status === 404) {
-                console.log('Data tidak ditemukan untuk email:', email)
                 return null
             }
 

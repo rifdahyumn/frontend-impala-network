@@ -275,8 +275,6 @@ const FormBuilderWorkspace = () => {
                 programName: programName,
                 title: `Pendaftaran Program ${programName}`
             }));
-            
-            document.title = `Buat Form "${programName}" - Form Builder | Impala Network`;
         }
     };
 

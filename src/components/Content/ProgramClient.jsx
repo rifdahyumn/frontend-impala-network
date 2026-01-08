@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, Building, User, MapPin, Calendar, DollarSign } from "lucide-react";
+import { Edit, Trash2, Building, User, MapPin, Calendar, DollarSign, Share2Icon, ExternalLink } from "lucide-react";
 import toast from 'react-hot-toast';
 
 const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModal, onProgramEdited }) => {
@@ -34,7 +34,8 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
             icon: DollarSign,
             fields: [
                 { key: 'price', label: 'Price', icon: DollarSign },
-                { key: 'capacity', label: 'Capacity', icon: User }
+                { key: 'capacity', label: 'Capacity', icon: User },
+                { key: 'link_rab', label: 'Link RAB', icon: Share2Icon, isLink: true }
             ]
         },
         {
@@ -46,6 +47,26 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
             ]
         },
     ];
+
+    const isValidUrl = (url) => {
+        if (!url) return false
+
+        try {
+            new URL(url)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    const formatUrl = (url) => {
+        if (!url) return '';
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            return `https://${url}`
+        }
+
+        return url
+    }
 
     const getActiveCategoryData = () => {
         return detailFields.find(category => category.category === activeCategory);
@@ -95,6 +116,11 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 <div className='grid grid-cols-2 gap-4'>
                     {activeCategoryData.fields.map((field, index) => {
                         const FieldIcon = field.icon
+                        const value = selectedProgram[field.key] || '-'
+
+                        const isLinkField = field.isLink && value !== '-'
+                        const formattedUrl = isLinkField ? formatUrl(value) : ''
+                        const isValidLink = isLinkField && isValidUrl(formattedUrl)
 
                         return (
                             <div key={index} className='flex items-start gap-3'>
@@ -104,9 +130,35 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                                     <label className='text-sm text-gray-500 block mb-1'>
                                         {field.label}
                                     </label>
-                                    <p className='text-gray-900 text-sm font-medium'>
-                                        {selectedProgram[field.key] || '-'}
-                                    </p>
+                                    
+                                    {isLinkField && isValidLink ? (
+                                        <div className='flex flex-col'>
+                                            <a 
+                                                href={formattedUrl}
+                                                target='_blank'
+                                                rel='noopener noreffer'
+                                                className='text-blue-600 hover:text-blue-800 hover:underline font-medium text-sm flex items-center gap-1 group'
+                                            >
+                                                <span className='break-all'>
+                                                    {formattedUrl}
+                                                </span>
+                                                <ExternalLink className='h-3 w-3 flex-shrink-0' />
+                                            </a>
+                                        </div>
+                                    ) : isLinkField && value !== '-' ? (
+                                        <div className='flex flex-col'>
+                                            <span className='text-gray-900 text-sm font-medium break-all'>
+                                                {value}
+                                            </span>
+                                            <span className='text-xs text-red-500 mt-1'>
+                                                (Format URL tidak valid)
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <p className='text-gray-900 text-sm font-medium'>
+                                            {value}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         )

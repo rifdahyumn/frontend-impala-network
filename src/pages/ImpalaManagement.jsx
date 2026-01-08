@@ -111,6 +111,11 @@ const ImpalaManagement = () => {
                     'Jumlah Anggota': 'Contoh: 50',
                     'Area Operasional': 'Contoh: Lokal',
                     'Peran dalam Komunitas': 'Contoh: Koordinator',
+
+                    // Umum
+                    'Bidang Minta': 'Contoh: Teknologi Informatika',
+                    'Latar Belakang': 'Contoh: Freelancer',
+                    'Tingkat Pengalaman': 'Contoh: Pemula'
                 },
             ];
             
@@ -127,7 +132,8 @@ const ImpalaManagement = () => {
                 { wch: 15 },   { wch: 25 },   { wch: 20 },   { wch: 15 },
                 { wch: 20 },   { wch: 30 },   { wch: 25 },   { wch: 30 },
                 { wch: 15 },   { wch: 20 },   { wch: 25 },   { wch: 20 },
-                { wch: 30 },   { wch: 30 }    
+                { wch: 30 },   { wch: 30 },   { wch: 30 },   { wch: 30 },
+                { wch: 30 }    
             ]
             dataWorksheet[!'cols'] = wscols
 
@@ -347,6 +353,11 @@ const ImpalaManagement = () => {
                                 member_count: row['Jumlah Anggota'] || row['member_count'] || '',
                                 operational_area: row['Area Operasional'] || row['operational_area'] || '',
                                 community_role: row['Peran dalam Komunitas'] || row['community_role'] || '',
+
+                                // umum information
+                                areas_interest: row['Bidang Minat'] || row['areas_interest'],
+                                backgorund: row['Latar Belakang'] || row['background'],
+                                experience_level: row['Tingkat Pengalaman'] || row['experience_level']
                             };
                             
                             const processArrayField = (value) => {
@@ -452,8 +463,8 @@ const ImpalaManagement = () => {
     }, []);
 
     const genderOptions = [
-        { value: 'laki-laki', label: '👨 Laki-laki' },
-        { value: 'perempuan', label: '👩 Perempuan' },
+        { value: 'laki-laki', label: 'Laki-laki' },
+        { value: 'perempuan', label: 'Perempuan' },
     ];
 
     const extractCategories = useMemo(() => {
@@ -755,6 +766,7 @@ const ImpalaManagement = () => {
             }
 
             const exportData = dataToExport.map((p, index) => ({
+                // Data Primery
                 'No': index + 1,
                 'Nama Lengkap': p.full_name || '',
                 'Email': p.email || '',
@@ -775,6 +787,7 @@ const ImpalaManagement = () => {
                 'Tanggal Dibuat': formatFieldValue(p.created_at, 'created_at'),
                 'Tanggal Diperbarui': formatFieldValue(p.updated_at, 'updated_at'),
                 
+                // Data UMKM
                 'Nama Usaha': p.business_name || '',
                 'Jenis Usaha': p.business_type || '',
                 'Alamat Usaha': p.business_address || '',
@@ -783,7 +796,11 @@ const ImpalaManagement = () => {
                 'Pendapatan Bulanan': p.monthly_revenue || '',
                 'Jumlah Karyawan': p.employee_count || '',
                 'Sertifikasi': formatFieldValue(p.certifications, 'certifications'),
+                'Media Sosial': formatFieldValue(p.social_media, 'social_media'),
+                'Marketplace': formatFieldValue(p.marketplace, 'marketplace'),
+                'Website': formatFieldValue(p.website, 'website'),
                 
+                // Data Mahasiswa
                 'Institusi': p.institution || '',
                 'Jurusan': p.major || '',
                 'Semester': p.semester || '',
@@ -791,21 +808,24 @@ const ImpalaManagement = () => {
                 'Minat Karir': p.career_interest || '',
                 'Kompetensi Inti': p.core_competency || '',
                 
+                // Data Profesional
                 'Tempat Kerja': p.workplace || '',
                 'Posisi': p.position || '',
                 'Lama Bekerja': p.work_duration || '',
                 'Sektor Industri': p.industry_sector || '',
                 'Keahlian': formatFieldValue(p.skills, 'skills'),
                 
+                // Data Komunitas
                 'Nama Komunitas': p.community_name || '',
                 'Bidang Fokus': p.focus_area || '',
                 'Jumlah Anggota': p.member_count || '',
                 'Area Operasional': p.operational_area || '',
                 'Peran dalam Komunitas': p.community_role || '',
                 
-                'Media Sosial': formatFieldValue(p.social_media, 'social_media'),
-                'Marketplace': formatFieldValue(p.marketplace, 'marketplace'),
-                'Website': formatFieldValue(p.website, 'website')
+                // Data Umum
+                'Bidang Minat': p.areas_interest || '',
+                'Latar Belakang': p.backgorund || '',
+                'Tingkat Pengalaman': p.experience_level || ''
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(exportData)
@@ -821,7 +841,8 @@ const ImpalaManagement = () => {
                 { wch: 15 },   { wch: 25 },   { wch: 20 },   { wch: 15 },
                 { wch: 20 },   { wch: 30 },   { wch: 25 },   { wch: 30 },
                 { wch: 15 },   { wch: 20 },   { wch: 25 },   { wch: 20 },
-                { wch: 30 },   { wch: 30 }    
+                { wch: 30 },   { wch: 30 },   { wch: 30 },   { wch: 30 },
+                { wch: 30 }    
             ];
             worksheet['!cols'] = wscols
 

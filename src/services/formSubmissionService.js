@@ -5,7 +5,7 @@ class FormSubmissionService {
         try {
             const {
                 page = 1,
-                limit = 50,
+                limit = 1000,
                 category = '',
                 gender = '',
                 search = '',

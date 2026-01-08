@@ -21,6 +21,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         start_date: '',
         end_date: '',
         price: 'Rp. ',
+        link_rab: '',
         capacity: '',
         instructors: [],
         location: '',
@@ -180,10 +181,10 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                     required: true,
                     placeholder: 'Select category',
                     options: [
-                        { value: 'seminar', label: 'Seminar / Webinar' },
-                        { value: 'workshop', label: 'Workshop / Training' },
-                        { value: 'volunteer', label: 'Volunteer / Community Service' },
-                        { value: 'exhibition', label: 'Exhibition / Expo' }
+                        { value: 'Seminar / Webinar', label: 'Seminar / Webinar' },
+                        { value: 'Workshop / Training', label: 'Workshop / Training' },
+                        { value: 'Volunteer / Community Service', label: 'Volunteer / Community Service' },
+                        { value: 'Exhibition / Expo', label: 'Exhibition / Expo' }
                     ]
                 },
                 {
@@ -227,6 +228,13 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 {
                     name: 'price',
                     label: 'Price',
+                    type: 'text',
+                    required: true,
+                    placeholder: ''
+                },
+                {
+                    name: 'link_rab',
+                    label: 'Link RAB',
                     type: 'text',
                     required: true,
                     placeholder: ''
@@ -370,6 +378,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 start_date: editData.start_date || '',
                 end_date: editData.end_date || '',
                 price: formattedPrice,
+                link_rab: editData.link_rab || '',
                 capacity: editData.capacity || '',
                 instructors: editData.instructors || [],
                 location: editData.location || '',
@@ -385,6 +394,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 start_date: '',
                 end_date: '',
                 price: '',
+                link_rab: '',
                 capacity: '',
                 instructors: [],
                 location: '',
@@ -476,6 +486,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 start_date: formData.start_date,
                 end_date: formData.end_date,
                 price: rawPrice,
+                link_rab: formData.link_rab,
                 capacity: formData.capacity,
                 instructors: Array.isArray(formData.instructors) ? formData.instructors : [formData.instructors],
                 location: formData.location,

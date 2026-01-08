@@ -68,7 +68,7 @@ const AddMemberSemarang = ({
     const [newAddOn, setNewAddOn] = useState('');
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    // const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     const [provinces, setProvinces] = useState([])
     const [regencies, setRegencies] = useState([])
@@ -621,7 +621,6 @@ const AddMemberSemarang = ({
         });
 
         setErrors(newErrors);
-        console.log('Validation errors:', newErrors);
         return Object.keys(newErrors).length === 0;
     };
 

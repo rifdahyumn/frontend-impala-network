@@ -137,7 +137,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                 </div>
             )}
 
-            <Card className='mb-4 min-h-screen border border-gray-200 shadow-sm'>
+            <Card className='min-h-screen border border-gray-200 shadow-sm'>
                 <CardHeader className='border-gray-100'>
                     <div className="flex justify-between items-center">
                         <div>
@@ -155,7 +155,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                     </div>
                 </CardHeader>
 
-                <CardContent className="p-6">
+                <CardContent>
                     <ScrollArea className="h-screen pr-4">
                         {templates.length === 0 ? (
                             <div className='text-center py-12 text-gray-500'>
@@ -191,9 +191,9 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                                     </Badge>
                                                 )}
 
-                                                <Badge variant="outline" className='text-xs bg-white border-gray-300'>
+                                                {/* <Badge variant="outline" className='text-xs bg-white border-gray-300'>
                                                     Draft
-                                                </Badge>
+                                                </Badge> */}
                                             </div>
                                         </div>
 
