@@ -28,6 +28,7 @@ class ClientService {
                 search = '',
                 status = '',
                 businessType = '',
+                gender = '', // ← TAMBAHKAN INI
                 showAllOnSearch = false
             } = params;
 
@@ -37,6 +38,7 @@ class ClientService {
                 ...(search && { search }),
                 ...(status && { status }),
                 ...(businessType && { business_type: businessType }),
+                ...(gender && { gender }), // ← TAMBAHKAN INI
                 ...(showAllOnSearch && { showAllOnSearch: 'true' })
             });
 
@@ -100,6 +102,7 @@ class ClientService {
             search = '',
             status = '',
             businessType = '',
+            gender = '', // ← TAMBAHKAN INI
             showAllOnSearch = false
         } = params;
 
@@ -109,6 +112,7 @@ class ClientService {
             ...(search && { search }),
             ...(status && { status }),
             ...(businessType && { business_type: businessType }),
+            ...(gender && { gender }), // ← TAMBAHKAN INI
             ...(showAllOnSearch && { showAllOnSearch: 'true' })
         });
 
@@ -119,6 +123,17 @@ class ClientService {
         try {
             if (!clientData.full_name || !clientData.email) {
                 throw new Error('Full name and email are required');
+            }
+
+            // Validasi gender jika ada
+            if (clientData.gender) {
+                const genderLower = clientData.gender.toLowerCase().trim();
+                // Standardize gender values
+                if (genderLower.includes('male') || genderLower.includes('laki') || genderLower.includes('pria')) {
+                    clientData.gender = 'male';
+                } else if (genderLower.includes('female') || genderLower.includes('perempuan') || genderLower.includes('wanita')) {
+                    clientData.gender = 'female';
+                }
             }
 
             const response = await fetch(`${this.baseURL}/client`, {
@@ -141,6 +156,17 @@ class ClientService {
         try {
             if (!clientId) {
                 throw new Error('Client ID is required');
+            }
+
+            // Validasi gender jika ada
+            if (clientData.gender) {
+                const genderLower = clientData.gender.toLowerCase().trim();
+                // Standardize gender values
+                if (genderLower.includes('male') || genderLower.includes('laki') || genderLower.includes('pria')) {
+                    clientData.gender = 'male';
+                } else if (genderLower.includes('female') || genderLower.includes('perempuan') || genderLower.includes('wanita')) {
+                    clientData.gender = 'female';
+                }
             }
 
             const response = await fetch(`${this.baseURL}/client/${clientId}`, {
@@ -224,6 +250,7 @@ class ClientService {
 
     async exportClients(filters = {}, format = 'csv') {
         try {
+            // PERBAIKAN: Include gender filter di export
             const result = await this.fetchAllClients(filters);
             
             if (!result.data || result.data.length === 0) {
@@ -383,6 +410,11 @@ class ClientService {
             validFilters.businessType = filters.businessType.trim();
         }
         
+        // TAMBAHKAN: Validasi gender
+        if (filters.gender && typeof filters.gender === 'string' && filters.gender.trim()) {
+            validFilters.gender = filters.gender.trim();
+        }
+        
         return validFilters;
     }
 
@@ -444,7 +476,8 @@ class ClientService {
         if (!clients || !Array.isArray(clients)) {
             return {
                 statuses: [],
-                businessTypes: []
+                businessTypes: [],
+                genders: [] // ← TAMBAHKAN INI
             };
         }
 
@@ -458,6 +491,12 @@ class ClientService {
             .filter(business => business && business.trim())
         )].sort();
 
+        // TAMBAHKAN: Extract unique genders
+        const genders = [...new Set(clients
+            .map(client => client.gender)
+            .filter(gender => gender && gender.trim())
+        )].sort();
+
         return {
             statuses: statuses.map(status => ({
                 value: status.toLowerCase(),
@@ -468,7 +507,12 @@ class ClientService {
                 value: business.toLowerCase(),
                 label: business,
                 original: business
-            }))
+            })),
+            genders: genders.map(gender => ({
+                value: gender.toLowerCase(),
+                label: gender === 'male' ? 'Male' : gender === 'female' ? 'Female' : gender,
+                original: gender
+            })) // ← TAMBAHKAN INI
         };
     }
 
@@ -500,6 +544,30 @@ class ClientService {
         } catch (error) {
             console.error('Error updating client status:', error)
             throw error
+        }
+    }
+
+    // TAMBAHKAN: Fungsi untuk mendapatkan gender statistics
+    async getGenderStatistics() {
+        try {
+            const response = await fetch(`${this.baseURL}/client/stats/gender`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error('Error fetching gender statistics:', error);
+            return {
+                success: true,
+                data: {
+                    male: 0,
+                    female: 0,
+                    total: 0
+                }
+            };
         }
     }
 }

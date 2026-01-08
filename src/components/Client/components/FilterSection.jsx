@@ -3,7 +3,7 @@ import SearchBar from '../../SearchFilter/SearchBar';
 import FilterDropdown from './FilterDropdown';
 
 const FiltersSection = ({
-    localFilters,
+    localFilters = {}, // ← BERIKAN DEFAULT VALUE
     showAllOnSearch,
     isInShowAllMode,
     onSearch,
@@ -11,22 +11,41 @@ const FiltersSection = ({
     onResetToPagination,
     onStatusFilterChange,
     onBusinessTypeFilterChange,
+    onGenderFilterChange, // ← TAMBAHKAN INI
+    onApplyFilters, // ← TAMBAHKAN INI (opsional, tapi recommended)
     availableBusinessTypes,
     statusOptions,
-    getActiveFiltersCount
+    getActiveFiltersCount,
+    // TAMBAHKAN PROP BARU INI
+    getFilteredCounts
 }) => {
+    console.log('🔍 [FiltersSection] Props received:', {
+        hasOnGenderFilterChange: !!onGenderFilterChange,
+        hasOnApplyFilters: !!onApplyFilters,
+        typeOnGenderFilterChange: typeof onGenderFilterChange,
+        hasGetFilteredCounts: !!getFilteredCounts // ← TAMBAHKAN DEBUG UNTUK getFilteredCounts
+    });
+    
+    // AMBIL SEARCH VALUE DENGAN SAFE ACCESS
+    const searchValue = localFilters?.search || '';
+    
     return (
         <div className='flex flex-col lg:flex-row gap-4 mb-6 justify-between'>
             <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
                 <div className="w-full sm:w-auto min-w-[250px]">
                     <SearchBar 
                         onSearch={onSearch}
+<<<<<<< HEAD
+                        placeholder="Search.."
+                        value={searchValue} // ← GUNAKAN VALUE YANG AMAN
+=======
                         placeholder="Search clients..."
                         value={localFilters.search}
+>>>>>>> c51e5c1beb7040812bb33a425fd6cdfc5b58ac6f
                     />
                 </div>
                 
-                {localFilters.search.trim() !== '' && (
+                {searchValue.trim() !== '' && ( // ← SEKARANG AMAN KARENA searchValue SELALU STRING
                     <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
                         <label className="flex items-center gap-2 cursor-pointer">
                         <input
@@ -55,9 +74,13 @@ const FiltersSection = ({
                     localFilters={localFilters}
                     onStatusFilterChange={onStatusFilterChange}
                     onBusinessTypeFilterChange={onBusinessTypeFilterChange}
+                    onGenderFilterChange={onGenderFilterChange} // ← KIRIM PROP INI
+                    onApplyFilters={onApplyFilters} // ← KIRIM PROP INI
                     availableBusinessTypes={availableBusinessTypes}
                     statusOptions={statusOptions}
                     getActiveFiltersCount={getActiveFiltersCount}
+                    // TAMBAHKAN PROP BARU INI
+                    getFilteredCounts={getFilteredCounts}
                 />
             </div>
         </div>

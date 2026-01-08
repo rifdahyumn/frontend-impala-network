@@ -1,3 +1,6 @@
+// Import constants untuk business types
+import { BUSINESS_TYPES } from "../../Client/constants/businessTypes";
+
 export const formSections = [
     {
         title: "Personal Information",
@@ -53,29 +56,7 @@ export const formSections = [
                 type: 'select',
                 required: true,
                 placeholder: 'Select business type',
-                options: [
-                    { value: 'Retail', label: 'Retail' },
-                    { value: 'Technology', label: 'Technology' },
-                    { value: 'Healthcare', label: 'Healthcare' },
-                    { value: 'Finance', label: 'Finance' },
-                    { value: 'Education', label: 'Education' },
-                    { value: 'Manufacturing', label: 'Manufacturing' },
-                    { value: 'Food & Beverage', label: 'Food & Beverage' },
-                    { value: 'Logistics / Transportation', label: 'Logistics / Transportation' },
-                    { value: 'Agriculture', label: 'Agriculture' },
-                    { value: 'Construction', label: 'Construction' },
-                    { value: 'Media & Entertainment', label: 'Media & Entertainment' },
-                    { value: 'Consulting', label: 'Consulting' },
-                    { value: 'Non-Profit / NGO', label: 'Non-Profit / NGO' },
-                    { value: 'Telecomunications', label: 'Telecomunications' },
-                    { value: 'Automotive', label: 'Automotive' },
-                    { value: 'E-Commerce', label: 'E-Commerce' },
-                    { value: 'Professional Service', label: 'Professional Service' },
-                    { value: 'Public Sector / Government', label: 'Public Sector / Government' },
-                    { value: 'Real Estate', label: 'Real Estate' },
-                    { value: 'Hospitality', label: 'Hospitality' },
-                    { value: 'Energy & Utilities', label: 'Energy & Utilities' },
-                ]
+                options: BUSINESS_TYPES // GUNAKAN DARI CONSTANTS
             },
             {
                 name: 'total_employee',
