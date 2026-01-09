@@ -1,8 +1,11 @@
 import toast from "react-hot-toast"
 import { useCallback, useEffect, useState } from "react"
 import heteroBanyumasService from "../services/heteroBanyumasService"
+import { useConfirmDialog } from "./useConfirmDialog"
 
 export const useHeteroBanyumas = (initialFilters = {}) => {
+    const confirmDialog = useConfirmDialog()
+
     const [members, setMembers] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -16,8 +19,6 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
         search: '',
         ...initialFilters
     })
-
-
 
     const fetchMembers = useCallback(async (page = 1, customFilters = null) => {
         try {
@@ -120,6 +121,7 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
     }
 
     return {
-        members, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchMembers: changePage, addMemberHeteroBanyumas, updateMemberHeteroBanyumas, deleteMemberHeteroBanyumas
+        ...confirmDialog, members, loading, error, pagination, filters, setFilters: refetchWithFilters, 
+        fetchMembers: changePage, addMemberHeteroBanyumas, updateMemberHeteroBanyumas, deleteMemberHeteroBanyumas
     }
 }

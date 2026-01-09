@@ -17,78 +17,21 @@ import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from "../components/Pagination/Pagination";
 import ClientContent from "../components/Content/ClientContent";
 import AddClient from "../components/AddButton/AddClient";
+import ConfirmModal from '../components/Content/ConfirmModal';
 
 const ProgramClient = () => {
-    const {
-        selectedMember,
-        localFilters,
-        loading,
-        error,
-        members,
-        pagination,
-        isInShowAllMode,
-        getTotalActiveCriteria,
-        getActiveFiltersCount,
-        availableBusinessTypes,
-        formattedMembers,
-        tableConfig,
-        
-        clientDetailRef,
-        highlightDetail,
-        
-        isAddClientModalOpen,
-        setIsAddClientModalOpen,
-        isEditModalOpen,
-        setIsEditModalOpen,
-        editingClient,
-        setEditingClient,
-        isImportModalOpen,
-        setIsImportModalOpen,
-        importFile,
-        validationErrors,
-        isDragging,
-        fileInputRef,
-        dropZoneRef,
-        isImporting,
-        isExporting,
-        
-        handleSelectMember,
-        handleSearch,
-        handleStatusFilterChange,
-        handleGenderFilterChange,
-        handleBusinessTypeFilterChange,
-        handleApplyFilters,
-        clearFilter,
-        clearAllFilters,
-        handleToggleShowAll,
-        handleResetToPagination,
-        handleAddClient,
-        handleOpenEditModal,
-        handleDeleteClient,
-        handleRefreshWithReset,
-        handlePageChange,
-        handleExport,
-        handleOpenImportModal,
-        handleImportExcel,
-        handleDownloadTemplate,
-        handleDragOver,
-        handleDragEnter,
-        handleDragLeave,
-        handleDrop,
-        handleFileUpload,
-        handleTriggerFileInput,
-        handleRemoveFile,
-        getBusinessTypeLabel,
-        getStatusLabel,
-        showAllOnSearch,
-        statusOptions,
-        addClient,
-        updateClient,
-        updateClientStatus,
-        fetchClients,
-        refreshData,
-        getFilteredCounts
-    } = useProgramClient();
+    const { selectedMember, localFilters, loading, error, members, pagination, isInShowAllMode, getTotalActiveCriteria,
+        getActiveFiltersCount, availableBusinessTypes, formattedMembers, tableConfig, clientDetailRef,
+        highlightDetail, isAddClientModalOpen, setIsAddClientModalOpen, isEditModalOpen, setIsEditModalOpen, editingClient,
+        setEditingClient, isImportModalOpen, setIsImportModalOpen, importFile, validationErrors, isDragging,
+        fileInputRef, dropZoneRef, isImporting, isExporting, handleSelectMember, handleSearch, handleStatusFilterChange,
+        handleGenderFilterChange, handleBusinessTypeFilterChange, handleApplyFilters, clearFilter, clearAllFilters,
+        handleToggleShowAll, handleResetToPagination, handleAddClient, handleOpenEditModal, handleDeleteClient,
+        handleRefreshWithReset, handlePageChange, handleExport, handleOpenImportModal, handleImportExcel,
+        handleDownloadTemplate, handleDragOver, handleDragEnter, handleDragLeave, handleDrop, handleFileUpload,
+        handleTriggerFileInput, handleRemoveFile, getBusinessTypeLabel, getStatusLabel, showAllOnSearch,
+        statusOptions, addClient, updateClient, updateClientStatus, fetchClients, refreshData, getFilteredCounts, showConfirm,
+        handleConfirm, handleCancel, isOpen: isConfirmOpen, config: confirmConfig } = useProgramClient();
 
     const handleAddNewClient = async (clientData) => {
         try {
@@ -393,8 +336,16 @@ const ProgramClient = () => {
                         onClientDeleted={() => {
                             fetchClients(pagination.page, localFilters, showAllOnSearch);
                         }}
+                        showConfirm={showConfirm}
                     />
                 </div>
+
+                <ConfirmModal 
+                    isOpen={isConfirmOpen}
+                    config={confirmConfig}
+                    onConfirm={handleConfirm}
+                    onCancel={handleCancel}
+                />
 
                 <AddClient
                     isAddUserModalOpen={isAddClientModalOpen || isEditModalOpen}

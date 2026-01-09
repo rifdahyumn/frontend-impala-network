@@ -1,8 +1,11 @@
 import toast from "react-hot-toast"
 import { useCallback, useEffect, useState } from "react"
 import heteroSoloService from "../services/heteroSoloService"
+import { useConfirmDialog } from "./useConfirmDialog"
 
 export const useHeteroSolo = (initialFilters = {}) => {
+    const confirmDialog = useConfirmDialog()
+
     const [members, setMembers] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -16,8 +19,6 @@ export const useHeteroSolo = (initialFilters = {}) => {
         search: '',
         ...initialFilters
     })
-
-
 
     const fetchMembers = useCallback(async (page = 1, customFilters = null) => {
         try {
@@ -120,6 +121,7 @@ export const useHeteroSolo = (initialFilters = {}) => {
     }
 
     return {
-        members, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchMembers: changePage, addMemberHeteroSolo, updateMemberHeteroSolo, deleteMemberHeteroSolo
+        ...confirmDialog, members, loading, error, pagination, filters, setFilters: refetchWithFilters, 
+        fetchMembers: changePage, addMemberHeteroSolo, updateMemberHeteroSolo, deleteMemberHeteroSolo
     }
 }

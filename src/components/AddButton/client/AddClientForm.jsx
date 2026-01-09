@@ -407,7 +407,7 @@ const AddClientForm = ({ isEditMode, editData, onAddClient, onEditClient, setIsA
                         ? (clientExists ? 'Updating...' : 'Saving...')
                         : (clientExists 
                             ? (isEditMode 
-                                ? (updateAllFields ? 'Update All' : 'Update Program Only')
+                                ? (updateAllFields ? 'Update All' : 'Update')
                                 : 'Update Client')
                             : (isEditMode ? 'Update Client' : 'Add Client')
                           )

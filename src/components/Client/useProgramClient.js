@@ -1,21 +1,13 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { useClients } from '../../hooks/useClients';
-import {
-    getBusinessDisplayName,
-    exportToExcel,
-    validateExcelFile,
-    parseExcelData,
-    downloadTemplate,
-    formatBusinessTypes,
-    formatStatuses,
-    countActiveFilters,
-    formatMembersForTable
-} from './programClientUtils';
+import { getBusinessDisplayName, exportToExcel, validateExcelFile, parseExcelData, downloadTemplate, formatBusinessTypes, formatStatuses, countActiveFilters, formatMembersForTable } from './programClientUtils';
 import { statusOptions } from './constants/statusOptions';
 import clientService from '../../services/clientService';
 
 import { BUSINESS_TYPES_FOR_FILTER } from './constants/businessTypes';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
+import { AlertTriangle } from 'lucide-react';
 
 export const useProgramClient = () => {
     const [selectedMember, setSelectedMember] = useState(null);
@@ -42,28 +34,10 @@ export const useProgramClient = () => {
     const dropZoneRef = useRef(null);
     const clientDetailRef = useRef(null);
 
-    // ============= 3. CUSTOM HOOKS =============
-    const {
-        members,
-        loading,
-        error,
-        pagination,
-        filters,
-        showAllOnSearch,
-        fetchClients,
-        updateFiltersAndFetch,
-        clearFilters: hookClearFilters,
-        clearSearch: hookClearSearch,
-        searchClients,
-        toggleShowAllOnSearch,
-        resetToPaginationMode,
-        handlePageChange: hookHandlePageChange,
-        addClient,
-        updateClient,
-        deleteClient,
-        refreshData,
-        updateClientStatus: updateClientStatusFromHook
-    } = useClients();
+    const { members, loading, error, pagination, filters, showAllOnSearch, fetchClients, updateFiltersAndFetch,
+        clearFilters: hookClearFilters, clearSearch: hookClearSearch, searchClients, toggleShowAllOnSearch,
+        resetToPaginationMode, handlePageChange: hookHandlePageChange, addClient, updateClient, deleteClient,
+        refreshData, updateClientStatus: updateClientStatusFromHook } = useClients();
 
     const isInShowAllMode = false;
 
@@ -73,8 +47,6 @@ export const useProgramClient = () => {
         try {
             const genderString = gender.toString().toLowerCase().trim();
             
-            // PERBAIKAN TOTAL: Gunakan regex atau cek eksak
-            // Cara 1: Regex pattern
             if (/^(female|f|perempuan|wanita|woman|women)$/i.test(genderString)) {
                 return 'female';
             }
@@ -83,11 +55,9 @@ export const useProgramClient = () => {
                 return 'male';
             }
             
-            // Cara 2: Cek eksak dulu
             if (genderString === 'female' || genderString === 'f') return 'female';
             if (genderString === 'male' || genderString === 'm') return 'male';
             
-            // Cara 3: Cek contains dengan hati-hati
             if (genderString.includes('female')) return 'female';
             if (genderString.includes('male') && !genderString.includes('female')) return 'male';
             
@@ -265,7 +235,7 @@ export const useProgramClient = () => {
                 }
                 
             } catch (error) {
-                console.error('❌ Filter error:', error);
+                console.error('Filter error:', error);
                 toast.error('Failed to apply filter', {
                     id: loadingToastId
                 });
@@ -363,23 +333,17 @@ export const useProgramClient = () => {
         setIsEditModalOpen(true);
     }, []);
 
+    const confirmDialog = useConfirmDialog()
+
     const handleDeleteClient = useCallback(async (clientId) => {
-        if (!selectedMember) return;
-
-        if (!window.confirm(`Are you sure want to delete ${selectedMember.full_name}? This action cannot be undone.`)) {
-            return;
-        }
-
         try {
             await deleteClient(clientId);
             setSelectedMember(null);
-            toast.success('Client deleted successfully');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
             console.error('Error deleting client', error);
-            toast.error(error.message || 'Failed to delete client');
         }
-    }, [selectedMember, deleteClient]);
+    }, [deleteClient]);
 
     const updateClientStatus = useCallback(async (clientId, status) => {
         try {
@@ -689,26 +653,10 @@ export const useProgramClient = () => {
         return formatStatuses(members);
     }, [members]);
 
-    // const filteredMembers = useMemo(() => {
-    //     let data = [...members];
-
-    //     if (localFilters.gender) {
-    //         const targetGender = normalizeGenderForFilter(localFilters.gender);
-
-    //         data = data.filter(member =>
-    //         normalizeGenderForFilter(member.gender) === targetGender
-    //         );
-    //     }
-
-    //     return data;
-    // }, [members, localFilters.gender, normalizeGenderForFilter]);
-
-
     const formattedMembers = useMemo(() => {
         
         let dataToFormat = [...members];
         
-        // Apply gender filter di frontend juga
         if (localFilters.gender) {
             const targetGender = normalizeGenderForFilter(localFilters.gender);
             
@@ -835,20 +783,6 @@ export const useProgramClient = () => {
         };
     }, []);
 
-    // useEffect(() => {    
-    //     if (localFilters.gender || filters.gender) {
-            
-    //         if (members.length > 0) {
-    //             const normalizedFilter = normalizeGenderForFilter(localFilters.gender || filters.gender);
-    //             const matchingClients = members.filter(member => {
-    //                 const clientGender = normalizeGenderForFilter(member.gender);
-    //                 return clientGender === normalizedFilter;
-    //             });
-    //         }
-    //     }
-    // }, [localFilters, members, filters, pagination, normalizeGenderForFilter]);
-
-    // PERBAIKAN: Debug untuk API calls dan filter matching
     useEffect(() => { 
         if (filters.gender && !localFilters.gender) {
             setLocalFilters(prev => ({ ...prev, gender: filters.gender }));
@@ -860,78 +794,18 @@ export const useProgramClient = () => {
         
     }, [localFilters, filters, members, selectedMember]);
 
-    return {
-        selectedMember,
-        localFilters,
-        loading,
-        error,
-        members,
-        pagination,
-        showAllOnSearch,
-        isInShowAllMode,
-        getTotalActiveCriteria,
-        getActiveFiltersCount,
-        availableBusinessTypes,
-        formattedMembers,
-        tableConfig,
-        highlightDetail,
-        addClient,
-        updateClient,
-        deleteClient,
-        fetchClients,
-        refreshData,
-        isAddClientModalOpen,
-        setIsAddClientModalOpen,
-        isEditModalOpen,
-        setIsEditModalOpen,
-        editingClient,
-        setEditingClient,
-        isImportModalOpen,
-        setIsImportModalOpen,
-        importFile,
-        validationErrors,
-        isDragging,
-        isImporting,
-        isExporting,
-        fileInputRef,
-        dropZoneRef,
-        clientDetailRef,
-        statusOptions,
-        availableStatuses,
-        // Tambahkan getFilteredCounts di sini
-        getFilteredCounts,
-        handleSelectMember,
-        handleSearch,
-        handleStatusFilterChange,
-        handleGenderFilterChange,
-        handleBusinessTypeFilterChange,
-        handleApplyFilters,
-        handleToggleShowAll,
-        clearFilter,
-        clearAllFilters,
-        handleResetToPagination,
-        handleAddClient,
-        handleOpenEditModal,
-        handleDeleteClient,
-        handleRefreshWithReset,
-        handlePageChange,
-        handleExport,
-        handleOpenImportModal,
-        handleImportExcel,
-        handleDownloadTemplate,
-        handleDragOver,
-        handleDragEnter,
-        handleDragLeave,
-        handleDrop,
-        handleFileUpload,
-        handleTriggerFileInput,
-        handleRemoveFile,
-        getBusinessTypeLabel,
-        getStatusLabel,
-        getGenderLabel,
-        getBusinessDisplayName,
-        updateClientStatus,
-        normalizeGenderForFilter
+    return { ...confirmDialog, selectedMember, localFilters, loading, error, members, pagination, showAllOnSearch, isInShowAllMode,
+        getTotalActiveCriteria, getActiveFiltersCount, availableBusinessTypes, formattedMembers, tableConfig,
+        highlightDetail, addClient, updateClient, deleteClient, fetchClients, refreshData, isAddClientModalOpen,
+        setIsAddClientModalOpen, isEditModalOpen, setIsEditModalOpen, editingClient, setEditingClient, isImportModalOpen,
+        setIsImportModalOpen, importFile, validationErrors, isDragging, isImporting, isExporting, fileInputRef,
+        dropZoneRef, clientDetailRef, statusOptions, availableStatuses, getFilteredCounts, handleSelectMember,
+        handleSearch, handleStatusFilterChange, handleGenderFilterChange, handleBusinessTypeFilterChange, handleApplyFilters,
+        handleToggleShowAll, clearFilter, clearAllFilters, handleResetToPagination, handleAddClient, handleOpenEditModal,
+        handleDeleteClient, handleRefreshWithReset, handlePageChange, handleExport, handleOpenImportModal,
+        handleImportExcel, handleDownloadTemplate, handleDragOver, handleDragEnter, handleDragLeave, handleDrop, handleFileUpload,
+        handleTriggerFileInput, handleRemoveFile, getBusinessTypeLabel, getStatusLabel, getGenderLabel, getBusinessDisplayName,
+        updateClientStatus, normalizeGenderForFilter
     };
 };
 

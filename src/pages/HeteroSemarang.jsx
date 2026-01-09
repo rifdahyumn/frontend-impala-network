@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import SearchBar from "../components/SearchFilter/SearchBar";
 import MemberTable from "../components/MemberTable/MemberTable";
 import Pagination from "../components/Pagination/Pagination";
-import { Loader2, Plus, Users, UserCheck, AlertCircle, Tag, X, Building2, Filter, User, Download, Upload, FileText, FileSpreadsheet } from "lucide-react"
+import { Loader2, Plus, Users, UserCheck, AlertCircle, Tag, X, Building2, Filter, User, Download, Upload, FileText, FileSpreadsheet, AlertTriangle } from "lucide-react"
 import { Button } from "../components/ui/button"
 import AddMember from "../components/AddButton/AddMemberSemarang";
 import HeteroContent from "../components/Content/HeteroSemarangContent";
@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import * as XLSX from 'xlsx';
+import ConfirmModal from "../components/Content/ConfirmModal";
 
 const HeteroSemarang = () => {
     const [selectedMember, setSelectedMember] = useState(null)
@@ -44,7 +45,9 @@ const HeteroSemarang = () => {
     const [filteredMembers, setFilteredMembers] = useState([]);
     const [availableSpaces, setAvailableSpaces] = useState([]);
 
-    const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroSemarang, updateMemberHeteroSemarang, deleteMemberHeteroSemarang } = useHeteroSemarang()
+    const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroSemarang, 
+        updateMemberHeteroSemarang, deleteMemberHeteroSemarang, showConfirm, handleConfirm, handleCancel,
+        isOpen: isConfirmOpen, config: confirmConfig } = useHeteroSemarang()
 
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
@@ -526,8 +529,8 @@ const HeteroSemarang = () => {
     ];
 
     const genderOptions = [
-        { value: 'male', label: '👨 Male' },
-        { value: 'female', label: '👩 Female' },
+        { value: 'male', label: 'Male' },
+        { value: 'female', label: 'Female' },
     ];
 
     const extractSpaces = useMemo(() => {
@@ -770,19 +773,28 @@ const HeteroSemarang = () => {
     const handleDeleteMember = async (memberId) => {
         if (!selectedMember) return
 
-        if (!window.confirm(`Are you sure want to delete ${selectedMember.full_name}?. This Action cannot be undone.`)) {
-            return
-        }
-
-        try {
-            await deleteMemberHeteroSemarang(memberId)
-            setSelectedMember(null)
-            toast.success('Member deleted successfully')
-            fetchMembers(pagination.page);
-            
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch {
-            //
+        if (showConfirm && typeof showConfirm === 'function') {
+            showConfirm({
+                title: 'Delete Program',
+                message: `Are you sure yiu want to delete "${selectedMember.full_name}"? This action cannot be undone`,
+                type: 'danger',
+                confirmText: 'Delete',
+                cancelText: 'Cancel',
+                onConfirm: async () => {
+                    try {
+                        await deleteMemberHeteroSemarang(memberId)
+                        setSelectedMember(null)
+                        toast.success('Member deleted successfully')
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } catch (error) {
+                        console.error('Error delete member:', error);
+                        toast.error(error.message || 'Failed to delete member');
+                    }
+                },
+                onCancel: () => {
+                    toast('Deletion cancelled', { icon: AlertTriangle });
+                }
+            })
         }
     };
 
@@ -1228,6 +1240,13 @@ const HeteroSemarang = () => {
                         }}
                     />
                 </div>
+
+                <ConfirmModal 
+                    isOpen={isConfirmOpen}
+                    config={confirmConfig}
+                    onConfirm={handleConfirm}
+                    onCancel={handleCancel}
+                />
 
                 <AddMember 
                     isAddMemberModalOpen={isAddMemberModalOpen || isEditModalOpen} 

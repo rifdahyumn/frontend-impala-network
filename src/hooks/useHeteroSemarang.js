@@ -1,8 +1,11 @@
 import toast from "react-hot-toast"
 import heteroSemarangService from "../services/heteroSemarangService"
 import { useCallback, useEffect, useState } from "react"
+import { useConfirmDialog } from "./useConfirmDialog"
 
 export const useHeteroSemarang = (initialFilters = {}) => {
+    const confirmDialog = useConfirmDialog()
+
     const [members, setMembers] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -119,6 +122,7 @@ export const useHeteroSemarang = (initialFilters = {}) => {
     }
 
     return {
-        members, loading, error, pagination, filters, setFilters: refetchWithFilters, fetchMembers: changePage, addMemberHeteroSemarang, updateMemberHeteroSemarang, deleteMemberHeteroSemarang
+        ...confirmDialog, members, loading, error, pagination, filters, setFilters: refetchWithFilters, 
+        fetchMembers: changePage, addMemberHeteroSemarang, updateMemberHeteroSemarang, deleteMemberHeteroSemarang
     }
 }
