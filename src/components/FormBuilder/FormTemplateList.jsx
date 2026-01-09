@@ -3,26 +3,49 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
-import { FileText, Calendar, ExternalLink, Copy, Loader2, Trash2, AlertCircle, Info } from 'lucide-react';
+import { FileText, Calendar, ExternalLink, Copy, Loader2, Trash2, AlertCircle, Info, Check } from 'lucide-react';
 
 const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCopyLink, onDeleteTemplate }) => {
     const [deletingId, setDeletingId] = useState(null)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [templateToDelete, setTemplateToDelete] = useState(null)
+    const [copiedTemplateId, setCopiedTemplateId] = useState(null)
+
+    const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin
 
     const copyFullLink = (template) => {
-        const fullLink = `http://localhost:5173/register/${template.unique_slug}`
+        const fullLink = `${baseUrl}/register/${template.unique_slug}`
         navigator.clipboard.writeText(fullLink)
+            .then(() => {
+                setCopiedTemplateId(template.id)
 
-        if (onCopyLink) {
-            onCopyLink(fullLink, template.program_name);
-        } else {
-            alert(`Link berhasil disalin: ${fullLink}`);
-        }
+                if (onCopyLink) {
+                    onCopyLink(fullLink, template.program_name);
+                }
+
+                setTimeout(() => {
+                    setCopiedTemplateId(null)
+                }, 2000)
+            })
+            .catch(err => {
+                console.error('Gagal menyalin:', err)
+
+                const tempInput = document.createElement('input')
+                tempInput.value = fullLink
+                document.body.appendChild(tempInput)
+                tempInput.select()
+                document.execCommand('copy')
+                document.body.removeChild(tempInput)
+
+                setCopiedTemplateId(template.id)
+                setTimeout(() => {
+                    setCopiedTemplateId(null)
+                }, 2000)
+            })
     }
 
     const openFullLink = (template) => {
-        const fullLink = `http://localhost:5173/register/${template.unique_slug}`
+        const fullLink = `${baseUrl}/register/${template.unique_slug}`
         window.open(fullLink, '_blank', 'noopener,noreferrer')
     }
 
@@ -190,10 +213,6 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                                         Published
                                                     </Badge>
                                                 )}
-
-                                                {/* <Badge variant="outline" className='text-xs bg-white border-gray-300'>
-                                                    Draft
-                                                </Badge> */}
                                             </div>
                                         </div>
 
@@ -225,10 +244,23 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                                             e.stopPropagation()
                                                             copyFullLink(template)
                                                         }}
-                                                        className='flex items-center gap-1.5 text-xs hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-all'
+                                                        className={`flex items-center gap-1.5 text-xs transition-all duration-300 ${
+                                                            copiedTemplateId === template.id
+                                                                ? 'bg-green-50 text-green-600 border-green-300 hover:bg-green-50 hover:text-green-600 hover:border-green-300'
+                                                                : 'hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300'
+                                                        }`}
                                                     >
-                                                        <Copy className='h-3.5 w-3.5' />
-                                                        Copy Form
+                                                        {copiedTemplateId === template.id ? (
+                                                            <>
+                                                                <Check className='h-3.5 w-3.5' />
+                                                                Copied!
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Copy className='h-3.5 w-3.5' />
+                                                                Copy Form
+                                                            </>
+                                                        )}
                                                     </Button>
                                                     <Button
                                                         size='sm'
