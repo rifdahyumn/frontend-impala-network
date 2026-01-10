@@ -2,8 +2,10 @@ import impalaService from "../services/impalaService"
 import { useState, useEffect, useCallback, useRef } from "react"
 import toast from "react-hot-toast"
 import { debounce } from 'lodash'
+import { useConfirmDialog } from "./useConfirmDialog"
 
 export const useImpala = (initialFilters = {}) => {
+    const confirmDialog = useConfirmDialog()
     const [participant, setParticipant] = useState([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
@@ -68,6 +70,7 @@ export const useImpala = (initialFilters = {}) => {
             
             const paginationData = result.metadata?.metadata?.pagination || {}
             setPagination(prev => ({
+                ...prev,
                 page: paginationData.page || page,
                 limit: paginationData.limit || pagination.limit,
                 total: paginationData.total || 0,
@@ -125,6 +128,7 @@ export const useImpala = (initialFilters = {}) => {
         filtersRef.current = updatedFilters
         
         setFilters(prev => ({
+            ...prev,
             search: updatedFilters.search,
             gender: updatedFilters.gender,
             category: updatedFilters.category
@@ -398,31 +402,11 @@ export const useImpala = (initialFilters = {}) => {
     }, [fetchImpala])
 
     return {
-        participant, 
-        loading, 
-        error, 
-        pagination, 
-        filters,
-        showAllOnSearch,
-        impalaStats, 
-        statsLoadingImpala,
-        fetchImpala,
-        updateFiltersAndFetch,
-        clearFilters,
-        clearSearch,
-        searchParticipants,
-        toggleShowAllOnSearch,
-        isShowAllMode: () => pagination.showingAllResults || false,
-        resetToPaginationMode,
-        getDisplayText,
-        refetch, 
-        handlePageChange, 
-        refreshData,
-        addParticipant, 
-        updateParticipant, 
-        deleteParticipant,
-        exportParticipants,
-        refetchStats: fetchImpalaStats
+        ...confirmDialog, participant, loading, error, pagination, filters, showAllOnSearch, impalaStats, 
+        statsLoadingImpala, fetchImpala, updateFiltersAndFetch, clearFilters, clearSearch, searchParticipants,
+        toggleShowAllOnSearch, isShowAllMode: () => pagination.showingAllResults || false, resetToPaginationMode,
+        getDisplayText, refetch, handlePageChange, refreshData, addParticipant, updateParticipant, deleteParticipant,
+        exportParticipants, refetchStats: fetchImpalaStats
     }
 }
 

@@ -4,33 +4,18 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import SearchBar from "../components/SearchFilter/SearchBar";
 import MemberTable from "../components/MemberTable/MemberTable";
 import Pagination from "../components/Pagination/Pagination";
-import { Loader2, Plus, Users, UserCheck, AlertCircle, Tag, X, Building2, Filter, User, Download, Upload, FileText, FileSpreadsheet } from "lucide-react"
+import { Loader2, Plus, Users, UserCheck, AlertCircle, X, Building2, Filter, Download, Upload, FileText, FileSpreadsheet, AlertTriangle } from "lucide-react"
 import { Button } from "../components/ui/button"
 import AddMemberSurakarta from "../components/AddButton/AddMemberSurakarta";
 import HeteroSoloContent from "../components/Content/HeteroSurakartaContent";
 import { useHeteroSolo } from "../hooks/useHeteroSolo";
 import toast from "react-hot-toast";
 import MemberStatsCards from "../MemberHetero/MemberStatsCard";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuGroup, 
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuCheckboxItem
-} from "../components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "../components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import * as XLSX from 'xlsx';
+import ConfirmModal from "../components/Content/ConfirmModal";
 
 const HeteroSurakarta = () => {
     const [selectedMember, setSelectedMember] = useState(null)
@@ -60,7 +45,9 @@ const HeteroSurakarta = () => {
     const [filteredMembers, setFilteredMembers] = useState([]);
     const [availableSpaces, setAvailableSpaces] = useState([]);
 
-    const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroSolo, updateMemberHeteroSolo, deleteMemberHeteroSolo } = useHeteroSolo()
+    const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroSolo, 
+        updateMemberHeteroSolo, deleteMemberHeteroSolo, showConfirm, handleConfirm, handleCancel,
+        isOpen: isConfirmOpen, config: confirmConfig } = useHeteroSolo()
 
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
@@ -793,19 +780,28 @@ const HeteroSurakarta = () => {
     const handleDeleteMember = async (memberId) => {
         if (!selectedMember) return
 
-        if (!window.confirm(`Are you sure want to delete ${selectedMember.full_name}?. This Action cannot be undone.`)) {
-            return
-        }
-
-        try {
-            await deleteMemberHeteroSolo(memberId)
-            setSelectedMember(null)
-            toast.success('Member deleted successfully')
-            fetchMembers(pagination.page);
-            
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch {
-            //
+        if (showConfirm && typeof showConfirm === 'function') {
+            showConfirm({
+                title: 'Delete Program',
+                message: `Are you sure yiu want to delete "${selectedMember.full_name}"? This action cannot be undone`,
+                type: 'danger',
+                confirmText: 'Delete',
+                cancelText: 'Cancel',
+                onConfirm: async () => {
+                    try {
+                        await deleteMemberHeteroSolo(memberId)
+                        setSelectedMember(null)
+                        toast.success('Member deleted successfully')
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } catch (error) {
+                        console.error('Error delete member:', error);
+                        toast.error(error.message || 'Failed to delete member');
+                    }
+                },
+                onCancel: () => {
+                    toast('Deletion cancelled', { icon: AlertTriangle });
+                }
+            })
         }
     };
 
@@ -1252,6 +1248,13 @@ const HeteroSurakarta = () => {
                         }}
                     />
                 </div>
+
+                <ConfirmModal 
+                    isOpen={isConfirmOpen}
+                    config={confirmConfig}
+                    onConfirm={handleConfirm}
+                    onCancel={handleCancel}
+                />
 
                 <AddMemberSurakarta 
                     isAddMemberModalOpen={isAddMemberModalOpen || isEditModalOpen} 

@@ -1,6 +1,6 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Loader2, Users, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
+import { Loader2, Users, RefreshCw, AlertCircle, CheckCircle, AlertTriangle } from "lucide-react";
 import { Button } from "../components/ui/button"
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import toast from "react-hot-toast";
@@ -14,6 +14,7 @@ import ProgramImportModal from '../components/Program/ProgramImportModal';
 import ProgramTable from '../components/Program/ProgramTable';
 import { formatInstructorsForExport, formatTagsForExport } from '../components/Program/ProgramHelper';
 import { getDisplayStatus, updateExpiredPrograms } from '../components/Program/ProgramStatus';
+import ConfirmModal from "../components/Content/ConfirmModal";
 
 const Program = () => {
     const [selectedProgram, setSelectedProgram] = useState(null)
@@ -31,33 +32,11 @@ const Program = () => {
     const [highlightDetail, setHighlightDetail] = useState(false);
     const programDetailRef = useRef(null);
     
-    const {
-        programs,
-        loading,
-        error,
-        pagination,
-        filters,
-        showAllOnSearch,
-        updateFiltersAndFetch,
-        searchPrograms,
-        toggleShowAllOnSearch,
-        clearFilters,
-        clearSearch,
-        isShowAllMode,
-        resetToPaginationMode,
-        fetchPrograms: hookFetchPrograms,
-        addProgram,
-        updateProgram,
-        deleteProgram,
-        refreshData,
-        isImporting,
-        importProgress,
-        importResult,
-        importFromFile,
-        downloadImportTemplate,
-        parseExcelFile,
-        resetImport
-    } = usePrograms();
+    const { programs, loading, error, pagination, filters, showAllOnSearch, updateFiltersAndFetch, searchPrograms,
+        toggleShowAllOnSearch, clearFilters, clearSearch, isShowAllMode, resetToPaginationMode, fetchPrograms: hookFetchPrograms,
+        addProgram, updateProgram, deleteProgram, refreshData, isImporting, importProgress, importResult,
+        importFromFile, downloadImportTemplate, parseExcelFile, resetImport, showConfirm, handleConfirm, handleCancel,
+        isOpen: isConfirmOpen, config: confirmConfig } = usePrograms();
 
     const [searchTerm, setSearchTerm] = useState("");
     const [availableCategories, setAvailableCategories] = useState([]);
@@ -129,19 +108,28 @@ const Program = () => {
     const handleDeleteProgram = async (programId) => {
         if (!selectedProgram) return;
 
-        if (!window.confirm(`Are you sure you want to delete ${selectedProgram.program_name}? This action cannot be undone.`)) {
-            return;
-        }
-
-        try {
-            await deleteProgram(programId);
-            setSelectedProgram(null);
-            toast.success('Program deleted successfully');
-
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (error) {
-            console.error('Error deleting program:', error);
-            toast.error(error.message || 'Failed to delete program');
+        if (showConfirm && typeof showConfirm === 'function') {
+            showConfirm({
+                title: 'Delete Program',
+                message: `Are you sure you want to delete "${selectedProgram.program_name}"? This action cannot be undone.`,
+                type: 'danger',
+                confirmText: 'Delete',
+                cancelText: 'Cancel',
+                onConfirm: async () => {
+                    try {
+                        await deleteProgram(programId);
+                        setSelectedProgram(null);
+                        toast.success('Program deleted successfully');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } catch (error) {
+                        console.error('Error deleting program:', error);
+                        toast.error(error.message || 'Failed to delete program');
+                    }
+                },
+                onCancel: () => {
+                    toast('Deletion cancelled', { icon: AlertTriangle });
+                }
+            })
         }
     };
 
@@ -313,6 +301,7 @@ const Program = () => {
                         onEdit={handleEditProgram}
                         onDelete={handleDeleteProgram}
                         detailTitle="Program Details"
+                        showConfirm={showConfirm}
                         onClientUpdated={() => hookFetchPrograms(pagination.page)}
                         onClientDeleted={() => {
                             hookFetchPrograms(pagination.page);
@@ -320,6 +309,13 @@ const Program = () => {
                         }}
                     />
                 </div>
+
+                <ConfirmModal
+                    isOpen={isConfirmOpen}
+                    config={confirmConfig}
+                    onConfirm={handleConfirm}
+                    onCancel={handleCancel}
+                />
 
                 <AddProgram
                     isAddProgramModalOpen={isAddProgramModalOpen || isEditModalOpen}

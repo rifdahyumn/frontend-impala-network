@@ -1,9 +1,12 @@
 import toast from "react-hot-toast"
 import programService from "../services/programService"
 import { useState, useEffect, useCallback, useRef } from "react"
-import { debounce, initial } from 'lodash'
+import { debounce } from 'lodash'
+import { useConfirmDialog } from "./useConfirmDialog"
 
 export const usePrograms = (initialFilters = {}) => {
+    const confirmDialog = useConfirmDialog()
+
     const [programs, setPrograms] = useState([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
@@ -549,7 +552,6 @@ export const usePrograms = (initialFilters = {}) => {
         try {
             setLoading(true)
             await programService.deleteProgram(programId)
-            toast.success('Program deleted successfully')
 
             setPrograms(prevPrograms =>
                 prevPrograms.filter(program => program.id !== programId)
@@ -561,6 +563,8 @@ export const usePrograms = (initialFilters = {}) => {
             }))
 
             await fetchAllStats()
+
+            return { success: true }
         } catch (error) {
             toast.error('Failed to delete program')
             throw error;
@@ -871,55 +875,13 @@ export const usePrograms = (initialFilters = {}) => {
         return await programService.getDistinctFilterValues(field)
     }, [])
 
-    return {
-        programs, 
-        loading, 
-        error, 
-        pagination, 
-        filters,
-        showAllOnSearch,
-        programStats, 
-        priceStats,
-        statsLoading,
-        
-        isImporting,
-        importProgress,
-        importResult,
-        importError,
-        
-        fetchPrograms: handlePageChange,
-        updateFiltersAndFetch,
-        clearFilters,
-        clearSearch,
-        searchPrograms,
-        toggleShowAllOnSearch,
-        isShowAllMode,
-        resetToPaginationMode,
-        getDisplayText,
-        refetch, 
-        handlePageChange, 
-        refreshData,
-        addProgram, 
-        updateProgram, 
-        deleteProgram,
-        exportPrograms,
-        refetchStats: fetchAllStats,
-        fetchProgramsStats,
-        fetchPriceStats,
-        fetchAllStats,
-        getAvailableFilters,
-        getSearchSuggestions,
-        getDistinctFilterValues,
-        allPrograms,
-        allProgramsLoading,
-        fetchAllPrograms,
-        refreshAllData,
-        
-        bulkImport,
-        parseExcelFile,
-        validateImportData,
-        importFromFile,
-        downloadImportTemplate,
-        resetImport
+    return { ...confirmDialog, programs, loading, error, pagination, filters, showAllOnSearch, programStats, priceStats,
+        statsLoading, isImporting, importProgress, importResult, importError, fetchPrograms: handlePageChange,
+        updateFiltersAndFetch, clearFilters, clearSearch, searchPrograms, toggleShowAllOnSearch, isShowAllMode,
+        resetToPaginationMode, getDisplayText, refetch, handlePageChange, refreshData, addProgram, 
+        updateProgram, deleteProgram, exportPrograms, refetchStats: fetchAllStats, fetchProgramsStats,
+        fetchPriceStats, fetchAllStats, getAvailableFilters, getSearchSuggestions, getDistinctFilterValues,
+        allPrograms, allProgramsLoading, fetchAllPrograms, refreshAllData, bulkImport, parseExcelFile,
+        validateImportData, importFromFile, downloadImportTemplate, resetImport
     }
 }

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, Loader2, DollarSign, XCircle, CheckCircle } from "lucide-react";
+import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, Loader2, DollarSign, XCircle, CheckCircle, AlertTriangle } from "lucide-react";
 import toast from 'react-hot-toast';
 
-const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal, onClientEdited, onStatusChange }) => {
+const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal, onClientEdited, onStatusChange, showConfirm, ConfirmModal }) => {
     const [activeCategory, setActiveCategory] = useState('Personal Information');
     const [deleteLoading, setDeleteLoading] = useState(false)
     const [statusLoading, setStatusLoading] = useState(false)
@@ -98,18 +98,32 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
     }
 
     const handleDelete = async () => {
+        if (!selectedMember) return
 
-        setDeleteLoading(true)
-        try {
-            if(onDelete) {
-                await onDelete(selectedMember.id)
+        showConfirm({
+            title: 'Delete',
+            message: `Are you sure you want to delete ${selectedMember.full_name}? This action cannot be undone.`,
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            type: 'danger',
+            onConfirm: async () => {
+                setDeleteLoading(true)
+                try {
+                    if (onDelete) {
+                        await onDelete(selectedMember.id)
+                    }
+                    toast.success('Client deleted successfully')
+                } catch (error) {
+                    console.error('Error Deleting client:', error)
+                    toast.error(error.message || 'Failed to delete client')
+                } finally {
+                    setDeleteLoading(false)
+                }
+            },
+            onCancel: () => {
+                toast('Detection cancelled', { icon: AlertTriangle })
             }
-        } catch (error) {
-            console.error('Error deleting client:', error)
-            toast.error(error.message || 'Failed to delete client')
-        } finally {
-            setDeleteLoading(false)
-        }
+        })
     }
 
     const handleStatusChange = async () => {
@@ -175,94 +189,98 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
     const isActive = selectedMember?.status === 'Active'
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>{detailTitle}</CardTitle>
-            </CardHeader>
+        <>
+            <Card>
+                <CardHeader>
+                    <CardTitle>{detailTitle}</CardTitle>
+                </CardHeader>
 
-            <CardContent>
-                {selectedMember ? (
-                    <div className='space-y-6'>
-                        <div className='flex flex-wrap items-center justify-between gap-4 mb-4'>
-                            <div className='flex flex-wrap gap-2 mb-4'>
-                                {detailFields.map((category, index) => {
-                                    const CategoryIcon = category.icon;
+                <CardContent>
+                    {selectedMember ? (
+                        <div className='space-y-6'>
+                            <div className='flex flex-wrap items-center justify-between gap-4 mb-4'>
+                                <div className='flex flex-wrap gap-2 mb-4'>
+                                    {detailFields.map((category, index) => {
+                                        const CategoryIcon = category.icon;
 
-                                    return (
-                                        <Button
-                                            key={index}
-                                            variant={activeCategory === category.category ? 'default' : 'outline'}
+                                        return (
+                                            <Button
+                                                key={index}
+                                                variant={activeCategory === category.category ? 'default' : 'outline'}
+                                                size="sm"
+                                                className="flex items-center gap-2"
+                                                onClick={() => setActiveCategory(category.category)}
+                                            >
+                                                <CategoryIcon className='h-4 w-4' />
+                                                {category.category}
+                                            </Button>
+                                        )
+                                    })}
+                                </div>
+
+                                {selectedMember && (
+                                    <div className="flex gap-2">
+                                        <Button 
+                                            variant="outline" 
                                             size="sm"
                                             className="flex items-center gap-2"
-                                            onClick={() => setActiveCategory(category.category)}
+                                            onClick={handleEdit}
                                         >
-                                            <CategoryIcon className='h-4 w-4' />
-                                            {category.category}
+                                            <Edit className="h-4 w-4" />
+                                            Edit
                                         </Button>
-                                    )
-                                })}
+
+                                        <Button
+                                            variant={isActive ? "outline" : "default"}
+                                            size="sm"
+                                            className={`flex items-center gap-2 ${
+                                                isActive
+                                                    ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-300'
+                                                    : 'bg-green-600 hover:bg-green-700 text-white'
+                                            }`}
+                                            onClick={handleStatusChange}
+                                            disabled={statusLoading}
+                                        >
+                                            {statusLoading ? (
+                                                <Loader2 className='h-4 w-4 animate-spin' />
+                                            ) : isActive ? (
+                                                <XCircle className='h-4 w-4' />
+                                            ) : (
+                                                <CheckCircle className='h-4 w-4' />
+                                            )}
+                                            {statusLoading ? 'Updating...' : (isActive ? 'Set Inactive' : 'Set Active')}
+                                        </Button>
+
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            onClick={handleDelete}
+                                            disabled={deleteLoading}
+                                        >
+                                            {deleteLoading ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="h-4 w-4" />
+                                            )}
+                                            {deleteLoading ? 'Deleting...' : 'Delete'}
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
 
-                            {selectedMember && (
-                                <div className="flex gap-2">
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        className="flex items-center gap-2"
-                                        onClick={handleEdit}
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                        Edit
-                                    </Button>
-
-                                    <Button
-                                        variant={isActive ? "outline" : "default"}
-                                        size="sm"
-                                        className={`flex items-center gap-2 ${
-                                            isActive
-                                                ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-300'
-                                                : 'bg-green-600 hover:bg-green-700 text-white'
-                                        }`}
-                                        onClick={handleStatusChange}
-                                        disabled={statusLoading}
-                                    >
-                                        {statusLoading ? (
-                                            <Loader2 className='h-4 w-4 animate-spin' />
-                                        ) : isActive ? (
-                                            <XCircle className='h-4 w-4' />
-                                        ) : (
-                                            <CheckCircle className='h-4 w-4' />
-                                        )}
-                                        {statusLoading ? 'Updating...' : (isActive ? 'Set Inactive' : 'Set Active')}
-                                    </Button>
-
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        onClick={handleDelete}
-                                        disabled={deleteLoading}
-                                    >
-                                        {deleteLoading ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Trash2 className="h-4 w-4" />
-                                        )}
-                                        {deleteLoading ? 'Deleting...' : 'Delete'}
-                                    </Button>
-                                </div>
-                            )}
+                            <ActiveCategoryContent />
                         </div>
+                    ) : (
+                        <div className='text-center py-4 text-gray-500'>
+                            <p>Select a client to view details</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
-                        <ActiveCategoryContent />
-                    </div>
-                ) : (
-                    <div className='text-center py-4 text-gray-500'>
-                        <p>Select a client to view details</p>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+            {ConfirmModal && ConfirmModal}
+        </>
     )
 
 }

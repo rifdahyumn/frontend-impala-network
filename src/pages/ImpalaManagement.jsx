@@ -1,6 +1,6 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X, RefreshCw, Download, Upload, FileText, FileSpreadsheet, CheckSquare } from "lucide-react";
+import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X, RefreshCw, Download, Upload, FileText, FileSpreadsheet, CheckSquare, AlertTriangle } from "lucide-react";
 import { Button } from "../components/ui/button"
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "../components/ui/input";
 import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx'
+import ConfirmModal from "../components/Content/ConfirmModal";
 
 const ImpalaManagement = () => {
     const [selectedParticipant, setSelectedParticipant] = useState(null);
@@ -32,7 +33,10 @@ const ImpalaManagement = () => {
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef(null);
 
-    const { participant, loading, error, pagination, handlePageChange, refreshData } = useImpala();
+    const { participant, loading, error, pagination, handlePageChange, refreshData, 
+            showConfirm, handleConfirm, handleCancel, isOpen: isConfirmOpen, config: confirmConfig,
+            deleteParticipant
+     } = useImpala();
 
     const handleSelectParticipant = useCallback((participant) => {
         setSelectedParticipant(participant);
@@ -604,13 +608,31 @@ const ImpalaManagement = () => {
         }
     };
 
-    const handleDelete = () => {
-        if (selectedParticipant) {
-            if (window.confirm(`Are you sure you want to delete ${selectedParticipant.full_name}?`)) {
-                setSelectedParticipant(null);
-                toast.success('Participant deleted successfully');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
+    const handleDelete = async () => {
+        if (!selectedParticipant) return
+
+        if (showConfirm && typeof showConfirm === 'function') {
+            showConfirm({
+                title: 'Delete Program',
+                message: `Are you sure you want to delete "${selectedParticipant.full_name}"? This action cannot be undone.`,
+                type: 'danger',
+                confirmText: 'Delete',
+                cancelText: 'Cancel',
+                onConfirm: async () => {
+                    try {
+                        await deleteParticipant(selectedParticipant.id);
+                        setSelectedParticipant(null);
+                        toast.success('Program deleted successfully');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } catch (error) {
+                        console.error('Error deleting program:', error);
+                        toast.error(error.message || 'Failed to delete program');
+                    }
+                },
+                onCancel: () => {
+                    toast('Deletion cancelled', { icon: AlertTriangle });
+                }
+            })
         }
     };
 
@@ -1204,6 +1226,13 @@ const ImpalaManagement = () => {
                         detailTitle={tableConfig.detailTitle}
                     />
                 </div>
+
+                <ConfirmModal 
+                    isOpen={isConfirmOpen}
+                    config={confirmConfig}
+                    onConfirm={handleConfirm}
+                    onCancel={handleCancel}
+                />
 
                 <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
                     <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl w-[95vw] max-w-[800px]">

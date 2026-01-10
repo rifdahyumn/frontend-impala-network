@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 import { Edit, Trash2, Building, User, MapPin, Calendar, DollarSign, Share2Icon, ExternalLink } from "lucide-react";
 import toast from 'react-hot-toast';
 
-const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModal, onProgramEdited }) => {
+const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModal, onProgramEdited, showConfirm }) => {
     const [activeCategory, setActiveCategory] = useState('Program Information');
     const [deleteLoading, setDeleteLoading] = useState(false)
 
@@ -86,18 +86,18 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
     }
 
     const handleDelete = async () => {
-        setDeleteLoading(true)
+        if (!selectedProgram) return;
+        
+        setDeleteLoading(true);
+        
         try {
-            if (onDelete) {
-                await onDelete(selectedProgram.id)
-            }
+            await onDelete(selectedProgram.id);
         } catch (error) {
-            console.error('Error deleteing program: ', error)
-            toast.error(error.message || 'Failed to delete program')
+            console.error('Error in handleDelete:', error);
         } finally {
-            setDeleteLoading(false)
+            setDeleteLoading(false);
         }
-    }
+    };
 
     const ActiveCategoryContent = () => {
         const activeCategoryData = getActiveCategoryData()
