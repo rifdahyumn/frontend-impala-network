@@ -680,8 +680,8 @@ const ImpalaManagement = () => {
 
     const getGenderLabel = (genderValue) => {
         if (!genderValue) return "";
-        if (genderValue.toLowerCase() === 'laki-laki') return '👨 Laki-laki';
-        if (genderValue.toLowerCase() === 'perempuan') return '👩 Perempuan';
+        if (genderValue.toLowerCase() === 'laki-laki') return 'Laki-laki';
+        if (genderValue.toLowerCase() === 'perempuan') return 'Perempuan';
         return genderValue;
     };
 
@@ -1075,7 +1075,7 @@ const ImpalaManagement = () => {
                                 
                                 {searchTerm && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        <span>🔍 "{searchTerm}"</span>
+                                        <span>"{searchTerm}"</span>
                                         <button 
                                             onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"

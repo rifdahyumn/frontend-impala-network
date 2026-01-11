@@ -40,6 +40,7 @@ const HeteroSurakartaContent = ({ selectedMember, onOpenEditModal, onDelete, det
                 { key: 'phone', label: 'Phone Number', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
                 { key: 'date_of_birth', label: 'Date of Birth', icon: Calendar },
+                { key: 'age', label: 'Age', icon: Calendar },
                 { key: 'education', label: 'Last Education', icon: BookOpen },
                 { key: 'company', label: 'Company/Organization', icon: Building }
             ]

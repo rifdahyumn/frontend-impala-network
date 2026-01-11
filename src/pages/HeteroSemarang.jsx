@@ -412,9 +412,10 @@ const HeteroSemarang = () => {
             const exportData = filteredMembers.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
+                'NIK': member.nik || '-',
                 'Email': member.email || '-',
-                'Gender': member.gender || '-',
                 'Phone': member.phone || '-',
+                'Gender': member.gender || '-',
                 'Space': member.space || '-',
                 'Company': member.company || '-',
                 'Duration': member.duration || '-',
@@ -469,25 +470,6 @@ const HeteroSemarang = () => {
                 XLSX.writeFile(wb, fileName);
                 
                 toast.success(`Exported ${exportData.length} members to Excel`);
-            } else if (format === 'csv') {
-                const csvContent = [
-                    Object.keys(exportData[0]).join(','),
-                    ...exportData.map(row => Object.values(row).join(','))
-                ].join('\n');
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                const url = URL.createObjectURL(blob);
-                
-                link.setAttribute("href", url);
-                link.setAttribute("download", `hetero_semarang_members_export_${new Date().getTime()}.csv`);
-                link.style.visibility = 'hidden';
-                
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                toast.success(`Exported ${exportData.length} members to CSV`);
             }
         } catch (error) {
             console.error('Export failed:', error);
@@ -1046,6 +1028,7 @@ const HeteroSemarang = () => {
                                             variant="outline"
                                             className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
                                             disabled={loading || filteredMembers.length === 0 || isExporting}
+                                            onClick={() => handleExport('excel')}
                                         >
                                             {isExporting ? (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1055,24 +1038,7 @@ const HeteroSemarang = () => {
                                             Export
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-48">
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('excel')}
-                                            disabled={filteredMembers.length === 0 || isExporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileSpreadsheet className="h-4 w-4" />
-                                            Export as Excel
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('csv')}
-                                            disabled={filteredMembers.length === 0 || isExporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileText className="h-4 w-4" />
-                                            Export as CSV
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
+                                   
                                 </DropdownMenu>
                             </div>
                         </div>
