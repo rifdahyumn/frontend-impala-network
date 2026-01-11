@@ -4,28 +4,7 @@ import { TrendingUp, Users, UserCheck, TrendingDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const MemberStatsCards = ({ statsData }) => {
-    const defaultStats = [
-        {
-            title: "Total Members",
-            value: "0",
-            percentage: "0%",
-            trend: "up",
-            icon: Users,
-            color: "blue",
-            description: "0% Growth"
-        },
-        {
-            title: "Active Members",
-            value: "0",
-            percentage: "0%",
-            trend: "up",
-            icon: UserCheck,
-            color: "green",
-            description: "0% of total"
-        }
-    ];
-
-    const stats = statsData || defaultStats;
+    const stats = statsData;
 
     const getColorClasses = (color) => {
         const colors = {

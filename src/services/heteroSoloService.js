@@ -96,6 +96,32 @@ class HeteroSoloService {
             throw error
         }
     }
+
+    async fetchMemberStats() {
+        try {
+            const response = await fetch(`${this.baseURL}/hetero/solo/stats`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            return await this.handleResponse(response)
+        } catch (error) {
+            console.error('Error fetching member stats', error)
+
+            return {
+                success: false,
+                data: {
+                    totalMembers: 0,
+                    activeMembers: 0,
+                    growthPercentage: '0%',
+                    activePercentage: '0%',
+                    isFallback: true
+                }
+            }
+        }
+    }
 }
 
 export default new HeteroSoloService();

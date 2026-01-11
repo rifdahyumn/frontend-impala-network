@@ -54,7 +54,7 @@ const HeteroSemarang = () => {
 
     const { members, loading, error, pagination, fetchMembers, addMemberHeteroSemarang, 
         updateMemberHeteroSemarang, deleteMemberHeteroSemarang, showConfirm, handleConfirm, handleCancel,
-        isOpen: isConfirmOpen, config: confirmConfig } = useHeteroSemarang()
+        isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroSemarang()
 
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
@@ -419,9 +419,10 @@ const HeteroSemarang = () => {
             const exportData = filteredMembers.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
+                'NIK': member.nik || '-',
                 'Email': member.email || '-',
-                'Gender': member.gender || '-',
                 'Phone': member.phone || '-',
+                'Gender': member.gender || '-',
                 'Space': member.space || '-',
                 'Company': member.company || '-',
                 'Duration': member.duration || '-',
@@ -476,25 +477,6 @@ const HeteroSemarang = () => {
                 XLSX.writeFile(wb, fileName);
                 
                 toast.success(`Exported ${exportData.length} members to Excel`);
-            } else if (format === 'csv') {
-                const csvContent = [
-                    Object.keys(exportData[0]).join(','),
-                    ...exportData.map(row => Object.values(row).join(','))
-                ].join('\n');
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                const url = URL.createObjectURL(blob);
-                
-                link.setAttribute("href", url);
-                link.setAttribute("download", `hetero_semarang_members_export_${new Date().getTime()}.csv`);
-                link.style.visibility = 'hidden';
-                
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                toast.success(`Exported ${exportData.length} members to CSV`);
             }
         } catch (error) {
             console.error('Export failed:', error);
@@ -758,36 +740,75 @@ const HeteroSemarang = () => {
     }, [searchTerm, filters]);
 
     const memberStats = useMemo(() => {
-        const totalMembers = filteredMembers.length;
-        const activeMembers = filteredMembers.filter(member => member.status === 'active').length;
-        
-        const activePercentage = totalMembers > 0 ? ((activeMembers / totalMembers) * 100).toFixed(1) : "0";
+        if (statsLoading) {
+            return [
+                {
+                    title: "Total Members",
+                    value: "Loading...",
+                    percentage: "0%",
+                    trend: "neutral",
+                    icon: Users,
+                    color: "blue",
+                    description: "Loading..."
+                },
+                {
+                    title: "Active Members",
+                    value: "Loading...",
+                    percentage: "0%",
+                    trend: "neutral",
+                    icon: UserCheck,
+                    color: "green",
+                    description: "Loading..."
+                }
+            ]
+        }
 
         return [
             {
+<<<<<<< HEAD
                 title: "Total Members",
                 value: totalMembers.toString(),
                 subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
                 percentage: `${totalMembers > 0 ? "12.5" : "0"}%`,
                 trend: totalMembers > 0 ? "up" : "neutral",
                 period: "Last Month",
+=======
+                title: 'Total Members',
+                value: stats.totalMembers.toString(),
+                subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
+                percentage: `${stats.growthPercentage}%`,
+                trend: parseFloat(stats.growthPercentage) > 0 ? "up" :
+                        parseFloat(stats.growthPercentage) < 0 ? "down" : "neutral",
+>>>>>>> 274c0e8c4429aa80d3b4a30f05cf7db065a44f19
                 icon: Users,
                 color: "blue",
-                description: `${totalMembers > 0 ? "12.5" : "0"}% Growth`
+                description: `${stats.growthPercentage}% growth`
             },
             {
                 title: "Active Members",
+<<<<<<< HEAD
                 value: activeMembers.toString(),
                 subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
                 percentage: `${activePercentage}%`,
                 trend: activeMembers > 0 ? "up" : "down",
                 period: "Last Month",
+=======
+                value: stats.activeMembers.toString(),
+                subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
+                percentage: `${stats.activePercentage}%`,
+                trend: stats.activeMembers > 0 ? "up" : "down",
+>>>>>>> 274c0e8c4429aa80d3b4a30f05cf7db065a44f19
                 icon: UserCheck,
                 color: "green",
-                description: `${activePercentage}% of total`
+                description: `${stats.activePercentage}% of total`
             }
+<<<<<<< HEAD
         ];
     }, [filteredMembers, filters.space, getSpaceLabel]);
+=======
+        ]
+    }, [stats, statsLoading, activeFilters.space, getSpaceLabel])
+>>>>>>> 274c0e8c4429aa80d3b4a30f05cf7db065a44f19
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
@@ -829,7 +850,8 @@ const HeteroSemarang = () => {
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
-            //
+            console.error('Error adding member:', error);
+            toast.error('Failed to add member');
         }
     }
 
@@ -872,11 +894,14 @@ const HeteroSemarang = () => {
         }
     }, [members, selectedMember?.id])
 
+<<<<<<< HEAD
     const handleRefresh = () => {
         fetchMembers(pagination.page)
         handleClearAllFilters();
     }
 
+=======
+>>>>>>> 274c0e8c4429aa80d3b4a30f05cf7db065a44f19
     const handlePageChange = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' })
         fetchMembers(page)
@@ -929,26 +954,6 @@ const HeteroSemarang = () => {
                         )}
                     </CardHeader>
                     <CardContent>
-                        {error && (
-                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
-                                <div className="flex items-start gap-3">
-                                    <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1">
-                                        <h3 className="text-sm font-semibold text-red-800">Failed to load members</h3>
-                                        <p className="text-sm text-red-600 mt-1">{error}</p>
-                                    </div>
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        onClick={handleRefresh}
-                                        className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
-                                    >
-                                        Reload Page
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
                                 <div className="w-full sm:w-auto min-w-[250px]">
@@ -1188,6 +1193,7 @@ const HeteroSemarang = () => {
                                             variant="outline"
                                             className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
                                             disabled={loading || filteredMembers.length === 0 || isExporting}
+                                            onClick={() => handleExport('excel')}
                                         >
                                             {isExporting ? (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1197,24 +1203,7 @@ const HeteroSemarang = () => {
                                             Export
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-48">
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('excel')}
-                                            disabled={filteredMembers.length === 0 || isExporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileSpreadsheet className="h-4 w-4" />
-                                            Export as Excel
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('csv')}
-                                            disabled={filteredMembers.length === 0 || isExporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileText className="h-4 w-4" />
-                                            Export as CSV
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
+                                   
                                 </DropdownMenu>
                             </div>
                         </div>

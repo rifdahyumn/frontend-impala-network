@@ -226,6 +226,34 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
 
                 return value
 
+            case 'Gender': {
+                if (!value) return '-'
+
+                const genderMap = {
+                    'laki-laki': 'Male',
+                    'Laki-laki': 'Male',
+                    'LAKI-LAKI': 'Male',
+                    'laki': 'Male',
+                    'Laki': 'Male',
+                    'pria': 'Male',
+                    'Pria': 'Male',
+                    'perempuan': 'Female',
+                    'Perempuan': 'Female',
+                    'PEREMPUAN': 'Female',
+                    'wanita': 'Female',
+                    'Wanita': 'Female',
+                    'male': 'Male',
+                    'Male': 'Male',
+                    'MALE': 'Male',
+                    'female': 'Female',
+                    'Female': 'Female',
+                    'FEMALE': 'Female'
+                }
+
+                const normalizedValue = value.toString().trim()
+                return genderMap[normalizedValue] || value
+            }
+
             default:
                 return value || '-';
         }
