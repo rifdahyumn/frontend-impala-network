@@ -1,6 +1,6 @@
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X, RefreshCw, Download, Upload, FileText, FileSpreadsheet, CheckSquare, AlertTriangle } from "lucide-react";
+import { Plus, Loader2, Users, AlertCircle, Tag, Filter, X, RefreshCw, Download, Upload, FileText, FileSpreadsheet, CheckSquare, AlertTriangle, Check } from "lucide-react";
 import { Button } from "../components/ui/button"
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import SearchBar from '../components/SearchFilter/SearchBar';
@@ -21,7 +21,7 @@ const ImpalaManagement = () => {
     const participantDetailRef = useRef(null);
     
     const [searchTerm, setSearchTerm] = useState("");
-    const [activeFilters, setActiveFilters] = useState({
+    const [filters, setFilters] = useState({
         gender: null,
         category: null,
     });
@@ -32,6 +32,13 @@ const ImpalaManagement = () => {
     const [importFile, setImportFile] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef(null);
+
+    // State untuk filter dropdown
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [tempFilters, setTempFilters] = useState({
+        gender: filters.gender || '',
+        category: filters.category || 'all'
+    });
 
     const { participant, loading, error, pagination, handlePageChange, refreshData, 
             showConfirm, handleConfirm, handleCancel, isOpen: isConfirmOpen, config: confirmConfig,
@@ -516,19 +523,18 @@ const ImpalaManagement = () => {
             );
         }
         
-        if (activeFilters.gender) {
+        if (filters.gender) {
             result = result.filter(participant => {
                 const participantGender = participant.gender?.toLowerCase();
-                return activeFilters.gender === 'all' || participantGender === activeFilters.gender;
+                return participantGender === filters.gender.toLowerCase();
             });
         }
         
-        if (activeFilters.category && activeFilters.category !== 'all') {
+        if (filters.category && filters.category !== 'all') {
             result = result.filter(participant => {
                 const participantCategory = participant.category;
                 if (!participantCategory) return false;
-                
-                return participantCategory.toLowerCase() === activeFilters.category.toLowerCase();
+                return participantCategory.toLowerCase() === filters.category.toLowerCase();
             });
         }
         
@@ -539,44 +545,114 @@ const ImpalaManagement = () => {
         setSearchTerm(term);
         const lowerTerm = term.toLowerCase();
         if (lowerTerm === 'perempuan' || lowerTerm === 'laki-laki') {
-            setActiveFilters(prev => ({
+            setFilters(prev => ({
                 ...prev,
                 gender: lowerTerm
             }));
         }
     };
 
-    const handleGenderFilterChange = (gender) => {
-        setActiveFilters(prev => ({
-            ...prev,
-            gender: prev.gender === gender ? null : gender
+    // Handler untuk filter sementara
+    const handleTempGenderChange = (gender) => {
+        setTempFilters(prev => ({ 
+            ...prev, 
+            gender: prev.gender === gender ? '' : gender 
         }));
     };
 
-    const handleCategoryFilterChange = (category) => {
-        setActiveFilters(prev => ({
-            ...prev,
-            category: prev.category === category ? null : category
-        }));
+    const handleTempCategoryChange = (category) => {
+        setTempFilters(prev => ({ ...prev, category }));
     };
 
-    const clearAllFilters = useCallback(() => {
+    // Handler untuk apply filter
+    const handleApplyFilters = () => {
+        setFilters({
+            gender: tempFilters.gender || null,
+            category: tempFilters.category || null
+        });
+        setIsFilterOpen(false);
+    };
+
+    // Handler untuk cancel filter
+    const handleCancelFilters = () => {
+        setTempFilters({
+            gender: filters.gender || '',
+            category: filters.category || 'all'
+        });
+        setIsFilterOpen(false);
+    };
+
+    // Handler untuk clear semua filter sementara
+    const handleClearAllTempFilters = () => {
+        setTempFilters({
+            gender: '',
+            category: 'all'
+        });
+    };
+
+    // Handler untuk clear semua filter permanen
+    const handleClearAllFilters = () => {
         setSearchTerm("");
-        setActiveFilters({
+        setFilters({
             gender: null,
             category: null,
         });
-    });
+    };
 
+    const getActiveFiltersCount = () => {
+        let count = 0;
+        if (filters.gender) count++;
+        if (filters.category && filters.category !== 'all') count++;
+        return count;
+    };
+
+    // Handler untuk menghitung filter sementara yang aktif
+    const getTempActiveFiltersCount = () => {
+        let count = 0;
+        if (tempFilters.gender) count++;
+        if (tempFilters.category && tempFilters.category !== 'all') count++;
+        return count;
+    };
+
+    const getTotalActiveCriteria = () => {
+        let count = 0;
+        if (searchTerm) count++;
+        if (filters.gender) count++;
+        if (filters.category && filters.category !== 'all') count++;
+        return count;
+    };
+
+    // Fungsi clear filter spesifik
     const clearFilter = (filterType) => {
-        if (filterType === 'gender') {
-            setActiveFilters(prev => ({ ...prev, gender: null }));
-        } else if (filterType === 'category') {
-            setActiveFilters(prev => ({ ...prev, category: null }));
-        } else if (filterType === 'search') {
+        if (filterType === 'search') {
             setSearchTerm("");
+        } else if (filterType === 'gender') {
+            setFilters(prev => ({ ...prev, gender: null }));
+        } else if (filterType === 'category') {
+            setFilters(prev => ({ ...prev, category: null }));
         }
     };
+
+    const getCategoryLabel = (categoryValue) => {
+        if (!categoryValue || categoryValue === "all") return "All Categories";
+        const category = availableCategories.find(c => c.value === categoryValue);
+        return category ? category.original : categoryValue;
+    };
+
+    const getGenderLabel = (genderValue) => {
+        if (!genderValue) return "";
+        if (genderValue.toLowerCase() === 'laki-laki') return '👨 Laki-laki';
+        if (genderValue.toLowerCase() === 'perempuan') return '👩 Perempuan';
+        return genderValue;
+    };
+
+    // Update tempFilters ketika filters berubah
+    useEffect(() => {
+        setTempFilters({
+            gender: filters.gender || '',
+            category: filters.category || 'all'
+        });
+    }, [filters]);
 
     useEffect(() => {
         if (participant.length > 0) {
@@ -600,7 +676,7 @@ const ImpalaManagement = () => {
 
     useEffect(() => {
         applyAllFilters();
-    }, [searchTerm, activeFilters]);
+    }, [searchTerm, filters]);
 
     const handleEdit = () => {
         if (selectedParticipant) {
@@ -649,41 +725,13 @@ const ImpalaManagement = () => {
 
     const handleRefresh = useCallback(() => {
         refreshData();
-        clearAllFilters();
-    }, [refreshData, clearAllFilters]);
+        handleClearAllFilters();
+    }, [refreshData, handleClearAllFilters]);
 
     const handlePageChangeModified = useCallback((page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         handlePageChange(page);
     }, [handlePageChange]);
-
-    const getActiveFiltersCount = () => {
-        let count = 0;
-        if (activeFilters.gender) count++;
-        if (activeFilters.category) count++;
-        return count;
-    };
-
-    const getTotalActiveCriteria = () => {
-        let count = 0;
-        if (searchTerm) count++;
-        if (activeFilters.gender) count++;
-        if (activeFilters.category) count++;
-        return count;
-    };
-
-    const getCategoryLabel = (categoryValue) => {
-        if (!categoryValue || categoryValue === "all") return "All Categories";
-        const category = availableCategories.find(c => c.value === categoryValue);
-        return category ? category.original : categoryValue;
-    };
-
-    const getGenderLabel = (genderValue) => {
-        if (!genderValue) return "";
-        if (genderValue.toLowerCase() === 'laki-laki') return '👨 Laki-laki';
-        if (genderValue.toLowerCase() === 'perempuan') return '👩 Perempuan';
-        return genderValue;
-    };
 
     const tableConfig = {
         headers: ['No', 'Full Name', 'Email', 'Gender', 'Program Name', 'Category', 'Entity', 'Action'],
@@ -935,91 +983,188 @@ const ImpalaManagement = () => {
                                     />
                                 </div>
                                 
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button 
-                                            variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
-                                            className={`flex items-center gap-2 transition-all duration-200 ${
-                                                getActiveFiltersCount() > 0 
-                                                    ? "bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-amber-500" 
-                                                    : "text-gray-700 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 border-gray-300"
-                                            }`}
-                                        >
-                                            <Filter className={`h-4 w-4 ${
-                                                getActiveFiltersCount() > 0 ? "text-white" : "text-gray-500"
-                                            }`} />
-                                            Filter
-                                            {getActiveFiltersCount() > 0 && (
-                                                <span className="ml-1 bg-white text-amber-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                                                    {getActiveFiltersCount()}
-                                                </span>
-                                            )}
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-56 shadow-lg border border-gray-200">
-                                        <DropdownMenuLabel className="text-gray-700 font-semibold">Filter Options</DropdownMenuLabel>
-                                        <DropdownMenuSeparator />
-                                        
-                                        <DropdownMenuGroup>
-                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
-                                                Gender
-                                            </DropdownMenuLabel>
-                                            {genderOptions.map((option) => (
-                                                <DropdownMenuCheckboxItem
-                                                    key={option.value}
-                                                    checked={activeFilters.gender?.toLowerCase() === option.value.toLowerCase()}
-                                                    onCheckedChange={() => handleGenderFilterChange(option.value)}
-                                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50"
-                                                >
-                                                    {option.label}
-                                                </DropdownMenuCheckboxItem>
-                                            ))}
-                                        </DropdownMenuGroup>
-                                        
-                                        <DropdownMenuSeparator />
-                                        
-                                        <DropdownMenuGroup>
-                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
-                                                Category
-                                            </DropdownMenuLabel>
-                                            <div className="max-h-48 overflow-y-auto">
-                                                <DropdownMenuCheckboxItem
-                                                    checked={activeFilters.category === 'all'}
-                                                    onCheckedChange={() => handleCategoryFilterChange('all')}
-                                                    className="cursor-pointer hover:bg-gray-50"
-                                                >
-                                                    All Categories
-                                                </DropdownMenuCheckboxItem>
-                                                
-                                                {availableCategories.map((category) => (
-                                                    <DropdownMenuCheckboxItem
-                                                        key={category.value}
-                                                        checked={activeFilters.category?.toLowerCase() === category.value.toLowerCase()}
-                                                        onCheckedChange={() => handleCategoryFilterChange(category.value)}
-                                                        className="cursor-pointer hover:bg-gray-50"
-                                                    >
-                                                        {category.label}
-                                                    </DropdownMenuCheckboxItem>
-                                                ))}
+                                {/* Custom Filter Dropdown - Versi baru seperti ProgramFilter.jsx */}
+                                <div className="relative">
+                                    <Button 
+                                        variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
+                                        className={`flex items-center gap-2 transition-all duration-200 ${
+                                            getActiveFiltersCount() > 0 
+                                                ? "bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-amber-500" 
+                                                : "text-gray-700 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 border-gray-300"
+                                        }`}
+                                        onClick={() => setIsFilterOpen(!isFilterOpen)}
+                                    >
+                                        <Filter className={`h-4 w-4 ${
+                                            getActiveFiltersCount() > 0 ? "text-white" : "text-gray-500"
+                                        }`} />
+                                        Filter
+                                        {getActiveFiltersCount() > 0 && (
+                                            <span className="ml-1 bg-white text-amber-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                                {getActiveFiltersCount()}
+                                            </span>
+                                        )}
+                                    </Button>
+
+                                    {isFilterOpen && (
+                                        <div className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]">
+                                            <div className="p-3 border-b">
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="font-bold text-gray-900 text-xs">Filter Options</h3>
+                                                    <span className="text-xs text-gray-500">
+                                                        {getTempActiveFiltersCount()} filter{getTempActiveFiltersCount() !== 1 ? 's' : ''} selected
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </DropdownMenuGroup>
-                                        
-                                        <DropdownMenuSeparator />
-                                        
-                                        <DropdownMenuItem 
-                                            onClick={() => {
-                                                setActiveFilters({
-                                                    gender: null,
-                                                    category: null,
-                                                });
-                                            }}
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer font-medium"
-                                        >
-                                            <X className="h-4 w-4 mr-2" />
-                                            Clear Filters
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+
+                                            <div className="p-3">
+                                                {/* Gender */}
+                                                <div className="mb-3">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <h4 className="font-semibold text-gray-900 text-xs">GENDER</h4>
+                                                        {tempFilters.gender && (
+                                                            <button 
+                                                                onClick={() => handleTempGenderChange('')}
+                                                                className="text-xs text-gray-400 hover:text-red-500"
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        {genderOptions.map((option) => {
+                                                            const isSelected = tempFilters.gender === option.value;
+                                                            return (
+                                                                <button
+                                                                    key={option.value}
+                                                                    className={`flex items-center justify-between px-2 py-1.5 rounded-md border transition-all text-xs flex-1 ${
+                                                                        isSelected
+                                                                            ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                                                            : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
+                                                                    }`}
+                                                                    onClick={() => handleTempGenderChange(option.value)}
+                                                                >
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <div className={`h-1.5 w-1.5 rounded-full ${
+                                                                            isSelected ? 'bg-amber-500' : 'bg-gray-400'
+                                                                        }`} />
+                                                                        <span className="text-xs">{option.label}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1">
+                                                                        {isSelected && (
+                                                                            <Check className="h-3 w-3 text-amber-600" />
+                                                                        )}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                {/* Category */}
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <h4 className="font-semibold text-gray-900 text-xs">CATEGORY</h4>
+                                                        {tempFilters.category && tempFilters.category !== 'all' && (
+                                                            <button 
+                                                                onClick={() => handleTempCategoryChange('all')}
+                                                                className="text-xs text-gray-400 hover:text-red-500"
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {/* All Categories */}
+                                                    <div className="mb-2">
+                                                        <button
+                                                            className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
+                                                                !tempFilters.category || tempFilters.category === 'all'
+                                                                    ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                                                    : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
+                                                            }`}
+                                                            onClick={() => handleTempCategoryChange('all')}
+                                                        >
+                                                            <div className="flex items-center gap-1.5">
+                                                                <div className={`h-2 w-2 rounded-full ${
+                                                                    !tempFilters.category || tempFilters.category === 'all' 
+                                                                        ? 'bg-amber-500' 
+                                                                        : 'bg-gray-400'
+                                                                }`} />
+                                                                <span className="font-medium text-xs">All Categories</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                {(!tempFilters.category || tempFilters.category === 'all') && (
+                                                                    <Check className="h-3 w-3 text-amber-600" />
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Categories Grid */}
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {availableCategories.map((category) => {
+                                                            const isSelected = tempFilters.category === category.value;
+                                                            
+                                                            return (
+                                                                <button
+                                                                    key={category.value}
+                                                                    className={`flex items-center justify-between px-2 py-1.5 rounded-lg border transition-all text-xs ${
+                                                                        isSelected
+                                                                            ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                                                            : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
+                                                                    }`}
+                                                                    onClick={() => handleTempCategoryChange(category.value)}
+                                                                >
+                                                                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                                        <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
+                                                                            isSelected ? 'bg-amber-500' : 'bg-gray-400'
+                                                                        }`} />
+                                                                        <span className="truncate font-medium text-xs">
+                                                                            {category.original}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+                                                                        {isSelected && (
+                                                                            <Check className="h-2.5 w-2.5 text-amber-600 flex-shrink-0" />
+                                                                        )}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="border-t p-2">
+                                                <div className="flex justify-between items-center">
+                                                    <button
+                                                        className="text-xs text-gray-600 hover:text-red-600 flex items-center gap-1.5"
+                                                        onClick={handleClearAllTempFilters}
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                        Clear All Filters
+                                                    </button>
+                                                    <div className="flex gap-1.5">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-xs h-7 px-2"
+                                                            onClick={handleCancelFilters}
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                        <Button
+                                                            className="bg-amber-500 hover:bg-amber-600 text-white text-xs h-7 px-3"
+                                                            onClick={handleApplyFilters}
+                                                        >
+                                                            Apply
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className='flex flex-wrap gap-2'>
@@ -1085,9 +1230,9 @@ const ImpalaManagement = () => {
                                     </span>
                                 )}
                                 
-                                {activeFilters.gender && (
+                                {filters.gender && (
                                     <span className="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        {getGenderLabel(activeFilters.gender)}
+                                        {getGenderLabel(filters.gender)}
                                         <button 
                                             onClick={() => clearFilter('gender')}
                                             className="text-pink-600 hover:text-pink-800 ml-1"
@@ -1097,10 +1242,10 @@ const ImpalaManagement = () => {
                                     </span>
                                 )}
                                 
-                                {activeFilters.category && activeFilters.category !== 'all' && (
+                                {filters.category && filters.category !== 'all' && (
                                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Tag className="w-3 h-3" />
-                                        {getCategoryLabel(activeFilters.category)}
+                                        {getCategoryLabel(filters.category)}
                                         <button 
                                             onClick={() => clearFilter('category')}
                                             className="text-green-600 hover:text-green-800 ml-1"
@@ -1110,7 +1255,7 @@ const ImpalaManagement = () => {
                                     </span>
                                 )}
                                 
-                                {activeFilters.category === 'all' && (
+                                {filters.category === 'all' && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Tag className="w-3 h-3" />
                                         All Categories
@@ -1125,7 +1270,7 @@ const ImpalaManagement = () => {
                                 
                                 <Button 
                                     variant="ghost" 
-                                    onClick={clearAllFilters}
+                                    onClick={handleClearAllFilters}
                                     className="text-sm h-8"
                                     size="sm"
                                 >
@@ -1162,7 +1307,7 @@ const ImpalaManagement = () => {
                                     {getTotalActiveCriteria() > 0 && (
                                         <Button 
                                             className="flex items-center gap-2"
-                                            onClick={clearAllFilters}
+                                            onClick={handleClearAllFilters}
                                             variant="outline"
                                         >
                                             Clear Filters
