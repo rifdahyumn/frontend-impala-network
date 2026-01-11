@@ -181,10 +181,10 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                     required: true,
                     placeholder: 'Select category',
                     options: [
-                        { value: 'Seminar / Webinar', label: 'Seminar / Webinar' },
-                        { value: 'Workshop / Training', label: 'Workshop / Training' },
-                        { value: 'Volunteer / Community Service', label: 'Volunteer / Community Service' },
-                        { value: 'Exhibition / Expo', label: 'Exhibition / Expo' }
+                        { value: 'Seminar', label: 'Seminar / Webinar' },
+                        { value: 'Workshop', label: 'Workshop' },
+                        { value: 'Community Service', label: 'Community Service' },
+                        { value: 'Expo', label: 'Expo' }
                     ]
                 },
                 {
