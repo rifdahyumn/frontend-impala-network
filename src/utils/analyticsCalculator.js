@@ -86,7 +86,7 @@ export const calculateMonthlyData = (data, year, metric) => {
     let itemsProcessed = 0;
     let itemsFilteredOut = 0;
     
-    dataArray.forEach((item, index) => {
+    dataArray.forEach((item) => {
         itemsProcessed++;
         
         if (!item?.created_at) {
@@ -294,7 +294,7 @@ export const calculateSummary = (monthlyData, metric, totalCount) => {
     let monthsWithData = 0;
     
    
-    monthlyData.forEach((month, index) => {
+    monthlyData.forEach((month) => {
         switch(metric) {
             case 'clients':
                 thisYearTotal += month.newClients;
@@ -375,7 +375,7 @@ const getMonthValue = (month, metric) => {
     }
 };
 
-const getFallbackData = (metric, year) => {
+const getFallbackData = (metric) => {
     const months = Array(12).fill().map((_, i) => ({
         month: MONTHS[i],
         monthIndex: i,

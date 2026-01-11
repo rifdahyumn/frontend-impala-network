@@ -47,7 +47,7 @@ const HeteroSemarang = () => {
 
     const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroSemarang, 
         updateMemberHeteroSemarang, deleteMemberHeteroSemarang, showConfirm, handleConfirm, handleCancel,
-        isOpen: isConfirmOpen, config: confirmConfig } = useHeteroSemarang()
+        isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroSemarang()
 
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
@@ -677,36 +677,53 @@ const HeteroSemarang = () => {
     }, [searchTerm, activeFilters]);
 
     const memberStats = useMemo(() => {
-        const totalMembers = filteredMembers.length;
-        const activeMembers = filteredMembers.filter(member => member.status === 'active').length;
-        
-        const activePercentage = totalMembers > 0 ? ((activeMembers / totalMembers) * 100).toFixed(1) : "0";
+        if (statsLoading) {
+            return [
+                {
+                    title: "Total Members",
+                    value: "Loading...",
+                    percentage: "0%",
+                    trend: "neutral",
+                    icon: Users,
+                    color: "blue",
+                    description: "Loading..."
+                },
+                {
+                    title: "Active Members",
+                    value: "Loading...",
+                    percentage: "0%",
+                    trend: "neutral",
+                    icon: UserCheck,
+                    color: "green",
+                    description: "Loading..."
+                }
+            ]
+        }
 
         return [
             {
-                title: "Total Members",
-                value: totalMembers.toString(),
+                title: 'Total Members',
+                value: stats.totalMembers.toString(),
                 subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
-                percentage: `${totalMembers > 0 ? "12.5" : "0"}%`,
-                trend: totalMembers > 0 ? "up" : "neutral",
-                period: "Last Month",
+                percentage: `${stats.growthPercentage}%`,
+                trend: parseFloat(stats.growthPercentage) > 0 ? "up" :
+                        parseFloat(stats.growthPercentage) < 0 ? "down" : "neutral",
                 icon: Users,
                 color: "blue",
-                description: `${totalMembers > 0 ? "12.5" : "0"}% Growth`
+                description: `${stats.growthPercentage}% growth`
             },
             {
                 title: "Active Members",
-                value: activeMembers.toString(),
+                value: stats.activeMembers.toString(),
                 subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
-                percentage: `${activePercentage}%`,
-                trend: activeMembers > 0 ? "up" : "down",
-                period: "Last Month",
+                percentage: `${stats.activePercentage}%`,
+                trend: stats.activeMembers > 0 ? "up" : "down",
                 icon: UserCheck,
                 color: "green",
-                description: `${activePercentage}% of total`
+                description: `${stats.activePercentage}% of total`
             }
-        ];
-    }, [filteredMembers, activeFilters.space, getSpaceLabel]);
+        ]
+    }, [stats, statsLoading, activeFilters.space, getSpaceLabel])
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
@@ -748,7 +765,8 @@ const HeteroSemarang = () => {
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
-            //
+            console.error('Error adding member:', error);
+            toast.error('Failed to add member');
         }
     }
 
@@ -790,11 +808,6 @@ const HeteroSemarang = () => {
             }
         }
     }, [members, selectedMember?.id])
-
-    const handleRefresh = () => {
-        fetchMembers(pagination.page)
-        clearAllFilters();
-    }
 
     const handlePageChange = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -870,26 +883,6 @@ const HeteroSemarang = () => {
                         )}
                     </CardHeader>
                     <CardContent>
-                        {error && (
-                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
-                                <div className="flex items-start gap-3">
-                                    <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1">
-                                        <h3 className="text-sm font-semibold text-red-800">Failed to load members</h3>
-                                        <p className="text-sm text-red-600 mt-1">{error}</p>
-                                    </div>
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        onClick={handleRefresh}
-                                        className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
-                                    >
-                                        Reload Page
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2 items-center'>
                                 <SearchBar 

@@ -608,13 +608,14 @@ const AddMemberSemarang = ({
         const newErrors = {};
 
         formSections.forEach(section => {
+
             if (section.fields && Array.isArray(section.fields)) {
                 section.fields.forEach(field => {
                     if (field.required  && field.name) {
                         const value = formData[field.name];
                         if (!value || value.toString().trim() === '') {
                             newErrors[field.name] = `${field.label} is required`;
-                        }
+                        } 
                     }
                 });
             }
