@@ -58,30 +58,55 @@ const ImpalaManagement = () => {
     const fetchProgramsFromSystem = async () => {
         setLoadingPrograms(true);
         try {
-            // Menggunakan service yang sudah ada untuk mengambil nama program dari client
             const response = await programService.getProgramNamesFromClients('');
             
-            if (response.data && Array.isArray(response.data)) {
-                const programOptions = response.data.map(item => ({
-                    value: item.program_name.toLowerCase().replace(/\s+/g, '_'),
-                    label: item.program_name,
-                    original: item.program_name,
-                    client: item.company || item.client_name || ''
-                }));
+            if (response && response.data && Array.isArray(response.data)) {
+                const programOptions = response.data
+                    .filter(item => item.program_name && item.program_name.trim() !== '')
+                    .map(item => ({
+                        value: item.program_name.toLowerCase().replace(/\s+/g, '_'),
+                        label: item.program_name,
+                        original: item.program_name,
+                        client: item.company || item.client_name || ''
+                    }));
                 
-                // Sort alphabetically
-                const sortedPrograms = programOptions.sort((a, b) => 
-                    a.original.localeCompare(b.original)
-                );
+                // Sort dan hilangkan duplikat
+                const sortedPrograms = programOptions
+                    .filter((program, index, self) =>
+                        index === self.findIndex(p => p.original === program.original)
+                    )
+                    .sort((a, b) => a.original.localeCompare(b.original));
                 
-                setAvailablePrograms(sortedPrograms);
+                setAvailablePrograms(prev => {
+                    // Cari program yang ada di prev tapi tidak ada di sortedPrograms
+                    const deletedPrograms = prev.filter(p => 
+                        !sortedPrograms.find(sp => sp.original === p.original)
+                    );
+                    
+                    // Jika ada program yang dihapus
+                    if (deletedPrograms.length > 0) {
+                        console.log(`Found ${deletedPrograms.length} deleted programs:`, 
+                            deletedPrograms.map(p => p.original));
+                        
+                        // Reset filter jika program yang dihapus sedang aktif
+                        deletedPrograms.forEach(program => {
+                            if (filters.program && filters.program === program.value) {
+                                setFilters(prev => ({ ...prev, program: null }));
+                                setTempFilters(prev => ({ ...prev, program: 'all' }));
+                                toast.info(`Filter direset karena program "${program.original}" tidak ditemukan`);
+                            }
+                        });
+                    }
+                    
+                    return sortedPrograms;
+                });
             } else {
-                // Fallback: extract dari peserta jika response tidak valid
+                console.warn('Invalid response format from getProgramNamesFromClients:', response);
                 fetchProgramsFromParticipants();
             }
         } catch (error) {
             console.error('Error fetching program names:', error);
-            // Fallback ke peserta
+            toast.error('Gagal memuat daftar program');
             fetchProgramsFromParticipants();
         } finally {
             setLoadingPrograms(false);
@@ -116,10 +141,17 @@ const ImpalaManagement = () => {
         }
     };
 
-    // ===== EVENT LISTENER UNTUK REAL-TIME UPDATE =====
+    // ===== EVENT LISTENERS UNTUK REAL-TIME UPDATE =====
     useEffect(() => {
         const handleProgramUpdated = (event) => {
             const { type, program } = event.detail;
+            
+            console.log(`Program ${type} event received:`, program);
+            
+            if (!program || !program.name) {
+                console.error('Invalid program update event:', event);
+                return;
+            }
             
             setAvailablePrograms(prev => {
                 if (type === 'added') {
@@ -142,18 +174,129 @@ const ImpalaManagement = () => {
                             a.original.localeCompare(b.original)
                         );
                     }
+                } else if (type === 'updated') {
+                    // Update existing program
+                    return prev.map(p => 
+                        p.original.toLowerCase() === program.name.toLowerCase() 
+                            ? { 
+                                ...p, 
+                                client: program.client || p.client,
+                                category: program.category || p.category,
+                                status: program.status || p.status
+                              }
+                            : p
+                    ).sort((a, b) => a.original.localeCompare(b.original));
                 }
                 
                 return prev;
             });
+            
+            // Refresh untuk sinkronisasi
+            fetchProgramsFromSystem();
+        };
+        
+        const handleProgramDeleted = (event) => {
+            const { type, program } = event.detail;
+            
+            console.log(`Program ${type} event received:`, program);
+            
+            if (!program || !program.name) {
+                console.error('Invalid program delete event:', event);
+                return;
+            }
+            
+            // 1. Hapus dari availablePrograms
+            setAvailablePrograms(prev => {
+                const updated = prev.filter(p => 
+                    !(p.original.toLowerCase() === program.name.toLowerCase())
+                );
+                
+                // Show notification jika ada perubahan
+                if (updated.length < prev.length) {
+                    toast.info(`Program "${program.name}" telah dihapus dari sistem`);
+                }
+                
+                return updated;
+            });
+            
+            // 2. Reset filter jika program yang dihapus sedang dipilih
+            if (filters.program && filters.program !== 'all') {
+                const selectedProgramValue = program.name.toLowerCase().replace(/\s+/g, '_');
+                if (filters.program === selectedProgramValue) {
+                    setFilters(prev => ({ ...prev, program: null }));
+                    setTempFilters(prev => ({ ...prev, program: 'all' }));
+                    toast.info(`Filter direset karena program "${program.name}" telah dihapus`);
+                }
+            }
+            
+            // 3. Panggil cleanup untuk memastikan sinkronisasi
+            fetchProgramsFromSystem();
+        };
+        
+        // Listen untuk success delete (optional)
+        const handleProgramDeletedSuccess = (event) => {
+            const { program, message } = event.detail;
+            console.log(`Delete success: ${message}`);
+        };
+        
+        // Listen untuk error delete (optional)
+        const handleProgramDeleteError = (event) => {
+            const { program, error } = event.detail;
+            console.error(`Delete error for ${program?.name}:`, error);
         };
         
         window.addEventListener('programAddedOrUpdated', handleProgramUpdated);
-        return () => window.removeEventListener('programAddedOrUpdated', handleProgramUpdated);
+        window.addEventListener('programDeleted', handleProgramDeleted);
+        window.addEventListener('programDeletedSuccess', handleProgramDeletedSuccess);
+        window.addEventListener('programDeleteError', handleProgramDeleteError);
+        
+        return () => {
+            window.removeEventListener('programAddedOrUpdated', handleProgramUpdated);
+            window.removeEventListener('programDeleted', handleProgramDeleted);
+            window.removeEventListener('programDeletedSuccess', handleProgramDeletedSuccess);
+            window.removeEventListener('programDeleteError', handleProgramDeleteError);
+        };
+    }, [filters.program]);
+
+    // Monitor perubahan pada filters.program untuk membersihkan program yang tidak valid
+    useEffect(() => {
+        if (filters.program && filters.program !== 'all') {
+            const programExists = availablePrograms.find(
+                p => p.value === filters.program
+            );
+            
+            if (!programExists) {
+                console.warn(`Program with value "${filters.program}" not found, resetting filter`);
+                setFilters(prev => ({ ...prev, program: null }));
+                setTempFilters(prev => ({ ...prev, program: 'all' }));
+            }
+        }
+    }, [availablePrograms, filters.program]);
+
+    // Backup polling untuk auto-cleanup (setiap 2 menit)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            fetchProgramsFromSystem();
+        }, 120000); // 2 menit
+        
+        return () => clearInterval(interval);
     }, []);
+
+    // ===== LOAD INITIAL DATA PROGRAM =====
+    useEffect(() => {
+        fetchProgramsFromSystem();
+    }, []);
+
+    // ===== TAMBAHKAN PROGRAM DARI PESERTA KE LIST =====
+    useEffect(() => {
+        if (!loading && participant.length > 0) {
+            fetchProgramsFromParticipants();
+        }
+    }, [loading, participant]);
 
     // ===== HANDLER UNTUK REFRESH PROGRAM LIST =====
     const handleRefreshPrograms = () => {
+        console.log('Refreshing program list...');
         fetchProgramsFromSystem();
         toast.success('Memperbarui daftar program...');
     };
@@ -803,11 +946,6 @@ const ImpalaManagement = () => {
         });
     }, [filters]);
 
-    // ===== LOAD INITIAL DATA PROGRAM =====
-    useEffect(() => {
-        fetchProgramsFromSystem();
-    }, []);
-
     useEffect(() => {
         if (participant.length > 0) {
             const normalizedParticipants = participant.map(p => ({
@@ -821,13 +959,6 @@ const ImpalaManagement = () => {
         }
     }, [participant, extractCategories]);
 
-    // ===== TAMBAHKAN PROGRAM DARI PESERTA KE LIST =====
-    useEffect(() => {
-        if (!loading && participant.length > 0) {
-            fetchProgramsFromParticipants();
-        }
-    }, [loading, participant]);
-
     useEffect(() => {
         if (participant.length > 0) {
             setFilteredParticipants(participant);
@@ -837,7 +968,7 @@ const ImpalaManagement = () => {
 
     useEffect(() => {
         applyAllFilters();
-    }, [searchTerm, filters]);
+    }, [searchTerm, filters, availablePrograms]);
 
     const handleEdit = () => {
         if (selectedParticipant) {
@@ -1110,7 +1241,8 @@ const ImpalaManagement = () => {
                                 <span className="text-sm">Loading Participant...</span>
                             </div>
                         )}
-                    </CardHeader>
+                    </CardHeader> {/* <=== INI YANG DITAMBAHKAN: PENUTUP CardHeader */}
+                    
                     <CardContent>
                         {error && (
                             <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
@@ -1144,7 +1276,7 @@ const ImpalaManagement = () => {
                                     />
                                 </div>
                                 
-                                {/* Custom Filter Dropdown - Versi baru seperti ProgramFilter.jsx */}
+                                {/* Custom Filter Dropdown */}
                                 <div className="relative">
                                     <Button 
                                         variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
