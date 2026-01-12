@@ -241,7 +241,6 @@ const ProgramClient = () => {
                                 availableBusinessTypes={availableBusinessTypes}
                                 statusOptions={statusOptions}
                                 getActiveFiltersCount={getActiveFiltersCount}
-                                // TAMBAHKAN INI: Kirim getFilteredCounts ke FiltersSection
                                 getFilteredCounts={getFilteredCounts || getFilteredCountsFallback}
                             />
 

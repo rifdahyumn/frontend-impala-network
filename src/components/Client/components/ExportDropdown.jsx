@@ -17,6 +17,7 @@ const ExportDropdown = ({
                     variant="outline"
                     className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
                     disabled={loading || members.length === 0 || isExporting}
+                    onClick={() => onExport('excel')}
                 >
                     {isExporting ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -26,24 +27,7 @@ const ExportDropdown = ({
                     Export {isInShowAllMode ? 'All' : ''}
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48">
-                <DropdownMenuItem 
-                    onClick={() => onExport('excel')}
-                    disabled={members.length === 0 || isExporting}
-                    className="flex items-center gap-2 cursor-pointer"
-                >
-                    <FileSpreadsheet className="h-4 w-4" />
-                    Export as Excel
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                    onClick={() => onExport('csv')}
-                    disabled={members.length === 0 || isExporting}
-                    className="flex items-center gap-2 cursor-pointer"
-                >
-                    <FileText className="h-4 w-4" />
-                    Export as CSV
-                </DropdownMenuItem>
-            </DropdownMenuContent>
+            
         </DropdownMenu>
     );
 };
