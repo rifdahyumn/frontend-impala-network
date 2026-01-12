@@ -669,7 +669,6 @@ const HeteroSurakarta = () => {
         setIsFilterOpen(false);
     };
 
-    // Handler untuk cancel filter
     const handleCancelFilters = () => {
         setTempFilters({
             gender: filters.gender || '',
@@ -678,7 +677,6 @@ const HeteroSurakarta = () => {
         setIsFilterOpen(false);
     };
 
-    // Handler untuk clear semua filter sementara
     const handleClearAllTempFilters = () => {
         setTempFilters({
             gender: '',
@@ -686,7 +684,6 @@ const HeteroSurakarta = () => {
         });
     };
 
-    // Handler untuk clear semua filter permanen
     const handleClearAllFilters = () => {
         setSearchTerm("");
         setFilters({
@@ -704,7 +701,6 @@ const HeteroSurakarta = () => {
         return count;
     };
 
-    // Handler untuk menghitung filter sementara yang aktif
     const getTempActiveFiltersCount = () => {
         let count = 0;
         if (tempFilters.gender) count++;
@@ -720,7 +716,6 @@ const HeteroSurakarta = () => {
         return count;
     };
 
-    // Fungsi clear filter spesifik
     const clearFilter = (filterType) => {
         if (filterType === 'search') {
             setSearchTerm("");
@@ -733,12 +728,11 @@ const HeteroSurakarta = () => {
 
     const getGenderLabel = (genderValue) => {
         if (!genderValue) return "";
-        if (genderValue === 'male') return '👨 Male';
-        if (genderValue === 'female') return '👩 Female';
+        if (genderValue === 'male') return 'Male';
+        if (genderValue === 'female') return 'Female';
         return genderValue;
     };
 
-    // Update tempFilters ketika filters berubah
     useEffect(() => {
         setTempFilters({
             gender: filters.gender || '',
@@ -788,36 +782,44 @@ const HeteroSurakarta = () => {
             ];
         }
 
-        const totalMembers = filteredMembers.length;
-        const activeMembers = filteredMembers.filter(member => member.status === 'active').length;
+        const totalMembers = stats?.totalMembers || filteredMembers.length;
+        const activeMembers = stats?.activeMembers || filteredMembers.filter(member => 
+            member.status?.toLowerCase() === 'active').length;
         
-        const activePercentage = totalMembers > 0 ? ((activeMembers / totalMembers) * 100).toFixed(1) : "0";
+        const activePercentage = totalMembers > 0 
+            ? ((activeMembers / totalMembers) * 100).toFixed(1) 
+            : "0";
+        
+        const growthPercentage = stats?.growthPercentage || "0";
 
         return [
             {
                 title: "Total Members",
                 value: totalMembers.toString(),
                 subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
-                percentage: `${totalMembers > 0 ? "12.5" : "0"}%`,
-                trend: totalMembers > 0 ? "up" : "neutral",
+                percentage: `${growthPercentage}%`,
+                trend: parseFloat(growthPercentage) > 0 ? "up" :
+                        parseFloat(growthPercentage) < 0 ? "down" : "neutral",
                 period: "Last Month",
                 icon: Users,
                 color: "blue",
-                description: `${totalMembers > 0 ? "12.5" : "0"}% Growth`
+                description: `${growthPercentage}% Growth`,
+                loading: false
             },
             {
                 title: "Active Members",
                 value: activeMembers.toString(),
                 subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
                 percentage: `${activePercentage}%`,
-                trend: activeMembers > 0 ? "up" : "down",
-                period: "Last Month",
+                trend: parseFloat(activePercentage) > 70 ? "up" : "down", // threshold bisa disesuaikan
+                period: "Current",
                 icon: UserCheck,
                 color: "green",
-                description: `${activePercentage}% of total`
+                description: `${activePercentage}% of total`,
+                loading: false
             }
         ];
-    }, [filteredMembers, filters.space, getSpaceLabel, statsLoading]);
+    }, [filteredMembers, filters.space, getSpaceLabel, stats, statsLoading]);
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);

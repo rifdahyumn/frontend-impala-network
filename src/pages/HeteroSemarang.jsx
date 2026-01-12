@@ -6,9 +6,9 @@ import MemberTable from "../components/MemberTable/MemberTable";
 import Pagination from "../components/Pagination/Pagination";
 import { Loader2, Plus, Users, UserCheck, AlertCircle, X, Building2, Filter, Download, Upload, FileText, FileSpreadsheet, AlertTriangle, Check } from "lucide-react"
 import { Button } from "../components/ui/button"
-import AddMemberSurakarta from "../components/AddButton/AddMemberSurakarta";
-import HeteroSoloContent from "../components/Content/HeteroSurakartaContent";
-import { useHeteroSolo } from "../hooks/useHeteroSolo";
+import AddMemberSemarang from "../components/AddButton/AddMemberSemarang";
+import HeteroSemarangContent from "../components/Content/HeteroSemarangContent";
+import { useHeteroSemarang } from "../hooks/useHeteroSemarang";
 import toast from "react-hot-toast";
 import MemberStatsCards from "../MemberHetero/MemberStatsCard";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "../components/ui/dropdown-menu";
@@ -17,7 +17,7 @@ import { Input } from "../components/ui/input";
 import * as XLSX from 'xlsx';
 import ConfirmModal from "../components/Content/ConfirmModal";
 
-const HeteroSurakarta = () => {
+const HeteroSemarang = () => {
     const [selectedMember, setSelectedMember] = useState(null)
     const [editingMember, setEditingMember] = useState(null)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -45,16 +45,15 @@ const HeteroSurakarta = () => {
     const [filteredMembers, setFilteredMembers] = useState([]);
     const [availableSpaces, setAvailableSpaces] = useState([]);
 
-    // State untuk filter dropdown
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [tempFilters, setTempFilters] = useState({
         gender: filters.gender || '',
         space: filters.space || 'all'
     });
 
-    const { members, loading, error, pagination, fetchMembers, addMemberHeteroSolo, 
-        updateMemberHeteroSolo, deleteMemberHeteroSolo, showConfirm, handleConfirm, handleCancel,
-        isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroSolo()
+    const { members, loading, error, pagination, fetchMembers, addMemberHeteroSemarang, 
+        updateMemberHeteroSemarang, deleteMemberHeteroSemarang, showConfirm, handleConfirm, handleCancel,
+        isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroSemarang()
 
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
@@ -212,7 +211,7 @@ const HeteroSurakarta = () => {
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Template");
             
-            XLSX.writeFile(wb, `hetero_surakarta_import_template_${new Date().getTime()}.xlsx`);
+            XLSX.writeFile(wb, `hetero_semarang_import_template_${new Date().getTime()}.xlsx`);
             
             toast.success('Template Excel berhasil didownload');
         } catch (error) {
@@ -348,7 +347,7 @@ const HeteroSurakarta = () => {
                         return;
                     }
                     
-                    const existingMembers = JSON.parse(localStorage.getItem('hetero_surakarta_members') || '[]');
+                    const existingMembers = JSON.parse(localStorage.getItem('hetero_semarang_members') || '[]');
                     const newMembers = [
                         ...existingMembers,
                         ...parsedData.map((member, index) => ({
@@ -358,7 +357,7 @@ const HeteroSurakarta = () => {
                             updated_at: new Date().toISOString()
                         }))
                     ];
-                    localStorage.setItem('hetero_surakarta_members', JSON.stringify(newMembers));
+                    localStorage.setItem('hetero_semarang_members', JSON.stringify(newMembers));
                     
                     setImportFile(null);
                     setValidationErrors([]);
@@ -471,10 +470,10 @@ const HeteroSurakarta = () => {
                 }
                 
                 const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Hetero Surakarta Members");
+                XLSX.utils.book_append_sheet(wb, ws, "Hetero Semarang Members");
                 
                 const dateStr = new Date().toISOString().split('T')[0];
-                const fileName = `hetero_surakarta_members_export_${dateStr}.xlsx`;
+                const fileName = `hetero_semarang_members_export_${dateStr}.xlsx`;
                 
                 XLSX.writeFile(wb, fileName);
                 
@@ -490,7 +489,7 @@ const HeteroSurakarta = () => {
                 const url = URL.createObjectURL(blob);
                 
                 link.setAttribute("href", url);
-                link.setAttribute("download", `hetero_surakarta_members_export_${new Date().getTime()}.csv`);
+                link.setAttribute("download", `hetero_semarang_members_export_${new Date().getTime()}.csv`);
                 link.style.visibility = 'hidden';
                 
                 document.body.appendChild(link);
@@ -707,7 +706,6 @@ const HeteroSurakarta = () => {
         return count;
     };
 
-    // Handler untuk menghitung filter sementara yang aktif
     const getTempActiveFiltersCount = () => {
         let count = 0;
         if (tempFilters.gender) count++;
@@ -723,7 +721,6 @@ const HeteroSurakarta = () => {
         return count;
     };
 
-    // Fungsi clear filter spesifik
     const clearFilter = (filterType) => {
         if (filterType === 'search') {
             setSearchTerm("");
@@ -736,12 +733,11 @@ const HeteroSurakarta = () => {
 
     const getGenderLabel = (genderValue) => {
         if (!genderValue) return "";
-        if (genderValue === 'male') return '👨 Male';
-        if (genderValue === 'female') return '👩 Female';
+        if (genderValue === 'male') return 'Male';
+        if (genderValue === 'female') return 'Female';
         return genderValue;
     };
 
-    // Update tempFilters ketika filters berubah
     useEffect(() => {
         setTempFilters({
             gender: filters.gender || '',
@@ -791,36 +787,45 @@ const HeteroSurakarta = () => {
             ];
         }
 
-        const totalMembers = filteredMembers.length;
-        const activeMembers = filteredMembers.filter(member => member.status === 'active').length;
+        const totalMembers = stats?.totalMembers || filteredMembers.length;
+        const activeMembers = stats?.activeMembers || filteredMembers.filter(member => 
+            member.status?.toLowerCase() === 'Active' 
+        ).length;
         
-        const activePercentage = totalMembers > 0 ? ((activeMembers / totalMembers) * 100).toFixed(1) : "0";
+        const activePercentage = totalMembers > 0 
+            ? ((activeMembers / totalMembers) * 100).toFixed(1) 
+            : "0";
+        
+        const growthPercentage = stats?.growthPercentage || "0";
 
         return [
             {
                 title: "Total Members",
                 value: totalMembers.toString(),
                 subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
-                percentage: `${totalMembers > 0 ? "12.5" : "0"}%`,
-                trend: totalMembers > 0 ? "up" : "neutral",
+                percentage: `${growthPercentage}%`,
+                trend: parseFloat(growthPercentage) > 0 ? "up" :
+                        parseFloat(growthPercentage) < 0 ? "down" : "neutral",
                 period: "Last Month",
                 icon: Users,
                 color: "blue",
-                description: `${totalMembers > 0 ? "12.5" : "0"}% Growth`
+                description: `${growthPercentage}% Growth`,
+                loading: false
             },
             {
                 title: "Active Members",
                 value: activeMembers.toString(),
                 subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
                 percentage: `${activePercentage}%`,
-                trend: activeMembers > 0 ? "up" : "down",
-                period: "Last Month",
+                trend: parseFloat(activePercentage) > 70 ? "up" : "down",
+                period: "Current",
                 icon: UserCheck,
                 color: "green",
-                description: `${activePercentage}% of total`
+                description: `${activePercentage}% of total`,
+                loading: false
             }
         ];
-    }, [filteredMembers, filters.space, getSpaceLabel, statsLoading]);
+    }, [filteredMembers, filters.space, getSpaceLabel, stats, statsLoading]);
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
@@ -833,7 +838,7 @@ const HeteroSurakarta = () => {
 
     const handleEditMember = async (memberId, memberData) => {
         try {
-            const updatedMember = await updateMemberHeteroSolo(memberId, memberData);
+            const updatedMember = await updateMemberHeteroSemarang(memberId, memberData);
 
             if (selectedMember && selectedMember.id === memberId){
                 setSelectedMember(prev => ({
@@ -855,7 +860,7 @@ const HeteroSurakarta = () => {
 
     const handleAddNewMember = async (memberData) => {
         try {
-            await addMemberHeteroSolo(memberData);
+            await addMemberHeteroSemarang(memberData);
             setIsAddMemberModalOpen(false);
             toast.success('Member added successfully');
             fetchMembers(pagination.page);
@@ -878,7 +883,7 @@ const HeteroSurakarta = () => {
                 cancelText: 'Cancel',
                 onConfirm: async () => {
                     try {
-                        await deleteMemberHeteroSolo(memberId);
+                        await deleteMemberHeteroSemarang(memberId);
                         setSelectedMember(null);
                         toast.success('Member deleted successfully');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -917,7 +922,7 @@ const HeteroSurakarta = () => {
 
     const tableConfig = {
         headers: ['No', 'Full Name', 'Email', 'Gender', 'Space', 'Company', 'Duration', 'Status', 'Action'],
-        title: 'Hetero Surakarta Management',
+        title: 'Hetero Semarang Management',
         addButton: "Add Member",
         detailTitle: "Member Details"
     };
@@ -1402,7 +1407,7 @@ const HeteroSurakarta = () => {
                         ${highlightDetail ? 'rounded-xl p-1 -m-1 bg-blue-50/50' : ''}
                     `}
                 >
-                    <HeteroSoloContent
+                    <HeteroSemarangContent
                         selectedMember={selectedMember}
                         onOpenEditModal={handleOpenEditModal}
                         onEdit={handleEditMember}
@@ -1423,7 +1428,7 @@ const HeteroSurakarta = () => {
                     onCancel={handleCancel}
                 />
 
-                <AddMemberSurakarta 
+                <AddMemberSemarang 
                     isAddMemberModalOpen={isAddMemberModalOpen || isEditModalOpen} 
                     setIsAddMemberModalOpen={(open) => {
                         if (!open) {
@@ -1594,4 +1599,4 @@ const HeteroSurakarta = () => {
     );
 };
 
-export default HeteroSurakarta;
+export default HeteroSemarang;

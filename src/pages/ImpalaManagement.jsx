@@ -191,7 +191,6 @@ const ImpalaManagement = () => {
                 return prev;
             });
             
-            // Refresh untuk sinkronisasi
             fetchProgramsFromSystem();
         };
         
@@ -205,13 +204,11 @@ const ImpalaManagement = () => {
                 return;
             }
             
-            // 1. Hapus dari availablePrograms
             setAvailablePrograms(prev => {
                 const updated = prev.filter(p => 
                     !(p.original.toLowerCase() === program.name.toLowerCase())
                 );
                 
-                // Show notification jika ada perubahan
                 if (updated.length < prev.length) {
                     toast.info(`Program "${program.name}" telah dihapus dari sistem`);
                 }
@@ -219,7 +216,6 @@ const ImpalaManagement = () => {
                 return updated;
             });
             
-            // 2. Reset filter jika program yang dihapus sedang dipilih
             if (filters.program && filters.program !== 'all') {
                 const selectedProgramValue = program.name.toLowerCase().replace(/\s+/g, '_');
                 if (filters.program === selectedProgramValue) {
@@ -229,11 +225,9 @@ const ImpalaManagement = () => {
                 }
             }
             
-            // 3. Panggil cleanup untuk memastikan sinkronisasi
             fetchProgramsFromSystem();
         };
         
-        // Listen untuk success delete (optional)
         const handleProgramDeletedSuccess = (event) => {
             const { program, message } = event.detail;
             console.log(`Delete success: ${message}`);
