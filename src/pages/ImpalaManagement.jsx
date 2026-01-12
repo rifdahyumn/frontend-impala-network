@@ -733,37 +733,6 @@ const ImpalaManagement = () => {
         handlePageChange(page);
     }, [handlePageChange]);
 
-<<<<<<< HEAD
-=======
-    const getActiveFiltersCount = () => {
-        let count = 0;
-        if (activeFilters.gender) count++;
-        if (activeFilters.category) count++;
-        return count;
-    };
-
-    const getTotalActiveCriteria = () => {
-        let count = 0;
-        if (searchTerm) count++;
-        if (activeFilters.gender) count++;
-        if (activeFilters.category) count++;
-        return count;
-    };
-
-    const getCategoryLabel = (categoryValue) => {
-        if (!categoryValue || categoryValue === "all") return "All Categories";
-        const category = availableCategories.find(c => c.value === categoryValue);
-        return category ? category.original : categoryValue;
-    };
-
-    const getGenderLabel = (genderValue) => {
-        if (!genderValue) return "";
-        if (genderValue.toLowerCase() === 'laki-laki') return 'Laki-laki';
-        if (genderValue.toLowerCase() === 'perempuan') return 'Perempuan';
-        return genderValue;
-    };
-
->>>>>>> 274c0e8c4429aa80d3b4a30f05cf7db065a44f19
     const tableConfig = {
         headers: ['No', 'Full Name', 'Email', 'Gender', 'Program Name', 'Category', 'Entity', 'Action'],
         title: "Impala Management",
@@ -1251,7 +1220,7 @@ const ImpalaManagement = () => {
                                 
                                 {searchTerm && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        <span>"{searchTerm}"</span>
+                                        <span>🔍 "{searchTerm}"</span>
                                         <button 
                                             onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"

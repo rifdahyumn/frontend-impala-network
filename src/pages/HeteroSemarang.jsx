@@ -4,11 +4,11 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import SearchBar from "../components/SearchFilter/SearchBar";
 import MemberTable from "../components/MemberTable/MemberTable";
 import Pagination from "../components/Pagination/Pagination";
-import { Loader2, Plus, Users, UserCheck, AlertCircle, Tag, X, Building2, Filter, User, Download, Upload, FileText, FileSpreadsheet, AlertTriangle, Check } from "lucide-react"
+import { Loader2, Plus, Users, UserCheck, AlertCircle, X, Building2, Filter, Download, Upload, FileText, FileSpreadsheet, AlertTriangle, Check } from "lucide-react"
 import { Button } from "../components/ui/button"
-import AddMember from "../components/AddButton/AddMemberSemarang";
-import HeteroContent from "../components/Content/HeteroSemarangContent";
-import { useHeteroSemarang } from "../hooks/useHeteroSemarang";
+import AddMemberSurakarta from "../components/AddButton/AddMemberSurakarta";
+import HeteroSoloContent from "../components/Content/HeteroSurakartaContent";
+import { useHeteroSolo } from "../hooks/useHeteroSolo";
 import toast from "react-hot-toast";
 import MemberStatsCards from "../MemberHetero/MemberStatsCard";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "../components/ui/dropdown-menu";
@@ -17,7 +17,7 @@ import { Input } from "../components/ui/input";
 import * as XLSX from 'xlsx';
 import ConfirmModal from "../components/Content/ConfirmModal";
 
-const HeteroSemarang = () => {
+const HeteroSurakarta = () => {
     const [selectedMember, setSelectedMember] = useState(null)
     const [editingMember, setEditingMember] = useState(null)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -39,8 +39,8 @@ const HeteroSemarang = () => {
     
     const [searchTerm, setSearchTerm] = useState("");
     const [filters, setFilters] = useState({
-        gender: null,
-        space: null,
+        gender: null, 
+        space: null, 
     });
     const [filteredMembers, setFilteredMembers] = useState([]);
     const [availableSpaces, setAvailableSpaces] = useState([]);
@@ -52,9 +52,9 @@ const HeteroSemarang = () => {
         space: filters.space || 'all'
     });
 
-    const { members, loading, error, pagination, fetchMembers, addMemberHeteroSemarang, 
-        updateMemberHeteroSemarang, deleteMemberHeteroSemarang, showConfirm, handleConfirm, handleCancel,
-        isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroSemarang()
+    const { members, loading, error, pagination, fetchMembers, addMemberHeteroSolo, 
+        updateMemberHeteroSolo, deleteMemberHeteroSolo, showConfirm, handleConfirm, handleCancel,
+        isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroSolo()
 
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
@@ -212,7 +212,7 @@ const HeteroSemarang = () => {
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Template");
             
-            XLSX.writeFile(wb, `hetero_semarang_import_template_${new Date().getTime()}.xlsx`);
+            XLSX.writeFile(wb, `hetero_surakarta_import_template_${new Date().getTime()}.xlsx`);
             
             toast.success('Template Excel berhasil didownload');
         } catch (error) {
@@ -282,9 +282,9 @@ const HeteroSemarang = () => {
             if (jsonData.length === 0) {
                 throw new Error('File Excel tidak berisi data');
             }
-
+            
             const headers = Object.keys(jsonData[0]).map(h => h.trim());
-
+            
             const dataRows = [];
             const errors = [];
             
@@ -348,7 +348,7 @@ const HeteroSemarang = () => {
                         return;
                     }
                     
-                    const existingMembers = JSON.parse(localStorage.getItem('hetero_semarang_members') || '[]');
+                    const existingMembers = JSON.parse(localStorage.getItem('hetero_surakarta_members') || '[]');
                     const newMembers = [
                         ...existingMembers,
                         ...parsedData.map((member, index) => ({
@@ -358,7 +358,7 @@ const HeteroSemarang = () => {
                             updated_at: new Date().toISOString()
                         }))
                     ];
-                    localStorage.setItem('hetero_semarang_members', JSON.stringify(newMembers));
+                    localStorage.setItem('hetero_surakarta_members', JSON.stringify(newMembers));
                     
                     setImportFile(null);
                     setValidationErrors([]);
@@ -419,10 +419,9 @@ const HeteroSemarang = () => {
             const exportData = filteredMembers.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
-                'NIK': member.nik || '-',
                 'Email': member.email || '-',
-                'Phone': member.phone || '-',
                 'Gender': member.gender || '-',
+                'Phone': member.phone || '-',
                 'Space': member.space || '-',
                 'Company': member.company || '-',
                 'Duration': member.duration || '-',
@@ -441,19 +440,19 @@ const HeteroSemarang = () => {
                 const ws = XLSX.utils.json_to_sheet(exportData);
                 
                 const wscols = [
-                    { wch: 5 },   
+                    { wch: 5 },  
                     { wch: 25 }, 
                     { wch: 30 }, 
-                    { wch: 10 }, 
+                    { wch: 10 },  
                     { wch: 15 },  
                     { wch: 25 }, 
                     { wch: 30 }, 
                     { wch: 15 },  
-                    { wch: 10 }, 
+                    { wch: 10 },  
                     { wch: 40 }, 
                     { wch: 40 }, 
-                    { wch: 12 }, 
-                    { wch: 12 }
+                    { wch: 12 },
+                    { wch: 12 }  
                 ];
                 ws['!cols'] = wscols;
                 
@@ -469,14 +468,33 @@ const HeteroSemarang = () => {
                 }
                 
                 const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Hetero Semarang Members");
+                XLSX.utils.book_append_sheet(wb, ws, "Hetero Surakarta Members");
                 
                 const dateStr = new Date().toISOString().split('T')[0];
-                const fileName = `hetero_semarang_members_export_${dateStr}.xlsx`;
+                const fileName = `hetero_surakarta_members_export_${dateStr}.xlsx`;
                 
                 XLSX.writeFile(wb, fileName);
                 
                 toast.success(`Exported ${exportData.length} members to Excel`);
+            } else if (format === 'csv') {
+                const csvContent = [
+                    Object.keys(exportData[0]).join(','),
+                    ...exportData.map(row => Object.values(row).join(','))
+                ].join('\n');
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                
+                link.setAttribute("href", url);
+                link.setAttribute("download", `hetero_surakarta_members_export_${new Date().getTime()}.csv`);
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                toast.success(`Exported ${exportData.length} members to CSV`);
             }
         } catch (error) {
             console.error('Export failed:', error);
@@ -505,16 +523,19 @@ const HeteroSemarang = () => {
         { value: "maneka personal", label: "🏠 Maneka Personal", original: "Maneka Personal" },
         { value: "maneka group", label: "👥 Maneka Group", original: "Maneka Group" },
         { value: "rembug 1", label: "🗣️ Rembug 1", original: "Rembug 1" },
-        { value: "rembug 2", label: "🗣️ Rembug 2", original: "Rembug 2" },
-        { value: "rembug 3", label: "🗣️ Rembug 3", original: "Rembug 3" },
+        { value: "rembug 2-6", label: "🗣️ Rembug 2-6", original: "Rembug 2-6" },
+        { value: "rembug 7", label: "🗣️ Rembug 7", original: "Rembug 7" },
         { value: "private office 1-3", label: "🚪 Private Office 1-3", original: "Private Office 1-3" },
         { value: "private office 4&5", label: "🚪 Private Office 4&5", original: "Private Office 4&5" },
         { value: "private office 6", label: "🚪 Private Office 6", original: "Private Office 6" },
         { value: "space gatra", label: "🏛️ Space Gatra", original: "Space Gatra" },
-        { value: "space maneka", label: "🏛️ Space Maneka", original: "Space Maneka" },
-        { value: "space outdoor", label: "🌳 Space Outdoor", original: "Space Outdoor" },
+        { value: "space gayeng", label: "🎉 Space Gayeng", original: "Space Gayeng" },
+        { value: "markspace", label: "📍 Markspace", original: "Markspace" },
+        { value: "foodlab", label: "🍽️ Foodlab", original: "Foodlab" },
+        { value: "abipraya membership", label: "🎫 Abipraya Membership", original: "Abipraya Membership" },
+        { value: "abipraya event", label: "🎪 Abipraya Event", original: "Abipraya Event" },
         { value: "virtual office", label: "💻 Virtual Office", original: "Virtual Office" },
-        { value: "course", label: "📚 Course", original: "Course" }
+        { value: "outdoorspace", label: "🌳 Outdoor Space", original: "Outdoor Space" }
     ];
 
     const genderOptions = [
@@ -550,10 +571,14 @@ const HeteroSemarang = () => {
                 if (lowerSpace.includes("maneka")) emoji = "🎨";
                 else if (lowerSpace.includes("rembug")) emoji = "🗣️";
                 else if (lowerSpace.includes("private")) emoji = "🚪";
-                else if (lowerSpace.includes("virtual")) emoji = "💻";
-                else if (lowerSpace.includes("course")) emoji = "📚";
                 else if (lowerSpace.includes("gatra")) emoji = "🏛️";
+                else if (lowerSpace.includes("gayeng")) emoji = "🎉";
+                else if (lowerSpace.includes("markspace")) emoji = "📍";
+                else if (lowerSpace.includes("foodlab")) emoji = "🍽️";
+                else if (lowerSpace.includes("abipraya")) emoji = "🎫";
+                else if (lowerSpace.includes("virtual")) emoji = "💻";
                 else if (lowerSpace.includes("outdoor")) emoji = "🌳";
+                else if (lowerSpace.includes("course")) emoji = "📚";
                 
                 return {
                     value: lowerSpace,
@@ -581,7 +606,7 @@ const HeteroSemarang = () => {
         const space = allSpaceOptions.find(s => s.value === spaceValue) || 
                      availableSpaces.find(s => s.value === spaceValue);
         return space ? space.original : spaceValue;
-    });
+    }, [allSpaceOptions, availableSpaces]);
 
     const applyAllFilters = () => {
         let result = [...members];
@@ -760,116 +785,99 @@ const HeteroSemarang = () => {
                     color: "green",
                     description: "Loading..."
                 }
-            ]
+            ];
         }
+
+        const totalMembers = filteredMembers.length;
+        const activeMembers = filteredMembers.filter(member => member.status === 'active').length;
+        
+        const activePercentage = totalMembers > 0 ? ((activeMembers / totalMembers) * 100).toFixed(1) : "0";
 
         return [
             {
-<<<<<<< HEAD
                 title: "Total Members",
                 value: totalMembers.toString(),
                 subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
                 percentage: `${totalMembers > 0 ? "12.5" : "0"}%`,
                 trend: totalMembers > 0 ? "up" : "neutral",
                 period: "Last Month",
-=======
-                title: 'Total Members',
-                value: stats.totalMembers.toString(),
-                subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
-                percentage: `${stats.growthPercentage}%`,
-                trend: parseFloat(stats.growthPercentage) > 0 ? "up" :
-                        parseFloat(stats.growthPercentage) < 0 ? "down" : "neutral",
->>>>>>> 274c0e8c4429aa80d3b4a30f05cf7db065a44f19
                 icon: Users,
                 color: "blue",
-                description: `${stats.growthPercentage}% growth`
+                description: `${totalMembers > 0 ? "12.5" : "0"}% Growth`
             },
             {
                 title: "Active Members",
-<<<<<<< HEAD
                 value: activeMembers.toString(),
                 subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
                 percentage: `${activePercentage}%`,
                 trend: activeMembers > 0 ? "up" : "down",
                 period: "Last Month",
-=======
-                value: stats.activeMembers.toString(),
-                subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
-                percentage: `${stats.activePercentage}%`,
-                trend: stats.activeMembers > 0 ? "up" : "down",
->>>>>>> 274c0e8c4429aa80d3b4a30f05cf7db065a44f19
                 icon: UserCheck,
                 color: "green",
-                description: `${stats.activePercentage}% of total`
+                description: `${activePercentage}% of total`
             }
-<<<<<<< HEAD
         ];
-    }, [filteredMembers, filters.space, getSpaceLabel]);
-=======
-        ]
-    }, [stats, statsLoading, activeFilters.space, getSpaceLabel])
->>>>>>> 274c0e8c4429aa80d3b4a30f05cf7db065a44f19
+    }, [filteredMembers, filters.space, getSpaceLabel, statsLoading]);
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
     };
 
     const handleOpenEditModal = (member) => {
-        setEditingMember(member)
-        setIsEditModalOpen(true)
-    }
+        setEditingMember(member);
+        setIsEditModalOpen(true);
+    };
 
     const handleEditMember = async (memberId, memberData) => {
         try {
-            const updatedMember = await updateMemberHeteroSemarang(memberId, memberData)
+            const updatedMember = await updateMemberHeteroSolo(memberId, memberData);
 
             if (selectedMember && selectedMember.id === memberId){
                 setSelectedMember(prev => ({
                     ...prev,
                     ...memberData,
                     ...updatedMember
-                }))
+                }));
             }
 
-            setIsEditModalOpen(false)
-            setEditingMember(null)
-            toast.success('Member updated successfully')
+            setIsEditModalOpen(false);
+            setEditingMember(null);
+            toast.success('Member updated successfully');
             fetchMembers(pagination.page);
         } catch (error) {
-            console.error('Error updating', error)
-            toast.error(error.message || 'Failed to update member')
+            console.error('Error updating', error);
+            toast.error(error.message || 'Failed to update member');
         }
     };
 
     const handleAddNewMember = async (memberData) => {
         try {
-            await addMemberHeteroSemarang(memberData)
-            setIsAddMemberModalOpen(false)
-            toast.success('Member added successfully')
-            await fetchMembers(pagination.page);
+            await addMemberHeteroSolo(memberData);
+            setIsAddMemberModalOpen(false);
+            toast.success('Member added successfully');
+            fetchMembers(pagination.page);
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
-            console.error('Error adding member:', error);
-            toast.error('Failed to add member');
+            // 
         }
-    }
+    };
 
     const handleDeleteMember = async (memberId) => {
-        if (!selectedMember) return
+        if (!selectedMember) return;
 
         if (showConfirm && typeof showConfirm === 'function') {
             showConfirm({
                 title: 'Delete Program',
-                message: `Are you sure yiu want to delete "${selectedMember.full_name}"? This action cannot be undone`,
+                message: `Are you sure you want to delete "${selectedMember.full_name}"? This action cannot be undone`,
                 type: 'danger',
                 confirmText: 'Delete',
                 cancelText: 'Cancel',
                 onConfirm: async () => {
                     try {
-                        await deleteMemberHeteroSemarang(memberId)
-                        setSelectedMember(null)
-                        toast.success('Member deleted successfully')
+                        await deleteMemberHeteroSolo(memberId);
+                        setSelectedMember(null);
+                        toast.success('Member deleted successfully');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     } catch (error) {
                         console.error('Error delete member:', error);
@@ -879,45 +887,42 @@ const HeteroSemarang = () => {
                 onCancel: () => {
                     toast('Deletion cancelled', { icon: AlertTriangle });
                 }
-            })
+            });
         }
     };
 
     useEffect(() => {
         if (selectedMember && members.length > 0) {
-            const currentSelected = members.find(member => member.id === selectedMember.id)
+            const currentSelected = members.find(member => member.id === selectedMember.id);
             if (currentSelected) {
-                setSelectedMember(currentSelected)
+                setSelectedMember(currentSelected);
             } else {
                 setSelectedMember(null);
             }
         }
-    }, [members, selectedMember?.id])
+    }, [members, selectedMember?.id]);
 
-<<<<<<< HEAD
     const handleRefresh = () => {
-        fetchMembers(pagination.page)
+        fetchMembers(pagination.page);
         handleClearAllFilters();
-    }
+    };
 
-=======
->>>>>>> 274c0e8c4429aa80d3b4a30f05cf7db065a44f19
     const handlePageChange = (page) => {
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-        fetchMembers(page)
-    }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        fetchMembers(page);
+    };
 
     const tableConfig = {
         headers: ['No', 'Full Name', 'Email', 'Gender', 'Space', 'Company', 'Duration', 'Status', 'Action'],
-        title: 'Hetero Semarang Management',
+        title: 'Hetero Surakarta Management',
         addButton: "Add Member",
         detailTitle: "Member Details"
-    }
+    };
 
     const formattedMembers = filteredMembers.map((member, index) => {
-        const currentPage = pagination.page
-        const itemsPerPage = pagination.limit
-        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1
+        const currentPage = pagination.page;
+        const itemsPerPage = pagination.limit;
+        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
 
         return {
             id: member.id,
@@ -932,8 +937,8 @@ const HeteroSemarang = () => {
             status: member.status,
             action: 'Detail',
             ...member
-        }
-    })
+        };
+    });
 
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
@@ -954,6 +959,26 @@ const HeteroSemarang = () => {
                         )}
                     </CardHeader>
                     <CardContent>
+                        {error && (
+                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
+                                <div className="flex items-start gap-3">
+                                    <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <h3 className="text-sm font-semibold text-red-800">Failed to load members</h3>
+                                        <p className="text-sm text-red-600 mt-1">{error}</p>
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={handleRefresh}
+                                        className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
+                                    >
+                                        Reload Page
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
                                 <div className="w-full sm:w-auto min-w-[250px]">
@@ -965,7 +990,7 @@ const HeteroSemarang = () => {
                                     />
                                 </div>
                                 
-                                {/* Custom Filter Dropdown - Versi baru seperti ProgramFilter.jsx */}
+                                {/* Custom Filter Dropdown */}
                                 <div className="relative">
                                     <Button 
                                         variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
@@ -1193,7 +1218,6 @@ const HeteroSemarang = () => {
                                             variant="outline"
                                             className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
                                             disabled={loading || filteredMembers.length === 0 || isExporting}
-                                            onClick={() => handleExport('excel')}
                                         >
                                             {isExporting ? (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1203,7 +1227,24 @@ const HeteroSemarang = () => {
                                             Export
                                         </Button>
                                     </DropdownMenuTrigger>
-                                   
+                                    <DropdownMenuContent className="w-48">
+                                        <DropdownMenuItem 
+                                            onClick={() => handleExport('excel')}
+                                            disabled={filteredMembers.length === 0 || isExporting}
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <FileSpreadsheet className="h-4 w-4" />
+                                            Export as Excel
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem 
+                                            onClick={() => handleExport('csv')}
+                                            disabled={filteredMembers.length === 0 || isExporting}
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <FileText className="h-4 w-4" />
+                                            Export as CSV
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
                         </div>
@@ -1214,7 +1255,7 @@ const HeteroSemarang = () => {
                                 
                                 {searchTerm && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        <span>🔍 "{searchTerm}"</span>
+                                        <span>"{searchTerm}"</span>
                                         <button 
                                             onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"
@@ -1358,7 +1399,7 @@ const HeteroSemarang = () => {
                         ${highlightDetail ? 'rounded-xl p-1 -m-1 bg-blue-50/50' : ''}
                     `}
                 >
-                    <HeteroContent
+                    <HeteroSoloContent
                         selectedMember={selectedMember}
                         onOpenEditModal={handleOpenEditModal}
                         onEdit={handleEditMember}
@@ -1379,13 +1420,13 @@ const HeteroSemarang = () => {
                     onCancel={handleCancel}
                 />
 
-                <AddMember 
+                <AddMemberSurakarta 
                     isAddMemberModalOpen={isAddMemberModalOpen || isEditModalOpen} 
                     setIsAddMemberModalOpen={(open) => {
                         if (!open) {
-                            setIsAddMemberModalOpen(false)
-                            setIsEditModalOpen(false)
-                            setEditingMember(null)
+                            setIsAddMemberModalOpen(false);
+                            setIsEditModalOpen(false);
+                            setEditingMember(null);
                         }
                     }}
                     onAddMember={handleAddNewMember}
@@ -1547,7 +1588,7 @@ const HeteroSemarang = () => {
                 </Dialog>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default HeteroSemarang;
+export default HeteroSurakarta;

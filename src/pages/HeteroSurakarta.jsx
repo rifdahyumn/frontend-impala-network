@@ -606,7 +606,7 @@ const HeteroSurakarta = () => {
         const space = allSpaceOptions.find(s => s.value === spaceValue) || 
                      availableSpaces.find(s => s.value === spaceValue);
         return space ? space.original : spaceValue;
-    });
+    }, [allSpaceOptions, availableSpaces]);
 
     const applyAllFilters = () => {
         let result = [...members];
@@ -765,7 +765,29 @@ const HeteroSurakarta = () => {
     }, [searchTerm, filters]);
 
     const memberStats = useMemo(() => {
-<<<<<<< HEAD
+        if (statsLoading) {
+            return [
+                {
+                    title: "Total Members",
+                    value: "Loading...",
+                    percentage: "0%",
+                    trend: "neutral",
+                    icon: Users,
+                    color: "blue",
+                    description: "Loading..."
+                },
+                {
+                    title: "Active Members",
+                    value: "Loading...",
+                    percentage: "0%",
+                    trend: "neutral",
+                    icon: UserCheck,
+                    color: "green",
+                    description: "Loading..."
+                }
+            ];
+        }
+
         const totalMembers = filteredMembers.length;
         const activeMembers = filteredMembers.filter(member => member.status === 'active').length;
         
@@ -795,116 +817,67 @@ const HeteroSurakarta = () => {
                 description: `${activePercentage}% of total`
             }
         ];
-    }, [filteredMembers, filters.space, getSpaceLabel]);
-=======
-            if (statsLoading) {
-                return [
-                    {
-                        title: "Total Members",
-                        value: "Loading...",
-                        percentage: "0%",
-                        trend: "neutral",
-                        icon: Users,
-                        color: "blue",
-                        description: "Loading..."
-                    },
-                    {
-                        title: "Active Members",
-                        value: "Loading...",
-                        percentage: "0%",
-                        trend: "neutral",
-                        icon: UserCheck,
-                        color: "green",
-                        description: "Loading..."
-                    }
-                ]
-            }
-    
-            return [
-                {
-                    title: 'Total Members',
-                    value: stats.totalMembers.toString(),
-                    subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
-                    percentage: `${stats.growthPercentage}%`,
-                    trend: parseFloat(stats.growthPercentage) > 0 ? "up" :
-                            parseFloat(stats.growthPercentage) < 0 ? "down" : "neutral",
-                    icon: Users,
-                    color: "blue",
-                    description: `${stats.growthPercentage}% growth`
-                },
-                {
-                    title: "Active Members",
-                    value: stats.activeMembers.toString(),
-                    subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
-                    percentage: `${stats.activePercentage}%`,
-                    trend: stats.activeMembers > 0 ? "up" : "down",
-                    icon: UserCheck,
-                    color: "green",
-                    description: `${stats.activePercentage}% of total`
-                }
-            ]
-        }, [stats, statsLoading, activeFilters.space, getSpaceLabel])
->>>>>>> 274c0e8c4429aa80d3b4a30f05cf7db065a44f19
+    }, [filteredMembers, filters.space, getSpaceLabel, statsLoading]);
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
     };
 
     const handleOpenEditModal = (member) => {
-        setEditingMember(member)
-        setIsEditModalOpen(true)
-    }
+        setEditingMember(member);
+        setIsEditModalOpen(true);
+    };
 
     const handleEditMember = async (memberId, memberData) => {
         try {
-            const updatedMember = await updateMemberHeteroSolo(memberId, memberData)
+            const updatedMember = await updateMemberHeteroSolo(memberId, memberData);
 
-            if (selectedMember && selectedMember.id === memberId){
+            if (selectedMember && selectedMember.id === memberId) {
                 setSelectedMember(prev => ({
                     ...prev,
                     ...memberData,
                     ...updatedMember
-                }))
+                }));
             }
 
-            setIsEditModalOpen(false)
-            setEditingMember(null)
-            toast.success('Member updated successfully')
+            setIsEditModalOpen(false);
+            setEditingMember(null);
+            toast.success('Member updated successfully');
             await fetchMembers(pagination.page);
         } catch (error) {
-            console.error('Error updating', error)
-            toast.error(error.message || 'Failed to update member')
+            console.error('Error updating', error);
+            toast.error(error.message || 'Failed to update member');
         }
     };
 
     const handleAddNewMember = async (memberData) => {
         try {
-            await addMemberHeteroSolo(memberData)
-            setIsAddMemberModalOpen(false)
-            toast.success('Member added successfully')
+            await addMemberHeteroSolo(memberData);
+            setIsAddMemberModalOpen(false);
+            toast.success('Member added successfully');
             await fetchMembers(pagination.page);
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
-            //
+            // 
         }
-    }
+    };
 
     const handleDeleteMember = async (memberId) => {
-        if (!selectedMember) return
+        if (!selectedMember) return;
 
         if (showConfirm && typeof showConfirm === 'function') {
             showConfirm({
                 title: 'Delete Program',
-                message: `Are you sure yiu want to delete "${selectedMember.full_name}"? This action cannot be undone`,
+                message: `Are you sure you want to delete "${selectedMember.full_name}"? This action cannot be undone`,
                 type: 'danger',
                 confirmText: 'Delete',
                 cancelText: 'Cancel',
                 onConfirm: async () => {
                     try {
-                        await deleteMemberHeteroSolo(memberId)
-                        setSelectedMember(null)
-                        toast.success('Member deleted successfully')
+                        await deleteMemberHeteroSolo(memberId);
+                        setSelectedMember(null);
+                        toast.success('Member deleted successfully');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     } catch (error) {
                         console.error('Error delete member:', error);
@@ -914,45 +887,42 @@ const HeteroSurakarta = () => {
                 onCancel: () => {
                     toast('Deletion cancelled', { icon: AlertTriangle });
                 }
-            })
+            });
         }
     };
 
     useEffect(() => {
         if (selectedMember && members.length > 0) {
-            const currentSelected = members.find(member => member.id === selectedMember.id)
+            const currentSelected = members.find(member => member.id === selectedMember.id);
             if (currentSelected) {
-                setSelectedMember(currentSelected)
+                setSelectedMember(currentSelected);
             } else {
                 setSelectedMember(null);
             }
         }
-    }, [members, selectedMember?.id])
+    }, [members, selectedMember?.id]);
 
-<<<<<<< HEAD
     const handleRefresh = () => {
-        fetchMembers(pagination.page)
+        fetchMembers(pagination.page);
         handleClearAllFilters();
-    }
+    };
 
-=======
->>>>>>> 274c0e8c4429aa80d3b4a30f05cf7db065a44f19
     const handlePageChange = (page) => {
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-        fetchMembers(page)
-    }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        fetchMembers(page);
+    };
 
     const tableConfig = {
         headers: ['No', 'Full Name', 'Email', 'Gender', 'Space', 'Company', 'Duration', 'Status', 'Action'],
         title: 'Hetero Surakarta Management',
         addButton: "Add Member",
         detailTitle: "Member Details"
-    }
+    };
 
     const formattedMembers = filteredMembers.map((member, index) => {
-        const currentPage = pagination.page
-        const itemsPerPage = pagination.limit
-        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1
+        const currentPage = pagination.page;
+        const itemsPerPage = pagination.limit;
+        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
 
         return {
             id: member.id,
@@ -967,8 +937,8 @@ const HeteroSurakarta = () => {
             status: member.status,
             action: 'Detail',
             ...member
-        }
-    })
+        };
+    });
 
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
@@ -989,6 +959,26 @@ const HeteroSurakarta = () => {
                         )}
                     </CardHeader>
                     <CardContent>
+                        {error && (
+                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
+                                <div className="flex items-start gap-3">
+                                    <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <h3 className="text-sm font-semibold text-red-800">Failed to load members</h3>
+                                        <p className="text-sm text-red-600 mt-1">{error}</p>
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={handleRefresh}
+                                        className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
+                                    >
+                                        Reload Page
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
                                 <div className="w-full sm:w-auto min-w-[250px]">
@@ -1000,7 +990,7 @@ const HeteroSurakarta = () => {
                                     />
                                 </div>
                                 
-                                {/* Custom Filter Dropdown - Versi baru seperti ProgramFilter.jsx */}
+                                {/* Custom Filter Dropdown */}
                                 <div className="relative">
                                     <Button 
                                         variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
@@ -1434,9 +1424,9 @@ const HeteroSurakarta = () => {
                     isAddMemberModalOpen={isAddMemberModalOpen || isEditModalOpen} 
                     setIsAddMemberModalOpen={(open) => {
                         if (!open) {
-                            setIsAddMemberModalOpen(false)
-                            setIsEditModalOpen(false)
-                            setEditingMember(null)
+                            setIsAddMemberModalOpen(false);
+                            setIsEditModalOpen(false);
+                            setEditingMember(null);
                         }
                     }}
                     onAddMember={handleAddNewMember}
@@ -1598,7 +1588,7 @@ const HeteroSurakarta = () => {
                 </Dialog>
             </div>
         </div>
-    )
-}
+    );
+};
 
 export default HeteroSurakarta;
