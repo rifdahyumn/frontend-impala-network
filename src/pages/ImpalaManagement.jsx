@@ -15,6 +15,9 @@ import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx'
 import ConfirmModal from "../components/Content/ConfirmModal";
 
+// ===== IMPORT PROGRAM SERVICE =====
+import programService from "../services/programService";
+
 const ImpalaManagement = () => {
     const [selectedParticipant, setSelectedParticipant] = useState(null);
     const [highlightDetail, setHighlightDetail] = useState(false);
@@ -24,9 +27,14 @@ const ImpalaManagement = () => {
     const [filters, setFilters] = useState({
         gender: null,
         category: null,
+        program: null, // <=== TAMBAHKAN FILTER PROGRAM
     });
     const [filteredParticipants, setFilteredParticipants] = useState([]);
     const [availableCategories, setAvailableCategories] = useState([]);
+    
+    // ===== STATE UNTUK PROGRAM FILTER =====
+    const [availablePrograms, setAvailablePrograms] = useState([]);
+    const [loadingPrograms, setLoadingPrograms] = useState(false);
     
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importFile, setImportFile] = useState(null);
@@ -37,13 +45,118 @@ const ImpalaManagement = () => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [tempFilters, setTempFilters] = useState({
         gender: filters.gender || '',
-        category: filters.category || 'all'
+        category: filters.category || 'all',
+        program: filters.program || 'all' // <=== TAMBAHKAN
     });
 
     const { participant, loading, error, pagination, handlePageChange, refreshData, 
             showConfirm, handleConfirm, handleCancel, isOpen: isConfirmOpen, config: confirmConfig,
             deleteParticipant
      } = useImpala();
+
+    // ===== FUNGSI UNTUK MENGAMBIL DAFTAR PROGRAM =====
+    const fetchProgramsFromSystem = async () => {
+        setLoadingPrograms(true);
+        try {
+            // Menggunakan service yang sudah ada untuk mengambil nama program dari client
+            const response = await programService.getProgramNamesFromClients('');
+            
+            if (response.data && Array.isArray(response.data)) {
+                const programOptions = response.data.map(item => ({
+                    value: item.program_name.toLowerCase().replace(/\s+/g, '_'),
+                    label: item.program_name,
+                    original: item.program_name,
+                    client: item.company || item.client_name || ''
+                }));
+                
+                // Sort alphabetically
+                const sortedPrograms = programOptions.sort((a, b) => 
+                    a.original.localeCompare(b.original)
+                );
+                
+                setAvailablePrograms(sortedPrograms);
+            } else {
+                // Fallback: extract dari peserta jika response tidak valid
+                fetchProgramsFromParticipants();
+            }
+        } catch (error) {
+            console.error('Error fetching program names:', error);
+            // Fallback ke peserta
+            fetchProgramsFromParticipants();
+        } finally {
+            setLoadingPrograms(false);
+        }
+    };
+
+    // Fallback function: extract program names dari peserta
+    const fetchProgramsFromParticipants = () => {
+        if (participant.length > 0) {
+            const uniquePrograms = [...new Set(participant
+                .map(p => p.program_name)
+                .filter(name => name && name.trim() !== "")
+            )].sort();
+            
+            const programOptions = uniquePrograms.map(program => ({
+                value: program.toLowerCase().replace(/\s+/g, '_'),
+                label: program,
+                original: program,
+                client: ''
+            }));
+            
+            setAvailablePrograms(prev => {
+                // Gabungkan dengan existing, hindari duplikat
+                const combined = [...prev];
+                programOptions.forEach(newProg => {
+                    if (!combined.find(p => p.original === newProg.original)) {
+                        combined.push(newProg);
+                    }
+                });
+                return combined.sort((a, b) => a.original.localeCompare(b.original));
+            });
+        }
+    };
+
+    // ===== EVENT LISTENER UNTUK REAL-TIME UPDATE =====
+    useEffect(() => {
+        const handleProgramUpdated = (event) => {
+            const { type, program } = event.detail;
+            
+            setAvailablePrograms(prev => {
+                if (type === 'added') {
+                    // Cek apakah program sudah ada
+                    const exists = prev.find(p => 
+                        p.original.toLowerCase() === program.name.toLowerCase()
+                    );
+                    
+                    if (!exists) {
+                        const newProgram = {
+                            value: program.name.toLowerCase().replace(/\s+/g, '_'),
+                            label: program.name,
+                            original: program.name,
+                            client: program.client || '',
+                            isNew: true
+                        };
+                        
+                        toast.success(`Program baru ditambahkan: ${program.name}`);
+                        return [...prev, newProgram].sort((a, b) => 
+                            a.original.localeCompare(b.original)
+                        );
+                    }
+                }
+                
+                return prev;
+            });
+        };
+        
+        window.addEventListener('programAddedOrUpdated', handleProgramUpdated);
+        return () => window.removeEventListener('programAddedOrUpdated', handleProgramUpdated);
+    }, []);
+
+    // ===== HANDLER UNTUK REFRESH PROGRAM LIST =====
+    const handleRefreshPrograms = () => {
+        fetchProgramsFromSystem();
+        toast.success('Memperbarui daftar program...');
+    };
 
     const handleSelectParticipant = useCallback((participant) => {
         setSelectedParticipant(participant);
@@ -508,6 +621,7 @@ const ImpalaManagement = () => {
         };
     }, []);
 
+    // ===== UPDATE APPLY ALL FILTERS UNTUK PROGRAM =====
     const applyAllFilters = () => {
         let result = [...participant];
         
@@ -538,6 +652,19 @@ const ImpalaManagement = () => {
             });
         }
         
+        // ===== FILTER PROGRAM =====
+        if (filters.program && filters.program !== 'all') {
+            const selectedProgram = availablePrograms.find(p => p.value === filters.program);
+            if (selectedProgram) {
+                result = result.filter(participant => {
+                    const participantProgram = participant.program_name;
+                    if (!participantProgram) return false;
+                    return participantProgram.toLowerCase() === selectedProgram.original.toLowerCase();
+                });
+            }
+        }
+        // ==========================
+        
         setFilteredParticipants(result);
     };
 
@@ -564,11 +691,17 @@ const ImpalaManagement = () => {
         setTempFilters(prev => ({ ...prev, category }));
     };
 
+    // ===== HANDLER UNTUK PROGRAM FILTER =====
+    const handleTempProgramChange = (program) => {
+        setTempFilters(prev => ({ ...prev, program }));
+    };
+
     // Handler untuk apply filter
     const handleApplyFilters = () => {
         setFilters({
             gender: tempFilters.gender || null,
-            category: tempFilters.category || null
+            category: tempFilters.category || null,
+            program: tempFilters.program || null // <=== TAMBAHKAN
         });
         setIsFilterOpen(false);
     };
@@ -577,7 +710,8 @@ const ImpalaManagement = () => {
     const handleCancelFilters = () => {
         setTempFilters({
             gender: filters.gender || '',
-            category: filters.category || 'all'
+            category: filters.category || 'all',
+            program: filters.program || 'all' // <=== TAMBAHKAN
         });
         setIsFilterOpen(false);
     };
@@ -586,7 +720,8 @@ const ImpalaManagement = () => {
     const handleClearAllTempFilters = () => {
         setTempFilters({
             gender: '',
-            category: 'all'
+            category: 'all',
+            program: 'all' // <=== TAMBAHKAN
         });
     };
 
@@ -596,6 +731,7 @@ const ImpalaManagement = () => {
         setFilters({
             gender: null,
             category: null,
+            program: null, // <=== TAMBAHKAN
         });
     };
 
@@ -603,6 +739,7 @@ const ImpalaManagement = () => {
         let count = 0;
         if (filters.gender) count++;
         if (filters.category && filters.category !== 'all') count++;
+        if (filters.program && filters.program !== 'all') count++; // <=== TAMBAHKAN
         return count;
     };
 
@@ -611,6 +748,7 @@ const ImpalaManagement = () => {
         let count = 0;
         if (tempFilters.gender) count++;
         if (tempFilters.category && tempFilters.category !== 'all') count++;
+        if (tempFilters.program && tempFilters.program !== 'all') count++; // <=== TAMBAHKAN
         return count;
     };
 
@@ -619,6 +757,7 @@ const ImpalaManagement = () => {
         if (searchTerm) count++;
         if (filters.gender) count++;
         if (filters.category && filters.category !== 'all') count++;
+        if (filters.program && filters.program !== 'all') count++; // <=== TAMBAHKAN
         return count;
     };
 
@@ -630,6 +769,8 @@ const ImpalaManagement = () => {
             setFilters(prev => ({ ...prev, gender: null }));
         } else if (filterType === 'category') {
             setFilters(prev => ({ ...prev, category: null }));
+        } else if (filterType === 'program') { // <=== TAMBAHKAN
+            setFilters(prev => ({ ...prev, program: null }));
         }
     };
 
@@ -646,13 +787,26 @@ const ImpalaManagement = () => {
         return genderValue;
     };
 
+    // ===== FUNGSI UNTUK GET PROGRAM LABEL =====
+    const getProgramLabel = (programValue) => {
+        if (!programValue || programValue === "all") return "All Programs";
+        const program = availablePrograms.find(p => p.value === programValue);
+        return program ? program.original : programValue;
+    };
+
     // Update tempFilters ketika filters berubah
     useEffect(() => {
         setTempFilters({
             gender: filters.gender || '',
-            category: filters.category || 'all'
+            category: filters.category || 'all',
+            program: filters.program || 'all' // <=== TAMBAHKAN
         });
     }, [filters]);
+
+    // ===== LOAD INITIAL DATA PROGRAM =====
+    useEffect(() => {
+        fetchProgramsFromSystem();
+    }, []);
 
     useEffect(() => {
         if (participant.length > 0) {
@@ -666,6 +820,13 @@ const ImpalaManagement = () => {
             setFilteredParticipants(normalizedParticipants);
         }
     }, [participant, extractCategories]);
+
+    // ===== TAMBAHKAN PROGRAM DARI PESERTA KE LIST =====
+    useEffect(() => {
+        if (!loading && participant.length > 0) {
+            fetchProgramsFromParticipants();
+        }
+    }, [loading, participant]);
 
     useEffect(() => {
         if (participant.length > 0) {
@@ -1061,7 +1222,7 @@ const ImpalaManagement = () => {
                                                 </div>
 
                                                 {/* Category */}
-                                                <div>
+                                                <div className="mb-3">
                                                     <div className="flex items-center justify-between mb-1">
                                                         <h4 className="font-semibold text-gray-900 text-xs">CATEGORY</h4>
                                                         {tempFilters.category && tempFilters.category !== 'all' && (
@@ -1133,6 +1294,109 @@ const ImpalaManagement = () => {
                                                         })}
                                                     </div>
                                                 </div>
+
+                                                {/* ===== PROGRAM NAME FILTER ===== */}
+                                                <div className="mb-3">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <h4 className="font-semibold text-gray-900 text-xs">PROGRAM NAME</h4>
+                                                            <button 
+                                                                onClick={handleRefreshPrograms}
+                                                                className="text-xs text-gray-400 hover:text-blue-500"
+                                                                title="Refresh program list"
+                                                            >
+                                                                <RefreshCw className={`h-3 w-3 ${loadingPrograms ? 'animate-spin' : ''}`} />
+                                                            </button>
+                                                        </div>
+                                                        {tempFilters.program && tempFilters.program !== 'all' && (
+                                                            <button 
+                                                                onClick={() => handleTempProgramChange('all')}
+                                                                className="text-xs text-gray-400 hover:text-red-500"
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {/* All Programs */}
+                                                    <div className="mb-2">
+                                                        <button
+                                                            className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
+                                                                !tempFilters.program || tempFilters.program === 'all'
+                                                                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                                                    : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 text-gray-700'
+                                                            }`}
+                                                            onClick={() => handleTempProgramChange('all')}
+                                                        >
+                                                            <div className="flex items-center gap-1.5">
+                                                                <div className={`h-2 w-2 rounded-full ${
+                                                                    !tempFilters.program || tempFilters.program === 'all' 
+                                                                        ? 'bg-purple-500' 
+                                                                        : 'bg-gray-400'
+                                                                }`} />
+                                                                <span className="font-medium text-xs">All Programs</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                {(!tempFilters.program || tempFilters.program === 'all') && (
+                                                                    <Check className="h-3 w-3 text-purple-600" />
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Programs List */}
+                                                    <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                                                        {loadingPrograms ? (
+                                                            <div className="flex items-center justify-center py-4">
+                                                                <Loader2 className="h-3 w-3 animate-spin text-purple-600 mr-2" />
+                                                                <span className="text-xs text-gray-600">Loading programs...</span>
+                                                            </div>
+                                                        ) : availablePrograms.length > 0 ? (
+                                                            <div className="space-y-1">
+                                                                {availablePrograms.map((program) => {
+                                                                    const isSelected = tempFilters.program === program.value;
+                                                                    
+                                                                    return (
+                                                                        <button
+                                                                            key={program.value}
+                                                                            className={`flex items-center justify-between w-full px-2 py-1.5 rounded transition-all text-xs ${
+                                                                                isSelected
+                                                                                    ? 'bg-purple-100 text-purple-700 border border-purple-300'
+                                                                                    : 'hover:bg-gray-50 text-gray-700'
+                                                                            }`}
+                                                                            onClick={() => handleTempProgramChange(program.value)}
+                                                                            title={program.client ? `Client: ${program.client}` : ''}
+                                                                        >
+                                                                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                                                <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
+                                                                                    isSelected ? 'bg-purple-500' : 'bg-gray-400'
+                                                                                }`} />
+                                                                                <span className="truncate text-xs text-left">
+                                                                                    {program.original}
+                                                                                    {program.isNew && (
+                                                                                        <span className="ml-1 bg-green-100 text-green-800 text-[10px] px-1 py-0.5 rounded">
+                                                                                            NEW
+                                                                                        </span>
+                                                                                    )}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+                                                                                {isSelected && (
+                                                                                    <Check className="h-2.5 w-2.5 text-purple-600 flex-shrink-0" />
+                                                                                )}
+                                                                            </div>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-center py-4 text-xs text-gray-500">
+                                                                No programs available. Add clients with program names first.
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {/* ===== END PROGRAM FILTER ===== */}
                                             </div>
 
                                             <div className="border-t p-2">
@@ -1267,6 +1531,32 @@ const ImpalaManagement = () => {
                                         </button>
                                     </span>
                                 )}
+                                
+                                {/* ===== PROGRAM FILTER DISPLAY ===== */}
+                                {filters.program && filters.program !== 'all' && (
+                                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        📚 {getProgramLabel(filters.program)}
+                                        <button 
+                                            onClick={() => clearFilter('program')}
+                                            className="text-purple-600 hover:text-purple-800 ml-1"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                )}
+                                
+                                {filters.program === 'all' && (
+                                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        📚 All Programs
+                                        <button 
+                                            onClick={() => clearFilter('program')}
+                                            className="text-purple-600 hover:text-purple-800 ml-1"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                )}
+                                {/* ===== END PROGRAM FILTER DISPLAY ===== */}
                                 
                                 <Button 
                                     variant="ghost" 
