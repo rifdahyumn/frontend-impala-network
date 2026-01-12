@@ -22,15 +22,19 @@ const HeteroBanyumas = () => {
     const [editingMember, setEditingMember] = useState(null)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
+
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importFile, setImportFile] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [validationErrors, setValidationErrors] = useState([]);
     const [isDragging, setIsDragging] = useState(false);
+    
     const fileInputRef = useRef(null);
     const dropZoneRef = useRef(null);
+
     const [highlightDetail, setHighlightDetail] = useState(false);
+
     const memberDetailRef = useRef(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilters, setActiveFilters] = useState({
@@ -39,9 +43,10 @@ const HeteroBanyumas = () => {
     });
     const [filteredMembers, setFilteredMembers] = useState([]);
     const [availableSpaces, setAvailableSpaces] = useState([]);
-    const { members, loading, error, pagination, filters, setFilters, fetchMembers, addMemberHeteroBanyumas, 
+
+    const { members, loading, pagination, filters, setFilters, fetchMembers, addMemberHeteroBanyumas, 
         updateMemberHeteroBanyumas, deleteMemberHeteroBanyumas, showConfirm, handleConfirm, handleCancel,
-        isOpen: isConfirmOpen, config: confirmConfig } = useHeteroBanyumas()
+        isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroBanyumas()
 
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
@@ -406,15 +411,22 @@ const HeteroBanyumas = () => {
             const exportData = filteredMembers.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
+                'NIK': member.nik || '-',
                 'Email': member.email || '-',
-                'Gender': member.gender || '-',
                 'Phone': member.phone || '-',
-                'Space': member.space || '-',
+                'Gender': member.gender || '-',
+                'Date of Birth': member.date_of_birth || '-',
+                'Age': member.age || '-',
+                'Education': member.education || '-',
                 'Company': member.company || '-',
-                'Duration': member.duration || '-',
                 'Status': member.status || '-',
                 'Address': member.address || '-',
-                'Notes': member.notes || '-',
+                'Space': member.space || '-',
+                'Start Date': member.start_date || '-',
+                'End Date': member.end_date || '-',
+                'Duration': member.duration || '-',
+                'Add On': member.add_on || '-',
+                'Add Information': member.add_information || '-',
                 'Created Date': member.created_at 
                     ? new Date(member.created_at).toLocaleDateString() 
                     : '-',
@@ -463,26 +475,8 @@ const HeteroBanyumas = () => {
                 XLSX.writeFile(wb, fileName);
                 
                 toast.success(`Exported ${exportData.length} members to Excel`);
-            } else if (format === 'csv') {
-                const csvContent = [
-                    Object.keys(exportData[0]).join(','),
-                    ...exportData.map(row => Object.values(row).join(','))
-                ].join('\n');
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                const url = URL.createObjectURL(blob);
-                
-                link.setAttribute("href", url);
-                link.setAttribute("download", `hetero_banyumas_members_export_${new Date().getTime()}.csv`);
-                link.style.visibility = 'hidden';
-                
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                toast.success(`Exported ${exportData.length} members to CSV`);
-            }
+            } 
+
         } catch (error) {
             console.error('Export failed:', error);
             toast.error(`Failed to export: ${error.message}`);
@@ -507,31 +501,31 @@ const HeteroBanyumas = () => {
     }, []);
 
     const allSpaceOptions = [
-        { value: "maneka personal", label: "🏠 Maneka Personal", original: "Maneka Personal" },
-        { value: "maneka group", label: "👥 Maneka Group", original: "Maneka Group" },
-        { value: "rembug meeting room", label: "🗣️ Rembug Meeting Room", original: "Rembug Meeting Room" },
-        { value: "rembug meeting room (weekend)", label: "🗣️ Rembug Meeting Room (Weekend)", original: "Rembug Meeting Room (Weekend)" },
-        { value: "private office 1", label: "🚪 Private Office 1", original: "Private Office 1" },
-        { value: "private office 2", label: "🚪 Private Office 2", original: "Private Office 2" },
-        { value: "private office 3&4", label: "🚪 Private Office 3&4", original: "Private Office 3&4" },
-        { value: "private office 5", label: "🚪 Private Office 5", original: "Private Office 5" },
-        { value: "private office 6", label: "🚪 Private Office 6", original: "Private Office 6" },
-        { value: "virtual office", label: "💻 Virtual Office", original: "Virtual Office" },
-        { value: "gatra event space", label: "🏛️ Gatra Event Space", original: "Gatra Event Space" },
-        { value: "gatra wedding hall", label: "💒 Gatra Wedding Hall", original: "Gatra Wedding Hall" },
-        { value: "outdoorspace", label: "🌳 Outdoorspace", original: "Outdoorspace" },
-        { value: "amphitheater", label: "🎭 Amphitheater", original: "Amphitheater" },
-        { value: "basketball court personal", label: "🏀 Basketball Court Personal", original: "Basketball Court Personal" },
-        { value: "basketball court membership", label: "🏀 Basketball Court Membership", original: "Basketball Court Membership" },
-        { value: "futsal court personal", label: "⚽ Futsal Court Personal", original: "Futsal Court Personal" },
-        { value: "futsal court membership", label: "⚽ Futsal Court Membership", original: "Futsal Court Membership" },
-        { value: "tennis court personal", label: "🎾 Tennis Court Personal", original: "Tennis Court Personal" },
-        { value: "tennis court membership", label: "🎾 Tennis Court Membership", original: "Tennis Court Membership" },
-        { value: "co-living room 1", label: "🏠 Co-Living Room 1", original: "Co-Living Room 1" },
-        { value: "co-living room 2", label: "🏠 Co-Living Room 2", original: "Co-Living Room 2" },
-        { value: "co-living room 3", label: "🏠 Co-Living Room 3", original: "Co-Living Room 3" },
-        { value: "co-living room 4", label: "🏠 Co-Living Room 4", original: "Co-Living Room 4" },
-        { value: "makerspace", label: "🔧 Makerspace", original: "Makerspace" }
+        { value: "maneka personal", label: "Maneka Personal", original: "Maneka Personal" },
+        { value: "maneka group", label: "Maneka Group", original: "Maneka Group" },
+        { value: "rembug meeting room", label: "Rembug Meeting Room", original: "Rembug Meeting Room" },
+        { value: "rembug meeting room (weekend)", label: "Rembug Meeting Room (Weekend)", original: "Rembug Meeting Room (Weekend)" },
+        { value: "private office 1", label: "Private Office 1", original: "Private Office 1" },
+        { value: "private office 2", label: "Private Office 2", original: "Private Office 2" },
+        { value: "private office 3&4", label: "Private Office 3&4", original: "Private Office 3&4" },
+        { value: "private office 5", label: "Private Office 5", original: "Private Office 5" },
+        { value: "private office 6", label: "Private Office 6", original: "Private Office 6" },
+        { value: "virtual office", label: "Virtual Office", original: "Virtual Office" },
+        { value: "gatra event space", label: "Gatra Event Space", original: "Gatra Event Space" },
+        { value: "gatra wedding hall", label: "Gatra Wedding Hall", original: "Gatra Wedding Hall" },
+        { value: "outdoorspace", label: "Outdoorspace", original: "Outdoorspace" },
+        { value: "amphitheater", label: "Amphitheater", original: "Amphitheater" },
+        { value: "basketball court personal", label: "Basketball Court Personal", original: "Basketball Court Personal" },
+        { value: "basketball court membership", label: "Basketball Court Membership", original: "Basketball Court Membership" },
+        { value: "futsal court personal", label: "Futsal Court Personal", original: "Futsal Court Personal" },
+        { value: "futsal court membership", label: "Futsal Court Membership", original: "Futsal Court Membership" },
+        { value: "tennis court personal", label: "Tennis Court Personal", original: "Tennis Court Personal" },
+        { value: "tennis court membership", label: "Tennis Court Membership", original: "Tennis Court Membership" },
+        { value: "co-living room 1", label: "Co-Living Room 1", original: "Co-Living Room 1" },
+        { value: "co-living room 2", label: "Co-Living Room 2", original: "Co-Living Room 2" },
+        { value: "co-living room 3", label: "Co-Living Room 3", original: "Co-Living Room 3" },
+        { value: "co-living room 4", label: "Co-Living Room 4", original: "Co-Living Room 4" },
+        { value: "makerspace", label: "Makerspace", original: "Makerspace" }
     ];
 
     const genderOptions = [
@@ -708,36 +702,53 @@ const HeteroBanyumas = () => {
     }, [searchTerm, activeFilters]);
 
     const memberStats = useMemo(() => {
-        const totalMembers = filteredMembers.length;
-        const activeMembers = filteredMembers.filter(member => member.status === 'active').length;
-        
-        const activePercentage = totalMembers > 0 ? ((activeMembers / totalMembers) * 100).toFixed(1) : "0";
+        if (statsLoading) {
+            return [
+                {
+                    title: "Total Members",
+                    value: "Loading...",
+                    percentage: "0%",
+                    trend: "neutral",
+                    icon: Users,
+                    color: "blue",
+                    description: "Loading..."
+                },
+                {
+                    title: "Active Members",
+                    value: "Loading...",
+                    percentage: "0%",
+                    trend: "neutral",
+                    icon: UserCheck,
+                    color: "green",
+                    description: "Loading..."
+                }
+            ]
+        }
 
         return [
             {
-                title: "Total Members",
-                value: totalMembers.toString(),
+                title: 'Total Members',
+                value: stats.totalMembers.toString(),
                 subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
-                percentage: `${totalMembers > 0 ? "12.5" : "0"}%`,
-                trend: totalMembers > 0 ? "up" : "neutral",
-                period: "Last Month",
+                percentage: `${stats.growthPercentage}%`,
+                trend: parseFloat(stats.growthPercentage) > 0 ? "up" :
+                        parseFloat(stats.growthPercentage) < 0 ? "down" : "neutral",
                 icon: Users,
                 color: "blue",
-                description: `${totalMembers > 0 ? "12.5" : "0"}% Growth`
+                description: `${stats.growthPercentage}% growth`
             },
             {
                 title: "Active Members",
-                value: activeMembers.toString(),
+                value: stats.activeMembers.toString(),
                 subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
-                percentage: `${activePercentage}%`,
-                trend: activeMembers > 0 ? "up" : "down",
-                period: "Last Month",
+                percentage: `${stats.activePercentage}%`,
+                trend: stats.activeMembers > 0 ? "up" : "down",
                 icon: UserCheck,
                 color: "green",
-                description: `${activePercentage}% of total`
+                description: `${stats.activePercentage}% of total`
             }
-        ];
-    }, [filteredMembers, activeFilters.space, getSpaceLabel]);
+        ]
+    }, [stats, statsLoading, activeFilters.space, getSpaceLabel])
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
@@ -822,11 +833,6 @@ const HeteroBanyumas = () => {
         }
     }, [members, selectedMember?.id])
 
-    const handleRefresh = () => {
-        fetchMembers(pagination.page)
-        clearAllFilters();
-    }
-
     const handlePageChange = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' })
         fetchMembers(page)
@@ -849,8 +855,8 @@ const HeteroBanyumas = () => {
 
     const getGenderLabel = (genderValue) => {
         if (!genderValue) return "";
-        if (genderValue === 'male') return '👨 Male';
-        if (genderValue === 'female') return '👩 Female';
+        if (genderValue === 'male') return 'Male';
+        if (genderValue === 'female') return 'Female';
         return genderValue;
     };
 
@@ -901,7 +907,7 @@ const HeteroBanyumas = () => {
                         )}
                     </CardHeader>
                     <CardContent>
-                        {error && (
+                        {/* {error && (
                             <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
                                 <div className="flex items-start gap-3">
                                     <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
@@ -919,7 +925,7 @@ const HeteroBanyumas = () => {
                                     </Button>
                                 </div>
                             </div>
-                        )}
+                        )} */}
 
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2 items-center'>
@@ -981,7 +987,7 @@ const HeteroBanyumas = () => {
                                                     onCheckedChange={() => handleSpaceFilterChange('all')}
                                                     className="cursor-pointer hover:bg-gray-50"
                                                 >
-                                                    🏢 All Spaces
+                                                    All Spaces
                                                 </DropdownMenuCheckboxItem>
                                                 
                                                 {availableSpaces.map((space) => (
@@ -1059,6 +1065,7 @@ const HeteroBanyumas = () => {
                                             variant="outline"
                                             className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
                                             disabled={loading || filteredMembers.length === 0 || isExporting}
+                                            onClick={() => handleExport('excel')}
                                         >
                                             {isExporting ? (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1068,24 +1075,7 @@ const HeteroBanyumas = () => {
                                             Export
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-48">
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('excel')}
-                                            disabled={filteredMembers.length === 0 || isExporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileSpreadsheet className="h-4 w-4" />
-                                            Export as Excel
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('csv')}
-                                            disabled={filteredMembers.length === 0 || isExporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileText className="h-4 w-4" />
-                                            Export as CSV
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
+                                    
                                 </DropdownMenu>
                             </div>
                         </div>

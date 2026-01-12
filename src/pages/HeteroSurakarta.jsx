@@ -833,6 +833,11 @@ const HeteroSurakarta = () => {
         }
     }, [members, selectedMember?.id])
 
+    const handleRefresh = () => {
+        fetchMembers(pagination.page)
+        clearAllFilters();
+    }
+
     const handlePageChange = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' })
         fetchMembers(page)
@@ -907,6 +912,26 @@ const HeteroSurakarta = () => {
                         )}
                     </CardHeader>
                     <CardContent>
+                        {error && (
+                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
+                                <div className="flex items-start gap-3">
+                                    <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <h3 className="text-sm font-semibold text-red-800">Failed to load members</h3>
+                                        <p className="text-sm text-red-600 mt-1">{error}</p>
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={handleRefresh}
+                                        className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
+                                    >
+                                        Reload Page
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex gap-2 items-center'>
                                 <SearchBar 

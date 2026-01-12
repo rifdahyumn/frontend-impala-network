@@ -550,7 +550,7 @@ const AddMemberBanyumas = ({
                     required: true,
                     placeholder: 'Select end date'
                 },
-                {
+               {
                     customComponent: true,
                     render: () => (
                         <div className="space-y-3 md:col-span-2">
