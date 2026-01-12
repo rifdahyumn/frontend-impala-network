@@ -39,6 +39,7 @@ const ProgramExport = ({
                 'Capacity': program.capacity || '-',
                 'Price': program.price || '-',
                 'Client': program.client || '-',
+                'Link RAB': program.link_rab || '-',
                 'Start Date': program.start_date || '-',
                 'End Date': program.end_date || '-',
                 'Description': program.description || '-',

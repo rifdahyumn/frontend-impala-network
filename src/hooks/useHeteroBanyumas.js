@@ -20,6 +20,15 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
         ...initialFilters
     })
 
+    const [stats, setStats] = useState({
+        totalMembers: 0,
+        activeMembers: 0,
+        growthPercentage: '0%',
+        activePercentage: '0%'
+    })
+
+    const [statsLoading, setStatsLoading] = useState(false)
+
     const fetchMembers = useCallback(async (page = 1, customFilters = null) => {
         try {
             setLoading(true)
@@ -49,8 +58,47 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
         }
     }, [filters, pagination.limit])
 
+    const fetchMemberStats  = useCallback(async () => {
+            try {
+                setStatsLoading(true)
+                const result = await heteroBanyumasService.fetchMemberStats()
+    
+                if (result.success) {
+                    setStats(result.data)
+                } else {
+                    const total = members.length
+                    const active = members.filter(m => m.status === 'Active').length
+                    const activePercentage = total > 0 ? ((active / total) * 100).toFixed(1) : '0%'
+    
+                    setStats({
+                        totalMembers: total,
+                        activeMembers: active,
+                        growthPercentage: '0%',
+                        activePercentage
+                    })
+                }
+            } catch (error) {
+                console.error('Error fetching member stats:', error)
+                toast.error('Failed to load statistics')
+                
+                const total = members.length
+                const active = members.filter(m => m.status === 'active').length
+                const activePercentage = total > 0 ? ((active / total) * 100).toFixed(1) : "0.0"
+    
+                setStats({
+                    totalMembers: total,
+                    activeMembers: active,
+                    growthPercentage: "0",
+                    activePercentage
+                })
+            } finally {
+                setStatsLoading(false)
+            }
+        }, [members.length])
+
     const refetchWithFilters = useCallback((newFilters) => {
         setFilters(newFilters)
+        fetchMembers(1, newFilters)
     }, [])
 
     const changePage = useCallback((page) => {
@@ -59,6 +107,7 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
 
     useEffect(() => {
         fetchMembers(1)
+        fetchMemberStats()
     }, [])
 
     const addMemberHeteroBanyumas = async (memberData) => {
@@ -67,6 +116,7 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
             toast.success('Member add successfully')
 
             await fetchMembers(pagination.page)
+            await fetchMemberStats()
             return result
         } catch (error) {
             toast.error('Failed to add member')
@@ -89,6 +139,7 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
                 )
             )
 
+            await fetchMemberStats()
             return result.data || result
         } catch (error) {
             toast.error('Failed to update member')
@@ -112,6 +163,8 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
                 ...prev,
                 total: prev.total - 1
             }))
+
+            await fetchMemberStats()
         } catch (error) {
             toast.error('Failed to delete member')
             throw error
@@ -120,8 +173,16 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
         }
     }
 
+    const refreshAll = useCallback(async () => {
+        await Promise.all([
+            fetchMembers(pagination.page),
+            fetchMemberStats()
+        ])
+    }, [fetchMembers, pagination.page, fetchMemberStats])
+
     return {
         ...confirmDialog, members, loading, error, pagination, filters, setFilters: refetchWithFilters, 
-        fetchMembers: changePage, addMemberHeteroBanyumas, updateMemberHeteroBanyumas, deleteMemberHeteroBanyumas
+        fetchMembers: changePage, addMemberHeteroBanyumas, updateMemberHeteroBanyumas, deleteMemberHeteroBanyumas,
+        fetchMemberStats, refreshAll, stats, statsLoading
     }
 }

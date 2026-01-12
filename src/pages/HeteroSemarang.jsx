@@ -424,10 +424,13 @@ const HeteroSurakarta = () => {
                 'Phone': member.phone || '-',
                 'Space': member.space || '-',
                 'Company': member.company || '-',
-                'Duration': member.duration || '-',
                 'Status': member.status || '-',
                 'Address': member.address || '-',
-                'Notes': member.notes || '-',
+                'Start Date': member.start_date || '-',
+                'End Date': member.end_date || '-',
+                'Duration': member.duration || '-',
+                'Add On': member.add_on || '-',
+                'Add Information': member.add_information || '-',
                 'Created Date': member.created_at 
                     ? new Date(member.created_at).toLocaleDateString() 
                     : '-',

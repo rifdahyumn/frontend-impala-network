@@ -10,7 +10,7 @@ const ProgramFilters = ({
     setSearchTerm,
     showAllOnSearch,
     isShowAllMode,
-    availableCategories,
+    // availableCategories,
     handleSearch,
     handleToggleShowAll,
     handleResetToPagination,
@@ -29,14 +29,12 @@ const ProgramFilters = ({
         { value: 'Inactive', label: 'Inactive', color: 'text-red-600 bg-red-50' },
     ];
 
-    // State untuk filter dropdown
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [tempFilters, setTempFilters] = useState({
         status: filters.status || '',
         category: filters.category || 'all'
     });
 
-    // Update tempFilters ketika filters berubah
     useEffect(() => {
         setTempFilters({
             status: filters.status || '',
@@ -44,56 +42,50 @@ const ProgramFilters = ({
         });
     }, [filters]);
 
-    // 4 kategori yang diizinkan
     const allowedCategories = [
         { 
-            value: 'seminar/webinar', 
+            value: 'Seminar / Webinar', 
             label: 'Seminar / Webinar', 
             original: 'Seminar / Webinar',
             mappingValues: ['seminar', 'webinar', 'seminar/webinar', 'seminar / webinar', 'seminar-webinar']
         },
         { 
-            value: 'workshop', 
+            value: 'Workshop', 
             label: 'Workshop', 
             original: 'Workshop',
             mappingValues: ['workshop', 'training', 'workshop training', 'workshop/training', 'workshop-training']
         },
         { 
-            value: 'community service', 
+            value: 'Community Service', 
             label: 'Community Service', 
             original: 'Community Service',
             mappingValues: ['community service', 'volunteer', 'volunteer/community', 'volunteer / community service', 'community']
         },
         { 
-            value: 'expo', 
+            value: 'Expo', 
             label: 'Expo', 
             original: 'Expo',
             mappingValues: ['expo', 'exhibition', 'exhibition/expo', 'exhibition / expo', 'exhibition-expo']
         }
     ];
 
-    // Fungsi untuk memetakan kategori dari database ke 4 kategori yang diizinkan
     const mapToAllowedCategory = (categoryValue) => {
         if (!categoryValue) return 'all';
         
         const normalizedValue = categoryValue.toLowerCase().trim();
         
-        // Cari kategori yang sesuai
         for (const category of allowedCategories) {
             if (category.mappingValues.includes(normalizedValue)) {
                 return category.value;
             }
         }
         
-        // Jika tidak ditemukan, return value asli
         return categoryValue;
     };
 
-    // Fungsi untuk mendapatkan label kategori yang ditampilkan
     const getCategoryLabel = (categoryValue) => {
         if (!categoryValue || categoryValue === "all") return "All Categories";
         
-        // Cari di allowedCategories
         const category = allowedCategories.find(c => 
             c.value.toLowerCase() === categoryValue.toLowerCase() ||
             c.mappingValues.includes(categoryValue.toLowerCase())
@@ -101,7 +93,6 @@ const ProgramFilters = ({
         
         if (category) return category.original;
         
-        // Fallback ke value asli
         return categoryValue;
     };
 
@@ -127,7 +118,6 @@ const ProgramFilters = ({
         return statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
     };
 
-    // Handler untuk filter sementara
     const handleTempStatusChange = (status) => {
         setTempFilters(prev => ({ ...prev, status }));
     };
@@ -136,9 +126,7 @@ const ProgramFilters = ({
         setTempFilters(prev => ({ ...prev, category }));
     };
 
-    // Handler untuk apply filter
     const handleApplyFilters = () => {
-        // Map kategori yang dipilih ke format yang sesuai untuk API
         let categoryToSend = '';
         if (tempFilters.category !== 'all') {
             categoryToSend = mapToAllowedCategory(tempFilters.category);
@@ -151,7 +139,6 @@ const ProgramFilters = ({
         setIsFilterOpen(false);
     };
 
-    // Handler untuk cancel filter
     const handleCancelFilters = () => {
         setTempFilters({
             status: filters.status || '',
@@ -168,7 +155,6 @@ const ProgramFilters = ({
         });
     };
 
-    // Handler untuk menghitung filter sementara yang aktif
     const getTempActiveFiltersCount = () => {
         let count = 0;
         if (tempFilters.status) count++;
@@ -314,7 +300,6 @@ const ProgramFilters = ({
                                             )}
                                         </div>
                                         
-                                        {/* All Categories */}
                                         <div className="mb-2">
                                             <button
                                                 className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
@@ -340,7 +325,6 @@ const ProgramFilters = ({
                                             </button>
                                         </div>
 
-                                        {/* Categories Grid - Hanya 4 opsi */}
                                         <div className="grid grid-cols-2 gap-2">
                                             {allowedCategories.map((category) => {
                                                 const isSelected = tempFilters.category === category.value;

@@ -151,38 +151,120 @@ class ProgramService {
         if (!dateString) return ''
 
         try {
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+                const [year, month, day] = dateString.split('-').map(Number)
+                const date = new Date(year, month - 1, day)
+
+                if (date.getFullYear() === year &&
+                    date.getMonth() === month - 1 &&
+                    date.getDate() === day) {
+                        return dateString
+                    }
+            }
+
             let date
 
             if (typeof dateString === 'number') {
-
                 const excelEpoch = new Date(Date.UTC(1899, 11, 30));
                 date = new Date(excelEpoch.getTime() + dateString * 24 * 60 * 60 * 1000);
             } else if (dateString.includes('T')) {
                 date = new Date(dateString)
-            } else if (dateString.includes('/')) {
-                const parts = dateString.split('/')
-                if (parts.length === 3) {
-                    date = new Date(parts[2], parts[1] - 1, parts[0]);
+            } else {
+                const cleanDate = String(dateString).trim()
+
+                const yyyyMmDdMatch = cleanDate.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+                if (yyyyMmDdMatch) {
+                    const year = parseInt(yyyyMmDdMatch[1], 10)
+                    const month = parseInt(yyyyMmDdMatch[2], 10)
+                    const day = parseInt(yyyyMmDdMatch[3], 10)
+
+                    if (year >= 1900 && year < 2100) {
+                        date = new Date(year, month - 1, day)
+                    }
                 }
-            } else if (dateString.includes('-')) {
-                const parts = dateString.split('-');
-                if (parts.length === 3) {
-                    date = new Date(parts[0], parts[1] - 1, parts[2]);
+
+                if (!date) {
+                    const dateSeparator = cleanDate.includes('/') ? '/' : '-';
+                    const parts = cleanDate.split(dateSeparator)
+
+                    if (parts.length === 3) {
+                        const possibleFormats = []
+
+                        if (parts[0].length === 4) {
+                            possibleFormats.push({
+                                year: parseInt(parts[0], 10),
+                                month: parseInt(parts[1], 10),
+                                day: parseInt(parts[2], 10)
+                            })
+                        }
+
+                        if (parts[2].length === 4) {
+                            possibleFormats.push({
+                                year: parseInt(parts[2], 10),
+                                month: parseInt(parts[1], 10),
+                                day: parseInt(parts[0], 10)
+                            })
+                        }
+
+                        if (parts[2].length === 4 && parseInt(parts[0], 10) <= 12) {
+                            possibleFormats.push({
+                                year: parseInt(parts[2], 10),
+                                month: parseInt(parts[0], 10),
+                                day: parseInt(parts[1], 10)
+                            })
+                        }
+
+                        for (const format of possibleFormats) {
+                            if (format.year >= 1900 && format.year <= 2100 &&
+                                format.month >= 1 && format.month <= 12 &&
+                                format.day >= 1 && format.day <= 31) {
+                                    const testDate = new Date(format.year, format.month - 1, format.day)
+                                    if (testDate.getFullYear() === format.year &&
+                                        testDate.getMonth() === format.month - 1 &&
+                                        testDate.getDate() === format.day) {
+                                            date = testDate
+                                            break
+                                        }
+                                }
+                        }
+                    }
+                }
+
+                if (!date) {
+                    const parsed = Date.parse(cleanDate)
+                    if (!isNaN(parsed)) {
+                        date = new Date(parsed)
+                    }
                 }
             }
 
             if (!date || isNaN(date.getTime())) {
-                date = new Date(dateString);
+                console.warn(`Cannot parse data: ${dateString}`)
+                return dateString
             }
 
-            if (!isNaN(date.getTime())) {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+
+            if (year < 1900 || year > 2100) {
+                console.warn(`Suspicious year detected: ${year} for input: ${dateString}`)
+
+                if (year > 100) {
+                    const currentYear = new Date().getFullYear()
+                    const century = Math.floor(currentYear / 100) * 100
+                    const correctedYear = century + year
+
+                    if (correctedYear >= 1900 && correctedYear <= 2100) {
+                        return `${correctedYear}-${month}${day}`
+                    }
+                }
+
+                return dateString
             }
 
-            return dateString
+            return `${year}-${month}-${day}`
+
         } catch  {
             return dateString
         }
@@ -226,6 +308,7 @@ class ProgramService {
                 'Capacity': '30',
                 'Price': '5000000',
                 'Client': 'PT. Example Corporation',
+                'Link RAB': 'https://docs.google.com/spreadsheets/d/1iulr-2du-2GVWKy4gCZoFxraPqbX2yTnx_CzP-auUb8/edit?gid=689740445#gid=689740445',
                 'Start Date': '2024-03-01',
                 'End Date': '2024-03-05',
                 'Description': '5-day intensive leadership training program',
@@ -239,6 +322,7 @@ class ProgramService {
                 'Capacity': '50',
                 'Price': '2500000',
                 'Client': 'Startup XYZ',
+                'Link RAB': 'https://docs.google.com/spreadsheets/d/1iulr-2du-2GVWKy4gCZoFxraPqbX2yTnx_CzP-auUb8/edit?gid=689740445#gid=689740445',
                 'Start Date': '2024-04-15',
                 'End Date': '2024-04-16',
                 'Description': '2-day digital marketing workshop',

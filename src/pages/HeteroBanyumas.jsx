@@ -22,15 +22,19 @@ const HeteroBanyumas = () => {
     const [editingMember, setEditingMember] = useState(null)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
+
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importFile, setImportFile] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [validationErrors, setValidationErrors] = useState([]);
     const [isDragging, setIsDragging] = useState(false);
+    
     const fileInputRef = useRef(null);
     const dropZoneRef = useRef(null);
+
     const [highlightDetail, setHighlightDetail] = useState(false);
+
     const memberDetailRef = useRef(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [filters, setFilters] = useState({
@@ -39,17 +43,9 @@ const HeteroBanyumas = () => {
     });
     const [filteredMembers, setFilteredMembers] = useState([]);
     const [availableSpaces, setAvailableSpaces] = useState([]);
-
-    // State untuk filter dropdown
-    const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [tempFilters, setTempFilters] = useState({
-        gender: filters.gender || '',
-        space: filters.space || 'all'
-    });
-
     const { members, loading, error, pagination, fetchMembers, addMemberHeteroBanyumas, 
         updateMemberHeteroBanyumas, deleteMemberHeteroBanyumas, showConfirm, handleConfirm, handleCancel,
-        isOpen: isConfirmOpen, config: confirmConfig } = useHeteroBanyumas()
+        isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroBanyumas()
 
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
@@ -414,15 +410,22 @@ const HeteroBanyumas = () => {
             const exportData = filteredMembers.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
+                'NIK': member.nik || '-',
                 'Email': member.email || '-',
-                'Gender': member.gender || '-',
                 'Phone': member.phone || '-',
-                'Space': member.space || '-',
+                'Gender': member.gender || '-',
+                'Date of Birth': member.date_of_birth || '-',
+                'Age': member.age || '-',
+                'Education': member.education || '-',
                 'Company': member.company || '-',
-                'Duration': member.duration || '-',
                 'Status': member.status || '-',
                 'Address': member.address || '-',
-                'Notes': member.notes || '-',
+                'Space': member.space || '-',
+                'Start Date': member.start_date || '-',
+                'End Date': member.end_date || '-',
+                'Duration': member.duration || '-',
+                'Add On': member.add_on || '-',
+                'Add Information': member.add_information || '-',
                 'Created Date': member.created_at 
                     ? new Date(member.created_at).toLocaleDateString() 
                     : '-',
@@ -471,26 +474,8 @@ const HeteroBanyumas = () => {
                 XLSX.writeFile(wb, fileName);
                 
                 toast.success(`Exported ${exportData.length} members to Excel`);
-            } else if (format === 'csv') {
-                const csvContent = [
-                    Object.keys(exportData[0]).join(','),
-                    ...exportData.map(row => Object.values(row).join(','))
-                ].join('\n');
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                const url = URL.createObjectURL(blob);
-                
-                link.setAttribute("href", url);
-                link.setAttribute("download", `hetero_banyumas_members_export_${new Date().getTime()}.csv`);
-                link.style.visibility = 'hidden';
-                
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                toast.success(`Exported ${exportData.length} members to CSV`);
-            }
+            } 
+
         } catch (error) {
             console.error('Export failed:', error);
             toast.error(`Failed to export: ${error.message}`);
@@ -515,31 +500,31 @@ const HeteroBanyumas = () => {
     }, []);
 
     const allSpaceOptions = [
-        { value: "maneka personal", label: "🏠 Maneka Personal", original: "Maneka Personal" },
-        { value: "maneka group", label: "👥 Maneka Group", original: "Maneka Group" },
-        { value: "rembug meeting room", label: "🗣️ Rembug Meeting Room", original: "Rembug Meeting Room" },
-        { value: "rembug meeting room (weekend)", label: "🗣️ Rembug Meeting Room (Weekend)", original: "Rembug Meeting Room (Weekend)" },
-        { value: "private office 1", label: "🚪 Private Office 1", original: "Private Office 1" },
-        { value: "private office 2", label: "🚪 Private Office 2", original: "Private Office 2" },
-        { value: "private office 3&4", label: "🚪 Private Office 3&4", original: "Private Office 3&4" },
-        { value: "private office 5", label: "🚪 Private Office 5", original: "Private Office 5" },
-        { value: "private office 6", label: "🚪 Private Office 6", original: "Private Office 6" },
-        { value: "virtual office", label: "💻 Virtual Office", original: "Virtual Office" },
-        { value: "gatra event space", label: "🏛️ Gatra Event Space", original: "Gatra Event Space" },
-        { value: "gatra wedding hall", label: "💒 Gatra Wedding Hall", original: "Gatra Wedding Hall" },
-        { value: "outdoorspace", label: "🌳 Outdoorspace", original: "Outdoorspace" },
-        { value: "amphitheater", label: "🎭 Amphitheater", original: "Amphitheater" },
-        { value: "basketball court personal", label: "🏀 Basketball Court Personal", original: "Basketball Court Personal" },
-        { value: "basketball court membership", label: "🏀 Basketball Court Membership", original: "Basketball Court Membership" },
-        { value: "futsal court personal", label: "⚽ Futsal Court Personal", original: "Futsal Court Personal" },
-        { value: "futsal court membership", label: "⚽ Futsal Court Membership", original: "Futsal Court Membership" },
-        { value: "tennis court personal", label: "🎾 Tennis Court Personal", original: "Tennis Court Personal" },
-        { value: "tennis court membership", label: "🎾 Tennis Court Membership", original: "Tennis Court Membership" },
-        { value: "co-living room 1", label: "🏠 Co-Living Room 1", original: "Co-Living Room 1" },
-        { value: "co-living room 2", label: "🏠 Co-Living Room 2", original: "Co-Living Room 2" },
-        { value: "co-living room 3", label: "🏠 Co-Living Room 3", original: "Co-Living Room 3" },
-        { value: "co-living room 4", label: "🏠 Co-Living Room 4", original: "Co-Living Room 4" },
-        { value: "makerspace", label: "🔧 Makerspace", original: "Makerspace" }
+        { value: "maneka personal", label: "Maneka Personal", original: "Maneka Personal" },
+        { value: "maneka group", label: "Maneka Group", original: "Maneka Group" },
+        { value: "rembug meeting room", label: "Rembug Meeting Room", original: "Rembug Meeting Room" },
+        { value: "rembug meeting room (weekend)", label: "Rembug Meeting Room (Weekend)", original: "Rembug Meeting Room (Weekend)" },
+        { value: "private office 1", label: "Private Office 1", original: "Private Office 1" },
+        { value: "private office 2", label: "Private Office 2", original: "Private Office 2" },
+        { value: "private office 3&4", label: "Private Office 3&4", original: "Private Office 3&4" },
+        { value: "private office 5", label: "Private Office 5", original: "Private Office 5" },
+        { value: "private office 6", label: "Private Office 6", original: "Private Office 6" },
+        { value: "virtual office", label: "Virtual Office", original: "Virtual Office" },
+        { value: "gatra event space", label: "Gatra Event Space", original: "Gatra Event Space" },
+        { value: "gatra wedding hall", label: "Gatra Wedding Hall", original: "Gatra Wedding Hall" },
+        { value: "outdoorspace", label: "Outdoorspace", original: "Outdoorspace" },
+        { value: "amphitheater", label: "Amphitheater", original: "Amphitheater" },
+        { value: "basketball court personal", label: "Basketball Court Personal", original: "Basketball Court Personal" },
+        { value: "basketball court membership", label: "Basketball Court Membership", original: "Basketball Court Membership" },
+        { value: "futsal court personal", label: "Futsal Court Personal", original: "Futsal Court Personal" },
+        { value: "futsal court membership", label: "Futsal Court Membership", original: "Futsal Court Membership" },
+        { value: "tennis court personal", label: "Tennis Court Personal", original: "Tennis Court Personal" },
+        { value: "tennis court membership", label: "Tennis Court Membership", original: "Tennis Court Membership" },
+        { value: "co-living room 1", label: "Co-Living Room 1", original: "Co-Living Room 1" },
+        { value: "co-living room 2", label: "Co-Living Room 2", original: "Co-Living Room 2" },
+        { value: "co-living room 3", label: "Co-Living Room 3", original: "Co-Living Room 3" },
+        { value: "co-living room 4", label: "Co-Living Room 4", original: "Co-Living Room 4" },
+        { value: "makerspace", label: "Makerspace", original: "Makerspace" }
     ];
 
     const genderOptions = [
@@ -655,43 +640,43 @@ const HeteroBanyumas = () => {
         setSearchTerm(term);
     };
 
-    // Handler untuk filter sementara
-    const handleTempGenderChange = (gender) => {
-        setTempFilters(prev => ({ 
-            ...prev, 
-            gender: prev.gender === gender ? '' : gender 
-        }));
-    };
+    // // Handler untuk filter sementara
+    // const handleTempGenderChange = (gender) => {
+    //     setTempFilters(prev => ({ 
+    //         ...prev, 
+    //         gender: prev.gender === gender ? '' : gender 
+    //     }));
+    // };
 
-    const handleTempSpaceChange = (space) => {
-        setTempFilters(prev => ({ ...prev, space }));
-    };
+    // const handleTempSpaceChange = (space) => {
+    //     setTempFilters(prev => ({ ...prev, space }));
+    // };
 
-    // Handler untuk apply filter
-    const handleApplyFilters = () => {
-        setFilters({
-            gender: tempFilters.gender || null,
-            space: tempFilters.space || null
-        });
-        setIsFilterOpen(false);
-    };
+    // // Handler untuk apply filter
+    // const handleApplyFilters = () => {
+    //     setFilters({
+    //         gender: tempFilters.gender || null,
+    //         space: tempFilters.space || null
+    //     });
+    //     setIsFilterOpen(false);
+    // };
 
-    // Handler untuk cancel filter
-    const handleCancelFilters = () => {
-        setTempFilters({
-            gender: filters.gender || '',
-            space: filters.space || 'all'
-        });
-        setIsFilterOpen(false);
-    };
+    // // Handler untuk cancel filter
+    // const handleCancelFilters = () => {
+    //     setTempFilters({
+    //         gender: filters.gender || '',
+    //         space: filters.space || 'all'
+    //     });
+    //     setIsFilterOpen(false);
+    // };
 
-    // Handler untuk clear semua filter sementara
-    const handleClearAllTempFilters = () => {
-        setTempFilters({
-            gender: '',
-            space: 'all'
-        });
-    };
+    // // Handler untuk clear semua filter sementara
+    // const handleClearAllTempFilters = () => {
+    //     setTempFilters({
+    //         gender: '',
+    //         space: 'all'
+    //     });
+    // };
 
     // Handler untuk clear semua filter permanen
     const handleClearAllFilters = () => {
@@ -704,28 +689,28 @@ const HeteroBanyumas = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const getActiveFiltersCount = () => {
-        let count = 0;
-        if (filters.gender) count++;
-        if (filters.space && filters.space !== 'all') count++;
-        return count;
-    };
+    // const getActiveFiltersCount = () => {
+    //     let count = 0;
+    //     if (filters.gender) count++;
+    //     if (filters.space && filters.space !== 'all') count++;
+    //     return count;
+    // };
 
     // Handler untuk menghitung filter sementara yang aktif
-    const getTempActiveFiltersCount = () => {
-        let count = 0;
-        if (tempFilters.gender) count++;
-        if (tempFilters.space && tempFilters.space !== 'all') count++;
-        return count;
-    };
+    // const getTempActiveFiltersCount = () => {
+    //     let count = 0;
+    //     if (tempFilters.gender) count++;
+    //     if (tempFilters.space && tempFilters.space !== 'all') count++;
+    //     return count;
+    // };
 
-    const getTotalActiveCriteria = () => {
-        let count = 0;
-        if (searchTerm) count++;
-        if (filters.gender) count++;
-        if (filters.space && filters.space !== 'all') count++;
-        return count;
-    };
+    // const getTotalActiveCriteria = () => {
+    //     let count = 0;
+    //     if (searchTerm) count++;
+    //     if (filters.gender) count++;
+    //     if (filters.space && filters.space !== 'all') count++;
+    //     return count;
+    // };
 
     // Fungsi clear filter spesifik
     const clearFilter = (filterType) => {
@@ -738,12 +723,12 @@ const HeteroBanyumas = () => {
         }
     };
 
-    const getGenderLabel = (genderValue) => {
-        if (!genderValue) return "";
-        if (genderValue === 'male') return '👨 Male';
-        if (genderValue === 'female') return '👩 Female';
-        return genderValue;
-    };
+    // const getGenderLabel = (genderValue) => {
+    //     if (!genderValue) return "";
+    //     if (genderValue === 'male') return '👨 Male';
+    //     if (genderValue === 'female') return '👩 Female';
+    //     return genderValue;
+    // };
 
     // Update tempFilters ketika filters berubah
     useEffect(() => {
@@ -781,27 +766,27 @@ const HeteroBanyumas = () => {
             {
                 title: "Total Members",
                 value: totalMembers.toString(),
-                subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
+                subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
                 percentage: `${totalMembers > 0 ? "12.5" : "0"}%`,
                 trend: totalMembers > 0 ? "up" : "neutral",
                 period: "Last Month",
                 icon: Users,
                 color: "blue",
-                description: `${totalMembers > 0 ? "12.5" : "0"}% Growth`
+                description: `${stats.growthPercentage}% growth`
             },
             {
                 title: "Active Members",
                 value: activeMembers.toString(),
-                subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
+                subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
                 percentage: `${activePercentage}%`,
                 trend: activeMembers > 0 ? "up" : "down",
                 period: "Last Month",
                 icon: UserCheck,
                 color: "green",
-                description: `${activePercentage}% of total`
+                description: `${stats.activePercentage}% of total`
             }
         ];
-    }, [filteredMembers, filters.space, getSpaceLabel]);
+    }, [filteredMembers, activeFilters.space, getSpaceLabel]);
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
@@ -888,13 +873,35 @@ const HeteroBanyumas = () => {
 
     const handleRefresh = () => {
         fetchMembers(pagination.page)
-        handleClearAllFilters();
+        clearAllFilters();
     }
 
     const handlePageChange = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' })
         fetchMembers(page)
     }
+
+    const getActiveFiltersCount = () => {
+        let count = 0;
+        if (activeFilters.gender) count++;
+        if (activeFilters.space) count++;
+        return count;
+    };
+
+    const getTotalActiveCriteria = () => {
+        let count = 0;
+        if (searchTerm) count++;
+        if (activeFilters.gender) count++;
+        if (activeFilters.space) count++;
+        return count;
+    };
+
+    const getGenderLabel = (genderValue) => {
+        if (!genderValue) return "";
+        if (genderValue === 'male') return '👨 Male';
+        if (genderValue === 'female') return '👩 Female';
+        return genderValue;
+    };
 
     const tableConfig = {
         headers: ['No', 'Full Name', 'Email', 'Gender', 'Space', 'Company', 'Duration', 'Status', 'Action'],
@@ -943,25 +950,6 @@ const HeteroBanyumas = () => {
                         )}
                     </CardHeader>
                     <CardContent>
-                        {error && (
-                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
-                                <div className="flex items-start gap-3">
-                                    <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1">
-                                        <h3 className="text-sm font-semibold text-red-800">Failed to load members</h3>
-                                        <p className="text-sm text-red-600 mt-1">{error}</p>
-                                    </div>
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        onClick={handleRefresh}
-                                        className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
-                                    >
-                                        Reload Page
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
 
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
                             <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
@@ -974,188 +962,91 @@ const HeteroBanyumas = () => {
                                     />
                                 </div>
                                 
-                                {/* Custom Filter Dropdown - Versi baru seperti ProgramFilter.jsx */}
-                                <div className="relative">
-                                    <Button 
-                                        variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
-                                        className={`flex items-center gap-2 transition-all duration-200 ${
-                                            getActiveFiltersCount() > 0 
-                                                ? "bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-amber-500" 
-                                                : "text-gray-700 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 border-gray-300"
-                                        }`}
-                                        onClick={() => setIsFilterOpen(!isFilterOpen)}
-                                    >
-                                        <Filter className={`h-4 w-4 ${
-                                            getActiveFiltersCount() > 0 ? "text-white" : "text-gray-500"
-                                        }`} />
-                                        Filter
-                                        {getActiveFiltersCount() > 0 && (
-                                            <span className="ml-1 bg-white text-amber-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                                                {getActiveFiltersCount()}
-                                            </span>
-                                        )}
-                                    </Button>
-
-                                    {isFilterOpen && (
-                                        <div className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]">
-                                            <div className="p-3 border-b">
-                                                <div className="flex items-center justify-between">
-                                                    <h3 className="font-bold text-gray-900 text-xs">Filter Options</h3>
-                                                    <span className="text-xs text-gray-500">
-                                                        {getTempActiveFiltersCount()} filter{getTempActiveFiltersCount() !== 1 ? 's' : ''} selected
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div className="p-3">
-                                                {/* Gender */}
-                                                <div className="mb-3">
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <h4 className="font-semibold text-gray-900 text-xs">GENDER</h4>
-                                                        {tempFilters.gender && (
-                                                            <button 
-                                                                onClick={() => handleTempGenderChange('')}
-                                                                className="text-xs text-gray-400 hover:text-red-500"
-                                                            >
-                                                                Clear
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        {genderOptions.map((option) => {
-                                                            const isSelected = tempFilters.gender === option.value;
-                                                            return (
-                                                                <button
-                                                                    key={option.value}
-                                                                    className={`flex items-center justify-between px-2 py-1.5 rounded-md border transition-all text-xs flex-1 ${
-                                                                        isSelected
-                                                                            ? 'border-amber-500 bg-amber-50 text-amber-700'
-                                                                            : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
-                                                                    }`}
-                                                                    onClick={() => handleTempGenderChange(option.value)}
-                                                                >
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <div className={`h-1.5 w-1.5 rounded-full ${
-                                                                            isSelected ? 'bg-amber-500' : 'bg-gray-400'
-                                                                        }`} />
-                                                                        <span className="text-xs">{option.label}</span>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-1">
-                                                                        {isSelected && (
-                                                                            <Check className="h-3 w-3 text-amber-600" />
-                                                                        )}
-                                                                    </div>
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-
-                                                {/* Space */}
-                                                <div>
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <h4 className="font-semibold text-gray-900 text-xs">SPACE</h4>
-                                                        {tempFilters.space && tempFilters.space !== 'all' && (
-                                                            <button 
-                                                                onClick={() => handleTempSpaceChange('all')}
-                                                                className="text-xs text-gray-400 hover:text-red-500"
-                                                            >
-                                                                Clear
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                    
-                                                    {/* All Spaces */}
-                                                    <div className="mb-2">
-                                                        <button
-                                                            className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
-                                                                !tempFilters.space || tempFilters.space === 'all'
-                                                                    ? 'border-amber-500 bg-amber-50 text-amber-700'
-                                                                    : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
-                                                            }`}
-                                                            onClick={() => handleTempSpaceChange('all')}
-                                                        >
-                                                            <div className="flex items-center gap-1.5">
-                                                                <div className={`h-2 w-2 rounded-full ${
-                                                                    !tempFilters.space || tempFilters.space === 'all' 
-                                                                        ? 'bg-amber-500' 
-                                                                        : 'bg-gray-400'
-                                                                }`} />
-                                                                <span className="font-medium text-xs">All Spaces</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-1.5">
-                                                                {(!tempFilters.space || tempFilters.space === 'all') && (
-                                                                    <Check className="h-3 w-3 text-amber-600" />
-                                                                )}
-                                                            </div>
-                                                        </button>
-                                                    </div>
-
-                                                    {/* Spaces Grid */}
-                                                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                                                        {availableSpaces.map((space) => {
-                                                            const isSelected = tempFilters.space === space.value;
-                                                            
-                                                            return (
-                                                                <button
-                                                                    key={space.value}
-                                                                    className={`flex items-center justify-between px-2 py-1.5 rounded-lg border transition-all text-xs ${
-                                                                        isSelected
-                                                                            ? 'border-amber-500 bg-amber-50 text-amber-700'
-                                                                            : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
-                                                                    }`}
-                                                                    onClick={() => handleTempSpaceChange(space.value)}
-                                                                >
-                                                                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                                                        <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
-                                                                            isSelected ? 'bg-amber-500' : 'bg-gray-400'
-                                                                        }`} />
-                                                                        <span className="truncate font-medium text-xs">
-                                                                            {space.original}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-                                                                        {isSelected && (
-                                                                            <Check className="h-2.5 w-2.5 text-amber-600 flex-shrink-0" />
-                                                                        )}
-                                                                    </div>
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="border-t p-2">
-                                                <div className="flex justify-between items-center">
-                                                    <button
-                                                        className="text-xs text-gray-600 hover:text-red-600 flex items-center gap-1.5"
-                                                        onClick={handleClearAllTempFilters}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button 
+                                            variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
+                                            className={`flex items-center gap-2 transition-all duration-200 ${
+                                                getActiveFiltersCount() > 0 
+                                                    ? "bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-amber-500" 
+                                                    : "text-gray-700 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 border-gray-300"
+                                            }`}
+                                        >
+                                            <Filter className={`h-4 w-4 ${
+                                                getActiveFiltersCount() > 0 ? "text-white" : "text-gray-500"
+                                            }`} />
+                                            Filter
+                                            {getActiveFiltersCount() > 0 && (
+                                                <span className="ml-1 bg-white text-amber-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                                    {getActiveFiltersCount()}
+                                                </span>
+                                            )}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-56 shadow-lg border border-gray-200">
+                                        <DropdownMenuLabel className="text-gray-700 font-semibold">Filter Options</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        
+                                        <DropdownMenuGroup>
+                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
+                                                Gender
+                                            </DropdownMenuLabel>
+                                            {genderOptions.map((option) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={option.value}
+                                                    checked={activeFilters.gender === option.value}
+                                                    onCheckedChange={() => handleGenderFilterChange(option.value)}
+                                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50"
+                                                >
+                                                    {option.label}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuGroup>
+                                        
+                                        <DropdownMenuSeparator />
+                                        
+                                        <DropdownMenuGroup>
+                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
+                                                Space
+                                            </DropdownMenuLabel>
+                                            <div className="max-h-48 overflow-y-auto">
+                                                <DropdownMenuCheckboxItem
+                                                    checked={activeFilters.space === 'all'}
+                                                    onCheckedChange={() => handleSpaceFilterChange('all')}
+                                                    className="cursor-pointer hover:bg-gray-50"
+                                                >
+                                                    🏢 All Spaces
+                                                </DropdownMenuCheckboxItem>
+                                                
+                                                {availableSpaces.map((space) => (
+                                                    <DropdownMenuCheckboxItem
+                                                        key={space.value}
+                                                        checked={activeFilters.space?.toLowerCase() === space.value.toLowerCase()}
+                                                        onCheckedChange={() => handleSpaceFilterChange(space.value)}
+                                                        className="cursor-pointer hover:bg-gray-50"
                                                     >
-                                                        <X className="h-3 w-3" />
-                                                        Clear All Filters
-                                                    </button>
-                                                    <div className="flex gap-1.5">
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="text-xs h-7 px-2"
-                                                            onClick={handleCancelFilters}
-                                                        >
-                                                            Cancel
-                                                        </Button>
-                                                        <Button
-                                                            className="bg-amber-500 hover:bg-amber-600 text-white text-xs h-7 px-3"
-                                                            onClick={handleApplyFilters}
-                                                        >
-                                                            Apply
-                                                        </Button>
-                                                    </div>
-                                                </div>
+                                                        {space.label}
+                                                    </DropdownMenuCheckboxItem>
+                                                ))}
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
+                                        </DropdownMenuGroup>
+                                        
+                                        <DropdownMenuSeparator />
+                                        
+                                        <DropdownMenuItem 
+                                            onClick={() => {
+                                                setActiveFilters({
+                                                    gender: null,
+                                                    space: null,
+                                                });
+                                            }}
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer font-medium"
+                                        >
+                                            <X className="h-4 w-4 mr-2" />
+                                            Clear Filters
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
 
                             <div className='flex flex-wrap gap-2'>
@@ -1202,6 +1093,7 @@ const HeteroBanyumas = () => {
                                             variant="outline"
                                             className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
                                             disabled={loading || filteredMembers.length === 0 || isExporting}
+                                            onClick={() => handleExport('excel')}
                                         >
                                             {isExporting ? (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1211,24 +1103,7 @@ const HeteroBanyumas = () => {
                                             Export
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-48">
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('excel')}
-                                            disabled={filteredMembers.length === 0 || isExporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileSpreadsheet className="h-4 w-4" />
-                                            Export as Excel
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('csv')}
-                                            disabled={filteredMembers.length === 0 || isExporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileText className="h-4 w-4" />
-                                            Export as CSV
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
+                                    
                                 </DropdownMenu>
                             </div>
                         </div>
