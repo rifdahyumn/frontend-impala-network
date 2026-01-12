@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import SearchBar from "../components/SearchFilter/SearchBar";
 import MemberTable from "../components/MemberTable/MemberTable";
 import Pagination from "../components/Pagination/Pagination";
-import { Loader2, Plus, Users, UserCheck, AlertCircle, Tag, X, Building2, Filter, User, Download, Upload, FileText, FileSpreadsheet, AlertTriangle } from "lucide-react"
+import { Loader2, Plus, Users, UserCheck, AlertCircle, Tag, X, Building2, Filter, User, Download, Upload, FileText, FileSpreadsheet, AlertTriangle, Check } from "lucide-react"
 import { Button } from "../components/ui/button"
 import AddMemberBanyumas from "../components/AddButton/AddMemberBanyumas";
 import HeteroBanyumasContent from "../components/Content/HeteroBanyumasContent";
@@ -37,14 +37,13 @@ const HeteroBanyumas = () => {
 
     const memberDetailRef = useRef(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [activeFilters, setActiveFilters] = useState({
+    const [filters, setFilters] = useState({
         gender: null,
         space: null, 
     });
     const [filteredMembers, setFilteredMembers] = useState([]);
     const [availableSpaces, setAvailableSpaces] = useState([]);
-
-    const { members, loading, pagination, filters, setFilters, fetchMembers, addMemberHeteroBanyumas, 
+    const { members, loading, error, pagination, fetchMembers, addMemberHeteroBanyumas, 
         updateMemberHeteroBanyumas, deleteMemberHeteroBanyumas, showConfirm, handleConfirm, handleCancel,
         isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroBanyumas()
 
@@ -615,22 +614,22 @@ const HeteroBanyumas = () => {
             );
         }
         
-        if (activeFilters.gender) {
+        if (filters.gender) {
             result = result.filter(member => {
                 const memberGender = member.gender?.toLowerCase();
-                return activeFilters.gender === 'all' || memberGender === activeFilters.gender;
+                return memberGender === filters.gender.toLowerCase();
             });
         }
         
-        if (activeFilters.space && activeFilters.space !== 'all') {
+        if (filters.space && filters.space !== 'all') {
             result = result.filter(member => {
                 const memberSpace = member.space?.toLowerCase();
                 if (!memberSpace) return false;
                 
-                if (memberSpace === activeFilters.space) return true;
+                if (memberSpace === filters.space) return true;
                 
-                return memberSpace.includes(activeFilters.space) || 
-                       activeFilters.space.includes(memberSpace);
+                return memberSpace.includes(filters.space) || 
+                       filters.space.includes(memberSpace);
             });
         }
         
@@ -639,49 +638,105 @@ const HeteroBanyumas = () => {
 
     const handleSearch = (term) => {
         setSearchTerm(term);
-        setFilters({ ...filters, search: term });
     };
 
-    const handleGenderFilterChange = (gender) => {
-        setActiveFilters(prev => ({
-            ...prev,
-            gender: prev.gender === gender ? null : gender
-        }));
-        setFilters({ ...filters, gender: gender || '' });
-    };
+    // // Handler untuk filter sementara
+    // const handleTempGenderChange = (gender) => {
+    //     setTempFilters(prev => ({ 
+    //         ...prev, 
+    //         gender: prev.gender === gender ? '' : gender 
+    //     }));
+    // };
 
-    const handleSpaceFilterChange = (space) => {
-        setActiveFilters(prev => ({
-            ...prev,
-            space: prev.space === space ? null : space
-        }));
-        setFilters({ ...filters, space: space || '' });
-    };
+    // const handleTempSpaceChange = (space) => {
+    //     setTempFilters(prev => ({ ...prev, space }));
+    // };
 
-    const clearAllFilters = useCallback(() => {
+    // // Handler untuk apply filter
+    // const handleApplyFilters = () => {
+    //     setFilters({
+    //         gender: tempFilters.gender || null,
+    //         space: tempFilters.space || null
+    //     });
+    //     setIsFilterOpen(false);
+    // };
+
+    // // Handler untuk cancel filter
+    // const handleCancelFilters = () => {
+    //     setTempFilters({
+    //         gender: filters.gender || '',
+    //         space: filters.space || 'all'
+    //     });
+    //     setIsFilterOpen(false);
+    // };
+
+    // // Handler untuk clear semua filter sementara
+    // const handleClearAllTempFilters = () => {
+    //     setTempFilters({
+    //         gender: '',
+    //         space: 'all'
+    //     });
+    // };
+
+    // Handler untuk clear semua filter permanen
+    const handleClearAllFilters = () => {
         setSearchTerm("");
-        setActiveFilters({
+        setFilters({
             gender: null,
             space: null,
         });
-        setFilteredMembers(members);
-        setFilters({ search: "", gender: "", space: "" });
         setSelectedMember(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [members, setFilters]);
+    };
 
+    // const getActiveFiltersCount = () => {
+    //     let count = 0;
+    //     if (filters.gender) count++;
+    //     if (filters.space && filters.space !== 'all') count++;
+    //     return count;
+    // };
+
+    // Handler untuk menghitung filter sementara yang aktif
+    // const getTempActiveFiltersCount = () => {
+    //     let count = 0;
+    //     if (tempFilters.gender) count++;
+    //     if (tempFilters.space && tempFilters.space !== 'all') count++;
+    //     return count;
+    // };
+
+    // const getTotalActiveCriteria = () => {
+    //     let count = 0;
+    //     if (searchTerm) count++;
+    //     if (filters.gender) count++;
+    //     if (filters.space && filters.space !== 'all') count++;
+    //     return count;
+    // };
+
+    // Fungsi clear filter spesifik
     const clearFilter = (filterType) => {
-        if (filterType === 'gender') {
-            setActiveFilters(prev => ({ ...prev, gender: null }));
-            setFilters({ ...filters, gender: '' });
-        } else if (filterType === 'space') {
-            setActiveFilters(prev => ({ ...prev, space: null }));
-            setFilters({ ...filters, space: '' });
-        } else if (filterType === 'search') {
+        if (filterType === 'search') {
             setSearchTerm("");
-            setFilters({ ...filters, search: '' });
+        } else if (filterType === 'gender') {
+            setFilters(prev => ({ ...prev, gender: null }));
+        } else if (filterType === 'space') {
+            setFilters(prev => ({ ...prev, space: null }));
         }
     };
+
+    // const getGenderLabel = (genderValue) => {
+    //     if (!genderValue) return "";
+    //     if (genderValue === 'male') return '👨 Male';
+    //     if (genderValue === 'female') return '👩 Female';
+    //     return genderValue;
+    // };
+
+    // Update tempFilters ketika filters berubah
+    useEffect(() => {
+        setTempFilters({
+            gender: filters.gender || '',
+            space: filters.space || 'all'
+        });
+    }, [filters]);
 
     useEffect(() => {
         if (members.length > 0) {
@@ -699,56 +754,39 @@ const HeteroBanyumas = () => {
 
     useEffect(() => {
         applyAllFilters();
-    }, [searchTerm, activeFilters]);
+    }, [searchTerm, filters]);
 
     const memberStats = useMemo(() => {
-        if (statsLoading) {
-            return [
-                {
-                    title: "Total Members",
-                    value: "Loading...",
-                    percentage: "0%",
-                    trend: "neutral",
-                    icon: Users,
-                    color: "blue",
-                    description: "Loading..."
-                },
-                {
-                    title: "Active Members",
-                    value: "Loading...",
-                    percentage: "0%",
-                    trend: "neutral",
-                    icon: UserCheck,
-                    color: "green",
-                    description: "Loading..."
-                }
-            ]
-        }
+        const totalMembers = filteredMembers.length;
+        const activeMembers = filteredMembers.filter(member => member.status === 'active').length;
+        
+        const activePercentage = totalMembers > 0 ? ((activeMembers / totalMembers) * 100).toFixed(1) : "0";
 
         return [
             {
-                title: 'Total Members',
-                value: stats.totalMembers.toString(),
+                title: "Total Members",
+                value: totalMembers.toString(),
                 subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
-                percentage: `${stats.growthPercentage}%`,
-                trend: parseFloat(stats.growthPercentage) > 0 ? "up" :
-                        parseFloat(stats.growthPercentage) < 0 ? "down" : "neutral",
+                percentage: `${totalMembers > 0 ? "12.5" : "0"}%`,
+                trend: totalMembers > 0 ? "up" : "neutral",
+                period: "Last Month",
                 icon: Users,
                 color: "blue",
                 description: `${stats.growthPercentage}% growth`
             },
             {
                 title: "Active Members",
-                value: stats.activeMembers.toString(),
+                value: activeMembers.toString(),
                 subtitle: activeFilters.space && activeFilters.space !== "all" ? `in ${getSpaceLabel(activeFilters.space)}` : "",
-                percentage: `${stats.activePercentage}%`,
-                trend: stats.activeMembers > 0 ? "up" : "down",
+                percentage: `${activePercentage}%`,
+                trend: activeMembers > 0 ? "up" : "down",
+                period: "Last Month",
                 icon: UserCheck,
                 color: "green",
                 description: `${stats.activePercentage}% of total`
             }
-        ]
-    }, [stats, statsLoading, activeFilters.space, getSpaceLabel])
+        ];
+    }, [filteredMembers, activeFilters.space, getSpaceLabel]);
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
@@ -833,6 +871,11 @@ const HeteroBanyumas = () => {
         }
     }, [members, selectedMember?.id])
 
+    const handleRefresh = () => {
+        fetchMembers(pagination.page)
+        clearAllFilters();
+    }
+
     const handlePageChange = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' })
         fetchMembers(page)
@@ -855,8 +898,8 @@ const HeteroBanyumas = () => {
 
     const getGenderLabel = (genderValue) => {
         if (!genderValue) return "";
-        if (genderValue === 'male') return 'Male';
-        if (genderValue === 'female') return 'Female';
+        if (genderValue === 'male') return '👨 Male';
+        if (genderValue === 'female') return '👩 Female';
         return genderValue;
     };
 
@@ -907,32 +950,17 @@ const HeteroBanyumas = () => {
                         )}
                     </CardHeader>
                     <CardContent>
-                        {/* {error && (
-                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm mb-6">
-                                <div className="flex items-start gap-3">
-                                    <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1">
-                                        <h3 className="text-sm font-semibold text-red-800">Failed to load members</h3>
-                                        <p className="text-sm text-red-600 mt-1">{error}</p>
-                                    </div>
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        onClick={handleRefresh}
-                                        className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
-                                    >
-                                        Reload Page
-                                    </Button>
-                                </div>
-                            </div>
-                        )} */}
 
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
-                            <div className='flex gap-2 items-center'>
-                                <SearchBar 
-                                    onSearch={handleSearch}
-                                    placeholder="Search..."
-                                />
+                            <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
+                                <div className="w-full sm:w-auto min-w-[250px]">
+                                    <SearchBar 
+                                        onSearch={handleSearch}
+                                        placeholder="Search..."
+                                        value={searchTerm}
+                                        onChange={(e) => handleSearch(e.target.value)}
+                                    />
+                                </div>
                                 
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -987,7 +1015,7 @@ const HeteroBanyumas = () => {
                                                     onCheckedChange={() => handleSpaceFilterChange('all')}
                                                     className="cursor-pointer hover:bg-gray-50"
                                                 >
-                                                    All Spaces
+                                                    🏢 All Spaces
                                                 </DropdownMenuCheckboxItem>
                                                 
                                                 {availableSpaces.map((space) => (
@@ -1021,9 +1049,9 @@ const HeteroBanyumas = () => {
                                 </DropdownMenu>
                             </div>
 
-                            <div className='flex gap-2'>
+                            <div className='flex flex-wrap gap-2'>
                                 <Button 
-                                    className='flex items-center gap-2'
+                                    className='flex items-center gap-2 whitespace-nowrap'
                                     onClick={handleAddMember}
                                 >
                                     <Plus className="h-4 w-4" />
@@ -1034,7 +1062,7 @@ const HeteroBanyumas = () => {
                                     <DropdownMenuTrigger asChild>
                                         <Button
                                             variant="outline"
-                                            className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+                                            className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50 whitespace-nowrap"
                                             disabled={loading}
                                         >
                                             <Upload className="h-4 w-4" />
@@ -1063,7 +1091,7 @@ const HeteroBanyumas = () => {
                                     <DropdownMenuTrigger asChild>
                                         <Button
                                             variant="outline"
-                                            className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
+                                            className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
                                             disabled={loading || filteredMembers.length === 0 || isExporting}
                                             onClick={() => handleExport('excel')}
                                         >
@@ -1096,9 +1124,9 @@ const HeteroBanyumas = () => {
                                     </span>
                                 )}
                                 
-                                {activeFilters.gender && (
+                                {filters.gender && (
                                     <span className="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        {getGenderLabel(activeFilters.gender)}
+                                        {getGenderLabel(filters.gender)}
                                         <button 
                                             onClick={() => clearFilter('gender')}
                                             className="text-pink-600 hover:text-pink-800 ml-1"
@@ -1108,10 +1136,10 @@ const HeteroBanyumas = () => {
                                     </span>
                                 )}
                                 
-                                {activeFilters.space && activeFilters.space !== 'all' && (
+                                {filters.space && filters.space !== 'all' && (
                                     <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Building2 className="w-3 h-3" />
-                                        {getSpaceLabel(activeFilters.space)}
+                                        {getSpaceLabel(filters.space)}
                                         <button 
                                             onClick={() => clearFilter('space')}
                                             className="text-orange-600 hover:text-orange-800 ml-1"
@@ -1121,7 +1149,7 @@ const HeteroBanyumas = () => {
                                     </span>
                                 )}
                                 
-                                {activeFilters.space === 'all' && (
+                                {filters.space === 'all' && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Building2 className="w-3 h-3" />
                                         All Spaces
@@ -1136,7 +1164,7 @@ const HeteroBanyumas = () => {
                                 
                                 <Button 
                                     variant="ghost" 
-                                    onClick={clearAllFilters}
+                                    onClick={handleClearAllFilters}
                                     className="text-sm h-8"
                                     size="sm"
                                 >
@@ -1164,7 +1192,7 @@ const HeteroBanyumas = () => {
                                     </h3>
                                     <p className="text-sm text-gray-500 max-w-md">
                                         {getTotalActiveCriteria() > 0 
-                                            ? `No members match your current filters${activeFilters.space && activeFilters.space !== "all" ? ` in ${getSpaceLabel(activeFilters.space)}` : ""}.`
+                                            ? `No members match your current filters${filters.space && filters.space !== "all" ? ` in ${getSpaceLabel(filters.space)}` : ""}.`
                                             : "Get started by adding your first member."
                                         }
                                     </p>
@@ -1173,7 +1201,7 @@ const HeteroBanyumas = () => {
                                     {getTotalActiveCriteria() > 0 && (
                                         <Button 
                                             className="flex items-center gap-2"
-                                            onClick={clearAllFilters}
+                                            onClick={handleClearAllFilters}
                                             variant="outline"
                                         >
                                             Clear Filters

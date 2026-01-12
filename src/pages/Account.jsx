@@ -1,7 +1,7 @@
 import AccountContent from "../components/Content/AccountContent";
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, UserCheck, AlertCircle, Tag, X, Filter, Briefcase } from "lucide-react";
+import { Plus, Loader2, Users, UserCheck, AlertCircle, X, Filter, Briefcase, Check, Building2 } from "lucide-react";
 import { Button } from "../components/ui/button"
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'; 
 import SearchBar from '../components/SearchFilter/SearchBar';
@@ -11,16 +11,6 @@ import Pagination from '../components/Pagination/Pagination';
 import AddUser from "../components/AddButton/AddUser";
 import { useUsers } from "../hooks/useUser";
 import toast from "react-hot-toast";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuGroup, 
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
-  DropdownMenuTrigger 
-} from "../components/ui/dropdown-menu";
 
 const Account = () => {
     const [selectedUser, setSelectedUser] = useState(null)
@@ -33,13 +23,22 @@ const Account = () => {
     const userDetailRef = useRef(null);
     
     const [searchTerm, setSearchTerm] = useState("");
-    const [activeFilters, setActiveFilters] = useState({
+    
+    // State untuk filter permanen dan sementara (seperti HeteroSurakarta.jsx)
+    const [filters, setFilters] = useState({
         position: null, 
         role: null, 
     });
+    
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [tempFilters, setTempFilters] = useState({
+        position: filters.position || '',
+        role: filters.role || 'all'
+    });
+    
     const [filteredUsers, setFilteredUsers] = useState([]);
 
-    const { users, loading, error, pagination, filters, setFilters, fetchUser, addUser, updateUser, deleteUser, activateUser } = useUsers()
+    const { users, loading, error, pagination, fetchFilters, setFilters: setHookFilters, fetchUser, addUser, updateUser, deleteUser, activateUser } = useUsers()
 
     const handleSelectUser = useCallback((user) => {
         setSelectedUser(user);
@@ -63,24 +62,25 @@ const Account = () => {
         }, 150); 
     }, []);
 
+    // Opsi filter asli (tidak diubah)
     const positionOptions = [
-        { value: 'managing director', label: '👑 Managing Director' },
-        { value: 'director', label: '🎯 Director' },
-        { value: 'head manager', label: '📊 Head Manager' },
-        { value: 'finance', label: '💰 Finance' },
-        { value: 'legal', label: '⚖️ Legal' },
-        { value: 'talent manager', label: '👨‍💼 Talent Manager' },
-        { value: 'ecosystem manager', label: '🌐 Ecosystem Manager' },
-        { value: 'strategic partnership executive', label: '🤝 Strategic Partnership Executive' },
-        { value: 'program manager', label: '📋 Program Manager' },
-        { value: 'space manager', label: '🏢 Space Manager' },
-        { value: 'creative', label: '🎨 Creative' }
+        { value: 'managing director', label: 'Managing Director' },
+        { value: 'director', label: 'Director' },
+        { value: 'head manager', label: 'Head Manager' },
+        { value: 'finance', label: 'Finance' },
+        { value: 'legal', label: 'Legal' },
+        { value: 'talent manager', label: 'Talent Manager' },
+        { value: 'ecosystem manager', label: 'Ecosystem Manager' },
+        { value: 'strategic partnership executive', label: 'Strategic Partnership Executive' },
+        { value: 'program manager', label: 'Program Manager' },
+        { value: 'space manager', label: 'Space Manager' },
+        { value: 'creative', label: 'Creative' }
     ];
 
     const roleOptions = [
-        { value: 'admin', label: '🔧 Admin' },
-        { value: 'user', label: '👤 User' },
-        { value: 'superadmin', label: '👑 Super Admin' }
+        { value: 'admin', label: 'Admin' },
+        { value: 'user', label: 'User' },
+        { value: 'superadmin', label: 'Super Admin' }
     ];
 
     const statusOptions = [
@@ -102,6 +102,17 @@ const Account = () => {
         return option ? option.original || option.label : value;
     };
 
+    // Fungsi untuk mendapatkan label filter yang sedang aktif
+    const getFilterLabel = (filterType) => {
+        if (filterType === 'position' && filters.position) {
+            return getOriginalLabel(filters.position, positionOptions);
+        }
+        if (filterType === 'role' && filters.role) {
+            return filters.role === 'all' ? 'All Roles' : getOriginalLabel(filters.role, roleOptions);
+        }
+        return '';
+    };
+
     const userStats = useMemo(() => {
         const totalUsers = filteredUsers.length;
         const activeUsers = filteredUsers.filter(user => user.status === 'active').length;
@@ -115,7 +126,7 @@ const Account = () => {
             {
                 title: "Total Users",
                 value: totalUsers.toString(),
-                subtitle: activeFilters.position ? `${getOriginalLabel(activeFilters.position, positionOptions)}` : "",
+                subtitle: filters.position ? `${getOriginalLabel(filters.position, positionOptions)}` : "",
                 percentage: `${totalUsers > 0 ? "8.5" : "0"}%`,
                 trend: totalUsers > 0 ? "up" : "neutral",
                 period: "Last Month",
@@ -137,7 +148,7 @@ const Account = () => {
             {
                 title: "Admin Users",
                 value: adminUsers.toString(),
-                subtitle: activeFilters.role ? `${getOriginalLabel(activeFilters.role, roleOptions)}` : "",
+                subtitle: filters.role ? `${filters.role === 'all' ? 'All Roles' : getOriginalLabel(filters.role, roleOptions)}` : "",
                 percentage: `${adminPercentage}%`,
                 trend: adminUsers > 0 ? "up" : "down",
                 period: "Last Month",
@@ -146,8 +157,9 @@ const Account = () => {
                 description: `${adminUsers} admin(s), ${superAdminUsers} super admin(s)`
             }
         ];
-    }, [filteredUsers, activeFilters.position, activeFilters.role]);
+    }, [filteredUsers, filters.position, filters.role]);
 
+    // Fungsi applyAllFilters seperti di HeteroSurakarta.jsx
     const applyAllFilters = () => {
         let result = [...users];
         
@@ -162,23 +174,23 @@ const Account = () => {
             );
         }
         
-        if (activeFilters.position) {
+        if (filters.position) {
             result = result.filter(user => {
                 const userPosition = user.position?.toLowerCase();
                 if (!userPosition) return false;
                 
-                return userPosition === activeFilters.position ||
-                       userPosition.includes(activeFilters.position) ||
-                       activeFilters.position.includes(userPosition);
+                return userPosition === filters.position ||
+                       userPosition.includes(filters.position) ||
+                       filters.position.includes(userPosition);
             });
         }
         
-        if (activeFilters.role) {
+        if (filters.role && filters.role !== 'all') {
             result = result.filter(user => {
                 const userRole = user.role?.toLowerCase();
                 if (!userRole) return false;
                 
-                return userRole === activeFilters.role;
+                return userRole === filters.role;
             });
         }
         
@@ -187,49 +199,99 @@ const Account = () => {
 
     const handleSearch = (term) => {
         setSearchTerm(term);
-        setFilters({ ...filters, search: term });
     };
 
-    const handlePositionFilterChange = (position) => {
-        setActiveFilters(prev => ({
-            ...prev,
-            position: prev.position === position ? null : position
+    // Handler untuk filter sementara (seperti HeteroSurakarta.jsx)
+    const handleTempPositionChange = (position) => {
+        setTempFilters(prev => ({ 
+            ...prev, 
+            position: prev.position === position ? '' : position 
         }));
-        setFilters({ ...filters, position: position });
     };
 
-    const handleRoleFilterChange = (role) => {
-        setActiveFilters(prev => ({
-            ...prev,
-            role: prev.role === role ? null : role
-        }));
-        setFilters({ ...filters, role: role });
+    const handleTempRoleChange = (role) => {
+        setTempFilters(prev => ({ ...prev, role }));
     };
 
-    const clearAllFilters = useCallback(() => {
+    // Handler untuk apply filter
+    const handleApplyFilters = () => {
+        setFilters({
+            position: tempFilters.position || null,
+            role: tempFilters.role || null
+        });
+        setIsFilterOpen(false);
+    };
+
+    // Handler untuk cancel filter
+    const handleCancelFilters = () => {
+        setTempFilters({
+            position: filters.position || '',
+            role: filters.role || 'all'
+        });
+        setIsFilterOpen(false);
+    };
+
+    // Handler untuk clear semua filter sementara
+    const handleClearAllTempFilters = () => {
+        setTempFilters({
+            position: '',
+            role: 'all'
+        });
+    };
+
+    // Handler untuk clear semua filter permanen
+    const handleClearAllFilters = () => {
         setSearchTerm("");
-        setActiveFilters({
+        setFilters({
             position: null,
             role: null,
         });
-        setFilters({ search: "", position: "", role: "", status: "" });
-        setFilteredUsers(users);
         setSelectedUser(null); 
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [users, setFilters]);
+    };
 
+    // Handler untuk menghitung filter aktif
+    const getActiveFiltersCount = () => {
+        let count = 0;
+        if (filters.position) count++;
+        if (filters.role && filters.role !== 'all') count++;
+        return count;
+    };
+
+    // Handler untuk menghitung filter sementara yang aktif
+    const getTempActiveFiltersCount = () => {
+        let count = 0;
+        if (tempFilters.position) count++;
+        if (tempFilters.role && tempFilters.role !== 'all') count++;
+        return count;
+    };
+
+    const getTotalActiveCriteria = () => {
+        let count = 0;
+        if (searchTerm) count++;
+        if (filters.position) count++;
+        if (filters.role && filters.role !== 'all') count++;
+        return count;
+    };
+
+    // Fungsi clear filter spesifik
     const clearFilter = (filterType) => {
-        if (filterType === 'position') {
-            setActiveFilters(prev => ({ ...prev, position: null }));
-            setFilters({ ...filters, position: "" });
-        } else if (filterType === 'role') {
-            setActiveFilters(prev => ({ ...prev, role: null }));
-            setFilters({ ...filters, role: "" });
-        } else if (filterType === 'search') {
+        if (filterType === 'search') {
             setSearchTerm("");
-            setFilters({ ...filters, search: "" });
+        } else if (filterType === 'position') {
+            setFilters(prev => ({ ...prev, position: null }));
+        } else if (filterType === 'role') {
+            setFilters(prev => ({ ...prev, role: null }));
         }
     };
+
+    // Update tempFilters ketika filters berubah
+    useEffect(() => {
+        setTempFilters({
+            position: filters.position || '',
+            role: filters.role || 'all'
+        });
+    }, [filters]);
 
     useEffect(() => {
         if (users.length > 0) {
@@ -240,7 +302,7 @@ const Account = () => {
 
     useEffect(() => {
         applyAllFilters();
-    }, [searchTerm, activeFilters]);
+    }, [searchTerm, filters]);
 
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
@@ -328,27 +390,12 @@ const Account = () => {
 
     const handleRefresh = () => {
         fetchUser(pagination.page);
-        clearAllFilters();
+        handleClearAllFilters();
     };
 
     const handlePageChange = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         fetchUser(page);
-    };
-
-    const getActiveFiltersCount = () => {
-        let count = 0;
-        if (activeFilters.position) count++;
-        if (activeFilters.role) count++;
-        return count;
-    };
-
-    const getTotalActiveCriteria = () => {
-        let count = 0;
-        if (searchTerm) count++;
-        if (activeFilters.position) count++;
-        if (activeFilters.role) count++;
-        return count;
     };
 
     const tableConfig = {
@@ -453,103 +500,234 @@ const Account = () => {
                         )}
 
                         <div className='flex flex-wrap gap-4 mb-6 justify-between'>
-                            <div className='flex gap-2 items-center'>
-                                <SearchBar 
-                                    onSearch={handleSearch}
-                                    placeholder="Search..."
-                                />
+                            <div className='flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap'>
+                                <div className="w-full sm:w-auto min-w-[250px]">
+                                    <SearchBar 
+                                        onSearch={handleSearch}
+                                        placeholder="Search..."
+                                        value={searchTerm}
+                                        onChange={(e) => handleSearch(e.target.value)}
+                                    />
+                                </div>
                                 
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button 
-                                            variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
-                                            className={`flex items-center gap-2 transition-all duration-200 ${
-                                                getActiveFiltersCount() > 0 
-                                                    ? "bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-amber-500" 
-                                                    : "text-gray-700 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 border-gray-300"
-                                            }`}
-                                        >
-                                            <Filter className={`h-4 w-4 ${
-                                                getActiveFiltersCount() > 0 ? "text-white" : "text-gray-500"
-                                            }`} />
-                                            Filter
-                                            {getActiveFiltersCount() > 0 && (
-                                                <span className="ml-1 bg-white text-amber-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                                                    {getActiveFiltersCount()}
-                                                </span>
-                                            )}
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-56 shadow-lg border border-gray-200">
-                                        <DropdownMenuLabel className="text-gray-700 font-semibold">Filter Options</DropdownMenuLabel>
-                                        <DropdownMenuSeparator />
-                                        
-                                        <DropdownMenuGroup>
-                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
-                                                Position
-                                            </DropdownMenuLabel>
-                                            {positionOptions.map((option) => (
-                                                <DropdownMenuCheckboxItem
-                                                    key={option.value}
-                                                    checked={activeFilters.position === option.value}
-                                                    onCheckedChange={() => handlePositionFilterChange(option.value)}
-                                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50"
-                                                >
-                                                    {option.label}
-                                                </DropdownMenuCheckboxItem>
-                                            ))}
-                                        </DropdownMenuGroup>
-                                        
-                                        <DropdownMenuSeparator />
-                                        
-                                        <DropdownMenuGroup>
-                                            <DropdownMenuLabel className="text-xs text-gray-500 font-medium">
-                                                Role
-                                            </DropdownMenuLabel>
-                                            <div className="max-h-48 overflow-y-auto">
-                                                <DropdownMenuCheckboxItem
-                                                    checked={activeFilters.role === 'all'}
-                                                    onCheckedChange={() => handleRoleFilterChange('all')}
-                                                    className="cursor-pointer hover:bg-gray-50"
-                                                >
-                                                    👥 All Roles
-                                                </DropdownMenuCheckboxItem>
-                                                
-                                                {roleOptions.map((role) => (
-                                                    <DropdownMenuCheckboxItem
-                                                        key={role.value}
-                                                        checked={activeFilters.role?.toLowerCase() === role.value.toLowerCase()}
-                                                        onCheckedChange={() => handleRoleFilterChange(role.value)}
-                                                        className="cursor-pointer hover:bg-gray-50"
-                                                    >
-                                                        {role.label}
-                                                    </DropdownMenuCheckboxItem>
-                                                ))}
+                                {/* Custom Filter Dropdown - Versi baru seperti HeteroSurakarta.jsx */}
+                                <div className="relative">
+                                    <Button 
+                                        variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
+                                        className={`flex items-center gap-2 transition-all duration-200 ${
+                                            getActiveFiltersCount() > 0 
+                                                ? "bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-amber-500" 
+                                                : "text-gray-700 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 border-gray-300"
+                                        }`}
+                                        onClick={() => setIsFilterOpen(!isFilterOpen)}
+                                    >
+                                        <Filter className={`h-4 w-4 ${
+                                            getActiveFiltersCount() > 0 ? "text-white" : "text-gray-500"
+                                        }`} />
+                                        Filter
+                                        {getActiveFiltersCount() > 0 && (
+                                            <span className="ml-1 bg-white text-amber-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                                {getActiveFiltersCount()}
+                                            </span>
+                                        )}
+                                    </Button>
+
+                                    {isFilterOpen && (
+                                        <div className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]">
+                                            <div className="p-3 border-b">
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="font-bold text-gray-900 text-xs">Filter Options</h3>
+                                                    <span className="text-xs text-gray-500">
+                                                        {getTempActiveFiltersCount()} filter{getTempActiveFiltersCount() !== 1 ? 's' : ''} selected
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </DropdownMenuGroup>
-                                        
-                                        <DropdownMenuSeparator />
-                                        
-                                        <DropdownMenuItem 
-                                            onClick={() => {
-                                                setActiveFilters({
-                                                    position: null,
-                                                    role: null,
-                                                });
-                                                setFilters({ ...filters, position: "", role: "" });
-                                            }}
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer font-medium"
-                                        >
-                                            <X className="h-4 w-4 mr-2" />
-                                            Clear Filters
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+
+                                            <div className="p-3">
+                                                {/* Position Filter */}
+                                                <div className="mb-3">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <h4 className="font-semibold text-gray-900 text-xs">POSITION</h4>
+                                                        {tempFilters.position && (
+                                                            <button 
+                                                                onClick={() => handleTempPositionChange('')}
+                                                                className="text-xs text-gray-400 hover:text-red-500"
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {/* All Positions */}
+                                                    <div className="mb-2">
+                                                        <button
+                                                            className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
+                                                                !tempFilters.position
+                                                                    ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                                                    : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
+                                                            }`}
+                                                            onClick={() => handleTempPositionChange('')}
+                                                        >
+                                                            <div className="flex items-center gap-1.5">
+                                                                <div className={`h-2 w-2 rounded-full ${
+                                                                    !tempFilters.position
+                                                                        ? 'bg-amber-500' 
+                                                                        : 'bg-gray-400'
+                                                                }`} />
+                                                                <span className="font-medium text-xs">All Positions</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                {!tempFilters.position && (
+                                                                    <Check className="h-3 w-3 text-amber-600" />
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Positions Grid */}
+                                                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                                                        {positionOptions.map((position) => {
+                                                            const isSelected = tempFilters.position === position.value;
+                                                            
+                                                            return (
+                                                                <button
+                                                                    key={position.value}
+                                                                    className={`flex items-center justify-between px-2 py-1.5 rounded-lg border transition-all text-xs ${
+                                                                        isSelected
+                                                                            ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                                                            : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
+                                                                    }`}
+                                                                    onClick={() => handleTempPositionChange(position.value)}
+                                                                >
+                                                                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                                        <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
+                                                                            isSelected ? 'bg-amber-500' : 'bg-gray-400'
+                                                                        }`} />
+                                                                        <span className="truncate font-medium text-xs">
+                                                                            {position.label}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+                                                                        {isSelected && (
+                                                                            <Check className="h-2.5 w-2.5 text-amber-600 flex-shrink-0" />
+                                                                        )}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                {/* Role Filter */}
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <h4 className="font-semibold text-gray-900 text-xs">ROLE</h4>
+                                                        {tempFilters.role && tempFilters.role !== 'all' && (
+                                                            <button 
+                                                                onClick={() => handleTempRoleChange('all')}
+                                                                className="text-xs text-gray-400 hover:text-red-500"
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {/* All Roles */}
+                                                    <div className="mb-2">
+                                                        <button
+                                                            className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
+                                                                !tempFilters.role || tempFilters.role === 'all'
+                                                                    ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                                                    : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
+                                                            }`}
+                                                            onClick={() => handleTempRoleChange('all')}
+                                                        >
+                                                            <div className="flex items-center gap-1.5">
+                                                                <div className={`h-2 w-2 rounded-full ${
+                                                                    !tempFilters.role || tempFilters.role === 'all' 
+                                                                        ? 'bg-amber-500' 
+                                                                        : 'bg-gray-400'
+                                                                }`} />
+                                                                <span className="font-medium text-xs">All Roles</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                {(!tempFilters.role || tempFilters.role === 'all') && (
+                                                                    <Check className="h-3 w-3 text-amber-600" />
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Roles Grid */}
+                                                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                                                        {roleOptions.map((role) => {
+                                                            const isSelected = tempFilters.role === role.value;
+                                                            
+                                                            return (
+                                                                <button
+                                                                    key={role.value}
+                                                                    className={`flex items-center justify-between px-2 py-1.5 rounded-lg border transition-all text-xs ${
+                                                                        isSelected
+                                                                            ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                                                            : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
+                                                                    }`}
+                                                                    onClick={() => handleTempRoleChange(role.value)}
+                                                                >
+                                                                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                                        <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
+                                                                            isSelected ? 'bg-amber-500' : 'bg-gray-400'
+                                                                        }`} />
+                                                                        <span className="truncate font-medium text-xs">
+                                                                            {role.label}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+                                                                        {isSelected && (
+                                                                            <Check className="h-2.5 w-2.5 text-amber-600 flex-shrink-0" />
+                                                                        )}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="border-t p-2">
+                                                <div className="flex justify-between items-center">
+                                                    <button
+                                                        className="text-xs text-gray-600 hover:text-red-600 flex items-center gap-1.5"
+                                                        onClick={handleClearAllTempFilters}
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                        Clear All Filters
+                                                    </button>
+                                                    <div className="flex gap-1.5">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-xs h-7 px-2"
+                                                            onClick={handleCancelFilters}
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                        <Button
+                                                            className="bg-amber-500 hover:bg-amber-600 text-white text-xs h-7 px-3"
+                                                            onClick={handleApplyFilters}
+                                                        >
+                                                            Apply
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
-                            <div className='flex gap-2'>
+                            <div className='flex flex-wrap gap-2'>
                                 <Button 
-                                    className='flex items-center gap-2'
+                                    className='flex items-center gap-2 whitespace-nowrap'
                                     onClick={handleAddUser}
                                 >
                                     <Plus className="h-4 w-4" />
@@ -565,7 +743,7 @@ const Account = () => {
                                 
                                 {searchTerm && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        <span>🔍 "{searchTerm}"</span>
+                                        <span>"{searchTerm}"</span>
                                         <button 
                                             onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"
@@ -575,10 +753,10 @@ const Account = () => {
                                     </span>
                                 )}
                                 
-                                {activeFilters.position && (
+                                {filters.position && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Briefcase className="w-3 h-3" />
-                                        {getOriginalLabel(activeFilters.position, positionOptions)}
+                                        {getFilterLabel('position')}
                                         <button 
                                             onClick={() => clearFilter('position')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"
@@ -588,10 +766,10 @@ const Account = () => {
                                     </span>
                                 )}
                                 
-                                {activeFilters.role && activeFilters.role !== 'all' && (
+                                {filters.role && filters.role !== 'all' && (
                                     <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Users className="w-3 h-3" />
-                                        {getOriginalLabel(activeFilters.role, roleOptions)}
+                                        {getFilterLabel('role')}
                                         <button 
                                             onClick={() => clearFilter('role')}
                                             className="text-purple-600 hover:text-purple-800 ml-1"
@@ -601,7 +779,7 @@ const Account = () => {
                                     </span>
                                 )}
                                 
-                                {activeFilters.role === 'all' && (
+                                {filters.role === 'all' && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Users className="w-3 h-3" />
                                         All Roles
@@ -616,7 +794,7 @@ const Account = () => {
                                 
                                 <Button 
                                     variant="ghost" 
-                                    onClick={clearAllFilters}
+                                    onClick={handleClearAllFilters}
                                     className="text-sm h-8"
                                     size="sm"
                                 >
@@ -631,13 +809,13 @@ const Account = () => {
                                     <div className="text-sm text-gray-600">
                                         <span>
                                             Showing <span className="font-semibold">{filteredUsers.length}</span> users
-                                            {activeFilters.position && (
-                                                <span> in <span className="font-semibold">{getOriginalLabel(activeFilters.position, positionOptions)}</span> position</span>
+                                            {filters.position && (
+                                                <span> in <span className="font-semibold">{getFilterLabel('position')}</span> position</span>
                                             )}
-                                            {activeFilters.role && activeFilters.role !== 'all' && (
-                                                <span> with role <span className="font-semibold">{getOriginalLabel(activeFilters.role, roleOptions)}</span></span>
+                                            {filters.role && filters.role !== 'all' && (
+                                                <span> with role <span className="font-semibold">{getFilterLabel('role')}</span></span>
                                             )}
-                                            {activeFilters.role === 'all' && (
+                                            {filters.role === 'all' && (
                                                 <span> in all roles</span>
                                             )}
                                         </span>
@@ -674,7 +852,7 @@ const Account = () => {
                                     {getTotalActiveCriteria() > 0 && (
                                         <Button 
                                             className="flex items-center gap-2"
-                                            onClick={clearAllFilters}
+                                            onClick={handleClearAllFilters}
                                             variant="outline"
                                         >
                                             Clear Filters
@@ -700,7 +878,6 @@ const Account = () => {
                                             </div>
                                         </div>
                                     )}
-                                    
                                     
                                     <MemberTable
                                         members={formattedUsers}
