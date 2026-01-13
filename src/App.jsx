@@ -17,6 +17,7 @@ import HeteroSemarang from './pages/HeteroSemarang';
 import HeteroSurakarta from './pages/HeteroSurakarta';
 import PublicForm from './components/PublicForm';
 import UserAccountSettings from "./components/UserAccountSettings/UserAccountSettings";
+import { LoadingSpinner } from './components/Loading';
 
 
 const MainLayout = ({ children }) => {
@@ -48,47 +49,41 @@ const MinimalLayout = ({ children }) => {
 };
 
 const ProtectedRoute = ({ children }) => {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const location = useLocation();
 
     if (isAuthenticated === null) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-50">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Checking authentication...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner />
     }
 
     if (!isAuthenticated) {
         return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    if (user?.role === 'komunitas' && location.pathname === '/') {
+        return <Navigate to="/hetero/semarang" replace />
     }
 
   return <MainLayout>{children}</MainLayout>;
 };
 
 const ProtectedRouteMinimal = ({ children }) => {
-    const { isAuthenticated } = useAuth();
-    const location = useLocation();
+    const { isAuthenticated, user } = useAuth();
+    // const location = useLocation();
 
     if (isAuthenticated === null) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-50">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Checking authentication...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner />
     }
 
     if (!isAuthenticated) {
-        return <Navigate to="/login" state={{ from: location }} replace />;
+        if (user?.role === 'komunitas') {
+            return <Navigate to="/hetero/semarang" replace />
+        }
+
+        return <Navigate to='/' replace />
     }
 
-    return <MinimalLayout>{children}</MinimalLayout>;
+    return children
 };
 
 const PublicRoute = ({ children }) => {
