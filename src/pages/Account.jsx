@@ -191,6 +191,12 @@ const Account = () => {
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Account Users");
             
+            // MODIFIKASI: Perhitungan active users di export Excel (sama seperti HeteroSemarang)
+            const activeUsers = filteredUsers.filter(u => 
+                u.status?.toLowerCase() === 'active'
+            ).length;
+            const inactiveUsers = filteredUsers.length - activeUsers;
+            
             // Tambahkan sheet info filter
             const filterInfo = [
                 ['USER ACCOUNT EXPORT'],
@@ -211,8 +217,8 @@ const Account = () => {
                 ['Role Filter', filters.role && filters.role !== 'all' ? getOriginalLabel(filters.role, roleOptions) : 'All'],
                 ['', ''],
                 ['STATISTICS'],
-                ['Total Active Users', filteredUsers.filter(u => u.status === 'active').length],
-                ['Total Inactive Users', filteredUsers.filter(u => u.status !== 'active').length],
+                ['Total Active Users', activeUsers],  // MODIFIKASI: Menggunakan perhitungan case-insensitive
+                ['Total Inactive Users', inactiveUsers],  // MODIFIKASI: Perhitungan yang benar
                 ['Total Admin Users', filteredUsers.filter(u => u.role === 'admin').length],
                 ['Total Super Admin Users', filteredUsers.filter(u => u.role === 'superadmin').length],
                 ['', ''],
@@ -302,36 +308,53 @@ const Account = () => {
         return '';
     };
 
+    // MODIFIKASI: Perhitungan userStats yang SAMA PERSIS dengan HeteroSemarang
     const userStats = useMemo(() => {
-        const totalUsers = filteredUsers.length;
-        const activeUsers = filteredUsers.filter(user => user.status === 'active').length;
-        const adminUsers = filteredUsers.filter(user => user.role === 'admin').length;
-        const superAdminUsers = filteredUsers.filter(user => user.role === 'superadmin').length;
+        // Asumsi: hook useUsers tidak memiliki stats seperti useHeteroSemarang
+        // Kita gunakan filteredUsers langsung dengan cara yang sama
         
-        const activePercentage = totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(1) : "0";
+        const totalUsers = filteredUsers.length;
+        // MODIFIKASI: Case-insensitive check seperti HeteroSemarang
+        const activeUsers = filteredUsers.filter(user => 
+            user.status?.toLowerCase() === 'active' 
+        ).length;
+        
+        // MODIFIKASI: Perhitungan persentase sama seperti HeteroSemarang
+        const activePercentage = totalUsers > 0 
+            ? ((activeUsers / totalUsers) * 100).toFixed(1) 
+            : "0";
+        
+        // MODIFIKASI: Growth percentage - di HeteroSemarang menggunakan stats?.growthPercentage
+        // Untuk Account, kita bisa menggunakan nilai default atau hardcoded
+        const growthPercentage = "8.5"; // Atau bisa dari props/hook jika tersedia
 
         return [
             {
                 title: "Total Users",
                 value: totalUsers.toString(),
                 subtitle: filters.position ? `${getOriginalLabel(filters.position, positionOptions)}` : "",
-                percentage: `${totalUsers > 0 ? "8.5" : "0"}%`,
-                trend: totalUsers > 0 ? "up" : "neutral",
+                percentage: `${growthPercentage}%`,
+                // MODIFIKASI: Trend logic sama seperti HeteroSemarang
+                trend: parseFloat(growthPercentage) > 0 ? "up" :
+                        parseFloat(growthPercentage) < 0 ? "down" : "neutral",
                 period: "Last Month",
                 icon: Users,
                 color: "blue",
-                description: `${totalUsers > 0 ? "8.5" : "0"}% Growth`
+                description: `${growthPercentage}% Growth`,
+                loading: false
             },
             {
                 title: "Active Users",
                 value: activeUsers.toString(),
                 subtitle: "",
                 percentage: `${activePercentage}%`,
-                trend: activeUsers > 0 ? "up" : "down",
-                period: "Last Month",
+                // MODIFIKASI: Trend indicator sama seperti HeteroSemarang (threshold 70%)
+                trend: parseFloat(activePercentage) > 70 ? "up" : "down",
+                period: "Current",  // MODIFIKASI: Period "Current" seperti HeteroSemarang
                 icon: UserCheck,
                 color: "green",
-                description: `${activePercentage}% of total`
+                description: `${activePercentage}% of total`,
+                loading: false
             }
         ];
     }, [filteredUsers, filters.position, filters.role, positionOptions]);
