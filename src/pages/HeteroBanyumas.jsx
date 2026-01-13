@@ -50,6 +50,48 @@ const HeteroBanyumas = () => {
         updateMemberHeteroBanyumas, deleteMemberHeteroBanyumas, showConfirm, handleConfirm, handleCancel,
         isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroBanyumas()
 
+    // Definisi allSpaceOptions dan getSpaceLabel di awal untuk menghindari circular dependency
+    const allSpaceOptions = [
+        { value: "maneka personal", label: "🏠 Maneka Personal", original: "Maneka Personal" },
+        { value: "maneka group", label: "👥 Maneka Group", original: "Maneka Group" },
+        { value: "rembug meeting room", label: "🗣️ Rembug Meeting Room", original: "Rembug Meeting Room" },
+        { value: "rembug meeting room (weekend)", label: "🗣️ Rembug Meeting Room (Weekend)", original: "Rembug Meeting Room (Weekend)" },
+        { value: "private office 1", label: "🚪 Private Office 1", original: "Private Office 1" },
+        { value: "private office 2", label: "🚪 Private Office 2", original: "Private Office 2" },
+        { value: "private office 3&4", label: "🚪 Private Office 3&4", original: "Private Office 3&4" },
+        { value: "private office 5", label: "🚪 Private Office 5", original: "Private Office 5" },
+        { value: "private office 6", label: "🚪 Private Office 6", original: "Private Office 6" },
+        { value: "virtual office", label: "💻 Virtual Office", original: "Virtual Office" },
+        { value: "gatra event space", label: "🏛️ Gatra Event Space", original: "Gatra Event Space" },
+        { value: "gatra wedding hall", label: "💒 Gatra Wedding Hall", original: "Gatra Wedding Hall" },
+        { value: "outdoorspace", label: "🌳 Outdoorspace", original: "Outdoorspace" },
+        { value: "amphitheater", label: "🎭 Amphitheater", original: "Amphitheater" },
+        { value: "basketball court personal", label: "🏀 Basketball Court Personal", original: "Basketball Court Personal" },
+        { value: "basketball court membership", label: "🏀 Basketball Court Membership", original: "Basketball Court Membership" },
+        { value: "futsal court personal", label: "⚽ Futsal Court Personal", original: "Futsal Court Personal" },
+        { value: "futsal court membership", label: "⚽ Futsal Court Membership", original: "Futsal Court Membership" },
+        { value: "tennis court personal", label: "🎾 Tennis Court Personal", original: "Tennis Court Personal" },
+        { value: "tennis court membership", label: "🎾 Tennis Court Membership", original: "Tennis Court Membership" },
+        { value: "co-living room 1", label: "🏠 Co-Living Room 1", original: "Co-Living Room 1" },
+        { value: "co-living room 2", label: "🏠 Co-Living Room 2", original: "Co-Living Room 2" },
+        { value: "co-living room 3", label: "🏠 Co-Living Room 3", original: "Co-Living Room 3" },
+        { value: "co-living room 4", label: "🏠 Co-Living Room 4", original: "Co-Living Room 4" },
+        { value: "makerspace", label: "🔧 Makerspace", original: "Makerspace" }
+    ];
+
+    const genderOptions = [
+        { value: 'male', label: 'Male' },
+        { value: 'female', label: 'Female' },
+    ];
+
+    // getSpaceLabel didefinisikan di sini sebelum digunakan oleh handleExport
+    const getSpaceLabel = useCallback((spaceValue) => {
+        if (!spaceValue || spaceValue === "all") return "All Spaces";
+        const space = allSpaceOptions.find(s => s.value === spaceValue) || 
+                     availableSpaces.find(s => s.value === spaceValue);
+        return space ? space.original : spaceValue;
+    }, [availableSpaces]);
+
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
         setHighlightDetail(true);
@@ -401,7 +443,8 @@ const HeteroBanyumas = () => {
         }
     }, []);
 
-    const handleExport = useCallback(async (format = 'excel') => {
+    // MODIFIKASI: Fungsi handleExport yang disederhanakan, langsung export ke Excel tanpa dropdown
+    const handleExport = useCallback(async () => {
         try {
             if (!filteredMembers || filteredMembers.length === 0) {
                 toast.error('No data to export');
@@ -410,6 +453,7 @@ const HeteroBanyumas = () => {
             
             setIsExporting(true);
             
+            // Format data untuk export - lengkap dengan semua field yang ada
             const exportData = filteredMembers.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
@@ -421,82 +465,148 @@ const HeteroBanyumas = () => {
                 'Duration': member.duration || '-',
                 'Status': member.status || '-',
                 'Address': member.address || '-',
+                'Start Date': member.start_date || '-',
+                'End Date': member.end_date || '-',
+                'Add On': member.add_on || '-',
+                'Add Information': member.add_information || '-',
                 'Notes': member.notes || '-',
                 'Created Date': member.created_at 
-                    ? new Date(member.created_at).toLocaleDateString() 
+                    ? new Date(member.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) 
                     : '-',
                 'Last Updated': member.updated_at 
-                    ? new Date(member.updated_at).toLocaleDateString() 
+                    ? new Date(member.updated_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) 
                     : '-'
             }));
 
-            if (format === 'excel') {
-                const ws = XLSX.utils.json_to_sheet(exportData);
-                
-                const wscols = [
-                    { wch: 5 },   
-                    { wch: 25 }, 
-                    { wch: 30 },  
-                    { wch: 10 },  
-                    { wch: 15 }, 
-                    { wch: 25 },  
-                    { wch: 30 }, 
-                    { wch: 15 }, 
-                    { wch: 10 }, 
-                    { wch: 40 }, 
-                    { wch: 40 },  
-                    { wch: 12 },  
-                    { wch: 12 }  
-                ];
-                ws['!cols'] = wscols;
-                
-                const range = XLSX.utils.decode_range(ws['!ref']);
-                for (let C = range.s.c; C <= range.e.c; ++C) {
-                    const cell_address = { c: C, r: 0 };
-                    const cell_ref = XLSX.utils.encode_cell(cell_address);
-                    if (!ws[cell_ref]) continue;
-                    ws[cell_ref].s = {
-                        font: { bold: true },
-                        fill: { fgColor: { rgb: "E0E0E0" } }
-                    };
-                }
-                
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Hetero Banyumas Members");
-                
-                const dateStr = new Date().toISOString().split('T')[0];
-                const fileName = `hetero_banyumas_members_export_${dateStr}.xlsx`;
-                
-                XLSX.writeFile(wb, fileName);
-                
-                toast.success(`Exported ${exportData.length} members to Excel`);
-            } else if (format === 'csv') {
-                const csvContent = [
-                    Object.keys(exportData[0]).join(','),
-                    ...exportData.map(row => Object.values(row).join(','))
-                ].join('\n');
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                const url = URL.createObjectURL(blob);
-                
-                link.setAttribute("href", url);
-                link.setAttribute("download", `hetero_banyumas_members_export_${new Date().getTime()}.csv`);
-                link.style.visibility = 'hidden';
-                
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                toast.success(`Exported ${exportData.length} members to CSV`);
+            // Buat worksheet dengan styling
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            
+            // Atur lebar kolom yang sesuai
+            const wscols = [
+                { wch: 5 },    // No
+                { wch: 25 },   // Full Name
+                { wch: 30 },   // Email
+                { wch: 10 },   // Gender
+                { wch: 15 },   // Phone
+                { wch: 25 },   // Space
+                { wch: 30 },   // Company
+                { wch: 15 },   // Duration
+                { wch: 15 },   // Status
+                { wch: 40 },   // Address
+                { wch: 15 },   // Start Date
+                { wch: 15 },   // End Date
+                { wch: 15 },   // Add On
+                { wch: 30 },   // Add Information
+                { wch: 40 },   // Notes
+                { wch: 20 },   // Created Date
+                { wch: 20 },   // Last Updated
+            ];
+            ws['!cols'] = wscols;
+            
+            // Tambahkan styling untuk header (baris pertama)
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell_address = { c: C, r: 0 };
+                const cell_ref = XLSX.utils.encode_cell(cell_address);
+                if (!ws[cell_ref]) continue;
+                ws[cell_ref].s = {
+                    font: { bold: true },
+                    fill: { fgColor: { rgb: "E0E0E0" } },
+                    alignment: { vertical: "center", horizontal: "center" }
+                };
             }
+            
+            // Buat workbook dengan sheet tambahan untuk info export
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Hetero Banyumas Members");
+            
+            // Tambahkan sheet info filter seperti di kode Program
+            const filterInfo = [
+                ['HETERO BANYUMAS MEMBERS EXPORT'],
+                ['', ''],
+                ['Export Date', new Date().toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                })],
+                ['Total Records Exported', filteredMembers.length],
+                ['', ''],
+                ['APPLIED FILTERS'],
+                ['Search Term', searchTerm || 'None'],
+                ['Gender Filter', filters.gender ? (filters.gender === 'male' ? 'Male' : 'Female') : 'All'],
+                ['Space Filter', filters.space && filters.space !== 'all' ? getSpaceLabel(filters.space) : 'All'],
+                ['', ''],
+                ['STATISTICS'],
+                ['Total Active Members', filteredMembers.filter(m => m.status === 'Active' || m.status === 'active').length],
+                ['Total Inactive Members', filteredMembers.filter(m => m.status !== 'Active' && m.status !== 'active').length],
+                ['', ''],
+                ['EXPORT INFORMATION'],
+                ['Generated On', new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                })],
+                ['System', 'Hetero Banyumas Management System'],
+                ['Version', '1.0.0']
+            ];
+            
+            const wsInfo = XLSX.utils.aoa_to_sheet(filterInfo);
+            
+            // Atur lebar kolom untuk sheet info
+            const infoCols = [
+                { wch: 25 },
+                { wch: 40 }
+            ];
+            wsInfo['!cols'] = infoCols;
+            
+            // Styling untuk header sheet info
+            const infoRange = XLSX.utils.decode_range(wsInfo['!ref']);
+            for (let R = 0; R <= Math.min(2, infoRange.e.r); R++) {
+                for (let C = infoRange.s.c; C <= infoRange.e.c; C++) {
+                    const cell_address = { c: C, r: R };
+                    const cell_ref = XLSX.utils.encode_cell(cell_address);
+                    if (wsInfo[cell_ref]) {
+                        wsInfo[cell_ref].s = {
+                            font: { bold: true, color: { rgb: "FFFFFF" } },
+                            fill: { fgColor: { rgb: "4F46E5" } },
+                            alignment: { vertical: "center", horizontal: "center" }
+                        };
+                    }
+                }
+            }
+            
+            XLSX.utils.book_append_sheet(wb, wsInfo, "Export Info");
+            
+            // Generate nama file dengan timestamp
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-').replace(/\..+/, '');
+            const fileName = `hetero_banyumas_members_export_${timestamp}.xlsx`;
+            
+            // Download file
+            XLSX.writeFile(wb, fileName);
+            
+            toast.success(`Successfully exported ${exportData.length} members to Excel`);
         } catch (error) {
             console.error('Export failed:', error);
             toast.error(`Failed to export: ${error.message}`);
         } finally {
             setIsExporting(false);
         }
-    }, [filteredMembers]);
+    }, [filteredMembers, searchTerm, filters, getSpaceLabel]);
 
     useEffect(() => {
         const preventDefaults = (e) => {
@@ -512,39 +622,6 @@ const HeteroBanyumas = () => {
             window.removeEventListener('drop', preventDefaults, false);
         };
     }, []);
-
-    const allSpaceOptions = [
-        { value: "maneka personal", label: "🏠 Maneka Personal", original: "Maneka Personal" },
-        { value: "maneka group", label: "👥 Maneka Group", original: "Maneka Group" },
-        { value: "rembug meeting room", label: "🗣️ Rembug Meeting Room", original: "Rembug Meeting Room" },
-        { value: "rembug meeting room (weekend)", label: "🗣️ Rembug Meeting Room (Weekend)", original: "Rembug Meeting Room (Weekend)" },
-        { value: "private office 1", label: "🚪 Private Office 1", original: "Private Office 1" },
-        { value: "private office 2", label: "🚪 Private Office 2", original: "Private Office 2" },
-        { value: "private office 3&4", label: "🚪 Private Office 3&4", original: "Private Office 3&4" },
-        { value: "private office 5", label: "🚪 Private Office 5", original: "Private Office 5" },
-        { value: "private office 6", label: "🚪 Private Office 6", original: "Private Office 6" },
-        { value: "virtual office", label: "💻 Virtual Office", original: "Virtual Office" },
-        { value: "gatra event space", label: "🏛️ Gatra Event Space", original: "Gatra Event Space" },
-        { value: "gatra wedding hall", label: "💒 Gatra Wedding Hall", original: "Gatra Wedding Hall" },
-        { value: "outdoorspace", label: "🌳 Outdoorspace", original: "Outdoorspace" },
-        { value: "amphitheater", label: "🎭 Amphitheater", original: "Amphitheater" },
-        { value: "basketball court personal", label: "🏀 Basketball Court Personal", original: "Basketball Court Personal" },
-        { value: "basketball court membership", label: "🏀 Basketball Court Membership", original: "Basketball Court Membership" },
-        { value: "futsal court personal", label: "⚽ Futsal Court Personal", original: "Futsal Court Personal" },
-        { value: "futsal court membership", label: "⚽ Futsal Court Membership", original: "Futsal Court Membership" },
-        { value: "tennis court personal", label: "🎾 Tennis Court Personal", original: "Tennis Court Personal" },
-        { value: "tennis court membership", label: "🎾 Tennis Court Membership", original: "Tennis Court Membership" },
-        { value: "co-living room 1", label: "🏠 Co-Living Room 1", original: "Co-Living Room 1" },
-        { value: "co-living room 2", label: "🏠 Co-Living Room 2", original: "Co-Living Room 2" },
-        { value: "co-living room 3", label: "🏠 Co-Living Room 3", original: "Co-Living Room 3" },
-        { value: "co-living room 4", label: "🏠 Co-Living Room 4", original: "Co-Living Room 4" },
-        { value: "makerspace", label: "🔧 Makerspace", original: "Makerspace" }
-    ];
-
-    const genderOptions = [
-        { value: 'male', label: 'Male' },
-        { value: 'female', label: 'Female' },
-    ];
 
     const extractSpaces = useMemo(() => {
         return (membersList) => {
@@ -606,13 +683,6 @@ const HeteroBanyumas = () => {
             return combinedSpaces.sort((a, b) => a.original.localeCompare(b.original));
         };
     }, []);
-
-    const getSpaceLabel = useCallback((spaceValue) => {
-        if (!spaceValue || spaceValue === "all") return "All Spaces";
-        const space = allSpaceOptions.find(s => s.value === spaceValue) || 
-                     availableSpaces.find(s => s.value === spaceValue);
-        return space ? space.original : spaceValue;
-    });
 
     const applyAllFilters = () => {
         let result = [...members];
@@ -1220,40 +1290,20 @@ const HeteroBanyumas = () => {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
-                                            disabled={loading || filteredMembers.length === 0 || isExporting}
-                                        >
-                                            {isExporting ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Download className="h-4 w-4" />
-                                            )}
-                                            Export
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-48">
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('excel')}
-                                            disabled={filteredMembers.length === 0 || isExporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileSpreadsheet className="h-4 w-4" />
-                                            Export as Excel
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('csv')}
-                                            disabled={filteredMembers.length === 0 || isExporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileText className="h-4 w-4" />
-                                            Export as CSV
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                {/* MODIFIKASI: Button Export tanpa dropdown, langsung export ke Excel */}
+                                <Button
+                                    variant="outline"
+                                    className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
+                                    disabled={loading || filteredMembers.length === 0 || isExporting}
+                                    onClick={handleExport}
+                                >
+                                    {isExporting ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Download className="h-4 w-4" />
+                                    )}
+                                    {isExporting ? 'Exporting...' : 'Export'}
+                                </Button>
                             </div>
                         </div>
                         
