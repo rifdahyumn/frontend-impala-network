@@ -20,11 +20,9 @@ export default function LoginPage() {
     const [errors, setErrors] = useState({});
     const [authError, setAuthError] = useState("");
     
-    // Gunakan env untuk menampilkan mode (opsional)
     const isDevelopment = import.meta.env.DEV;
     const appUrl = import.meta.env.VITE_APP_URL;
 
-    // Redirect jika sudah login
     useEffect(() => {
         if (user) {
             const from = location.state?.from?.pathname || getRedirectPath(user.role);
@@ -32,7 +30,6 @@ export default function LoginPage() {
         }
     }, [user, navigate, location]);
 
-    // Validasi form
     const validateForm = () => {
         const newErrors = {};
         
@@ -52,7 +49,6 @@ export default function LoginPage() {
         return Object.keys(newErrors).length === 0;
     };
 
-    // Get redirect path berdasarkan role
     const getRedirectPath = (role) => {
         switch (role) {
             case 'komunitas':
@@ -71,7 +67,7 @@ export default function LoginPage() {
             ...prev,
             [name]: value
         }));
-        // Clear error ketika user mulai mengetik
+
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: "" }));
         }
@@ -81,7 +77,6 @@ export default function LoginPage() {
     const handleLogin = async (e) => {
         e.preventDefault();
         
-        // Validasi form
         if (!validateForm()) {
             return;
         }
@@ -90,21 +85,17 @@ export default function LoginPage() {
         setAuthError("");
 
         try {
-            // Gunakan service layer
             const { token, user: userData } = await loginService({
                 email: formData.email.trim(),
                 password: formData.password
             });
 
-            // Simpan token dengan cara yang aman
             login(token, userData);
 
-            // Redirect berdasarkan role
             const redirectPath = getRedirectPath(userData.role);
             navigate(redirectPath, { replace: true });
             
         } catch (err) {
-            // Handle error dengan aman
             let errorMessage = "Login gagal. Periksa email dan password Anda.";
             
             if (err.message.includes("network") || err.message.includes("Network")) {
@@ -115,7 +106,6 @@ export default function LoginPage() {
             
             setAuthError(errorMessage);
             
-            // Log error hanya di development
             if (import.meta.env.DEV) {
                 console.error('Login error:', err);
             }
@@ -124,7 +114,6 @@ export default function LoginPage() {
         }
     };
 
-    // Clear sensitive data dari state
     useEffect(() => {
         return () => {
             setFormData({ email: "", password: "" });
@@ -204,7 +193,7 @@ export default function LoginPage() {
                                     navigate('/forgot-password');
                                 }}
                             >
-                                Lupa Password?
+                                Forgot Password?
                             </a>
                         </div>
 
@@ -217,7 +206,7 @@ export default function LoginPage() {
                             {loading ? (
                                 <div className="flex items-center justify-center">
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                    Sedang masuk...
+                                    Loading...
                                 </div>
                             ) : (
                                 'Masuk'

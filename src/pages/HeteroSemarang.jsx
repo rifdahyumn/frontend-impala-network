@@ -80,7 +80,6 @@ const HeteroSemarang = () => {
         { value: 'female', label: 'Female' },
     ];
 
-    // getSpaceLabel didefinisikan di sini sebelum digunakan oleh handleExport
     const getSpaceLabel = useCallback((spaceValue) => {
         if (!spaceValue || spaceValue === "all") return "All Spaces";
         const space = allSpaceOptions.find(s => s.value === spaceValue) || 

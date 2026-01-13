@@ -11,7 +11,7 @@ export const useHeteroSemarang = (initialFilters = {}) => {
     const [error, setError] = useState(null)
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 20,
         total: 0,
         totalPages: 0
     })
