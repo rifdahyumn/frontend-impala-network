@@ -55,6 +55,39 @@ const HeteroSemarang = () => {
         updateMemberHeteroSemarang, deleteMemberHeteroSemarang, showConfirm, handleConfirm, handleCancel,
         isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroSemarang()
 
+    // Definisi allSpaceOptions dan getSpaceLabel di awal untuk menghindari circular dependency
+    const allSpaceOptions = [
+        { value: "maneka personal", label: "🏠 Maneka Personal", original: "Maneka Personal" },
+        { value: "maneka group", label: "👥 Maneka Group", original: "Maneka Group" },
+        { value: "rembug 1", label: "🗣️ Rembug 1", original: "Rembug 1" },
+        { value: "rembug 2-6", label: "🗣️ Rembug 2-6", original: "Rembug 2-6" },
+        { value: "rembug 7", label: "🗣️ Rembug 7", original: "Rembug 7" },
+        { value: "private office 1-3", label: "🚪 Private Office 1-3", original: "Private Office 1-3" },
+        { value: "private office 4&5", label: "🚪 Private Office 4&5", original: "Private Office 4&5" },
+        { value: "private office 6", label: "🚪 Private Office 6", original: "Private Office 6" },
+        { value: "space gatra", label: "🏛️ Space Gatra", original: "Space Gatra" },
+        { value: "space gayeng", label: "🎉 Space Gayeng", original: "Space Gayeng" },
+        { value: "markspace", label: "📍 Markspace", original: "Markspace" },
+        { value: "foodlab", label: "🍽️ Foodlab", original: "Foodlab" },
+        { value: "abipraya membership", label: "🎫 Abipraya Membership", original: "Abipraya Membership" },
+        { value: "abipraya event", label: "🎪 Abipraya Event", original: "Abipraya Event" },
+        { value: "virtual office", label: "💻 Virtual Office", original: "Virtual Office" },
+        { value: "outdoorspace", label: "🌳 Outdoor Space", original: "Outdoor Space" }
+    ];
+
+    const genderOptions = [
+        { value: 'male', label: 'Male' },
+        { value: 'female', label: 'Female' },
+    ];
+
+    // getSpaceLabel didefinisikan di sini sebelum digunakan oleh handleExport
+    const getSpaceLabel = useCallback((spaceValue) => {
+        if (!spaceValue || spaceValue === "all") return "All Spaces";
+        const space = allSpaceOptions.find(s => s.value === spaceValue) || 
+                     availableSpaces.find(s => s.value === spaceValue);
+        return space ? space.original : spaceValue;
+    }, [availableSpaces]);
+
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
         setHighlightDetail(true);
@@ -406,7 +439,8 @@ const HeteroSemarang = () => {
         }
     }, []);
 
-    const handleExport = useCallback(async (format = 'excel') => {
+    // MODIFIKASI: Fungsi handleExport tanpa dropdown, langsung export ke Excel
+    const handleExport = useCallback(async () => {
         try {
             if (!filteredMembers || filteredMembers.length === 0) {
                 toast.error('No data to export');
@@ -415,6 +449,7 @@ const HeteroSemarang = () => {
             
             setIsExporting(true);
             
+            // Format data untuk export
             const exportData = filteredMembers.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
@@ -438,73 +473,83 @@ const HeteroSemarang = () => {
                     : '-'
             }));
 
-            if (format === 'excel') {
-                const ws = XLSX.utils.json_to_sheet(exportData);
-                
-                const wscols = [
-                    { wch: 5 },  
-                    { wch: 25 }, 
-                    { wch: 30 }, 
-                    { wch: 10 },  
-                    { wch: 15 },  
-                    { wch: 25 }, 
-                    { wch: 30 }, 
-                    { wch: 15 },  
-                    { wch: 10 },  
-                    { wch: 40 }, 
-                    { wch: 40 }, 
-                    { wch: 12 },
-                    { wch: 12 }  
-                ];
-                ws['!cols'] = wscols;
-                
-                const range = XLSX.utils.decode_range(ws['!ref']);
-                for (let C = range.s.c; C <= range.e.c; ++C) {
-                    const cell_address = { c: C, r: 0 };
-                    const cell_ref = XLSX.utils.encode_cell(cell_address);
-                    if (!ws[cell_ref]) continue;
-                    ws[cell_ref].s = {
-                        font: { bold: true },
-                        fill: { fgColor: { rgb: "E0E0E0" } }
-                    };
-                }
-                
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Hetero Semarang Members");
-                
-                const dateStr = new Date().toISOString().split('T')[0];
-                const fileName = `hetero_semarang_members_export_${dateStr}.xlsx`;
-                
-                XLSX.writeFile(wb, fileName);
-                
-                toast.success(`Exported ${exportData.length} members to Excel`);
-            } else if (format === 'csv') {
-                const csvContent = [
-                    Object.keys(exportData[0]).join(','),
-                    ...exportData.map(row => Object.values(row).join(','))
-                ].join('\n');
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                const url = URL.createObjectURL(blob);
-                
-                link.setAttribute("href", url);
-                link.setAttribute("download", `hetero_semarang_members_export_${new Date().getTime()}.csv`);
-                link.style.visibility = 'hidden';
-                
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                toast.success(`Exported ${exportData.length} members to CSV`);
+            // Buat worksheet dengan styling
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            
+            // Atur lebar kolom
+            const wscols = [
+                { wch: 5 },    // No
+                { wch: 25 },   // Full Name
+                { wch: 30 },   // Email
+                { wch: 10 },   // Gender
+                { wch: 15 },   // Phone
+                { wch: 25 },   // Space
+                { wch: 30 },   // Company
+                { wch: 15 },   // Status
+                { wch: 40 },   // Address
+                { wch: 12 },   // Start Date
+                { wch: 12 },   // End Date
+                { wch: 10 },   // Duration
+                { wch: 15 },   // Add On
+                { wch: 20 },   // Add Information
+                { wch: 15 },   // Created Date
+                { wch: 15 },   // Last Updated
+            ];
+            ws['!cols'] = wscols;
+            
+            // Tambahkan styling untuk header
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell_address = { c: C, r: 0 };
+                const cell_ref = XLSX.utils.encode_cell(cell_address);
+                if (!ws[cell_ref]) continue;
+                ws[cell_ref].s = {
+                    font: { bold: true },
+                    fill: { fgColor: { rgb: "E0E0E0" } }
+                };
             }
+            
+            // Buat workbook dengan sheet tambahan untuk info export
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Hetero Surakarta Members");
+            
+            // Tambahkan sheet info filter seperti di kode Program
+            const filterInfo = [
+                ['HETERO SURAKARTA MEMBERS EXPORT'],
+                ['', ''],
+                ['Export Date', new Date().toLocaleString()],
+                ['Total Records Exported', filteredMembers.length],
+                ['', ''],
+                ['APPLIED FILTERS'],
+                ['Search Term', searchTerm || 'None'],
+                ['Gender Filter', filters.gender ? (filters.gender === 'male' ? 'Male' : 'Female') : 'All'],
+                ['Space Filter', filters.space && filters.space !== 'all' ? getSpaceLabel(filters.space) : 'All'],
+                ['', ''],
+                ['Total Active Members', filteredMembers.filter(m => m.status === 'active').length],
+                ['Total Inactive Members', filteredMembers.filter(m => m.status !== 'active').length],
+                ['', ''],
+                ['GENERATED ON', new Date().toLocaleDateString()],
+                ['SYSTEM', 'Hetero Surakarta Management System']
+            ];
+            
+            const wsInfo = XLSX.utils.aoa_to_sheet(filterInfo);
+            XLSX.utils.book_append_sheet(wb, wsInfo, "Export Info");
+            
+            // Generate nama file dengan timestamp
+            const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+            const fileName = `hetero_surakarta_members_export_${dateStr}.xlsx`;
+            
+            // Download file
+            XLSX.writeFile(wb, fileName);
+            
+            toast.success(`Successfully exported ${exportData.length} members to Excel`);
         } catch (error) {
             console.error('Export failed:', error);
             toast.error(`Failed to export: ${error.message}`);
         } finally {
             setIsExporting(false);
         }
-    }, [filteredMembers]);
+    }, [filteredMembers, searchTerm, filters, getSpaceLabel]);
 
     useEffect(() => {
         const preventDefaults = (e) => {
@@ -520,30 +565,6 @@ const HeteroSemarang = () => {
             window.removeEventListener('drop', preventDefaults, false);
         };
     }, []);
-
-    const allSpaceOptions = [
-        { value: "maneka personal", label: "🏠 Maneka Personal", original: "Maneka Personal" },
-        { value: "maneka group", label: "👥 Maneka Group", original: "Maneka Group" },
-        { value: "rembug 1", label: "🗣️ Rembug 1", original: "Rembug 1" },
-        { value: "rembug 2-6", label: "🗣️ Rembug 2-6", original: "Rembug 2-6" },
-        { value: "rembug 7", label: "🗣️ Rembug 7", original: "Rembug 7" },
-        { value: "private office 1-3", label: "🚪 Private Office 1-3", original: "Private Office 1-3" },
-        { value: "private office 4&5", label: "🚪 Private Office 4&5", original: "Private Office 4&5" },
-        { value: "private office 6", label: "🚪 Private Office 6", original: "Private Office 6" },
-        { value: "space gatra", label: "🏛️ Space Gatra", original: "Space Gatra" },
-        { value: "space gayeng", label: "🎉 Space Gayeng", original: "Space Gayeng" },
-        { value: "markspace", label: "📍 Markspace", original: "Markspace" },
-        { value: "foodlab", label: "🍽️ Foodlab", original: "Foodlab" },
-        { value: "abipraya membership", label: "🎫 Abipraya Membership", original: "Abipraya Membership" },
-        { value: "abipraya event", label: "🎪 Abipraya Event", original: "Abipraya Event" },
-        { value: "virtual office", label: "💻 Virtual Office", original: "Virtual Office" },
-        { value: "outdoorspace", label: "🌳 Outdoor Space", original: "Outdoor Space" }
-    ];
-
-    const genderOptions = [
-        { value: 'male', label: 'Male' },
-        { value: 'female', label: 'Female' },
-    ];
 
     const extractSpaces = useMemo(() => {
         return (membersList) => {
@@ -602,13 +623,6 @@ const HeteroSemarang = () => {
             return combinedSpaces.sort((a, b) => a.original.localeCompare(b.original));
         };
     }, []);
-
-    const getSpaceLabel = useCallback((spaceValue) => {
-        if (!spaceValue || spaceValue === "all") return "All Spaces";
-        const space = allSpaceOptions.find(s => s.value === spaceValue) || 
-                     availableSpaces.find(s => s.value === spaceValue);
-        return space ? space.original : spaceValue;
-    }, [allSpaceOptions, availableSpaces]);
 
     const applyAllFilters = () => {
         let result = [...members];
@@ -1220,40 +1234,20 @@ const HeteroSemarang = () => {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
-                                            disabled={loading || filteredMembers.length === 0 || isExporting}
-                                        >
-                                            {isExporting ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Download className="h-4 w-4" />
-                                            )}
-                                            Export
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-48">
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('excel')}
-                                            disabled={filteredMembers.length === 0 || isExporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileSpreadsheet className="h-4 w-4" />
-                                            Export as Excel
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem 
-                                            onClick={() => handleExport('csv')}
-                                            disabled={filteredMembers.length === 0 || isExporting}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <FileText className="h-4 w-4" />
-                                            Export as CSV
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                {/* MODIFIKASI: Button Export tanpa dropdown, langsung export ke Excel */}
+                                <Button
+                                    variant="outline"
+                                    className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
+                                    disabled={loading || filteredMembers.length === 0 || isExporting}
+                                    onClick={handleExport}
+                                >
+                                    {isExporting ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Download className="h-4 w-4" />
+                                    )}
+                                    {isExporting ? 'Exporting...' : 'Export'}
+                                </Button>
                             </div>
                         </div>
                         
