@@ -473,7 +473,6 @@ const HeteroSemarang = () => {
                     : '-'
             }));
 
-<<<<<<< HEAD
             // Buat worksheet dengan styling
             const ws = XLSX.utils.json_to_sheet(exportData);
             
@@ -508,67 +507,6 @@ const HeteroSemarang = () => {
                     font: { bold: true },
                     fill: { fgColor: { rgb: "E0E0E0" } }
                 };
-=======
-            if (format === 'excel') {
-                const ws = XLSX.utils.json_to_sheet(exportData);
-                
-                const wscols = [
-                    { wch: 5 },  
-                    { wch: 25 }, 
-                    { wch: 30 }, 
-                    { wch: 10 },  
-                    { wch: 15 },  
-                    { wch: 25 }, 
-                    { wch: 30 }, 
-                    { wch: 15 },  
-                    { wch: 10 },  
-                    { wch: 40 }, 
-                    { wch: 40 }, 
-                    { wch: 12 },
-                    { wch: 12 }  
-                ];
-                ws['!cols'] = wscols;
-                
-                const range = XLSX.utils.decode_range(ws['!ref']);
-                for (let C = range.s.c; C <= range.e.c; ++C) {
-                    const cell_address = { c: C, r: 0 };
-                    const cell_ref = XLSX.utils.encode_cell(cell_address);
-                    if (!ws[cell_ref]) continue;
-                    ws[cell_ref].s = {
-                        font: { bold: true },
-                        fill: { fgColor: { rgb: "E0E0E0" } }
-                    };
-                }
-                
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Hetero Semarang Members");
-                
-                const dateStr = new Date().toISOString().split('T')[0];
-                const fileName = `hetero_semarang_members_export_${dateStr}.xlsx`;
-                
-                XLSX.writeFile(wb, fileName);
-                
-                toast.success(`Exported ${exportData.length} members to Excel`);
-            } else if (format === 'csv') {
-                const csvContent = [
-                    Object.keys(exportData[0]).join(','),
-                    ...exportData.map(row => Object.values(row).join(','))
-                ].join('\n');
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                const url = URL.createObjectURL(blob);
-                
-                link.setAttribute("href", url);
-                link.setAttribute("download", `hetero_semarang_members_export_${new Date().getTime()}.csv`);
-                link.style.visibility = 'hidden';
-                
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                toast.success(`Exported ${exportData.length} members to CSV`);
->>>>>>> f439ec86149feea57ec7ee5b3d2574375fcf0102
             }
             
             // Buat workbook dengan sheet tambahan untuk info export
