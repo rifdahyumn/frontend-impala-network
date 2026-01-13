@@ -529,7 +529,12 @@ const HeteroSurakarta = () => {
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Hetero Surakarta Members");
             
-            // Tambahkan sheet info filter seperti di kode Program
+            // MODIFIKASI: Update perhitungan active members di export Excel (sama seperti HeteroSemarang)
+            const activeMembers = filteredMembers.filter(m => 
+                m.status?.toLowerCase() === 'active'
+            ).length;
+            const inactiveMembers = filteredMembers.length - activeMembers;
+            
             const filterInfo = [
                 ['HETERO SURAKARTA MEMBERS EXPORT'],
                 ['', ''],
@@ -549,8 +554,8 @@ const HeteroSurakarta = () => {
                 ['Space Filter', filters.space && filters.space !== 'all' ? getSpaceLabel(filters.space) : 'All'],
                 ['', ''],
                 ['STATISTICS'],
-                ['Total Active Members', filteredMembers.filter(m => m.status === 'active').length],
-                ['Total Inactive Members', filteredMembers.filter(m => m.status !== 'active').length],
+                ['Total Active Members', activeMembers],  // MODIFIKASI: Menggunakan filter case-insensitive
+                ['Total Inactive Members', inactiveMembers],  // MODIFIKASI: Perhitungan yang benar
                 ['', ''],
                 ['EXPORT INFORMATION'],
                 ['Generated On', new Date().toLocaleDateString('en-US', {
@@ -834,6 +839,7 @@ const HeteroSurakarta = () => {
         applyAllFilters();
     }, [searchTerm, filters]);
 
+    // MODIFIKASI: Perhitungan memberStats yang SAMA PERSIS dengan HeteroSemarang
     const memberStats = useMemo(() => {
         if (statsLoading) {
             return [
@@ -858,36 +864,49 @@ const HeteroSurakarta = () => {
             ];
         }
 
-        const totalMembers = filteredMembers.length;
-        const activeMembers = filteredMembers.filter(member => member.status === 'active').length;
+        // MODIFIKASI: Menggunakan stats dari hook sebagai prioritas, sama seperti HeteroSemarang
+        const totalMembers = stats?.totalMembers || filteredMembers.length;
+        const activeMembers = stats?.activeMembers || filteredMembers.filter(member => 
+            member.status?.toLowerCase() === 'active' 
+        ).length;
         
-        const activePercentage = totalMembers > 0 ? ((activeMembers / totalMembers) * 100).toFixed(1) : "0";
+        // MODIFIKASI: Perhitungan persentase sama seperti HeteroSemarang
+        const activePercentage = totalMembers > 0 
+            ? ((activeMembers / totalMembers) * 100).toFixed(1) 
+            : "0";
+        
+        // MODIFIKASI: Menggunakan growthPercentage dari stats, sama seperti HeteroSemarang
+        const growthPercentage = stats?.growthPercentage || "0";
 
         return [
             {
                 title: "Total Members",
                 value: totalMembers.toString(),
                 subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
-                percentage: `${totalMembers > 0 ? "12.5" : "0"}%`,
-                trend: totalMembers > 0 ? "up" : "neutral",
+                percentage: `${growthPercentage}%`,
+                trend: parseFloat(growthPercentage) > 0 ? "up" :
+                        parseFloat(growthPercentage) < 0 ? "down" : "neutral",
                 period: "Last Month",
                 icon: Users,
                 color: "blue",
-                description: `${totalMembers > 0 ? "12.5" : "0"}% Growth`
+                description: `${growthPercentage}% Growth`,
+                loading: false
             },
             {
                 title: "Active Members",
                 value: activeMembers.toString(),
                 subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
                 percentage: `${activePercentage}%`,
-                trend: activeMembers > 0 ? "up" : "down",
-                period: "Last Month",
+                // MODIFIKASI: Trend indicator sama seperti HeteroSemarang (threshold 70%)
+                trend: parseFloat(activePercentage) > 70 ? "up" : "down",
+                period: "Current",
                 icon: UserCheck,
                 color: "green",
-                description: `${activePercentage}% of total`
+                description: `${activePercentage}% of total`,
+                loading: false
             }
         ];
-    }, [filteredMembers, filters.space, getSpaceLabel, statsLoading]);
+    }, [filteredMembers, filters.space, getSpaceLabel, stats, statsLoading]);
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);

@@ -97,6 +97,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
             }
         }
     };
+
     const handlePricePaste = (e) => {
         e.preventDefault();
         const pastedData = e.clipboardData.getData('text');
@@ -380,10 +381,12 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 price: formattedPrice,
                 link_rab: editData.link_rab || '',
                 capacity: editData.capacity || '',
-                instructors: editData.instructors || [],
+                instructors: Array.isArray(editData.instructors) ? editData.instructors : 
+                           (editData.instructors ? [editData.instructors] : []),
                 location: editData.location || '',
                 description: editData.description || '',
-                tags: editData.tags || []
+                tags: Array.isArray(editData.tags) ? editData.tags : 
+                     (editData.tags ? [editData.tags] : [])
             });
         } else {
             setFormData({
@@ -403,6 +406,8 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
             });
         }
         setErrors({});
+        setNewInstructor('');
+        setNewTag('');
     }, [isEditMode, editData, isAddProgramModalOpen]);
 
     const validateForm = () => {
@@ -411,7 +416,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         formSections.forEach(section => {
             if (section.fields && Array.isArray(section.fields)) {
                 section.fields.forEach(field => {
-                    if (field.required) {
+                    if (field.required && field.name) {
                         const value = formData[field.name];
                         if (!value || value.toString().trim() === '' || value === 'Rp. ') {
                             newErrors[field.name] = `${field.label} is required`;
@@ -767,11 +772,11 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
             <DialogContent className="max-h-[90vh] max-w-[900px] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
-                        {isEditMode ? 'Edit Program' : 'Add New Program'}
+                        {isEditMode ? `Edit Program: ${formData.program_name || ''}` : 'Add New Program'}
                     </DialogTitle>
                     <DialogDescription>
                         {isEditMode
-                            ? 'Update the program information below'
+                            ? `Update information for "${formData.program_name || 'this program'}"`
                             : 'Fill in the details below to add a new program to the system'
                         }
                     </DialogDescription>
@@ -813,7 +818,11 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={loading}>
+                        <Button 
+                            type="submit" 
+                            disabled={loading}
+                            className={isEditMode ? "bg-amber-500 hover:bg-amber-300" : ""}
+                        >
                             {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                             {loading 
                                 ? (isEditMode ? 'Updating Program...' : 'Adding Program...')
