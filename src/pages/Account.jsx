@@ -1,22 +1,31 @@
 import AccountContent from "../components/Content/AccountContent";
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, UserCheck, AlertCircle, X, Filter, Briefcase, Check, Building2 } from "lucide-react";
-import { Button } from "../components/ui/button"
+import { Plus, Loader2, Users, UserCheck, AlertCircle, X, Filter, Briefcase, Check, Building2, Download } from "lucide-react";
+import { Button } from "../components/ui/button";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'; 
 import SearchBar from '../components/SearchFilter/SearchBar';
-import ExportButton from '../components/ActionButton/ExportButton';
 import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from '../components/Pagination/Pagination';
 import AddUser from "../components/AddButton/AddUser";
 import { useUsers } from "../hooks/useUser";
 import toast from "react-hot-toast";
+import * as XLSX from 'xlsx'; // Tambahkan library Excel
 
 const Account = () => {
-    const [selectedUser, setSelectedUser] = useState(null)
+    const [selectedUser, setSelectedUser] = useState(null);
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
+    
+    // State untuk modal konfirmasi
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        config: null
+    });
+    
+    // State untuk export
+    const [isExporting, setIsExporting] = useState(false);
     
     const [highlightDetail, setHighlightDetail] = useState(false);
     
@@ -38,7 +47,227 @@ const Account = () => {
     
     const [filteredUsers, setFilteredUsers] = useState([]);
 
-    const { users, loading, error, pagination, fetchFilters, setFilters: setHookFilters, fetchUser, addUser, updateUser, deleteUser, activateUser } = useUsers()
+    const { users, loading, error, pagination, fetchFilters, setFilters: setHookFilters, fetchUser, addUser, updateUser, deleteUser, activateUser } = useUsers();
+
+    // Fungsi untuk menampilkan modal konfirmasi
+    const showConfirm = (config) => {
+        setConfirmModal({
+            isOpen: true,
+            config
+        });
+    };
+
+    // Fungsi untuk handle konfirmasi
+    const handleConfirm = async () => {
+        if (confirmModal.config && confirmModal.config.onConfirm) {
+            try {
+                await confirmModal.config.onConfirm();
+            } catch (error) {
+                console.error('Error in confirm action:', error);
+                toast.error(error.message || 'Failed to perform action');
+            }
+        }
+        setConfirmModal({ isOpen: false, config: null });
+    };
+
+    // Fungsi untuk handle cancel
+    const handleCancel = () => {
+        if (confirmModal.config && confirmModal.config.onCancel) {
+            confirmModal.config.onCancel();
+        }
+        setConfirmModal({ isOpen: false, config: null });
+    };
+
+    // Fungsi getOriginalLabel didefinisikan sebelum digunakan di handleExport
+    const getOriginalLabel = (value, options) => {
+        if (!value) return "";
+        const option = options.find(opt => opt.value === value);
+        return option ? option.original || option.label : value;
+    };
+
+    // Opsi filter
+    const positionOptions = [
+        { value: 'managing director', label: 'Managing Director', original: 'Managing Director' },
+        { value: 'director', label: 'Director', original: 'Director' },
+        { value: 'head manager', label: 'Head Manager', original: 'Head Manager' },
+        { value: 'finance', label: 'Finance', original: 'Finance' },
+        { value: 'legal', label: 'Legal', original: 'Legal' },
+        { value: 'talent manager', label: 'Talent Manager', original: 'Talent Manager' },
+        { value: 'ecosystem manager', label: 'Ecosystem Manager', original: 'Ecosystem Manager' },
+        { value: 'strategic partnership executive', label: 'Strategic Partnership Executive', original: 'Strategic Partnership Executive' },
+        { value: 'program manager', label: 'Program Manager', original: 'Program Manager' },
+        { value: 'space manager', label: 'Space Manager', original: 'Space Manager' },
+        { value: 'creative', label: 'Creative', original: 'Creative' }
+    ];
+
+    const roleOptions = [
+        { value: 'admin', label: 'Admin', original: 'Admin' },
+        { value: 'user', label: 'User', original: 'User' },
+        { value: 'superadmin', label: 'Super Admin', original: 'Super Admin' }
+    ];
+
+    // FUNGSI EXPORT YANG SAMA SEPERTI DI KODE SEBELUMNYA
+    const handleExport = useCallback(async () => {
+        try {
+            if (!filteredUsers || filteredUsers.length === 0) {
+                toast.error('No data to export');
+                return;
+            }
+            
+            setIsExporting(true);
+            
+            // Format data untuk export - lengkap dengan semua field yang ada
+            const exportData = filteredUsers.map((user, index) => ({
+                'No': index + 1,
+                'Employee ID': user.employee_id || '-',
+                'Full Name': user.full_name || '-',
+                'Email': user.email || '-',
+                'Position': user.position || '-',
+                'Role': user.role || '-',
+                'Status': user.status || '-',
+                'Phone': user.phone || '-',
+                'Last Login': user.last_login 
+                    ? new Date(user.last_login).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) 
+                    : '-',
+                'Created Date': user.created_at 
+                    ? new Date(user.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) 
+                    : '-',
+                'Last Updated': user.updated_at 
+                    ? new Date(user.updated_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) 
+                    : '-'
+            }));
+
+            // Buat worksheet dengan styling
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            
+            // Atur lebar kolom yang sesuai
+            const wscols = [
+                { wch: 5 },    // No
+                { wch: 15 },   // Employee ID
+                { wch: 25 },   // Full Name
+                { wch: 30 },   // Email
+                { wch: 25 },   // Position
+                { wch: 15 },   // Role
+                { wch: 15 },   // Status
+                { wch: 15 },   // Phone
+                { wch: 20 },   // Last Login
+                { wch: 20 },   // Created Date
+                { wch: 20 },   // Last Updated
+            ];
+            ws['!cols'] = wscols;
+            
+            // Tambahkan styling untuk header (baris pertama)
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell_address = { c: C, r: 0 };
+                const cell_ref = XLSX.utils.encode_cell(cell_address);
+                if (!ws[cell_ref]) continue;
+                ws[cell_ref].s = {
+                    font: { bold: true },
+                    fill: { fgColor: { rgb: "E0E0E0" } },
+                    alignment: { vertical: "center", horizontal: "center" }
+                };
+            }
+            
+            // Buat workbook dengan sheet tambahan untuk info export
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Account Users");
+            
+            // Tambahkan sheet info filter
+            const filterInfo = [
+                ['USER ACCOUNT EXPORT'],
+                ['', ''],
+                ['Export Date', new Date().toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                })],
+                ['Total Records Exported', filteredUsers.length],
+                ['', ''],
+                ['APPLIED FILTERS'],
+                ['Search Term', searchTerm || 'None'],
+                ['Position Filter', filters.position ? getOriginalLabel(filters.position, positionOptions) : 'All'],
+                ['Role Filter', filters.role && filters.role !== 'all' ? getOriginalLabel(filters.role, roleOptions) : 'All'],
+                ['', ''],
+                ['STATISTICS'],
+                ['Total Active Users', filteredUsers.filter(u => u.status === 'active').length],
+                ['Total Inactive Users', filteredUsers.filter(u => u.status !== 'active').length],
+                ['Total Admin Users', filteredUsers.filter(u => u.role === 'admin').length],
+                ['Total Super Admin Users', filteredUsers.filter(u => u.role === 'superadmin').length],
+                ['', ''],
+                ['EXPORT INFORMATION'],
+                ['Generated On', new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                })],
+                ['System', 'User Account Management System'],
+                ['Version', '1.0.0']
+            ];
+            
+            const wsInfo = XLSX.utils.aoa_to_sheet(filterInfo);
+            
+            // Atur lebar kolom untuk sheet info
+            const infoCols = [
+                { wch: 25 },
+                { wch: 40 }
+            ];
+            wsInfo['!cols'] = infoCols;
+            
+            // Styling untuk header sheet info
+            const infoRange = XLSX.utils.decode_range(wsInfo['!ref']);
+            for (let R = 0; R <= Math.min(2, infoRange.e.r); R++) {
+                for (let C = infoRange.s.c; C <= infoRange.e.c; C++) {
+                    const cell_address = { c: C, r: R };
+                    const cell_ref = XLSX.utils.encode_cell(cell_address);
+                    if (wsInfo[cell_ref]) {
+                        wsInfo[cell_ref].s = {
+                            font: { bold: true, color: { rgb: "FFFFFF" } },
+                            fill: { fgColor: { rgb: "4F46E5" } },
+                            alignment: { vertical: "center", horizontal: "center" }
+                        };
+                    }
+                }
+            }
+            
+            XLSX.utils.book_append_sheet(wb, wsInfo, "Export Info");
+            
+            // Generate nama file dengan timestamp
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-').replace(/\..+/, '');
+            const fileName = `user_accounts_export_${timestamp}.xlsx`;
+            
+            // Download file
+            XLSX.writeFile(wb, fileName);
+            
+            toast.success(`Successfully exported ${exportData.length} users to Excel`);
+        } catch (error) {
+            console.error('Export failed:', error);
+            toast.error(`Failed to export: ${error.message}`);
+        } finally {
+            setIsExporting(false);
+        }
+    }, [filteredUsers, searchTerm, filters, positionOptions, roleOptions]);
 
     const handleSelectUser = useCallback((user) => {
         setSelectedUser(user);
@@ -62,46 +291,6 @@ const Account = () => {
         }, 150); 
     }, []);
 
-    // Opsi filter asli (tidak diubah)
-    const positionOptions = [
-        { value: 'managing director', label: 'Managing Director' },
-        { value: 'director', label: 'Director' },
-        { value: 'head manager', label: 'Head Manager' },
-        { value: 'finance', label: 'Finance' },
-        { value: 'legal', label: 'Legal' },
-        { value: 'talent manager', label: 'Talent Manager' },
-        { value: 'ecosystem manager', label: 'Ecosystem Manager' },
-        { value: 'strategic partnership executive', label: 'Strategic Partnership Executive' },
-        { value: 'program manager', label: 'Program Manager' },
-        { value: 'space manager', label: 'Space Manager' },
-        { value: 'creative', label: 'Creative' }
-    ];
-
-    const roleOptions = [
-        { value: 'admin', label: 'Admin' },
-        { value: 'user', label: 'User' },
-        { value: 'superadmin', label: 'Super Admin' }
-    ];
-
-    const statusOptions = [
-        { value: "all", label: "📊 All Status" },
-        { value: "active", label: "🟢 Active", original: "Active" },
-        { value: "inactive", label: "🔴 Inactive", original: "Inactive" },
-        { value: "pending", label: "🟡 Pending", original: "Pending" }
-    ];
-
-    const getLabel = (value, options) => {
-        if (!value) return "";
-        const option = options.find(opt => opt.value === value);
-        return option ? option.label : value;
-    };
-
-    const getOriginalLabel = (value, options) => {
-        if (!value) return "";
-        const option = options.find(opt => opt.value === value);
-        return option ? option.original || option.label : value;
-    };
-
     // Fungsi untuk mendapatkan label filter yang sedang aktif
     const getFilterLabel = (filterType) => {
         if (filterType === 'position' && filters.position) {
@@ -120,7 +309,6 @@ const Account = () => {
         const superAdminUsers = filteredUsers.filter(user => user.role === 'superadmin').length;
         
         const activePercentage = totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(1) : "0";
-        const adminPercentage = totalUsers > 0 ? ((adminUsers / totalUsers) * 100).toFixed(1) : "0";
 
         return [
             {
@@ -144,20 +332,9 @@ const Account = () => {
                 icon: UserCheck,
                 color: "green",
                 description: `${activePercentage}% of total`
-            },
-            {
-                title: "Admin Users",
-                value: adminUsers.toString(),
-                subtitle: filters.role ? `${filters.role === 'all' ? 'All Roles' : getOriginalLabel(filters.role, roleOptions)}` : "",
-                percentage: `${adminPercentage}%`,
-                trend: adminUsers > 0 ? "up" : "down",
-                period: "Last Month",
-                icon: Briefcase,
-                color: "purple",
-                description: `${adminUsers} admin(s), ${superAdminUsers} super admin(s)`
             }
         ];
-    }, [filteredUsers, filters.position, filters.role]);
+    }, [filteredUsers, filters.position, filters.role, positionOptions]);
 
     // Fungsi applyAllFilters seperti di HeteroSurakarta.jsx
     const applyAllFilters = () => {
@@ -328,44 +505,54 @@ const Account = () => {
 
     const handleEditUser = async (userId, userData) => {
         try {
-            const updatedUser = await updateUser(userId, userData)
+            const updatedUser = await updateUser(userId, userData);
 
             if (selectedUser && selectedUser.id === userId) {
                 setSelectedUser(prev => ({
                     ...prev,
                     ...userData,
                     ...updatedUser
-                }))
+                }));
             }
 
-            setIsEditModalOpen(false)
-            setEditingUser(null)
-            toast.success('User updated successfully')
+            setIsEditModalOpen(false);
+            setEditingUser(null);
+            toast.success('User updated successfully');
             fetchUser(pagination.page);
         } catch (error) {
-            console.error('Error updating', error)
-            toast.error(error.message || 'Failed to update user')
+            console.error('Error updating', error);
+            toast.error(error.message || 'Failed to update user');
         }
     };
 
     const handleDeleteUser = async (userId) => {
-        if (!selectedUser) return
+        if (!selectedUser) return;
 
-        if (!window.confirm(`Are you sure want to delete ${selectedUser.full_name}? This action cannot be undone`)) {
-            return
-        }
-
-        try {
-            await deleteUser(userId)
-            setSelectedUser(null)
-            toast.success('User deleted successfully')
-            fetchUser(pagination.page);
-            
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch {
-            //
-        }
-    }
+        // Gunakan modal konfirmasi untuk delete user
+        showConfirm({
+            title: 'Delete User',
+            message: `Are you sure you want to delete "${selectedUser.full_name}"? This action cannot be undone.`,
+            type: 'danger',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            onConfirm: async () => {
+                try {
+                    await deleteUser(userId);
+                    setSelectedUser(null);
+                    toast.success('User deleted successfully');
+                    fetchUser(pagination.page);
+                    
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    toast.error(error.message || 'Failed to delete user');
+                }
+            },
+            onCancel: () => {
+                toast('Deletion cancelled', { icon: '⚠️' });
+            }
+        });
+    };
 
     const handleActivate = async (userId) => {
         try {
@@ -379,14 +566,14 @@ const Account = () => {
 
     useEffect(() => {
         if (selectedUser && users.length > 0) {
-            const currentSelected = users.find(member => member.id === selectedUser.id)
+            const currentSelected = users.find(member => member.id === selectedUser.id);
             if (currentSelected) {
-                setSelectedUser(currentSelected)
+                setSelectedUser(currentSelected);
             } else {
                 setSelectedUser(null);
             }
         }
-    }, [users, selectedUser?.id])
+    }, [users, selectedUser?.id]);
 
     const handleRefresh = () => {
         fetchUser(pagination.page);
@@ -403,12 +590,12 @@ const Account = () => {
         title: 'User Account Management',
         addButton: 'Add User',
         detailTitle: 'User Details'
-    }
+    };
 
     const formattedUsers = filteredUsers.map((user, index) => {
-        const currentPage = pagination.page
-        const itemsPerPage = pagination.limit
-        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1
+        const currentPage = pagination.page;
+        const itemsPerPage = pagination.limit;
+        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
 
         return {
             id: user.id,
@@ -425,12 +612,12 @@ const Account = () => {
             avatar: user.avatar,
             action: 'Detail',
             ...user
-        }
-    })
+        };
+    });
 
     const UserStatsCards = ({ statsData }) => {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 {statsData.map((stat, index) => (
                     <div key={index} className="bg-white rounded-xl p-6 shadow-sm border">
                         <div className="flex items-center justify-between">
@@ -733,7 +920,21 @@ const Account = () => {
                                     <Plus className="h-4 w-4" />
                                     {tableConfig.addButton}
                                 </Button>
-                                <ExportButton data={formattedUsers} />
+                                
+                                {/* Tombol Export - Sama seperti di kode sebelumnya */}
+                                <Button
+                                    variant="outline"
+                                    className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
+                                    disabled={loading || filteredUsers.length === 0 || isExporting}
+                                    onClick={handleExport}
+                                >
+                                    {isExporting ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Download className="h-4 w-4" />
+                                    )}
+                                    {isExporting ? 'Exporting...' : 'Export'}
+                                </Button>
                             </div>
                         </div>
                         
@@ -926,6 +1127,12 @@ const Account = () => {
                             fetchUser(pagination.page);
                             setSelectedUser(null);
                         }}
+                        // Tambahkan props konfirmasi modal
+                        showConfirm={showConfirm}
+                        handleConfirm={handleConfirm}
+                        handleCancel={handleCancel}
+                        isOpen={confirmModal.isOpen}
+                        config={confirmModal.config}
                     />
                 </div>
                 
@@ -933,9 +1140,9 @@ const Account = () => {
                     isAddUserModalOpen={isAddUserModalOpen || isEditModalOpen} 
                     setIsAddUserModalOpen={(open) => {
                         if (!open) {
-                            setIsAddUserModalOpen(false)
-                            setIsEditModalOpen(false)
-                            setEditingUser(null)
+                            setIsAddUserModalOpen(false);
+                            setIsEditModalOpen(false);
+                            setEditingUser(null);
                         }
                     }}
                     onAddUser={handleAddUserSuccess}
@@ -944,7 +1151,7 @@ const Account = () => {
                 />
             </div>
         </div>
-    )
-}
+    );
+};
 
 export default Account;

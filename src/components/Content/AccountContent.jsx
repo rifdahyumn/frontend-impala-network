@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, User, Mail, Phone,Shield, History, CheckCircle, Lock, Image, EyeClosed, EyeOffIcon, EyeOff, Eye, Loader2, UserCheck } from "lucide-react";
+import { Edit, Trash2, User, Mail, Phone,Shield, History, CheckCircle, Lock, Image, EyeClosed, EyeOffIcon, EyeOff, Eye, Loader2, UserCheck, AlertTriangle } from "lucide-react";
 import toast from 'react-hot-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import ConfirmModal from "./ConfirmModal"; 
 
-const AccountContent = ({ selectedUser, onOpenEditModal, detailTitle, onDelete, onUserEdited, onActivateUser  }) => {
+const AccountContent = ({ 
+    selectedUser, 
+    onOpenEditModal, 
+    detailTitle, 
+    onDelete, 
+    onUserEdited, 
+    onActivateUser,
+    // Tambahkan props untuk konfirmasi modal
+    showConfirm, // Fungsi untuk menampilkan modal konfirmasi
+    handleConfirm, // Fungsi untuk menangani konfirmasi
+    handleCancel, // Fungsi untuk menangani pembatalan
+    isOpen: isConfirmOpen, // Status modal terbuka/tutup
+    config: confirmConfig // Konfigurasi modal
+}) => {
     const [activeCategory, setActiveCategory] = useState('Account Information');
     const [showPassword, setShowPassword] = useState(false)
     const [deleteLoading, setDeleteLoading] = useState(false)
@@ -62,16 +76,33 @@ const AccountContent = ({ selectedUser, onOpenEditModal, detailTitle, onDelete, 
     }
 
     const handleDelete = async () => {
-        setDeleteLoading(true)
-        try {
-            if (onDelete) {
-                await onDelete(selectedUser.id)
-            }
-        } catch (error) {
-            console.error('Error deleting client:', error)
-            toast.error(error.message || 'Failed to delete User')
-        } finally {
-            setDeleteLoading(false)
+        if (!selectedUser) return
+
+        if (showConfirm && typeof showConfirm === 'function') {
+            showConfirm({
+                title: 'Deactivate User',
+                message: `Are you sure you want to deactivate "${selectedUser.full_name}"? User will not be able to access the system.`,
+                type: 'danger',
+                confirmText: 'Deactivate',
+                cancelText: 'Cancel',
+                onConfirm: async () => {
+                    setDeleteLoading(true)
+                    try {
+                        if (onDelete) {
+                            await onDelete(selectedUser.id)
+                            toast.success('User deactivated successfully');
+                        }
+                    } catch (error) {
+                        console.error('Error deactivating user:', error)
+                        toast.error(error.message || 'Failed to deactivate user')
+                    } finally {
+                        setDeleteLoading(false)
+                    }
+                },
+                onCancel: () => {
+                    toast('Deactivation cancelled', { icon: AlertTriangle });
+                }
+            })
         }
     }
 
@@ -234,91 +265,101 @@ const AccountContent = ({ selectedUser, onOpenEditModal, detailTitle, onDelete, 
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>{detailTitle}</CardTitle>
-            </CardHeader>
+        <>
+            <Card>
+                <CardHeader>
+                    <CardTitle>{detailTitle}</CardTitle>
+                </CardHeader>
 
-            <CardContent>
-                {selectedUser ? (
-                    <div className='space-y-6'>
-                        <div className='flex flex-wrap items-center justify-between gap-4 mb-4'>
-                            <div className='flex flex-wrap gap-2 mb-4'>
-                                {detailFields.map((category, index) => {
-                                    const CategoryIcon = category.icon;
+                <CardContent>
+                    {selectedUser ? (
+                        <div className='space-y-6'>
+                            <div className='flex flex-wrap items-center justify-between gap-4 mb-4'>
+                                <div className='flex flex-wrap gap-2 mb-4'>
+                                    {detailFields.map((category, index) => {
+                                        const CategoryIcon = category.icon;
 
-                                    return (
-                                        <Button
-                                            key={index}
-                                            variant={activeCategory === category.category ? 'default' : 'outline'}
+                                        return (
+                                            <Button
+                                                key={index}
+                                                variant={activeCategory === category.category ? 'default' : 'outline'}
+                                                size="sm"
+                                                className="flex items-center gap-2"
+                                                onClick={() => {
+                                                    setActiveCategory(category.category)
+                                                    setShowPassword(false)
+                                                }}
+                                            >
+                                                <CategoryIcon className='h-4 w-4' />
+                                                {category.category}
+                                            </Button>
+                                        )
+                                    })}
+                                </div>
+
+                                {selectedUser && (
+                                    <div className="flex gap-2">
+                                        <Button 
+                                            variant="outline" 
                                             size="sm"
                                             className="flex items-center gap-2"
-                                            onClick={() => {
-                                                setActiveCategory(category.category)
-                                                setShowPassword(false)
-                                            }}
+                                            onClick={handleEdit}
                                         >
-                                            <CategoryIcon className='h-4 w-4' />
-                                            {category.category}
+                                            <Edit className="h-4 w-4" />
+                                            Edit
                                         </Button>
-                                    )
-                                })}
+
+                                        {selectedUser.status === 'Inactive' && (
+                                            <Button
+                                                onClick={handleActivate}
+                                            >
+                                                {activateLoading ? (
+                                                    <Loader2 className='h-4 w-4 animate-spin' />
+                                                ) : (
+                                                    <UserCheck className='h-4 w-4' />
+                                                )}
+                                                {activateLoading ? 'Activating...' : 'Activate'}
+                                            </Button>
+                                        )}
+
+                                        {selectedUser.status === 'Active' && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                onClick={handleDelete}
+                                                disabled={deleteLoading}
+                                            >
+                                                {deleteLoading ? (
+                                                    <Loader2 className='h-4 w-4 animate-spin' />
+                                                ) : (
+                                                    <Trash2 className='h-4 w-4' />
+                                                )}
+                                                {deleteLoading ? 'Deactivating...' : 'Deactivate'}
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
-                            {selectedUser && (
-                                <div className="flex gap-2">
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        className="flex items-center gap-2"
-                                        onClick={handleEdit}
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                        Edit
-                                    </Button>
-
-                                    {selectedUser.status === 'Inactive' && (
-                                        <Button
-                                            onClick={handleActivate}
-                                        >
-                                            {activateLoading ? (
-                                                <Loader2 className='h-4 w-4 animate-spin' />
-                                            ) : (
-                                                <UserCheck className='h-4 w-4' />
-                                            )}
-                                            {activateLoading ? 'Activating...' : 'Activate'}
-                                        </Button>
-                                    )}
-
-                                    {selectedUser.status === 'Active' && (
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                            onClick={handleDelete}
-                                            disabled={deleteLoading}
-                                        >
-                                            {deleteLoading ? (
-                                                <Loader2 className='h-4 w-4 animate-spin' />
-                                            ) : (
-                                                <Trash2 className='h-4 w-4' />
-                                            )}
-                                            {deleteLoading ? 'Deactivating...' : 'Deactivate'}
-                                        </Button>
-                                    )}
-                                </div>
-                            )}
+                            <ActiveCategoryContent />
                         </div>
+                    ) : (
+                        <div className='text-center py-4 text-gray-500'>
+                            <p>Select a client to view details</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
-                        <ActiveCategoryContent />
-                    </div>
-                ) : (
-                    <div className='text-center py-4 text-gray-500'>
-                        <p>Select a client to view details</p>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+            {/* Tambahkan ConfirmModal di sini */}
+            <ConfirmModal 
+                isOpen={isConfirmOpen}
+                config={confirmConfig}
+                onConfirm={handleConfirm}
+                onCancel={handleCancel}
+            />
+        </>
     )
 
 }
