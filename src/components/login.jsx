@@ -5,64 +5,133 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/impalalogo.png";
 import logo2 from "../assets/heterologo.png";
+import { loginService } from "../services/authServices";
+import { validateEmail } from "../utils/validation";
 
 export default function LoginPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { login } = useAuth();
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const { login, user } = useAuth();
+    const [formData, setFormData] = useState({
+        email: "",
+        password: ""
+    });
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const [errors, setErrors] = useState({});
+    const [authError, setAuthError] = useState("");
+    
+    // Gunakan env untuk menampilkan mode (opsional)
+    const isDevelopment = import.meta.env.DEV;
+    const appUrl = import.meta.env.VITE_APP_URL;
+
+    // Redirect jika sudah login
+    useEffect(() => {
+        if (user) {
+            const from = location.state?.from?.pathname || getRedirectPath(user.role);
+            navigate(from, { replace: true });
+        }
+    }, [user, navigate, location]);
+
+    // Validasi form
+    const validateForm = () => {
+        const newErrors = {};
+        
+        if (!formData.email.trim()) {
+            newErrors.email = "Email harus diisi";
+        } else if (!validateEmail(formData.email)) {
+            newErrors.email = "Format email tidak valid";
+        }
+        
+        if (!formData.password) {
+            newErrors.password = "Password harus diisi";
+        } else if (formData.password.length < 6) {
+            newErrors.password = "Password minimal 6 karakter";
+        }
+        
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    // Get redirect path berdasarkan role
+    const getRedirectPath = (role) => {
+        switch (role) {
+            case 'komunitas':
+                return '/hetero/banyumas';
+            case 'admin':
+            case 'manajer':
+                return '/';
+            default:
+                return '/';
+        }
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        // Clear error ketika user mulai mengetik
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: "" }));
+        }
+        if (authError) setAuthError("");
+    };
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        
+        // Validasi form
+        if (!validateForm()) {
+            return;
+        }
+
         setLoading(true);
-        setError('');
+        setAuthError("");
 
         try {
-            const res = await fetch("http://localhost:3000/api/auth/login", {
-                method: "POST",
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+            // Gunakan service layer
+            const { token, user: userData } = await loginService({
+                email: formData.email.trim(),
+                password: formData.password
             });
 
-            const data = await res.json();
-            
-            if (!res.ok) {
-                throw new Error(data.error || 'Login Failed');
-            }
+            // Simpan token dengan cara yang aman
+            login(token, userData);
 
-            login(data.token, data.user);
-
-            const from = location.state?.from?.pathname || '/';
-            navigate(from, { replace: true });
+            // Redirect berdasarkan role
+            const redirectPath = getRedirectPath(userData.role);
+            navigate(redirectPath, { replace: true });
             
         } catch (err) {
-            setError(err.message);
-            console.error('Login error:', err);
+            // Handle error dengan aman
+            let errorMessage = "Login gagal. Periksa email dan password Anda.";
+            
+            if (err.message.includes("network") || err.message.includes("Network")) {
+                errorMessage = "Koneksi jaringan bermasalah. Coba lagi.";
+            } else if (err.message.includes("timeout")) {
+                errorMessage = "Waktu login habis. Coba lagi.";
+            }
+            
+            setAuthError(errorMessage);
+            
+            // Log error hanya di development
+            if (import.meta.env.DEV) {
+                console.error('Login error:', err);
+            }
         } finally {
             setLoading(false);
         }
     };
 
+    // Clear sensitive data dari state
     useEffect(() => {
-        const token = localStorage.getItem('token')
-        if(token) {
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]))
-                const isExpired = Date.now() > (payload.exp * 1000)
-
-                if (isExpired) {
-                    localStorage.removeItem('token')
-                    localStorage.removeItem('user')
-                }
-            } catch (error) {
-                localStorage.removeItem('token')
-                localStorage.removeItem('user')
-            }
-        }
-    })
+        return () => {
+            setFormData({ email: "", password: "" });
+            setErrors({});
+            setAuthError("");
+        };
+    }, []);
 
     return (
         <div className="login-page">
@@ -70,57 +139,88 @@ export default function LoginPage() {
             <div className="login-container">
                 <div className="login-box">
                     <div className="logo-group">
-                        <img src={logo} alt="Logo 1" className="login-logo" />
-                        <img src={logo2} alt="Logo 2" className="login-logo" />
+                        <img src={logo} alt="Logo Impala" className="login-logo" />
+                        <img src={logo2} alt="Logo Hetero" className="login-logo" />
                     </div>
 
-                    <form onSubmit={handleLogin}>
+                    {/* Mode indicator (opsional, hanya untuk development) */}
+                    {isDevelopment && (
+                        <div className="mb-4 p-2 bg-yellow-100 border border-yellow-300 rounded text-center">
+                            <p className="text-xs text-yellow-800">
+                                Development Mode - {appUrl}
+                            </p>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleLogin} noValidate>
                         <div className="input-field">
                             <FaUser className="icon" />
                             <input 
                                 type="email" 
+                                name="email"
                                 placeholder="Email" 
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                value={formData.email}
+                                onChange={handleChange}
+                                disabled={loading}
                                 required
+                                autoComplete="email"
+                                aria-label="Email"
                             />
                         </div>
+                        {errors.email && (
+                            <p className="text-red-500 text-xs mt-1 ml-8">{errors.email}</p>
+                        )}
 
-                        <div className="input-field">
+                        <div className="input-field mt-4">
                             <FaLock className="icon" />
                             <input 
                                 type="password" 
+                                name="password"
                                 placeholder="Password" 
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                value={formData.password}
+                                onChange={handleChange}
+                                disabled={loading}
                                 required
+                                autoComplete="current-password"
+                                aria-label="Password"
                             />
                         </div>
+                        {errors.password && (
+                            <p className="text-red-500 text-xs mt-1 ml-8">{errors.password}</p>
+                        )}
 
-                        {error && (
-                            <div className="error-message">
-                                <p className="text-red-500 text-sm mb-3">{error}</p>
+                        {authError && (
+                            <div className="error-message mt-4 p-3 bg-red-50 border border-red-200 rounded">
+                                <p className="text-red-600 text-sm">{authError}</p>
                             </div>
                         )}
 
-                        <div className="forgot">
-                            <a href="#" className="text-blue-500 hover:text-blue-700">
-                                Forgot Password?
+                        <div className="forgot mt-4">
+                            <a 
+                                href={`${appUrl}/forgot-password`}
+                                className="text-blue-500 hover:text-blue-700 text-sm"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    navigate('/forgot-password');
+                                }}
+                            >
+                                Lupa Password?
                             </a>
                         </div>
 
                         <button 
                             type="submit" 
-                            className="login-btn" 
+                            className="login-btn mt-6" 
                             disabled={loading}
+                            aria-busy={loading}
                         >
                             {loading ? (
                                 <div className="flex items-center justify-center">
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                    Logging in...
+                                    Sedang masuk...
                                 </div>
                             ) : (
-                                'Login'
+                                'Masuk'
                             )}
                         </button>
                     </form>
