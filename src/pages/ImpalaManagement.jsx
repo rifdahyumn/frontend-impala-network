@@ -648,103 +648,10 @@ const ImpalaManagement = () => {
             ]
             dataWorksheet[!'cols'] = wscols
 
-            const instructionData = [
-                { 'KOLOM': 'DESKRIPSI', 'CONTOH': 'FORMAT', 'CATATAN': 'KETERANGAN' },
-                { 'KOLOM': 'Nama Lengkap', 'CONTOH': 'John Doe', 'CATATAN': 'Wajib diisi' },
-                { 'KOLOM': 'Email', 'CONTOH': 'john@example.com', 'CATATAN': 'Wajib diisi, format email valid' },
-                { 'KOLOM': 'Nomor Telepon', 'CONTOH': '081234567890', 'CATATAN': 'Wajib diisi, format angka' },
-                { 'KOLOM': 'Jenis Kelamin', 'CONTOH': 'Laki-laki', 'CATATAN': 'Pilihan: Laki-laki, Perempuan' },
-                { 'KOLOM': 'Kategori', 'CONTOH': 'Mahasiswa', 'CATATAN': 'Pilihan: Mahasiswa, UMKM, Profesional, Komunitas' },
-                { 'KOLOM': 'Program', 'CONTOH': 'Enterprise Digital Acceleration 2025', 'CATATAN': 'Nama program yang diikuti' },
-                { 'KOLOM': 'Tanggal Lahir', 'CONTOH': '1990-01-01', 'CATATAN': 'Format: YYYY-MM-DD' },
-                { 'KOLOM': 'Usia', 'CONTOH': '34', 'CATATAN': 'Akan dihitung otomatis jika tanggal lahir diisi' },
-                { 'KOLOM': 'Alamat', 'CONTOH': 'Jl. Contoh No. 123', 'CATATAN': 'Alamat lengkap' },
-                { 'KOLOM': 'Kota/Kabupaten', 'CONTOH': 'KOTA BANDUNG', 'CATATAN': 'Nama kota atau kabupaten' },
-                { 'KOLOM': 'Provinsi', 'CONTOH': 'JAWA BARAT', 'CATATAN': 'Nama provinsi' },
-                { 'KOLOM': 'Pendidikan', 'CONTOH': 'Sarjana (S1)', 'CATATAN': 'Pilihan: SD/Sederajat, SMP/Sederajat, SMA/Sederajat, Diploma, Sarjana, Magister, Doktor' },
-                { 'KOLOM': 'NIK', 'CONTOH': '3275031201990001', 'CATATAN': '16 digit NIK' },
-                { 'KOLOM': 'Kode Pos', 'CONTOH': '40115', 'CATATAN': '5 digit kode pos' },
-                { 'KOLOM': 'Status Disabilitas', 'CONTOH': 'Tidak memiliki disabilitas', 'CATATAN': 'Opsional' },
-                { 'KOLOM': 'Alasan Bergabung', 'CONTOH': 'Ingin menambah wawasan', 'CATATAN': 'Alasan mengikuti program' },
-                { 'KOLOM': 'Media Sosial', 'CONTOH': 'Instagram: @johndoe, Facebook: John Doe', 'CATATAN': 'Pisahkan dengan koma untuk multiple' },
-                { 'KOLOM': 'Marketplace', 'CONTOH': 'Tokopedia: tokopedia.com/johndoe', 'CATATAN': 'Pisahkan dengan koma untuk multiple' },
-                { 'KOLOM': 'Website', 'CONTOH': 'johndoe.com', 'CATATAN': 'Pisahkan dengan koma untuk multiple' }
-            ];
-
-            const instructionWorksheet = XLSX.utils.json_to_sheet(instructionData)
-
-            const instructionCols = [
-                { wch: 25 },  
-                { wch: 40 },  
-                { wch: 30 },   
-                { wch: 50 }
-            ]
-
-            instructionWorksheet['!cols'] = instructionCols
-
-            const categoryData = [
-                { 'KATEGORI': 'FIELD YANG WAJIB DIISI', 'KETERANGAN': '' },
-                { 'KATEGORI': 'Mahasiswa', 'KETERANGAN': 'Institusi, Jurusan, Semester, Tahun Masuk' },
-                { 'KATEGORI': 'UMKM', 'KETERANGAN': 'Nama Usaha, Jenis Usaha, Alamat Usaha' },
-                { 'KATEGORI': 'Profesional', 'KETERANGAN': 'Tempat Kerja, Posisi, Lama Bekerja' },
-                { 'KATEGORI': 'Komunitas', 'KETERANGAN': 'Nama Komunitas, Bidang Fokus, Jumlah Anggota' }
-            ]
-            
-            const categoryWorksheet = XLSX.utils.json_to_sheet(categoryData)
-            const categoryCols = [
-                { wch: 25 },
-                { wch: 50 }
-            ]
-
-            categoryWorksheet['!cols'] = categoryCols
-
             const workbook = XLSX.utils.book_new()
-
             XLSX.utils.book_append_sheet(workbook, dataWorksheet, 'Template data')
-            XLSX.utils.book_append_sheet(workbook, instructionWorksheet, 'Instruksi')
-            XLSX.utils.book_append_sheet(workbook, categoryWorksheet, 'Kategori')
-
-            const formData = [
-                { 'JENIS DATA': 'FORMAT', 'CONTOH': 'PENJELASAN' },
-                { 'JENIS DATA': 'Tanggal', 'CONTOH': '2024-01-15', 'PENJELASAN': 'YYYY-MM-DD (Tahun-Bulan-Tanggal)' },
-                { 'JENIS DATA': 'Angka', 'CONTOH': '1000000', 'PENJELASAN': 'Tanpa titik atau koma pemisah ribuan' },
-                { 'JENIS DATA': 'Array/Multiple', 'CONTOH': 'value1, value2, value3', 'PENJELASAN': 'Pisahkan dengan koma untuk multiple values' },
-                { 'JENIS DATA': 'Email', 'CONTOH': 'nama@domain.com', 'PENJELASAN': 'Format email yang valid' },
-                { 'JENIS DATA': 'Telepon', 'CONTOH': '081234567890', 'PENJELASAN': 'Format angka, tanpa tanda + atau -' }
-            ]
-
-            const formatWorksheet = XLSX.utils.json_to_sheet(formData)
-            const formatCols = [
-                { wch: 20 },
-                { wch: 20 },
-                { wch: 40 }
-            ]
-
-            formatWorksheet['!cols'] = formatCols;
-            XLSX.utils.book_append_sheet(workbook, formatWorksheet, 'Format data')
-
-            const emptyData = templateData.map(row => {
-                const emptyRow = {}
-                Object.keys(row).forEach(key => {
-                    emptyRow[key]
-                })
-
-                return emptyRow
-            })
-
-            const emptyWorksheet = XLSX.utils.json_to_sheet(emptyData)
-            emptyWorksheet['!cols'] = wscols
-            XLSX.utils.book_append_sheet(workbook, emptyWorksheet, 'Isi data disini')
-
-            if (!dataWorksheet['A1']) dataWorksheet['A1'] = {}
-            if (!dataWorksheet['A1'].s) dataWorksheet['A1'].s = {}
-            dataWorksheet['A1'].s = {
-                fill: { fgColor: { rgb: '#FFFF0000' } },
-                font: { color: { rgb: '#FFFFFFFF' }, bold: true }
-            }
 
             XLSX.writeFile(workbook, 'impala_management_template.xlsx')
-
             toast.success('Template excel berhasil didownload')
 
         } catch (error) {
