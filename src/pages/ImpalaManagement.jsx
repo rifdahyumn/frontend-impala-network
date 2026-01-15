@@ -298,9 +298,8 @@ const ImpalaManagement = () => {
     }
 
     const handleApplyFilters = () => {
-        // Pastikan kita mengirim SEMUA field filter, bukan hanya yang diubah
         const updatedFilters = {
-            search: filters.search || '', // Pastikan search tetap ada
+            search: filters.search || '', 
             gender: tempFilters.gender || '', 
             category: tempFilters.category && tempFilters.category !== 'all' ? tempFilters.category : '',
             program: tempFilters.program && tempFilters.program !== 'all' 
@@ -830,6 +829,8 @@ const ImpalaManagement = () => {
                                 address: row['Alamat'] || row['address'] || '',
                                 regency_name: row['Kota/Kabupaten'] || row['regency_name'] || '',
                                 province_name: row['Provinsi'] || row['province_name'] || '',
+                                district_name: row['Kecamatan'] || row['district_name'] || '',
+                                village_name: row['Kelurahan/Desa'] || row['village_name'] || '',
                                 education: row['Pendidikan'] || row['education'] || '',
                                 nik: row['NIK'] || row['nik'] || '',
                                 postal_code: row['Kode Pos'] || row['postal_code'] || '',
@@ -868,7 +869,7 @@ const ImpalaManagement = () => {
 
                                 // umum information
                                 areas_interest: row['Bidang Minat'] || row['areas_interest'],
-                                backgorund: row['Latar Belakang'] || row['background'],
+                                background: row['Latar Belakang'] || row['background'],
                                 experience_level: row['Tingkat Pengalaman'] || row['experience_level']
                             };
                             

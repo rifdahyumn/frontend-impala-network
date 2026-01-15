@@ -275,150 +275,168 @@ export const useImpala = (initialFilters = {}) => {
 
     const exportParticipants = useCallback(async (format = 'xlsx', exportFilters = null, exportAll = false) => {
         try {
-            setLoading(true)
+            setLoading(true);
 
-            const currentFilters = exportFilters || filtersRef.current
+            const currentFilters = exportFilters || filtersRef.current;
             
-            const queryParams = new URLSearchParams()
+            const queryParams = new URLSearchParams();
 
             if (currentFilters.search) {
-                queryParams.append('search', currentFilters.search)
+                queryParams.append('search', currentFilters.search);
             }
 
             if (currentFilters.gender) {
-                queryParams.append('gender', currentFilters.gender)
+                queryParams.append('gender', currentFilters.gender);
             }
 
             if (currentFilters.category) {
-                queryParams.append('category', currentFilters.category)
+                queryParams.append('category', currentFilters.category);
             }
 
             if (currentFilters.program) {
-                queryParams.append('program', currentFilters.program)
+                queryParams.append('program', currentFilters.program);
             }
 
-            queryParams.append('format', format)
+            queryParams.append('format', format);
 
             if (exportAll) {
-                queryParams.append('includeAll', 'true')
+                queryParams.append('includeAll', 'true');
             }
 
             let dataToExport;
-            let exportFilename = ''
+            let exportFilename = '';
 
             if (format === 'xlsx' || format === 'excel') {
                 try {
-                    const response = await fetch(`/api/impala/export/participant?${queryParams.toString()}`)
+                    const response = await fetch(`/api/impala/export?${queryParams.toString()}`);
 
                     if (!response.ok) {
-                        const errorData = await response.json()
-                        throw new Error(errorData.message || 'Failed to export data')
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Failed to export data');
                     }
 
-                    const result = await response.json()
+                    const result = await response.json();
 
-                    if (result.success) {
-                        dataToExport = result.data || []
+                    if (result.success && result.data && result.data.length > 0) {
+                        dataToExport = result.data;
 
                         const formatArrayField = (fieldValue) => {
-                            if (!fieldValue) return ''
+                            if (!fieldValue) return '';
                             if (Array.isArray(fieldValue)) {
-                                return fieldValue.join(', ')
+                                return fieldValue.filter(item => item != null && item !== '').join(', ');
                             }
 
                             if (typeof fieldValue === 'string') {
                                 try {
-                                    const parsed = JSON.parse(fieldValue)
+                                    const parsed = JSON.parse(fieldValue);
                                     if (Array.isArray(parsed)) {
-                                        return parsed.join(', ')
+                                        return parsed.filter(item => item != null && item !== '').join(', ');
                                     }
                                 } catch {
-                                    //
+                                    // 
                                 }
-
-                                return fieldValue
+                                return fieldValue;
                             }
 
-                            return String(fieldValue)
-                        }
+                            return String(fieldValue || '');
+                        };
 
                         const formatFieldValue = (fieldValue, fieldName) => {
-                            if (fieldValue === null || fieldValue === undefined) return ''
+                            if (fieldValue === null || fieldValue === undefined || fieldValue === '') {
+                                return '';
+                            }
 
                             if (['social_media', 'marketplace', 'website', 'skills', 'certifications'].includes(fieldName)) {
-                                return formatArrayField(fieldValue)
+                                return formatArrayField(fieldValue);
                             }
 
                             if (fieldName.includes('date') || fieldName.includes('created') || fieldName.includes('updated')) {
                                 try {
-                                    return new Date(fieldValue).toLocaleDateString('id-ID')
+                                    const date = new Date(fieldValue);
+                                    if (!isNaN(date.getTime())) {
+                                        return date.toLocaleDateString('id-ID');
+                                    }
                                 } catch {
-                                    return fieldValue
+                                    // 
                                 }
+                                return fieldValue;
                             }
 
-                            return String(fieldValue)
-                        }
+                            // eslint-disable-next-line no-control-regex
+                            return String(fieldValue).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+                        };
 
-                        const exportData = dataToExport.map((p, index) => ({
-                            'No': index + 1,
-                            'Nama Lengkap': p.full_name || '',
-                            'Email': p.email || '',
-                            'Nomor Telepon': p.phone || '',
-                            'Jenis Kelamin': p.gender || '',
-                            'Kategori': p.category || '',
-                            'Program': p.program_name || '',
-                            'Tanggal Lahir': p.date_of_birth || '',
-                            'Usia': p.age || '',
-                            'Alamat': p.address || '',
-                            'Kota/Kabupaten': p.regency_name || '',
-                            'Provinsi': p.province_name || '',
-                            'Pendidikan': p.education || '',
-                            'NIK': p.nik || '',
-                            'Kode Pos': p.postal_code || '',
-                            'Status Disabilitas': p.disability_status || '',
-                            'Alasan Bergabung': p.reason_join_program || '',
-                            'Tanggal Dibuat': formatFieldValue(p.created_at, 'created_at'),
-                            'Tanggal Diperbarui': formatFieldValue(p.updated_at, 'updated_at'),
+                            const exportData = dataToExport.map((p, index) => ({
+                                'No': index + 1,
+                                'Nama Lengkap': p.full_name || '',
+                                'Email': p.email || '',
+                                'Nomor Telepon': p.phone || '',
+                                'Jenis Kelamin': p.gender || '',
+                                'Kategori': p.category || '',
+                                'Program': p.program_name || '',
+                                'Tanggal Lahir': p.date_of_birth || '',
+                                'Usia': p.age || '',
+                                'Alamat': p.address || '',
+                                'Kota/Kabupaten': p.regency_name || '',
+                                'Provinsi': p.province_name || '',
+                                'Pendidikan': p.education || '',
+                                'NIK': p.nik || '',
+                                'Kode Pos': p.postal_code || '',
+                                'Status Disabilitas': p.disability_status || '',
+                                'Alasan Bergabung': p.reason_join_program || '',
+                                'Tanggal Dibuat': formatFieldValue(p.created_at, 'created_at'),
+                                'Tanggal Diperbarui': formatFieldValue(p.updated_at, 'updated_at'),
 
-                            'Nama Usaha': p.business_name || '',
-                            'Jenis Usaha': p.business_type || '',
-                            'Alamat Usaha': p.business_address || '',
-                            'Bentuk Usaha': p.business_form || '',
-                            'Tahun Berdiri': p.established_year || '',
-                            'Pendapatan Bulanan': p.monthly_revenue || '',
-                            'Jumlah Karyawan': p.employee_count || '',
-                            'Sertifikasi': formatFieldValue(p.certifications, 'certifications'),
-                            'Media Sosial': formatFieldValue(p.social_media, 'social_media'),
-                            'Marketplace': formatFieldValue(p.marketplace, 'marketplace'),
-                            'Website': formatFieldValue(p.website, 'website'),
+                                'Nama Usaha': p.business_name || '',
+                                'Jenis Usaha': p.business_type || '',
+                                'Alamat Usaha': p.business_address || '',
+                                'Bentuk Usaha': p.business_form || '',
+                                'Tahun Berdiri': p.established_year || '',
+                                'Pendapatan Bulanan': p.monthly_revenue || '',
+                                'Jumlah Karyawan': p.employee_count || '',
+                                'Sertifikasi': formatFieldValue(p.certifications, 'certifications'),
+                                'Media Sosial': formatFieldValue(p.social_media, 'social_media'),
+                                'Marketplace': formatFieldValue(p.marketplace, 'marketplace'),
+                                'Website': formatFieldValue(p.website, 'website'),
 
-                            'Institusi': p.institution || '',
-                            'Jurusan': p.major || '',
-                            'Semester': p.semester || '',
-                            'Tahun Masuk': p.enrollment_year || '',
-                            'Minat Karir': p.career_interest || '',
-                            'Kompetensi Inti': p.core_competency || '',
+                                'Institusi': p.institution || '',
+                                'Jurusan': p.major || '',
+                                'Semester': p.semester || '',
+                                'Tahun Masuk': p.enrollment_year || '',
+                                'Minat Karir': p.career_interest || '',
+                                'Kompetensi Inti': p.core_competency || '',
 
-                            'Tempat Kerja': p.workplace || '',
-                            'Posisi': p.position || '',
-                            'Lama Bekerja': p.work_duration || '',
-                            'Sektor Industri': p.industry_sector || '',
-                            'Keahlian': formatFieldValue(p.skills, 'skills'),
+                                'Tempat Kerja': p.workplace || '',
+                                'Posisi': p.position || '',
+                                'Lama Bekerja': p.work_duration || '',
+                                'Sektor Industri': p.industry_sector || '',
+                                'Keahlian': formatFieldValue(p.skills, 'skills'),
 
-                            'Nama Komunitas': p.community_name || '',
-                            'Bidang Fokus': p.focus_area || '',
-                            'Jumlah Anggota': p.member_count || '',
-                            'Area Operasional': p.operational_area || '',
-                            'Peran dalam Komunitas': p.community_role || '',
+                                'Nama Komunitas': p.community_name || '',
+                                'Bidang Fokus': p.focus_area || '',
+                                'Jumlah Anggota': p.member_count || '',
+                                'Area Operasional': p.operational_area || '',
+                                'Peran dalam Komunitas': p.community_role || '',
 
-                            'Bidang Minat': p.areas_interest || '',
-                            'Latar Belakang': p.backgorund || '',
-                            'Tingkat Pengalaman': p.experience_level || ''
-                        }))
+                                'Bidang Minat': p.areas_interest || '',
+                                'Latar Belakang': p.backgorund || '',
+                                'Tingkat Pengalaman': p.experience_level || ''
+                            }));
+
+                        const safeExportData = exportData.map(row => {
+                            const safeRow = {};
+                            Object.keys(row).forEach(key => {
+                                const value = row[key];
+                                safeRow[key] = typeof value === 'string' 
+                                    // eslint-disable-next-line no-control-regex
+                                    ? value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+                                    : value;
+                            });
+                            return safeRow;
+                        });
 
                         const workbook = XLSX.utils.book_new();
-                        const worksheet = XLSX.utils.json_to_sheet(exportData);
+                        const worksheet = XLSX.utils.json_to_sheet(safeExportData);
 
                         const wscols = [
                             { wch: 5 },    { wch: 25 },   { wch: 30 },   { wch: 15 },
@@ -433,78 +451,237 @@ export const useImpala = (initialFilters = {}) => {
                             { wch: 25 },   { wch: 20 },   { wch: 30 },   { wch: 30 },
                             { wch: 30 },   { wch: 30 },   { wch: 30 }
                         ];
+                        
                         worksheet['!cols'] = wscols;
 
-                        worksheet['!autofilter'] = { ref: XLSX.utils.encode_range({
-                            s: { r: 0, c: 0 },
-                            e: { r: 0, c: Object.keys(exportData[0] || {}).length - 1 }
-                        }) }
+                        if (safeExportData.length > 0) {
+                            const headerRow = 0; 
+                            const lastDataRow = safeExportData.length;
+                            const lastColIndex = Object.keys(safeExportData[0]).length - 1;
+                            
+                            worksheet['!autofilter'] = { 
+                                ref: XLSX.utils.encode_range({
+                                    s: { r: headerRow, c: 0 },
+                                    e: { r: lastDataRow, c: lastColIndex } 
+                                })
+                            };
+                        }
 
-                        XLSX.utils.book_append_sheet(workbook, worksheet, 'Participnats')
-
-                        const timestamp = new Date().toISOString()
-                            .replace(/[:.]/g, '-')
-                            .replace('T', '-')
-                            .split('.')[0]
-
-                        exportFilename = `impala_management_${currentFilters.search || 'all'}_${timestamp}.xlsx`
-
-                        XLSX.writeFile(workbook, exportFilename)
-
-                        toast.success(`successfully exported ${dataToExport.length} participants to Excel`)
-                    } else {
-                        throw new Error(result.message || 'Export failed')
-                    }
-
-                } catch (error) {
-                    console.error('Excel export error:', error)
-                    
-                    dataToExport = pagination.showingAllResults && currentFilters.search
-                        ? participant
-                        : await impalaService.fetchAllImpala(currentFilters).then(res => res.data || [])
-
-                    if (dataToExport.length > 0) {
-                        const exportData = dataToExport.map((p, index) => ({
-                            'No': index + 1,
-                            'Full Name': p.full_name || '',
-                            'Email': p.email || '',
-                            'Phone': p.phone || '',
-                            'Gender': p.gender || '',
-                            'category': p.category || '',
-                            'program': p.program || '',
-                        }))
-
-                        const workbook = XLSX.utils.book_new();
-                        const worksheet = XLSX.utils.json_to_sheet(exportData);
                         XLSX.utils.book_append_sheet(workbook, worksheet, 'Participants');
 
                         const timestamp = new Date().toISOString()
-                            .replace(/[:.]/g, '-')
-                            .replace('T', '-')
-                            .split('.')[0];
+                            .replace(/:/g, '-')
+                            .replace(/\..+/, '');
+                        
+                        const cleanSearchTerm = (currentFilters.search || 'all')
+                            .replace(/[^a-zA-Z0-9\s_-]/g, '')
+                            .replace(/\s+/g, '_')
+                            .substring(0, 30);
+                        
+                        exportFilename = `impala_management_${cleanSearchTerm}_${timestamp}.xlsx`;
 
-                        exportFilename = `impala_management_${currentFilters.search || 'all'}_${timestamp}.xlsx`
+                        XLSX.writeFile(workbook, exportFilename, {
+                            bookType: 'xlsx',
+                            type: 'binary'
+                        });
 
-                        XLSX.writeFile(workbook, exportFilename);
-                        toast.success(`Exported ${dataToExport.length} participants to Excel (fallback method)`);
+                        toast.success(`Successfully exported ${dataToExport.length} participants to Excel`);
+                        
+                        return { data: dataToExport, filename: exportFilename };
                     } else {
-                        toast.error('No data to export')
+                        const message = result.message || 'No data available to export';
+                        toast.warning(message);
+                        return { data: [], filename: '' };
+                    }
+
+                } catch (error) {
+                    console.error('Excel export error:', error);
+    
+                    // Fallback: Use local data with FULL format
+                    try {
+                        if (pagination.showingAllResults && currentFilters.search) {
+                            dataToExport = participant;
+                        } else {
+                            const fallbackResult = await impalaService.fetchAllImpala(currentFilters);
+                            dataToExport = fallbackResult.data || [];
+                        }
+
+                        if (dataToExport.length > 0) {
+                            // GUNAKAN FORMAT YANG SAMA seperti di success block
+                            const formatArrayField = (fieldValue) => {
+                                if (!fieldValue) return '';
+                                if (Array.isArray(fieldValue)) {
+                                    return fieldValue.filter(item => item != null && item !== '').join(', ');
+                                }
+
+                                if (typeof fieldValue === 'string') {
+                                    try {
+                                        const parsed = JSON.parse(fieldValue);
+                                        if (Array.isArray(parsed)) {
+                                            return parsed.filter(item => item != null && item !== '').join(', ');
+                                        }
+                                    } catch {
+                                        // Not JSON, return as is
+                                    }
+                                    return fieldValue;
+                                }
+
+                                return String(fieldValue || '');
+                            };
+
+                            const formatFieldValue = (fieldValue, fieldName) => {
+                                if (fieldValue === null || fieldValue === undefined || fieldValue === '') {
+                                    return '';
+                                }
+
+                                if (['social_media', 'marketplace', 'website', 'skills', 'certifications'].includes(fieldName)) {
+                                    return formatArrayField(fieldValue);
+                                }
+
+                                if (fieldName.includes('date') || fieldName.includes('created') || fieldName.includes('updated')) {
+                                    try {
+                                        const date = new Date(fieldValue);
+                                        if (!isNaN(date.getTime())) {
+                                            return date.toLocaleDateString('id-ID');
+                                        }
+                                    } catch {
+                                        // Return original value if date parsing fails
+                                    }
+                                    return fieldValue;
+                                }
+
+                                // eslint-disable-next-line no-control-regex
+                                return String(fieldValue).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+                            };
+
+                            const exportData = dataToExport.map((p, index) => ({
+                                'No': index + 1,
+                                'Nama Lengkap': p.full_name || '',
+                                'Email': p.email || '',
+                                'Nomor Telepon': p.phone || '',
+                                'Jenis Kelamin': p.gender || '',
+                                'Kategori': p.category || '',
+                                'Program': p.program_name || '',
+                                'Tanggal Lahir': p.date_of_birth || '',
+                                'Usia': p.age || '',
+                                'Alamat': p.address || '',
+                                'Kota/Kabupaten': p.regency_name || '',
+                                'Provinsi': p.province_name || '',
+                                'Pendidikan': p.education || '',
+                                'NIK': p.nik || '',
+                                'Kode Pos': p.postal_code || '',
+                                'Status Disabilitas': p.disability_status || '',
+                                'Alasan Bergabung': p.reason_join_program || '',
+
+                                'Nama Usaha': p.business_name || '',
+                                'Jenis Usaha': p.business_type || '',
+                                'Alamat Usaha': p.business_address || '',
+                                'Bentuk Usaha': p.business_form || '',
+                                'Tahun Berdiri': p.established_year || '',
+                                'Pendapatan Bulanan': p.monthly_revenue || '',
+                                'Jumlah Karyawan': p.employee_count || '',
+                                'Sertifikasi': formatFieldValue(p.certifications, 'certifications'),
+                                'Media Sosial': formatFieldValue(p.social_media, 'social_media'),
+                                'Marketplace': formatFieldValue(p.marketplace, 'marketplace'),
+                                'Website': formatFieldValue(p.website, 'website'),
+
+                                'Institusi': p.institution || '',
+                                'Jurusan': p.major || '',
+                                'Semester': p.semester || '',
+                                'Tahun Masuk': p.enrollment_year || '',
+                                'Minat Karir': p.career_interest || '',
+                                'Kompetensi Inti': p.core_competency || '',
+
+                                'Tempat Kerja': p.workplace || '',
+                                'Posisi': p.position || '',
+                                'Lama Bekerja': p.work_duration || '',
+                                'Sektor Industri': p.industry_sector || '',
+                                'Keahlian': formatFieldValue(p.skills, 'skills'),
+
+                                'Nama Komunitas': p.community_name || '',
+                                'Bidang Fokus': p.focus_area || '',
+                                'Jumlah Anggota': p.member_count || '',
+                                'Area Operasional': p.operational_area || '',
+                                'Peran dalam Komunitas': p.community_role || '',
+
+                                'Bidang Minat': p.areas_interest || '',
+                                'Latar Belakang': p.backgorund || '',
+                                'Tingkat Pengalaman': p.experience_level || '',
+
+                                'Tanggal Dibuat': formatFieldValue(p.created_at, 'created_at'),
+                                'Tanggal Diperbarui': formatFieldValue(p.updated_at, 'updated_at'),
+                            }));
+
+                            const safeExportData = exportData.map(row => {
+                                const safeRow = {};
+                                Object.keys(row).forEach(key => {
+                                    const value = row[key];
+                                    safeRow[key] = typeof value === 'string' 
+                                        // eslint-disable-next-line no-control-regex
+                                        ? value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+                                        : value;
+                                });
+                                return safeRow;
+                            });
+
+                            const workbook = XLSX.utils.book_new();
+                            const worksheet = XLSX.utils.json_to_sheet(safeExportData);
+                            
+                            // Set column widths
+                            const wscols = [
+                                { wch: 5 },    { wch: 25 },   { wch: 30 },   { wch: 15 },
+                                { wch: 15 },   { wch: 20 },   { wch: 30 },   { wch: 15 },
+                                { wch: 8 },    { wch: 40 },   { wch: 20 },   { wch: 20 },
+                                { wch: 20 },   { wch: 20 },   { wch: 20 },   { wch: 10 },
+                                { wch: 25 },   { wch: 40 },   { wch: 15 },   { wch: 15 },
+                                { wch: 25 },   { wch: 20 },   { wch: 40 },   { wch: 20 },
+                                { wch: 15 },   { wch: 10 },   { wch: 15 },   { wch: 25 },
+                                { wch: 20 },   { wch: 15 },   { wch: 20 },   { wch: 30 },
+                                { wch: 25 },   { wch: 30 },   { wch: 15 },   { wch: 20 },
+                                { wch: 25 },   { wch: 20 },   { wch: 30 },   { wch: 30 },
+                                { wch: 30 },   { wch: 30 },   { wch: 30 }
+                            ];
+                            worksheet['!cols'] = wscols;
+
+                            XLSX.utils.book_append_sheet(workbook, worksheet, 'Participants');
+
+                            const timestamp = new Date().toISOString()
+                                .replace(/:/g, '-')
+                                .replace(/\..+/, '');
+                                
+                            const cleanSearchTerm = (currentFilters.search || 'all')
+                                .replace(/[^a-zA-Z0-9\s_-]/g, '')
+                                .replace(/\s+/g, '_')
+                                .substring(0, 30);
+                                
+                            exportFilename = `impala_management_${cleanSearchTerm}_${timestamp}.xlsx`;
+
+                            XLSX.writeFile(workbook, exportFilename);
+                            
+                            toast.success(`Exported ${dataToExport.length} participants (fallback method)`);
+                            
+                            return { data: dataToExport, filename: exportFilename };
+                        } else {
+                            toast.error('No data to export');
+                            return { data: [], filename: '' };
+                        }
+                    } catch (fallbackError) {
+                        console.error('Fallback export error:', fallbackError);
+                        toast.error('Export failed. Please try again.');
+                        throw fallbackError;
                     }
                 }
             } else {
-                throw new Error(`Unsupported format: ${format}`)
+                throw new Error(`Unsupported format: ${format}`);
             }
-
-            return { data: dataToExport, filename: exportFilename }
-
         } catch (error) {
-            console.error('Error exporting participants:', error)
-            toast.error('Failed to export participants')
-            throw error
+            console.error('Error exporting participants:', error);
+            toast.error('Failed to export participants');
+            throw error;
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [participant, pagination.showingAllResults, showAllOnSearch])
+    }, [participant, pagination.showingAllResults]);
 
     const addParticipant = async (participantData) => {
         try {

@@ -112,7 +112,6 @@ export const locationService = {
         if (!id) return '';
 
         try {
-            // let endpoint = '';
             switch(type) {
                 case 'province': 
                     { const provinces = await fetch(`${API_BASE}/provinsi.json`);
