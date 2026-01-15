@@ -60,12 +60,11 @@ const FiltersSection = ({
                     localFilters={localFilters}
                     onStatusFilterChange={onStatusFilterChange}
                     onBusinessTypeFilterChange={onBusinessTypeFilterChange}
-                    onGenderFilterChange={onGenderFilterChange} // ← KIRIM PROP INI
-                    onApplyFilters={onApplyFilters} // ← KIRIM PROP INI
+                    onGenderFilterChange={onGenderFilterChange}
+                    onApplyFilters={onApplyFilters}
                     availableBusinessTypes={availableBusinessTypes}
                     statusOptions={statusOptions}
                     getActiveFiltersCount={getActiveFiltersCount}
-                    // TAMBAHKAN PROP BARU INI
                     getFilteredCounts={getFilteredCounts}
                 />
             </div>

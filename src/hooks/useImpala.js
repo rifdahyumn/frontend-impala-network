@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import toast from "react-hot-toast"
 import { debounce } from 'lodash'
 import { useConfirmDialog } from "./useConfirmDialog"
+import * as XLSX from 'xlsx';
 
 export const useImpala = (initialFilters = {}) => {
     const confirmDialog = useConfirmDialog()
@@ -27,6 +28,7 @@ export const useImpala = (initialFilters = {}) => {
         search: '',
         gender: '',
         category: '',
+        program: '',
         ...initialFilters
     })
     
@@ -36,7 +38,9 @@ export const useImpala = (initialFilters = {}) => {
     const [filters, setFilters] = useState({
         search: filtersRef.current.search,
         gender: filtersRef.current.gender,
-        category: filtersRef.current.category
+        category: filtersRef.current.category,
+        program: filtersRef.current.program
+
     })
 
     const fetchImpala = useCallback(async (page = 1, customFilters = null, showAll = false, requestId = null) => {
@@ -61,6 +65,7 @@ export const useImpala = (initialFilters = {}) => {
                 ...(currentFilters.search && { search: currentFilters.search }),
                 ...(currentFilters.gender && { gender: currentFilters.gender }),
                 ...(currentFilters.category && { category: currentFilters.category }),
+                ...(currentFilters.program && currentFilters.program !== 'all' && { program: currentFilters.program }),
                 ...(currentFilters.search && showAll && { showAllOnSearch: 'true' })
             }
 
@@ -124,24 +129,28 @@ export const useImpala = (initialFilters = {}) => {
         const updatedFilters = {
             ...filtersRef.current,
             ...newFilters
-        }
-        filtersRef.current = updatedFilters
+        };
+        
+        filtersRef.current = updatedFilters;
         
         setFilters(prev => ({
             ...prev,
             search: updatedFilters.search,
             gender: updatedFilters.gender,
-            category: updatedFilters.category
-        }))
+            category: updatedFilters.category,
+            program: updatedFilters.program
+        }));
         
         if (!newFilters.search && showAllOnSearch) {
-            setShowAllOnSearch(false)
+            setShowAllOnSearch(false);
         }
         
         if (debouncedFetchRef.current) {
-            debouncedFetchRef.current(1, updatedFilters, showAll)
+            debouncedFetchRef.current(1, updatedFilters, showAll);
+        } else {
+            console.error('debouncedFetchRef.current is null!');
         }
-    }, [showAllOnSearch])
+    }, [showAllOnSearch]);
 
     const toggleShowAllOnSearch = useCallback((value) => {
         setShowAllOnSearch(value)
@@ -157,7 +166,8 @@ export const useImpala = (initialFilters = {}) => {
         const clearedFilters = {
             search: '',
             gender: '',
-            category: ''
+            category: '',
+            program: ''
         }
         
         filtersRef.current = clearedFilters
@@ -263,54 +273,230 @@ export const useImpala = (initialFilters = {}) => {
         fetchImpalaStats()
     }, [fetchImpalaStats])
 
-    const exportParticipants = useCallback(async (format = 'csv', exportFilters = null) => {
+    const exportParticipants = useCallback(async (format = 'xlsx', exportFilters = null, exportAll = false) => {
         try {
             setLoading(true)
 
             const currentFilters = exportFilters || filtersRef.current
-            let dataToExport
-        
-            if (pagination.showingAllResults && currentFilters.search && format === 'csv') {
-                dataToExport = participant
-                
-                const csvContent = impalaService.convertToCSV(dataToExport)
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-                const url = window.URL.createObjectURL(blob)
-                const link = document.createElement('a')
-                link.href = url
-                link.setAttribute('download', `impala_participants_${currentFilters.search || 'all'}_${new Date().toISOString().split('T')[0]}.csv`)
-                document.body.appendChild(link)
-                link.click()
-                document.body.removeChild(link)
-                window.URL.revokeObjectURL(url)
-                
-                toast.success(`Exported ${dataToExport.length} participants to CSV`)
-            } else {
-                const result = await impalaService.fetchAllImpala(currentFilters)
-                dataToExport = result.data || []
-                
-                if (format === 'csv') {
-                    const csvContent = impalaService.convertToCSV(dataToExport)
-                    
-                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-                    const url = window.URL.createObjectURL(blob)
-                    const link = document.createElement('a')
-                    link.href = url
-                    link.setAttribute('download', `impala_participants_${currentFilters.search || 'all'}_${new Date().toISOString().split('T')[0]}.csv`)
-                    document.body.appendChild(link)
-                    link.click()
-                    document.body.removeChild(link)
-                    window.URL.revokeObjectURL(url)
-                    
-                    toast.success(`Exported ${dataToExport.length} participants to CSV`)
-                } else {
-                    toast.success(`Prepared ${dataToExport.length} participants for export`)
-                    return dataToExport
-                }
-            }
             
-            return dataToExport
+            const queryParams = new URLSearchParams()
+
+            if (currentFilters.search) {
+                queryParams.append('search', currentFilters.search)
+            }
+
+            if (currentFilters.gender) {
+                queryParams.append('gender', currentFilters.gender)
+            }
+
+            if (currentFilters.category) {
+                queryParams.append('category', currentFilters.category)
+            }
+
+            if (currentFilters.program) {
+                queryParams.append('program', currentFilters.program)
+            }
+
+            queryParams.append('format', format)
+
+            if (exportAll) {
+                queryParams.append('includeAll', 'true')
+            }
+
+            let dataToExport;
+            let exportFilename = ''
+
+            if (format === 'xlsx' || format === 'excel') {
+                try {
+                    const response = await fetch(`/api/impala/export/participant?${queryParams.toString()}`)
+
+                    if (!response.ok) {
+                        const errorData = await response.json()
+                        throw new Error(errorData.message || 'Failed to export data')
+                    }
+
+                    const result = await response.json()
+
+                    if (result.success) {
+                        dataToExport = result.data || []
+
+                        const formatArrayField = (fieldValue) => {
+                            if (!fieldValue) return ''
+                            if (Array.isArray(fieldValue)) {
+                                return fieldValue.join(', ')
+                            }
+
+                            if (typeof fieldValue === 'string') {
+                                try {
+                                    const parsed = JSON.parse(fieldValue)
+                                    if (Array.isArray(parsed)) {
+                                        return parsed.join(', ')
+                                    }
+                                } catch {
+                                    //
+                                }
+
+                                return fieldValue
+                            }
+
+                            return String(fieldValue)
+                        }
+
+                        const formatFieldValue = (fieldValue, fieldName) => {
+                            if (fieldValue === null || fieldValue === undefined) return ''
+
+                            if (['social_media', 'marketplace', 'website', 'skills', 'certifications'].includes(fieldName)) {
+                                return formatArrayField(fieldValue)
+                            }
+
+                            if (fieldName.includes('date') || fieldName.includes('created') || fieldName.includes('updated')) {
+                                try {
+                                    return new Date(fieldValue).toLocaleDateString('id-ID')
+                                } catch {
+                                    return fieldValue
+                                }
+                            }
+
+                            return String(fieldValue)
+                        }
+
+                        const exportData = dataToExport.map((p, index) => ({
+                            'No': index + 1,
+                            'Nama Lengkap': p.full_name || '',
+                            'Email': p.email || '',
+                            'Nomor Telepon': p.phone || '',
+                            'Jenis Kelamin': p.gender || '',
+                            'Kategori': p.category || '',
+                            'Program': p.program_name || '',
+                            'Tanggal Lahir': p.date_of_birth || '',
+                            'Usia': p.age || '',
+                            'Alamat': p.address || '',
+                            'Kota/Kabupaten': p.regency_name || '',
+                            'Provinsi': p.province_name || '',
+                            'Pendidikan': p.education || '',
+                            'NIK': p.nik || '',
+                            'Kode Pos': p.postal_code || '',
+                            'Status Disabilitas': p.disability_status || '',
+                            'Alasan Bergabung': p.reason_join_program || '',
+                            'Tanggal Dibuat': formatFieldValue(p.created_at, 'created_at'),
+                            'Tanggal Diperbarui': formatFieldValue(p.updated_at, 'updated_at'),
+
+                            'Nama Usaha': p.business_name || '',
+                            'Jenis Usaha': p.business_type || '',
+                            'Alamat Usaha': p.business_address || '',
+                            'Bentuk Usaha': p.business_form || '',
+                            'Tahun Berdiri': p.established_year || '',
+                            'Pendapatan Bulanan': p.monthly_revenue || '',
+                            'Jumlah Karyawan': p.employee_count || '',
+                            'Sertifikasi': formatFieldValue(p.certifications, 'certifications'),
+                            'Media Sosial': formatFieldValue(p.social_media, 'social_media'),
+                            'Marketplace': formatFieldValue(p.marketplace, 'marketplace'),
+                            'Website': formatFieldValue(p.website, 'website'),
+
+                            'Institusi': p.institution || '',
+                            'Jurusan': p.major || '',
+                            'Semester': p.semester || '',
+                            'Tahun Masuk': p.enrollment_year || '',
+                            'Minat Karir': p.career_interest || '',
+                            'Kompetensi Inti': p.core_competency || '',
+
+                            'Tempat Kerja': p.workplace || '',
+                            'Posisi': p.position || '',
+                            'Lama Bekerja': p.work_duration || '',
+                            'Sektor Industri': p.industry_sector || '',
+                            'Keahlian': formatFieldValue(p.skills, 'skills'),
+
+                            'Nama Komunitas': p.community_name || '',
+                            'Bidang Fokus': p.focus_area || '',
+                            'Jumlah Anggota': p.member_count || '',
+                            'Area Operasional': p.operational_area || '',
+                            'Peran dalam Komunitas': p.community_role || '',
+
+                            'Bidang Minat': p.areas_interest || '',
+                            'Latar Belakang': p.backgorund || '',
+                            'Tingkat Pengalaman': p.experience_level || ''
+                        }))
+
+                        const workbook = XLSX.utils.book_new();
+                        const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+                        const wscols = [
+                            { wch: 5 },    { wch: 25 },   { wch: 30 },   { wch: 15 },
+                            { wch: 15 },   { wch: 20 },   { wch: 30 },   { wch: 15 },
+                            { wch: 8 },    { wch: 40 },   { wch: 20 },   { wch: 20 },
+                            { wch: 20 },   { wch: 20 },   { wch: 20 },   { wch: 10 },
+                            { wch: 25 },   { wch: 40 },   { wch: 15 },   { wch: 15 },
+                            { wch: 25 },   { wch: 20 },   { wch: 40 },   { wch: 20 },
+                            { wch: 15 },   { wch: 10 },   { wch: 15 },   { wch: 25 },
+                            { wch: 20 },   { wch: 15 },   { wch: 20 },   { wch: 30 },
+                            { wch: 25 },   { wch: 30 },   { wch: 15 },   { wch: 20 },
+                            { wch: 25 },   { wch: 20 },   { wch: 30 },   { wch: 30 },
+                            { wch: 30 },   { wch: 30 },   { wch: 30 }
+                        ];
+                        worksheet['!cols'] = wscols;
+
+                        worksheet['!autofilter'] = { ref: XLSX.utils.encode_range({
+                            s: { r: 0, c: 0 },
+                            e: { r: 0, c: Object.keys(exportData[0] || {}).length - 1 }
+                        }) }
+
+                        XLSX.utils.book_append_sheet(workbook, worksheet, 'Participnats')
+
+                        const timestamp = new Date().toISOString()
+                            .replace(/[:.]/g, '-')
+                            .replace('T', '-')
+                            .split('.')[0]
+
+                        exportFilename = `impala_management_${currentFilters.search || 'all'}_${timestamp}.xlsx`
+
+                        XLSX.writeFile(workbook, exportFilename)
+
+                        toast.success(`successfully exported ${dataToExport.length} participants to Excel`)
+                    } else {
+                        throw new Error(result.message || 'Export failed')
+                    }
+
+                } catch (error) {
+                    console.error('Excel export error:', error)
+                    
+                    dataToExport = pagination.showingAllResults && currentFilters.search
+                        ? participant
+                        : await impalaService.fetchAllImpala(currentFilters).then(res => res.data || [])
+
+                    if (dataToExport.length > 0) {
+                        const exportData = dataToExport.map((p, index) => ({
+                            'No': index + 1,
+                            'Full Name': p.full_name || '',
+                            'Email': p.email || '',
+                            'Phone': p.phone || '',
+                            'Gender': p.gender || '',
+                            'category': p.category || '',
+                            'program': p.program || '',
+                        }))
+
+                        const workbook = XLSX.utils.book_new();
+                        const worksheet = XLSX.utils.json_to_sheet(exportData);
+                        XLSX.utils.book_append_sheet(workbook, worksheet, 'Participants');
+
+                        const timestamp = new Date().toISOString()
+                            .replace(/[:.]/g, '-')
+                            .replace('T', '-')
+                            .split('.')[0];
+
+                        exportFilename = `impala_management_${currentFilters.search || 'all'}_${timestamp}.xlsx`
+
+                        XLSX.writeFile(workbook, exportFilename);
+                        toast.success(`Exported ${dataToExport.length} participants to Excel (fallback method)`);
+                    } else {
+                        toast.error('No data to export')
+                    }
+                }
+            } else {
+                throw new Error(`Unsupported format: ${format}`)
+            }
+
+            return { data: dataToExport, filename: exportFilename }
+
         } catch (error) {
             console.error('Error exporting participants:', error)
             toast.error('Failed to export participants')
@@ -403,7 +589,7 @@ export const useImpala = (initialFilters = {}) => {
 
     return {
         ...confirmDialog, participant, loading, error, pagination, filters, showAllOnSearch, impalaStats, 
-        statsLoadingImpala, fetchImpala, updateFiltersAndFetch, clearFilters, clearSearch, searchParticipants,
+        statsLoadingImpala, fetchImpala, setFilters: updateFiltersAndFetch, clearFilters, clearSearch, searchParticipants,
         toggleShowAllOnSearch, isShowAllMode: () => pagination.showingAllResults || false, resetToPaginationMode,
         getDisplayText, refetch, handlePageChange, refreshData, addParticipant, updateParticipant, deleteParticipant,
         exportParticipants, refetchStats: fetchImpalaStats

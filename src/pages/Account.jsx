@@ -10,7 +10,7 @@ import Pagination from '../components/Pagination/Pagination';
 import AddUser from "../components/AddButton/AddUser";
 import { useUsers } from "../hooks/useUser";
 import toast from "react-hot-toast";
-import * as XLSX from 'xlsx'; // Tambahkan library Excel
+import * as XLSX from 'xlsx'; 
 
 const Account = () => {
     const [selectedUser, setSelectedUser] = useState(null);
@@ -18,13 +18,11 @@ const Account = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     
-    // State untuk modal konfirmasi
     const [confirmModal, setConfirmModal] = useState({
         isOpen: false,
         config: null
     });
     
-    // State untuk export
     const [isExporting, setIsExporting] = useState(false);
     
     const [highlightDetail, setHighlightDetail] = useState(false);
@@ -33,7 +31,6 @@ const Account = () => {
     
     const [searchTerm, setSearchTerm] = useState("");
     
-    // State untuk filter permanen dan sementara (seperti HeteroSurakarta.jsx)
     const [filters, setFilters] = useState({
         position: null, 
         role: null, 
@@ -47,9 +44,8 @@ const Account = () => {
     
     const [filteredUsers, setFilteredUsers] = useState([]);
 
-    const { users, loading, error, pagination, fetchFilters, setFilters: setHookFilters, fetchUser, addUser, updateUser, deleteUser, activateUser } = useUsers();
+    const { users, loading, error, pagination, fetchUser, addUser, updateUser, deleteUser, activateUser } = useUsers();
 
-    // Fungsi untuk menampilkan modal konfirmasi
     const showConfirm = (config) => {
         setConfirmModal({
             isOpen: true,
@@ -57,7 +53,6 @@ const Account = () => {
         });
     };
 
-    // Fungsi untuk handle konfirmasi
     const handleConfirm = async () => {
         if (confirmModal.config && confirmModal.config.onConfirm) {
             try {
@@ -70,7 +65,6 @@ const Account = () => {
         setConfirmModal({ isOpen: false, config: null });
     };
 
-    // Fungsi untuk handle cancel
     const handleCancel = () => {
         if (confirmModal.config && confirmModal.config.onCancel) {
             confirmModal.config.onCancel();
@@ -78,14 +72,13 @@ const Account = () => {
         setConfirmModal({ isOpen: false, config: null });
     };
 
-    // Fungsi getOriginalLabel didefinisikan sebelum digunakan di handleExport
     const getOriginalLabel = (value, options) => {
         if (!value) return "";
         const option = options.find(opt => opt.value === value);
         return option ? option.original || option.label : value;
     };
 
-    // Opsi filter
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const positionOptions = [
         { value: 'managing director', label: 'Managing Director', original: 'Managing Director' },
         { value: 'director', label: 'Director', original: 'Director' },
@@ -100,13 +93,13 @@ const Account = () => {
         { value: 'creative', label: 'Creative', original: 'Creative' }
     ];
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const roleOptions = [
         { value: 'admin', label: 'Admin', original: 'Admin' },
         { value: 'user', label: 'User', original: 'User' },
         { value: 'superadmin', label: 'Super Admin', original: 'Super Admin' }
     ];
 
-    // FUNGSI EXPORT YANG SAMA SEPERTI DI KODE SEBELUMNYA
     const handleExport = useCallback(async () => {
         try {
             if (!filteredUsers || filteredUsers.length === 0) {
@@ -115,8 +108,7 @@ const Account = () => {
             }
             
             setIsExporting(true);
-            
-            // Format data untuk export - lengkap dengan semua field yang ada
+
             const exportData = filteredUsers.map((user, index) => ({
                 'No': index + 1,
                 'Employee ID': user.employee_id || '-',
@@ -155,26 +147,23 @@ const Account = () => {
                     : '-'
             }));
 
-            // Buat worksheet dengan styling
             const ws = XLSX.utils.json_to_sheet(exportData);
             
-            // Atur lebar kolom yang sesuai
             const wscols = [
-                { wch: 5 },    // No
-                { wch: 15 },   // Employee ID
-                { wch: 25 },   // Full Name
-                { wch: 30 },   // Email
-                { wch: 25 },   // Position
-                { wch: 15 },   // Role
-                { wch: 15 },   // Status
-                { wch: 15 },   // Phone
-                { wch: 20 },   // Last Login
-                { wch: 20 },   // Created Date
-                { wch: 20 },   // Last Updated
+                { wch: 5 },   
+                { wch: 15 },  
+                { wch: 25 },   
+                { wch: 30 },  
+                { wch: 25 },  
+                { wch: 15 },
+                { wch: 15 }, 
+                { wch: 15 },  
+                { wch: 20 }, 
+                { wch: 20 }, 
+                { wch: 20 },  
             ];
             ws['!cols'] = wscols;
             
-            // Tambahkan styling untuk header (baris pertama)
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let C = range.s.c; C <= range.e.c; ++C) {
                 const cell_address = { c: C, r: 0 };
@@ -187,17 +176,14 @@ const Account = () => {
                 };
             }
             
-            // Buat workbook dengan sheet tambahan untuk info export
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Account Users");
             
-            // MODIFIKASI: Perhitungan active users di export Excel (sama seperti HeteroSemarang)
             const activeUsers = filteredUsers.filter(u => 
                 u.status?.toLowerCase() === 'active'
             ).length;
             const inactiveUsers = filteredUsers.length - activeUsers;
             
-            // Tambahkan sheet info filter
             const filterInfo = [
                 ['USER ACCOUNT EXPORT'],
                 ['', ''],
@@ -217,8 +203,8 @@ const Account = () => {
                 ['Role Filter', filters.role && filters.role !== 'all' ? getOriginalLabel(filters.role, roleOptions) : 'All'],
                 ['', ''],
                 ['STATISTICS'],
-                ['Total Active Users', activeUsers],  // MODIFIKASI: Menggunakan perhitungan case-insensitive
-                ['Total Inactive Users', inactiveUsers],  // MODIFIKASI: Perhitungan yang benar
+                ['Total Active Users', activeUsers],  
+                ['Total Inactive Users', inactiveUsers],  
                 ['Total Admin Users', filteredUsers.filter(u => u.role === 'admin').length],
                 ['Total Super Admin Users', filteredUsers.filter(u => u.role === 'superadmin').length],
                 ['', ''],
@@ -234,14 +220,12 @@ const Account = () => {
             
             const wsInfo = XLSX.utils.aoa_to_sheet(filterInfo);
             
-            // Atur lebar kolom untuk sheet info
             const infoCols = [
                 { wch: 25 },
                 { wch: 40 }
             ];
             wsInfo['!cols'] = infoCols;
             
-            // Styling untuk header sheet info
             const infoRange = XLSX.utils.decode_range(wsInfo['!ref']);
             for (let R = 0; R <= Math.min(2, infoRange.e.r); R++) {
                 for (let C = infoRange.s.c; C <= infoRange.e.c; C++) {
@@ -259,11 +243,9 @@ const Account = () => {
             
             XLSX.utils.book_append_sheet(wb, wsInfo, "Export Info");
             
-            // Generate nama file dengan timestamp
             const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-').replace(/\..+/, '');
             const fileName = `user_accounts_export_${timestamp}.xlsx`;
             
-            // Download file
             XLSX.writeFile(wb, fileName);
             
             toast.success(`Successfully exported ${exportData.length} users to Excel`);
@@ -297,7 +279,6 @@ const Account = () => {
         }, 150); 
     }, []);
 
-    // Fungsi untuk mendapatkan label filter yang sedang aktif
     const getFilterLabel = (filterType) => {
         if (filterType === 'position' && filters.position) {
             return getOriginalLabel(filters.position, positionOptions);
@@ -308,7 +289,6 @@ const Account = () => {
         return '';
     };
 
-    // Handler untuk menghitung filter aktif
     const getActiveFiltersCount = () => {
         let count = 0;
         if (filters.position) count++;
@@ -316,7 +296,6 @@ const Account = () => {
         return count;
     };
 
-    // Handler untuk menghitung filter sementara yang aktif
     const getTempActiveFiltersCount = () => {
         let count = 0;
         if (tempFilters.position) count++;
@@ -332,24 +311,16 @@ const Account = () => {
         return count;
     };
 
-    // MODIFIKASI: Perhitungan userStats yang SAMA PERSIS dengan HeteroSemarang
     const userStats = useMemo(() => {
-        // Asumsi: hook useUsers tidak memiliki stats seperti useHeteroSemarang
-        // Kita gunakan filteredUsers langsung dengan cara yang sama
-        
         const totalUsers = filteredUsers.length;
-        // MODIFIKASI: Case-insensitive check seperti HeteroSemarang
         const activeUsers = filteredUsers.filter(user => 
             user.status?.toLowerCase() === 'active' 
         ).length;
         
-        // MODIFIKASI: Perhitungan persentase sama seperti HeteroSemarang
         const activePercentage = totalUsers > 0 
             ? ((activeUsers / totalUsers) * 100).toFixed(1) 
             : "0";
-        
-        // MODIFIKASI: PERBAIKAN - Growth percentage yang benar
-        // Hitung persentase dari total data yang tidak difilter
+
         const totalUnfiltered = users.length;
         const totalFiltered = filteredUsers.length;
         
@@ -358,12 +329,10 @@ const Account = () => {
         let trend = "neutral";
         
         if (getTotalActiveCriteria() > 0) {
-            // Jika ada filter aktif, hitung persentase dari total data yang tidak difilter
             if (totalUnfiltered > 0) {
                 growthPercentage = ((totalFiltered / totalUnfiltered) * 100).toFixed(1);
                 growthDescription = `${growthPercentage}% of total users`;
                 
-                // Trend: positif jika > 50% dari total, negatif jika < 10%
                 const percentageValue = parseFloat(growthPercentage);
                 if (percentageValue > 50) {
                     trend = "up";
@@ -374,9 +343,6 @@ const Account = () => {
                 }
             }
         } else {
-            // Jika tidak ada filter, gunakan growth dari data aktual
-            // Karena tidak ada data historis, kita gunakan logika sederhana
-            // Misalnya: jika ada banyak users, anggap ada growth
             if (totalFiltered > 10) {
                 growthPercentage = "12.5";
                 growthDescription = "12.5% Growth (estimated)";
@@ -398,7 +364,6 @@ const Account = () => {
                 value: totalUsers.toString(),
                 subtitle: filters.position ? `${getOriginalLabel(filters.position, positionOptions)}` : "",
                 percentage: `${growthPercentage}%`,
-                // MODIFIKASI: Trend logic sama seperti HeteroSemarang
                 trend: trend,
                 period: "Current",
                 icon: Users,
@@ -411,9 +376,8 @@ const Account = () => {
                 value: activeUsers.toString(),
                 subtitle: "",
                 percentage: `${activePercentage}%`,
-                // MODIFIKASI: Trend indicator sama seperti HeteroSemarang (threshold 70%)
                 trend: parseFloat(activePercentage) > 70 ? "up" : "down",
-                period: "Current",  // MODIFIKASI: Period "Current" seperti HeteroSemarang
+                period: "Current", 
                 icon: UserCheck,
                 color: "green",
                 description: `${activePercentage}% of total`,
@@ -422,7 +386,6 @@ const Account = () => {
         ];
     }, [filteredUsers, filters.position, filters.role, positionOptions, users.length, getTotalActiveCriteria]);
 
-    // Fungsi applyAllFilters seperti di HeteroSurakarta.jsx
     const applyAllFilters = () => {
         let result = [...users];
         
@@ -464,7 +427,6 @@ const Account = () => {
         setSearchTerm(term);
     };
 
-    // Handler untuk filter sementara (seperti HeteroSurakarta.jsx)
     const handleTempPositionChange = (position) => {
         setTempFilters(prev => ({ 
             ...prev, 
@@ -476,7 +438,6 @@ const Account = () => {
         setTempFilters(prev => ({ ...prev, role }));
     };
 
-    // Handler untuk apply filter
     const handleApplyFilters = () => {
         setFilters({
             position: tempFilters.position || null,
@@ -485,7 +446,6 @@ const Account = () => {
         setIsFilterOpen(false);
     };
 
-    // Handler untuk cancel filter
     const handleCancelFilters = () => {
         setTempFilters({
             position: filters.position || '',
@@ -494,7 +454,6 @@ const Account = () => {
         setIsFilterOpen(false);
     };
 
-    // Handler untuk clear semua filter sementara
     const handleClearAllTempFilters = () => {
         setTempFilters({
             position: '',
@@ -502,7 +461,6 @@ const Account = () => {
         });
     };
 
-    // Handler untuk clear semua filter permanen
     const handleClearAllFilters = () => {
         setSearchTerm("");
         setFilters({
@@ -513,7 +471,6 @@ const Account = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // Fungsi clear filter spesifik
     const clearFilter = (filterType) => {
         if (filterType === 'search') {
             setSearchTerm("");
@@ -524,7 +481,6 @@ const Account = () => {
         }
     };
 
-    // Update tempFilters ketika filters berubah
     useEffect(() => {
         setTempFilters({
             position: filters.position || '',
@@ -590,7 +546,6 @@ const Account = () => {
     const handleDeleteUser = async (userId) => {
         if (!selectedUser) return;
 
-        // Gunakan modal konfirmasi untuk delete user
         showConfirm({
             title: 'Delete User',
             message: `Are you sure you want to delete "${selectedUser.full_name}"? This action cannot be undone.`,
@@ -1151,11 +1106,6 @@ const Account = () => {
                                 </div>
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
-                                    <div className="text-sm text-gray-600">
-                                        Showing {filteredUsers.length} of {users.length} users
-                                        {getTotalActiveCriteria() > 0 && " (filtered)"}
-                                    </div>
-                                    
                                     <Pagination 
                                         currentPage={pagination.page}
                                         totalPages={pagination.totalPages}
@@ -1189,7 +1139,6 @@ const Account = () => {
                             fetchUser(pagination.page);
                             setSelectedUser(null);
                         }}
-                        // Tambahkan props konfirmasi modal
                         showConfirm={showConfirm}
                         handleConfirm={handleConfirm}
                         handleCancel={handleCancel}

@@ -57,7 +57,6 @@ export const validateRowData = (row, rowIndex) => {
         }
     }
     
-    // TAMBAHKAN: Validasi untuk gender
     if (row.gender) {
         const genderValue = row.gender.toString().toLowerCase().trim();
         if (!['male', 'female', 'laki-laki', 'perempuan', 'pria', 'wanita'].some(g => 
@@ -127,16 +126,15 @@ export const parseExcelData = (data) => {
 
                     const normalizedHeader = headerMapping[header] || header;
                     
-                    // Standardisasi gender value
                     if (normalizedHeader === 'gender' && cleanValue) {
                         const genderLower = cleanValue.toLowerCase().trim();
-                        // Standardize gender values
+
                         if (genderLower.includes('male') || genderLower.includes('laki') || genderLower.includes('pria')) {
                             cleanRow[normalizedHeader] = 'male';
                         } else if (genderLower.includes('female') || genderLower.includes('perempuan') || genderLower.includes('wanita')) {
                             cleanRow[normalizedHeader] = 'female';
                         } else {
-                            cleanRow[normalizedHeader] = genderLower; // keep as is for now
+                            cleanRow[normalizedHeader] = genderLower; 
                         }
                     } else {
                         cleanRow[normalizedHeader] = cleanValue;
@@ -187,7 +185,6 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
             params.append('business_type', currentFilters.business.trim())
         }
 
-        // TAMBAHKAN: Parameter gender untuk export
         if (currentFilters.gender?.trim()) {
             params.append('gender', currentFilters.gender.trim())
         }
@@ -299,19 +296,17 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
 export const downloadTemplate = () => {
     const templateData = [
         {
-            'Full Name': 'Contoh: John Doe',
-            'Email': 'Contoh: john@example.com',
-            'Phone': 'Contoh: 081234567890',
+            'Full Name': 'Contoh: Jonathan Ardi Wijaya',
+            'Email': 'Contoh: jonathan.wijaya@auroratech.co.id',
+            'Phone': 'Contoh: +62 812 3456 7890',
             'Gender': 'Contoh: Male',
-            'Company': 'Contoh: PT. Contoh Indonesia',
-            'Position': 'Contoh: CO-Founder',
+            'Company': 'Contoh: Aurora Tech Solutions',
+            'Position': 'Contoh: Head of Digital Transformation',
             'Total Employee': 'Contoh: 50-100 employees',
             'Business': 'Contoh: Technology',
-            'Program Name': 'Contoh: Program Premium',
-            'Status': 'Contoh: Active',
-            'Address': 'Contoh: Jl. Contoh No. 123',
-            'Join Date': 'Contoh: 2024-01-15',
-            'Notes': 'Contoh: Catatan tambahan'
+            'Program Name': 'Contoh: Enterprise Digital Acceleration 2025',
+            'Address': 'Contoh: Jl. MT Haryono No. 35, Komplek Bisnis Sentra Mahakam',
+            'Notes': 'Contoh: Client focused on modernizing internal systems'
         },
     ];
   
@@ -328,9 +323,7 @@ export const downloadTemplate = () => {
             'Total Employee': 'Contoh: 50-100 employees',
             'Business': 'Contoh: Technology',
             'Program Name': 'Contoh: Enterprise Digital Acceleration 2025',
-            'Status': 'Contoh: Active',
-            'Address': 'Contoh: Jl. Jenderal Sudirman No. 88, Jakarta',
-            'Join Date': 'Contoh: 2025-12-30',
+            'Address': 'Contoh: Jl. MT Haryono No. 35, Komplek Bisnis Sentra Mahakam',
             'Notes': 'Contoh: Client focused on modernizing internal systems'
         }
     ]
@@ -424,7 +417,6 @@ export const formatStatuses = (members) => {
     }));
 };
 
-// TAMBAHKAN: Fungsi untuk format genders
 export const formatGenders = (members) => {
     if (!members || members.length === 0) return [];
     
@@ -434,7 +426,6 @@ export const formatGenders = (members) => {
     
     const uniqueGenders = [...new Set(allGenders)].sort();
     
-    // Standardize gender values
     const standardizedGenders = uniqueGenders.map(gender => {
         const genderLower = gender.toLowerCase().trim();
         if (genderLower.includes('male') || genderLower.includes('laki') || genderLower.includes('pria')) {
@@ -454,17 +445,15 @@ export const formatGenders = (members) => {
     }));
 };
 
-// PERBAIKI: countActiveFilters untuk include gender
 export const countActiveFilters = (filters) => {
     let count = 0;
     if (filters.search && filters.search.trim() !== '') count++;
     if (filters.status && filters.status.trim() !== '') count++;
     if (filters.businessType && filters.businessType.trim() !== '' && filters.businessType !== 'all') count++;
-    if (filters.gender && filters.gender.trim() !== '') count++; // ← TAMBAHKAN INI
+    if (filters.gender && filters.gender.trim() !== '') count++;
     return count;
 };
 
-// TAMBAHKAN: Fungsi untuk mendapatkan label gender
 export const getGenderLabel = (genderValue) => {
     if (!genderValue || genderValue.trim() === '') return '';
     
@@ -489,7 +478,7 @@ export const formatMembersForTable = (members, pagination, isInShowAllMode, getB
             fullName: client.full_name,
             email: client.email,
             phone: client.phone,
-            gender: client.gender, // ← TAMBAHKAN INI jika ingin menampilkan gender di table
+            gender: client.gender, 
             company: client.company,
             business: getBusinessDisplayName(client.business),
             programName: client.program_name,

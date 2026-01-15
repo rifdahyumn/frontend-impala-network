@@ -1,4 +1,3 @@
-// Import constants untuk business types
 import { BUSINESS_TYPES } from "../../Client/constants/businessTypes";
 
 export const formSections = [
@@ -56,7 +55,7 @@ export const formSections = [
                 type: 'select',
                 required: true,
                 placeholder: 'Select business type',
-                options: BUSINESS_TYPES // GUNAKAN DARI CONSTANTS
+                options: BUSINESS_TYPES 
             },
             {
                 name: 'total_employee',

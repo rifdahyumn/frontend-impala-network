@@ -96,7 +96,7 @@ export default function LoginPage() {
             navigate(redirectPath, { replace: true });
             
         } catch (err) {
-            let errorMessage = "Login gagal. Periksa email dan password Anda.";
+            let errorMessage = "Login failed. Please check your email and password.";
             
             if (err.message.includes("network") || err.message.includes("Network")) {
                 errorMessage = "Koneksi jaringan bermasalah. Coba lagi.";

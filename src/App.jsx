@@ -69,7 +69,6 @@ const ProtectedRoute = ({ children }) => {
 
 const ProtectedRouteMinimal = ({ children }) => {
     const { isAuthenticated, user } = useAuth();
-    // const location = useLocation();
 
     if (isAuthenticated === null) {
         return <LoadingSpinner />

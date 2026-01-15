@@ -15,24 +15,14 @@ import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx'
 import ConfirmModal from "../components/Content/ConfirmModal";
 
-// ===== IMPORT PROGRAM SERVICE =====
 import programService from "../services/programService";
 
 const ImpalaManagement = () => {
     const [selectedParticipant, setSelectedParticipant] = useState(null);
     const [highlightDetail, setHighlightDetail] = useState(false);
     const participantDetailRef = useRef(null);
-    
-    const [searchTerm, setSearchTerm] = useState("");
-    const [filters, setFilters] = useState({
-        gender: null,
-        category: null,
-        program: null, // <=== TAMBAHKAN FILTER PROGRAM
-    });
-    const [filteredParticipants, setFilteredParticipants] = useState([]);
     const [availableCategories, setAvailableCategories] = useState([]);
     
-    // ===== STATE UNTUK PROGRAM FILTER =====
     const [availablePrograms, setAvailablePrograms] = useState([]);
     const [loadingPrograms, setLoadingPrograms] = useState(false);
     
@@ -40,21 +30,22 @@ const ImpalaManagement = () => {
     const [importFile, setImportFile] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef(null);
+    const filterRef = useRef(null)
 
-    // State untuk filter dropdown
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [tempFilters, setTempFilters] = useState({
-        gender: filters.gender || '',
-        category: filters.category || 'all',
-        program: filters.program || 'all' // <=== TAMBAHKAN
+        gender: '',
+        category: 'all',
+        program: 'all' 
     });
 
-    const { participant, loading, error, pagination, handlePageChange, refreshData, 
-            showConfirm, handleConfirm, handleCancel, isOpen: isConfirmOpen, config: confirmConfig,
-            deleteParticipant
-     } = useImpala();
+    const { participant, loading, error, pagination, filters, setFilters, clearFilters, searchParticipants,
+            handlePageChange, refreshData, showConfirm, handleConfirm, handleCancel, isOpen: isConfirmOpen, 
+            config: confirmConfig, deleteParticipant, exportParticipants
+    } = useImpala();
 
-    // ===== FUNGSI UNTUK MENGAMBIL DAFTAR PROGRAM =====
+    const [searchInput, setSearchInput] = useState('');
+
     const fetchProgramsFromSystem = async () => {
         setLoadingPrograms(true);
         try {
@@ -70,7 +61,6 @@ const ImpalaManagement = () => {
                         client: item.company || item.client_name || ''
                     }));
                 
-                // Sort dan hilangkan duplikat
                 const sortedPrograms = programOptions
                     .filter((program, index, self) =>
                         index === self.findIndex(p => p.original === program.original)
@@ -78,20 +68,15 @@ const ImpalaManagement = () => {
                     .sort((a, b) => a.original.localeCompare(b.original));
                 
                 setAvailablePrograms(prev => {
-                    // Cari program yang ada di prev tapi tidak ada di sortedPrograms
                     const deletedPrograms = prev.filter(p => 
                         !sortedPrograms.find(sp => sp.original === p.original)
                     );
                     
-                    // Jika ada program yang dihapus
                     if (deletedPrograms.length > 0) {
-                        console.log(`Found ${deletedPrograms.length} deleted programs:`, 
-                            deletedPrograms.map(p => p.original));
-                        
-                        // Reset filter jika program yang dihapus sedang aktif
                         deletedPrograms.forEach(program => {
-                            if (filters.program && filters.program === program.value) {
-                                setFilters(prev => ({ ...prev, program: null }));
+                            if (filters.program && filters.program === program.original) {
+                                const updatedFilters = { ...filters, program: '' }
+                                setFilters(updatedFilters);
                                 setTempFilters(prev => ({ ...prev, program: 'all' }));
                                 toast.info(`Filter direset karena program "${program.original}" tidak ditemukan`);
                             }
@@ -113,7 +98,6 @@ const ImpalaManagement = () => {
         }
     };
 
-    // Fallback function: extract program names dari peserta
     const fetchProgramsFromParticipants = () => {
         if (participant.length > 0) {
             const uniquePrograms = [...new Set(participant
@@ -129,7 +113,6 @@ const ImpalaManagement = () => {
             }));
             
             setAvailablePrograms(prev => {
-                // Gabungkan dengan existing, hindari duplikat
                 const combined = [...prev];
                 programOptions.forEach(newProg => {
                     if (!combined.find(p => p.original === newProg.original)) {
@@ -141,12 +124,9 @@ const ImpalaManagement = () => {
         }
     };
 
-    // ===== EVENT LISTENERS UNTUK REAL-TIME UPDATE =====
     useEffect(() => {
         const handleProgramUpdated = (event) => {
             const { type, program } = event.detail;
-            
-            console.log(`Program ${type} event received:`, program);
             
             if (!program || !program.name) {
                 console.error('Invalid program update event:', event);
@@ -155,7 +135,6 @@ const ImpalaManagement = () => {
             
             setAvailablePrograms(prev => {
                 if (type === 'added') {
-                    // Cek apakah program sudah ada
                     const exists = prev.find(p => 
                         p.original.toLowerCase() === program.name.toLowerCase()
                     );
@@ -175,7 +154,6 @@ const ImpalaManagement = () => {
                         );
                     }
                 } else if (type === 'updated') {
-                    // Update existing program
                     return prev.map(p => 
                         p.original.toLowerCase() === program.name.toLowerCase() 
                             ? { 
@@ -195,9 +173,7 @@ const ImpalaManagement = () => {
         };
         
         const handleProgramDeleted = (event) => {
-            const { type, program } = event.detail;
-            
-            console.log(`Program ${type} event received:`, program);
+            const { program } = event.detail;
             
             if (!program || !program.name) {
                 console.error('Invalid program delete event:', event);
@@ -216,24 +192,16 @@ const ImpalaManagement = () => {
                 return updated;
             });
             
-            if (filters.program && filters.program !== 'all') {
-                const selectedProgramValue = program.name.toLowerCase().replace(/\s+/g, '_');
-                if (filters.program === selectedProgramValue) {
-                    setFilters(prev => ({ ...prev, program: null }));
-                    setTempFilters(prev => ({ ...prev, program: 'all' }));
-                    toast.info(`Filter direset karena program "${program.name}" telah dihapus`);
-                }
+            if (filters.program && filters.program !== program.name) {
+                const updatedFilters = { ...filters, program: '' };
+                setFilters(updatedFilters);
+                setTempFilters(prev => ({ ...prev, program: 'all' }));
+                toast.info(`Filter direset karena program "${program.name}" telah dihapus`);
             }
             
             fetchProgramsFromSystem();
         };
-        
-        const handleProgramDeletedSuccess = (event) => {
-            const { program, message } = event.detail;
-            console.log(`Delete success: ${message}`);
-        };
-        
-        // Listen untuk error delete (optional)
+
         const handleProgramDeleteError = (event) => {
             const { program, error } = event.detail;
             console.error(`Delete error for ${program?.name}:`, error);
@@ -241,56 +209,49 @@ const ImpalaManagement = () => {
         
         window.addEventListener('programAddedOrUpdated', handleProgramUpdated);
         window.addEventListener('programDeleted', handleProgramDeleted);
-        window.addEventListener('programDeletedSuccess', handleProgramDeletedSuccess);
         window.addEventListener('programDeleteError', handleProgramDeleteError);
         
         return () => {
             window.removeEventListener('programAddedOrUpdated', handleProgramUpdated);
             window.removeEventListener('programDeleted', handleProgramDeleted);
-            window.removeEventListener('programDeletedSuccess', handleProgramDeletedSuccess);
             window.removeEventListener('programDeleteError', handleProgramDeleteError);
         };
-    }, [filters.program]);
+    }, [filters, setFilters]);
 
-    // Monitor perubahan pada filters.program untuk membersihkan program yang tidak valid
     useEffect(() => {
-        if (filters.program && filters.program !== 'all') {
+        if (filters.program && filters.program !== '') {
             const programExists = availablePrograms.find(
-                p => p.value === filters.program
+                p => p.original === filters.program
             );
             
             if (!programExists) {
-                console.warn(`Program with value "${filters.program}" not found, resetting filter`);
-                setFilters(prev => ({ ...prev, program: null }));
+                console.warn(`Program "${filters.program}" not found, resetting filter`);
+                const updatedFilters = { ...filters, program: '' };
+                setFilters(updatedFilters);
                 setTempFilters(prev => ({ ...prev, program: 'all' }));
             }
         }
-    }, [availablePrograms, filters.program]);
+    }, [availablePrograms, filters, setFilters]);
 
-    // Backup polling untuk auto-cleanup (setiap 2 menit)
     useEffect(() => {
         const interval = setInterval(() => {
             fetchProgramsFromSystem();
-        }, 120000); // 2 menit
+        }, 120000); 
         
         return () => clearInterval(interval);
     }, []);
 
-    // ===== LOAD INITIAL DATA PROGRAM =====
     useEffect(() => {
         fetchProgramsFromSystem();
     }, []);
 
-    // ===== TAMBAHKAN PROGRAM DARI PESERTA KE LIST =====
     useEffect(() => {
         if (!loading && participant.length > 0) {
             fetchProgramsFromParticipants();
         }
     }, [loading, participant]);
 
-    // ===== HANDLER UNTUK REFRESH PROGRAM LIST =====
     const handleRefreshPrograms = () => {
-        console.log('Refreshing program list...');
         fetchProgramsFromSystem();
         toast.success('Memperbarui daftar program...');
     };
@@ -315,6 +276,296 @@ const ImpalaManagement = () => {
             }
         }, 150);
     }, []);
+
+    const handleSearch = useCallback((term) => {
+        setSearchInput(term)
+        searchParticipants(term)
+    }, [searchParticipants])
+
+    const handleTempGenderChange = (gender) => {
+        setTempFilters(prev => ({
+            ...prev,
+            gender: prev.gender === gender ? '' : gender
+        }))
+    }
+
+    const handleTempCategoryChange = (category) => {
+        setTempFilters(prev => ({ ...prev, category }))
+    }
+
+    const handleTempProgramChange = (program) => {
+        setTempFilters(prev => ({ ...prev, program }))
+    }
+
+    const handleApplyFilters = () => {
+        // Pastikan kita mengirim SEMUA field filter, bukan hanya yang diubah
+        const updatedFilters = {
+            search: filters.search || '', // Pastikan search tetap ada
+            gender: tempFilters.gender || '', 
+            category: tempFilters.category && tempFilters.category !== 'all' ? tempFilters.category : '',
+            program: tempFilters.program && tempFilters.program !== 'all' 
+                ? (availablePrograms.find(p => p.value === tempFilters.program)?.original || '')
+                : ''
+        };
+        
+        setFilters(updatedFilters);
+        setIsFilterOpen(false);
+    };
+
+    const handleCancelFilters = () => {
+        setTempFilters({
+            gender: filters.gender || '',
+            category: filters.category || 'all',
+            program: filters.program ? getProgramValueFromName(filters.program) : 'all'
+        });
+        setIsFilterOpen(false);
+    };
+
+    const handleClearAllTempFilters = () => {
+        setTempFilters({
+            gender: '',
+            category: 'all',
+            program: 'all'
+        });
+    };
+
+    const clearFilter = (filterType) => {
+        if (filterType === 'search') {
+            setSearchInput('');
+            searchParticipants('');
+        } else if (filterType === 'gender') {
+            setFilters({ ...filters, gender: '' });
+        } else if (filterType === 'category') {
+            setFilters({ ...filters, category: '' });
+        } else if (filterType === 'program') {
+            setFilters({ ...filters, program: '' });
+        }
+    };
+
+    const handleClearAllFilters = useCallback(() => {
+        setSearchInput('');
+        clearFilters();
+        setTempFilters({
+            gender: '',
+            category: 'all',
+            program: 'all'
+        });
+    }, [clearFilters]);
+
+    const getProgramValueFromName = (programName) => {
+        if (!programName) return 'all';
+        const program = availablePrograms.find(p => p.original === programName);
+        return program ? program.value : 'all';
+    };
+
+    const getProgramLabel = (programName) => {
+        if (!programName || programName === '') return "All Programs";
+        const program = availablePrograms.find(p => p.original === programName);
+        return program ? program.original : programName;
+    };
+
+    const getCategoryLabel = (categoryValue) => {
+        if (!categoryValue || categoryValue === '') return "All Categories";
+        return categoryValue;
+    };
+
+    const getGenderLabel = (genderValue) => {
+        if (!genderValue) return "";
+        if (genderValue.toLowerCase() === 'Male') return 'Male';
+        if (genderValue.toLowerCase() === 'Female') return 'Female';
+        return genderValue;
+    };
+
+    const getActiveFiltersCount = () => {
+        let count = 0;
+        if (filters.gender) count++;
+        if (filters.category) count++;
+        if (filters.program) count++;
+        return count;
+    };
+
+    const getTempActiveFiltersCount = () => {
+        let count = 0;
+        if (tempFilters.gender) count++;
+        if (tempFilters.category && tempFilters.category !== 'all') count++;
+        if (tempFilters.program && tempFilters.program !== 'all') count++;
+        return count;
+    };
+
+    const getTotalActiveCriteria = () => {
+        let count = 0;
+        if (filters.search) count++;
+        if (filters.gender) count++;
+        if (filters.category) count++;
+        if (filters.program) count++;
+        return count;
+    };
+
+    useEffect(() => {
+        setTempFilters({
+            gender: filters.gender || '',
+            category: filters.category || 'all',
+            program: filters.program ? getProgramValueFromName(filters.program) : 'all'
+        });
+    }, [filters]);
+
+    const extractCategories = useMemo(() => {
+        return (participants) => {
+            if (!participants.length) return [];
+            
+            const allCategories = participants
+                .map(p => p.category)
+                .filter(category => category && category.trim() !== "");
+            
+            const uniqueCategories = [...new Set(allCategories)].sort();
+            
+            return uniqueCategories.map(category => {
+                let emoji = "👤";
+                const lowerCategory = category.toLowerCase();
+                
+                if (lowerCategory.includes("mahasiswa")) emoji = "🎓";
+                else if (lowerCategory.includes("umkm")) emoji = "🏪";
+                else if (lowerCategory.includes("startup")) emoji = "🚀";
+                else if (lowerCategory.includes("corporate")) emoji = "🏢";
+                else if (lowerCategory.includes("student")) emoji = "📚";
+                else if (lowerCategory.includes("professional")) emoji = "💼";
+                
+                return {
+                    value: category.toLowerCase(),
+                    label: `${emoji} ${category}`,
+                    original: category
+                };
+            });
+        };
+    }, []);
+
+    useEffect(() => {
+        if (participant.length > 0) {
+            const extractedCategories = extractCategories(participant);
+            setAvailableCategories(extractedCategories);
+        }
+    }, [participant, extractCategories]);
+
+    const genderOptions = [
+        { value: 'Male', label: 'Male' },
+        { value: 'Female', label: 'Female' },
+    ];
+
+    const formattedParticipants = useMemo(() => {
+        return participant.map((participant, index) => {
+            const currentPage = pagination.page;
+            const itemsPerPage = pagination.limit;
+            const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
+
+            return {
+                id: participant.id,
+                no: itemNumber,
+                full_name: participant.full_name,
+                email: participant.email,
+                category: participant.category,
+                program_name: participant.program_name,
+                phone: participant.phone,
+                business_type: participant.business_type || participant.business_type,
+                gender: participant.gender,
+                action: 'Detail',
+                ...participant
+            };
+        });
+    }, [participant, pagination.page, pagination.limit]);
+
+    const handleExport = useCallback(async (exportAll = false) => {
+        try {
+            toast.loading(exportAll
+                ? 'Mengambil semua data dari database...'
+                : 'Menyiapkan data untuk diexport...'
+            );
+
+            await exportParticipants('xlsx', filters, exportAll);
+            
+            toast.success(`Berhasil mengexport data ke Excel`);
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error('Gagal mengexport data');
+        }
+    }, [exportParticipants, filters]);
+
+    const handleEdit = () => {
+        if (selectedParticipant) {
+            alert(`Edit participant: ${selectedParticipant.full_name}`);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!selectedParticipant) return;
+
+        showConfirm({
+            title: 'Hapus Peserta',
+            message: `Apakah Anda yakin ingin menghapus "${selectedParticipant.full_name}"? Tindakan ini tidak dapat dibatalkan.`,
+            type: 'danger',
+            confirmText: 'Hapus',
+            cancelText: 'Batal',
+            onConfirm: async () => {
+                try {
+                    await deleteParticipant(selectedParticipant.id);
+                    setSelectedParticipant(null);
+                    toast.success('Peserta berhasil dihapus');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } catch (error) {
+                    console.error('Error deleting participant:', error);
+                    toast.error(error.message || 'Gagal menghapus peserta');
+                }
+            },
+            onCancel: () => {
+                toast('Penghapusan dibatalkan', { icon: AlertTriangle });
+            }
+        });
+    };
+
+    useEffect(() => {
+        if (selectedParticipant && participant.length > 0) {
+            const currentSelected = participant.find(p => p.id === selectedParticipant.id);
+            if (currentSelected) {
+                setSelectedParticipant(currentSelected);
+            } else {
+                setSelectedParticipant(null);
+            }
+        }
+    }, [participant, selectedParticipant?.id]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (filterRef.current && !filterRef.current.contains(event.target)) {
+                setIsFilterOpen(false)
+            }
+        }
+
+        if (isFilterOpen) {
+            document.addEventListener('mousedown', handleClickOutside)
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [isFilterOpen])
+
+    const handleRefresh = useCallback(() => {
+        refreshData();
+        handleClearAllFilters();
+    }, [refreshData, handleClearAllFilters]);
+
+    const handlePageChangeModified = useCallback((page) => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        handlePageChange(page);
+    }, [handlePageChange]);
+
+    const tableConfig = {
+        headers: ['No', 'Full Name', 'Email', 'Gender', 'Program Name', 'Category', 'Entity', 'Action'],
+        title: "Impala Management",
+        addButton: "Add Participant",
+        detailTitle: "Participant Details"
+    };
 
     const handleDownloadTemplate = useCallback(() => {
         try {
@@ -723,504 +974,6 @@ const ImpalaManagement = () => {
         setIsImportModalOpen(true);
     }, []);
 
-    const genderOptions = [
-        { value: 'laki-laki', label: 'Laki-laki' },
-        { value: 'perempuan', label: 'Perempuan' },
-    ];
-
-    const extractCategories = useMemo(() => {
-        return (participants) => {
-            if (!participants.length) return [];
-            
-            const allCategories = participants
-                .map(p => p.category)
-                .filter(category => category && category.trim() !== "");
-            
-            const uniqueCategories = [...new Set(allCategories)].sort();
-            
-            return uniqueCategories.map(category => {
-                let emoji = "👤";
-                const lowerCategory = category.toLowerCase();
-                
-                if (lowerCategory.includes("mahasiswa")) emoji = "🎓";
-                else if (lowerCategory.includes("umkm")) emoji = "🏪";
-                else if (lowerCategory.includes("startup")) emoji = "🚀";
-                else if (lowerCategory.includes("corporate")) emoji = "🏢";
-                else if (lowerCategory.includes("student")) emoji = "📚";
-                else if (lowerCategory.includes("professional")) emoji = "💼";
-                
-                return {
-                    value: category.toLowerCase(),
-                    label: `${emoji} ${category}`,
-                    original: category
-                };
-            });
-        };
-    }, []);
-
-    // ===== UPDATE APPLY ALL FILTERS UNTUK PROGRAM =====
-    const applyAllFilters = () => {
-        let result = [...participant];
-        
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase();
-            result = result.filter(participant =>
-                participant.full_name?.toLowerCase().includes(term) ||
-                participant.email?.toLowerCase().includes(term) ||
-                participant.category?.toLowerCase().includes(term) ||
-                participant.program_name?.toLowerCase().includes(term) ||
-                participant.business?.toLowerCase().includes(term) ||
-                participant.gender?.toLowerCase().includes(term)
-            );
-        }
-        
-        if (filters.gender) {
-            result = result.filter(participant => {
-                const participantGender = participant.gender?.toLowerCase();
-                return participantGender === filters.gender.toLowerCase();
-            });
-        }
-        
-        if (filters.category && filters.category !== 'all') {
-            result = result.filter(participant => {
-                const participantCategory = participant.category;
-                if (!participantCategory) return false;
-                return participantCategory.toLowerCase() === filters.category.toLowerCase();
-            });
-        }
-        
-        // ===== FILTER PROGRAM =====
-        if (filters.program && filters.program !== 'all') {
-            const selectedProgram = availablePrograms.find(p => p.value === filters.program);
-            if (selectedProgram) {
-                result = result.filter(participant => {
-                    const participantProgram = participant.program_name;
-                    if (!participantProgram) return false;
-                    return participantProgram.toLowerCase() === selectedProgram.original.toLowerCase();
-                });
-            }
-        }
-        // ==========================
-        
-        setFilteredParticipants(result);
-    };
-
-    const handleSearch = (term) => {
-        setSearchTerm(term);
-        const lowerTerm = term.toLowerCase();
-        if (lowerTerm === 'perempuan' || lowerTerm === 'laki-laki') {
-            setFilters(prev => ({
-                ...prev,
-                gender: lowerTerm
-            }));
-        }
-    };
-
-    // Handler untuk filter sementara
-    const handleTempGenderChange = (gender) => {
-        setTempFilters(prev => ({ 
-            ...prev, 
-            gender: prev.gender === gender ? '' : gender 
-        }));
-    };
-
-    const handleTempCategoryChange = (category) => {
-        setTempFilters(prev => ({ ...prev, category }));
-    };
-
-    // ===== HANDLER UNTUK PROGRAM FILTER =====
-    const handleTempProgramChange = (program) => {
-        setTempFilters(prev => ({ ...prev, program }));
-    };
-
-    // Handler untuk apply filter
-    const handleApplyFilters = () => {
-        setFilters({
-            gender: tempFilters.gender || null,
-            category: tempFilters.category || null,
-            program: tempFilters.program || null // <=== TAMBAHKAN
-        });
-        setIsFilterOpen(false);
-    };
-
-    // Handler untuk cancel filter
-    const handleCancelFilters = () => {
-        setTempFilters({
-            gender: filters.gender || '',
-            category: filters.category || 'all',
-            program: filters.program || 'all' // <=== TAMBAHKAN
-        });
-        setIsFilterOpen(false);
-    };
-
-    // Handler untuk clear semua filter sementara
-    const handleClearAllTempFilters = () => {
-        setTempFilters({
-            gender: '',
-            category: 'all',
-            program: 'all' // <=== TAMBAHKAN
-        });
-    };
-
-    // Handler untuk clear semua filter permanen
-    const handleClearAllFilters = () => {
-        setSearchTerm("");
-        setFilters({
-            gender: null,
-            category: null,
-            program: null, // <=== TAMBAHKAN
-        });
-    };
-
-    const getActiveFiltersCount = () => {
-        let count = 0;
-        if (filters.gender) count++;
-        if (filters.category && filters.category !== 'all') count++;
-        if (filters.program && filters.program !== 'all') count++; // <=== TAMBAHKAN
-        return count;
-    };
-
-    // Handler untuk menghitung filter sementara yang aktif
-    const getTempActiveFiltersCount = () => {
-        let count = 0;
-        if (tempFilters.gender) count++;
-        if (tempFilters.category && tempFilters.category !== 'all') count++;
-        if (tempFilters.program && tempFilters.program !== 'all') count++; // <=== TAMBAHKAN
-        return count;
-    };
-
-    const getTotalActiveCriteria = () => {
-        let count = 0;
-        if (searchTerm) count++;
-        if (filters.gender) count++;
-        if (filters.category && filters.category !== 'all') count++;
-        if (filters.program && filters.program !== 'all') count++; // <=== TAMBAHKAN
-        return count;
-    };
-
-    // Fungsi clear filter spesifik
-    const clearFilter = (filterType) => {
-        if (filterType === 'search') {
-            setSearchTerm("");
-        } else if (filterType === 'gender') {
-            setFilters(prev => ({ ...prev, gender: null }));
-        } else if (filterType === 'category') {
-            setFilters(prev => ({ ...prev, category: null }));
-        } else if (filterType === 'program') { // <=== TAMBAHKAN
-            setFilters(prev => ({ ...prev, program: null }));
-        }
-    };
-
-    const getCategoryLabel = (categoryValue) => {
-        if (!categoryValue || categoryValue === "all") return "All Categories";
-        const category = availableCategories.find(c => c.value === categoryValue);
-        return category ? category.original : categoryValue;
-    };
-
-    const getGenderLabel = (genderValue) => {
-        if (!genderValue) return "";
-        if (genderValue.toLowerCase() === 'laki-laki') return '👨 Laki-laki';
-        if (genderValue.toLowerCase() === 'perempuan') return '👩 Perempuan';
-        return genderValue;
-    };
-
-    // ===== FUNGSI UNTUK GET PROGRAM LABEL =====
-    const getProgramLabel = (programValue) => {
-        if (!programValue || programValue === "all") return "All Programs";
-        const program = availablePrograms.find(p => p.value === programValue);
-        return program ? program.original : programValue;
-    };
-
-    // Update tempFilters ketika filters berubah
-    useEffect(() => {
-        setTempFilters({
-            gender: filters.gender || '',
-            category: filters.category || 'all',
-            program: filters.program || 'all' // <=== TAMBAHKAN
-        });
-    }, [filters]);
-
-    useEffect(() => {
-        if (participant.length > 0) {
-            const normalizedParticipants = participant.map(p => ({
-                ...p,
-                gender: p.gender ? p.gender.toLowerCase().trim() : p.gender
-            }));
-            
-            const extractedCategories = extractCategories(normalizedParticipants);
-            setAvailableCategories(extractedCategories);
-            setFilteredParticipants(normalizedParticipants);
-        }
-    }, [participant, extractCategories]);
-
-    useEffect(() => {
-        if (participant.length > 0) {
-            setFilteredParticipants(participant);
-            applyAllFilters();
-        }
-    }, [participant]);
-
-    useEffect(() => {
-        applyAllFilters();
-    }, [searchTerm, filters, availablePrograms]);
-
-    const handleEdit = () => {
-        if (selectedParticipant) {
-            alert(`Edit participant: ${selectedParticipant.full_name}`);
-        }
-    };
-
-    const handleDelete = async () => {
-        if (!selectedParticipant) return
-
-        if (showConfirm && typeof showConfirm === 'function') {
-            showConfirm({
-                title: 'Delete Program',
-                message: `Are you sure you want to delete "${selectedParticipant.full_name}"? This action cannot be undone.`,
-                type: 'danger',
-                confirmText: 'Delete',
-                cancelText: 'Cancel',
-                onConfirm: async () => {
-                    try {
-                        await deleteParticipant(selectedParticipant.id);
-                        setSelectedParticipant(null);
-                        toast.success('Program deleted successfully');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    } catch (error) {
-                        console.error('Error deleting program:', error);
-                        toast.error(error.message || 'Failed to delete program');
-                    }
-                },
-                onCancel: () => {
-                    toast('Deletion cancelled', { icon: AlertTriangle });
-                }
-            })
-        }
-    };
-
-    useEffect(() => {
-        if (selectedParticipant && participant.length > 0) {
-            const currentSelected = participant.find(p => p.id === selectedParticipant.id);
-            if (currentSelected) {
-                setSelectedParticipant(currentSelected);
-            } else {
-                setSelectedParticipant(null);
-            }
-        }
-    }, [participant, selectedParticipant?.id]);
-
-    const handleRefresh = useCallback(() => {
-        refreshData();
-        handleClearAllFilters();
-    }, [refreshData, handleClearAllFilters]);
-
-    const handlePageChangeModified = useCallback((page) => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        handlePageChange(page);
-    }, [handlePageChange]);
-
-    const tableConfig = {
-        headers: ['No', 'Full Name', 'Email', 'Gender', 'Program Name', 'Category', 'Entity', 'Action'],
-        title: "Impala Management",
-        addButton: "Add Participant",
-        detailTitle: "Participant Details"
-    };
-
-    const formattedParticipants = filteredParticipants.map((participant, index) => {
-        const currentPage = pagination.page;
-        const itemsPerPage = pagination.limit;
-        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
-
-        return {
-            id: participant.id,
-            no: itemNumber,
-            full_name: participant.full_name,
-            email: participant.email,
-            category: participant.category,
-            program_name: participant.program_name,
-            phone: participant.phone,
-            business: participant.business,
-            gender: participant.gender,
-            action: 'Detail',
-            ...participant
-        };
-    });
-
-    const handleExport = useCallback(async (exportAll = false) => {
-        try {
-            toast.loading(exportAll
-                ? 'Fetching ALL data from database...'
-                : 'Preparing export data...'
-            )
-
-            let dataToExport;
-
-            if (exportAll) {
-                const response = await fetch(`/api/impala/export?exportType=all`)
-
-                if (!response.ok) {
-                    const errorData = await response.json()
-                    throw new Error(errorData.error || 'Failed to fetch all data')
-                }
-
-                const result = await response.json()
-
-                if (!result.success) {
-                    throw new Error(result.message || 'Export Failed')
-                }
-
-                dataToExport = result.data
-            } else {
-                dataToExport = filteredParticipants
-            }
-
-            if (!dataToExport || dataToExport.length === 0) {
-                toast.dismiss()
-                toast.error('No data to export')
-                return
-            }
-
-            const formatArrayField = (fieldValue) => {
-                if (!fieldValue) return '';
-                if (Array.isArray(fieldValue)) {
-                    return fieldValue.join(', ')
-                }
-
-                if (typeof fieldValue === 'string') {
-                    try {
-                        const parsed = JSON.parse(fieldValue)
-                        if (Array.isArray(parsed)) {
-                            return parsed.join(', ')
-                        }
-
-                    } catch {
-                        //
-                    }
-
-                    return fieldValue
-                }
-
-                return String(fieldValue)
-            }
-
-            const formatFieldValue = (fieldValue, fieldName) => {
-                if (fieldValue === null || fieldValue === undefined) return ''
-
-                if (['social_media', 'marketplace', 'website', 'skills', 'certifications'].includes(fieldName)) {
-                    return formatArrayField(fieldValue)
-                }
-
-                if (fieldName.includes('date') || fieldName.includes('created') || fieldName.includes('updated')) {
-                    try {
-                        return new Date(fieldValue).toLocaleDateString('id-ID')
-                    } catch {
-                        return fieldValue
-                    }
-                }
-
-                return String(fieldValue)
-            }
-
-            const exportData = dataToExport.map((p, index) => ({
-                // Data Primery
-                'No': index + 1,
-                'Nama Lengkap': p.full_name || '',
-                'Email': p.email || '',
-                'Nomor Telepon': p.phone || '',
-                'Jenis Kelamin': p.gender || '',
-                'Kategori': p.category || '',
-                'Program': p.program_name || '',
-                'Tanggal Lahir': p.date_of_birth || '',
-                'Usia': p.age || '',
-                'Alamat': p.address || '',
-                'Kota/Kabupaten': p.regency_name || '',
-                'Provinsi': p.province_name || '',
-                'Pendidikan': p.education || '',
-                'NIK': p.nik || '',
-                'Kode Pos': p.postal_code || '',
-                'Status Disabilitas': p.disability_status || '',
-                'Alasan Bergabung': p.reason_join_program || '',
-                'Tanggal Dibuat': formatFieldValue(p.created_at, 'created_at'),
-                'Tanggal Diperbarui': formatFieldValue(p.updated_at, 'updated_at'),
-                
-                // Data UMKM
-                'Nama Usaha': p.business_name || '',
-                'Jenis Usaha': p.business_type || '',
-                'Alamat Usaha': p.business_address || '',
-                'Bentuk Usaha': p.business_form || '',
-                'Tahun Berdiri': p.established_year || '',
-                'Pendapatan Bulanan': p.monthly_revenue || '',
-                'Jumlah Karyawan': p.employee_count || '',
-                'Sertifikasi': formatFieldValue(p.certifications, 'certifications'),
-                'Media Sosial': formatFieldValue(p.social_media, 'social_media'),
-                'Marketplace': formatFieldValue(p.marketplace, 'marketplace'),
-                'Website': formatFieldValue(p.website, 'website'),
-                
-                // Data Mahasiswa
-                'Institusi': p.institution || '',
-                'Jurusan': p.major || '',
-                'Semester': p.semester || '',
-                'Tahun Masuk': p.enrollment_year || '',
-                'Minat Karir': p.career_interest || '',
-                'Kompetensi Inti': p.core_competency || '',
-                
-                // Data Profesional
-                'Tempat Kerja': p.workplace || '',
-                'Posisi': p.position || '',
-                'Lama Bekerja': p.work_duration || '',
-                'Sektor Industri': p.industry_sector || '',
-                'Keahlian': formatFieldValue(p.skills, 'skills'),
-                
-                // Data Komunitas
-                'Nama Komunitas': p.community_name || '',
-                'Bidang Fokus': p.focus_area || '',
-                'Jumlah Anggota': p.member_count || '',
-                'Area Operasional': p.operational_area || '',
-                'Peran dalam Komunitas': p.community_role || '',
-                
-                // Data Umum
-                'Bidang Minat': p.areas_interest || '',
-                'Latar Belakang': p.backgorund || '',
-                'Tingkat Pengalaman': p.experience_level || ''
-            }));
-
-            const worksheet = XLSX.utils.json_to_sheet(exportData)
-
-            const wscols = [
-                { wch: 5 },    { wch: 10 },   { wch: 25 },   { wch: 30 },
-                { wch: 15 },   { wch: 15 },   { wch: 20 },   { wch: 30 },
-                { wch: 15 },   { wch: 8 },    { wch: 40 },   { wch: 20 },
-                { wch: 20 },   { wch: 20 },   { wch: 20 },   { wch: 20 },
-                { wch: 20 },   { wch: 10 },   { wch: 25 },   { wch: 40 },
-                { wch: 15 },   { wch: 15 },   { wch: 25 },   { wch: 20 },
-                { wch: 40 },   { wch: 20 },   { wch: 15 },   { wch: 10 },
-                { wch: 15 },   { wch: 25 },   { wch: 20 },   { wch: 15 },
-                { wch: 20 },   { wch: 30 },   { wch: 25 },   { wch: 30 },
-                { wch: 15 },   { wch: 20 },   { wch: 25 },   { wch: 20 },
-                { wch: 30 },   { wch: 30 },   { wch: 30 },   { wch: 30 },
-                { wch: 30 }    
-            ];
-            worksheet['!cols'] = wscols
-
-            worksheet['!autofilter'] = { ref: "A1:AQ1" };
-            
-            const workbook = XLSX.utils.book_new()
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Beneficiaries')
-
-            const timestamp = new Date().toString()
-                .replace(/[:.]/g, '-')
-                .replace('T', '-')
-                .split('.')[0]
-            
-            XLSX.writeFile(workbook, `impala_management_${timestamp}.xlsx`)
-
-            toast.success(`Successfully exported ${filteredParticipants.length} beneficiaries to excel`)
-        } catch (error) {
-            console.error('Export failed:', error);
-            toast.error('Failed to export participants');
-        }
-    }, [filteredParticipants]);
-
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
             <div className='flex-1 p-6'>
@@ -1232,10 +985,10 @@ const ImpalaManagement = () => {
                         {loading && (
                             <div className="flex items-center gap-2 text-blue-600">
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                <span className="text-sm">Loading Participant...</span>
+                                <span className="text-sm">Loading beneficiaries...</span>
                             </div>
                         )}
-                    </CardHeader> {/* <=== INI YANG DITAMBAHKAN: PENUTUP CardHeader */}
+                    </CardHeader> 
                     
                     <CardContent>
                         {error && (
@@ -1265,12 +1018,11 @@ const ImpalaManagement = () => {
                                     <SearchBar 
                                         onSearch={handleSearch}
                                         placeholder="Search..."
-                                        value={searchTerm}
+                                        value={searchInput}
                                         onChange={(e) => handleSearch(e.target.value)}
                                     />
                                 </div>
                                 
-                                {/* Custom Filter Dropdown */}
                                 <div className="relative">
                                     <Button 
                                         variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
@@ -1293,7 +1045,10 @@ const ImpalaManagement = () => {
                                     </Button>
 
                                     {isFilterOpen && (
-                                        <div className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]">
+                                        <div 
+                                            ref={filterRef}
+                                            className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]"
+                                        >
                                             <div className="p-3 border-b">
                                                 <div className="flex items-center justify-between">
                                                     <h3 className="font-bold text-gray-900 text-xs">Filter Options</h3>
@@ -1304,7 +1059,6 @@ const ImpalaManagement = () => {
                                             </div>
 
                                             <div className="p-3">
-                                                {/* Gender */}
                                                 <div className="mb-3">
                                                     <div className="flex items-center justify-between mb-1">
                                                         <h4 className="font-semibold text-gray-900 text-xs">GENDER</h4>
@@ -1347,7 +1101,6 @@ const ImpalaManagement = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Category */}
                                                 <div className="mb-3">
                                                     <div className="flex items-center justify-between mb-1">
                                                         <h4 className="font-semibold text-gray-900 text-xs">CATEGORY</h4>
@@ -1361,7 +1114,6 @@ const ImpalaManagement = () => {
                                                         )}
                                                     </div>
                                                     
-                                                    {/* All Categories */}
                                                     <div className="mb-2">
                                                         <button
                                                             className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
@@ -1387,7 +1139,6 @@ const ImpalaManagement = () => {
                                                         </button>
                                                     </div>
 
-                                                    {/* Categories Grid */}
                                                     <div className="grid grid-cols-2 gap-2">
                                                         {availableCategories.map((category) => {
                                                             const isSelected = tempFilters.category === category.value;
@@ -1421,7 +1172,6 @@ const ImpalaManagement = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* ===== PROGRAM NAME FILTER ===== */}
                                                 <div className="mb-3">
                                                     <div className="flex items-center justify-between mb-1">
                                                         <div className="flex items-center gap-2">
@@ -1444,7 +1194,6 @@ const ImpalaManagement = () => {
                                                         )}
                                                     </div>
                                                     
-                                                    {/* All Programs */}
                                                     <div className="mb-2">
                                                         <button
                                                             className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
@@ -1470,7 +1219,6 @@ const ImpalaManagement = () => {
                                                         </button>
                                                     </div>
 
-                                                    {/* Programs List */}
                                                     <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2">
                                                         {loadingPrograms ? (
                                                             <div className="flex items-center justify-center py-4">
@@ -1522,7 +1270,7 @@ const ImpalaManagement = () => {
                                                         )}
                                                     </div>
                                                 </div>
-                                                {/* ===== END PROGRAM FILTER ===== */}
+                                                
                                             </div>
 
                                             <div className="border-t p-2">
@@ -1608,9 +1356,9 @@ const ImpalaManagement = () => {
                             <div className="mb-4 flex flex-wrap items-center gap-2">
                                 <span className="text-sm text-gray-600">Active filters:</span>
                                 
-                                {searchTerm && (
+                                {filters.search && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        <span>🔍 "{searchTerm}"</span>
+                                        <span>"{filters.search}"</span>
                                         <button 
                                             onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"
@@ -1632,7 +1380,7 @@ const ImpalaManagement = () => {
                                     </span>
                                 )}
                                 
-                                {filters.category && filters.category !== 'all' && (
+                                {filters.category && (
                                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                                         <Tag className="w-3 h-3" />
                                         {getCategoryLabel(filters.category)}
@@ -1645,23 +1393,9 @@ const ImpalaManagement = () => {
                                     </span>
                                 )}
                                 
-                                {filters.category === 'all' && (
-                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        <Tag className="w-3 h-3" />
-                                        All Categories
-                                        <button 
-                                            onClick={() => clearFilter('category')}
-                                            className="text-blue-600 hover:text-blue-800 ml-1"
-                                        >
-                                            ×
-                                        </button>
-                                    </span>
-                                )}
-                                
-                                {/* ===== PROGRAM FILTER DISPLAY ===== */}
-                                {filters.program && filters.program !== 'all' && (
+                                {filters.program && (
                                     <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        📚 {getProgramLabel(filters.program)}
+                                        {getProgramLabel(filters.program)}
                                         <button 
                                             onClick={() => clearFilter('program')}
                                             className="text-purple-600 hover:text-purple-800 ml-1"
@@ -1670,19 +1404,6 @@ const ImpalaManagement = () => {
                                         </button>
                                     </span>
                                 )}
-                                
-                                {filters.program === 'all' && (
-                                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        📚 All Programs
-                                        <button 
-                                            onClick={() => clearFilter('program')}
-                                            className="text-purple-600 hover:text-purple-800 ml-1"
-                                        >
-                                            ×
-                                        </button>
-                                    </span>
-                                )}
-                                {/* ===== END PROGRAM FILTER DISPLAY ===== */}
                                 
                                 <Button 
                                     variant="ghost" 
@@ -1698,19 +1419,19 @@ const ImpalaManagement = () => {
                         {loading && participant.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4">
                                 <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                                <span className="text-gray-600">Loading participants...</span>
+                                <span className="text-gray-600">Loading beneficiaries...</span>
                                 <div className="w-64 bg-gray-200 rounded-full h-2">
                                     <div className="bg-blue-600 h-2 rounded-full animate-pulse w-3/4"></div>
                                 </div>
                             </div>
-                        ) : filteredParticipants.length === 0 ? (
+                        ) : participant.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
                                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
                                     <Users className="w-10 h-10 text-gray-400" />
                                 </div>
                                 <div className="space-y-2">
                                     <h3 className="text-lg font-semibold text-gray-700">
-                                        No participants found
+                                        No beneficiaries found
                                     </h3>
                                     <p className="text-sm text-gray-500 max-w-md">
                                         {getTotalActiveCriteria() > 0 
@@ -1733,7 +1454,7 @@ const ImpalaManagement = () => {
                                         className="flex items-center gap-2"
                                     >
                                         <Plus className="h-4 w-4" />
-                                        Add New Participant
+                                        Add New beneficiaries
                                     </Button>
                                 </div>
                             </div>
@@ -1814,7 +1535,7 @@ const ImpalaManagement = () => {
                                     <li>Download the template first for correct format</li>
                                     <li>Fill in the data according to the columns</li>
                                     <li>Maximum file size: 5MB</li>
-                                    <li>Only CSV files are supported</li>
+                                    <li>Only Excel files are supported</li>
                                 </ul>
                             </div>
                             

@@ -1,4 +1,4 @@
-import { Filter } from "lucide-react"; // ✅ Jangan lupa import Filter
+import { Filter } from "lucide-react"; 
 import { Button } from "../ui/button";
 import {
     DropdownMenu,
@@ -20,7 +20,6 @@ const FilterButton = ({
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                {/* ✅ TOMBOL HARUS ADA DI SINI */}
                 <Button 
                     className='flex items-center gap-2 transition-all duration-200' 
                     variant={activeFilter ? "default" : variant}
@@ -28,7 +27,6 @@ const FilterButton = ({
                 >
                     <Filter className="h-4 w-4" />
                     {buttonText}
-                    {/* ❌ ChevronDown sudah dihapus */}
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent 

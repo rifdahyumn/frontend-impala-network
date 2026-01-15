@@ -141,6 +141,7 @@ class ImpalaService {
                 search = '',
                 gender = '',
                 category = '',
+                program = '',
                 showAllOnSearch = false
             } = params
 
@@ -150,6 +151,7 @@ class ImpalaService {
                 ...(search && { search }),
                 ...(gender && { gender }),
                 ...(category && { category }),
+                ...(program && { program }),
                 ...(showAllOnSearch && { showAllOnSearch: 'true' })
             })
 

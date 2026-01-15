@@ -1,10 +1,8 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { CheckCircle, Home, UserCheck, Mail, Phone, MessageCircle } from 'lucide-react';
 
 const PublicFormSuccess = ({ template, submittedData, getAfterSubmitMessage }) => {
-    const navigate = useNavigate();
     
     const getWhatsappGroupLink = () => {
         if (template?.whatsapp_group_link) return template.whatsapp_group_link;
@@ -87,14 +85,14 @@ const PublicFormSuccess = ({ template, submittedData, getAfterSubmitMessage }) =
                                     <MessageCircle className="h-4 w-4" />
                                     Gabung Grup WhatsApp
                                 </Button>
-                                <Button
+                                {/* <Button
                                     onClick={() => navigate('/')}
                                     variant="outline"
                                     className="flex items-center gap-2"
                                 >
                                     <Home className="h-4 w-4" />
                                     Kembali ke Beranda
-                                </Button>
+                                </Button> */}
                             </div>
                         )}
 

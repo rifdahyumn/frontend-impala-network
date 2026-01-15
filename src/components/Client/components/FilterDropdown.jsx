@@ -27,13 +27,11 @@ const FilterDropdown = ({
         });
     }, [localFilters]);
 
-    // Filter dan deduplikasi availableBusinessTypes
     const filteredBusinessTypes = React.useMemo(() => {
         if (!Array.isArray(availableBusinessTypes) || availableBusinessTypes.length === 0) {
             return [];
         }
 
-        // Opsi yang harus dihilangkan (kecuali education dan agriculture)
         const unwantedOptions = [
             'agribusiness',
             'central government',
@@ -46,7 +44,6 @@ const FilterDropdown = ({
         const seen = new Set();
         const filteredTypes = [];
 
-        // Tambahkan opsi education dan agriculture secara manual jika belum ada
         const additionalOptions = [
             { 
                 value: 'education', 
@@ -60,7 +57,6 @@ const FilterDropdown = ({
             }
         ];
 
-        // Tambahkan opsi tambahan terlebih dahulu
         additionalOptions.forEach(option => {
             const key = option.value?.toLowerCase?.()?.trim?.() || '';
             if (!seen.has(key)) {
@@ -69,19 +65,16 @@ const FilterDropdown = ({
             }
         });
 
-        // Kemudian tambahkan dari availableBusinessTypes
         availableBusinessTypes.forEach(type => {
             if (!type || typeof type !== 'object') return;
             
             const key = type.value?.toLowerCase?.()?.trim?.() || '';
             const label = type.original?.toLowerCase?.() || type.label?.toLowerCase?.() || key;
             
-            // Skip jika sudah ada atau key kosong
             if (!key || seen.has(key)) {
                 return;
             }
 
-            // Cek apakah opsi ini termasuk yang harus dihilangkan
             const shouldSkip = unwantedOptions.some(unwanted => 
                 label?.includes?.(unwanted) || 
                 key?.includes?.(unwanted) ||
@@ -97,7 +90,6 @@ const FilterDropdown = ({
             filteredTypes.push(type);
         });
 
-        // Urutkan berdasarkan nama untuk tampilan yang lebih rapi
         return filteredTypes.sort((a, b) => {
             const nameA = (a.original || a.label || a.value || '').toLowerCase();
             const nameB = (b.original || b.label || b.value || '').toLowerCase();
@@ -127,7 +119,6 @@ const FilterDropdown = ({
         if (onApplyFilters && typeof onApplyFilters === 'function') {
             onApplyFilters(tempFilters);
         } else {
-            // Call individual handlers
             if (tempFilters.status !== localFilters.status) {
                 onStatusFilterChange && onStatusFilterChange(tempFilters.status || '');
             }
@@ -159,14 +150,6 @@ const FilterDropdown = ({
             gender: '',
             businessType: 'all'
         });
-    };
-
-    const getTempActiveFiltersCount = () => {
-        let count = 0;
-        if (tempFilters.status && tempFilters.status !== '') count++;
-        if (tempFilters.gender && tempFilters.gender !== '') count++;
-        if (tempFilters.businessType && tempFilters.businessType !== 'all') count++;
-        return count;
     };
 
     return (

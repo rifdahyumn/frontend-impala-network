@@ -50,7 +50,6 @@ const HeteroBanyumas = () => {
         updateMemberHeteroBanyumas, deleteMemberHeteroBanyumas, showConfirm, handleConfirm, handleCancel,
         isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroBanyumas()
 
-    // Definisi allSpaceOptions dan getSpaceLabel di awal untuk menghindari circular dependency
     const allSpaceOptions = [
         { value: "maneka personal", label: "🏠 Maneka Personal", original: "Maneka Personal" },
         { value: "maneka group", label: "👥 Maneka Group", original: "Maneka Group" },
@@ -84,7 +83,6 @@ const HeteroBanyumas = () => {
         { value: 'female', label: 'Female' },
     ];
 
-    // getSpaceLabel didefinisikan di sini sebelum digunakan oleh handleExport
     const getSpaceLabel = useCallback((spaceValue) => {
         if (!spaceValue || spaceValue === "all") return "All Spaces";
         const space = allSpaceOptions.find(s => s.value === spaceValue) || 
@@ -443,7 +441,6 @@ const HeteroBanyumas = () => {
         }
     }, []);
 
-    // MODIFIKASI: Fungsi handleExport yang disederhanakan, langsung export ke Excel tanpa dropdown
     const handleExport = useCallback(async () => {
         try {
             if (!filteredMembers || filteredMembers.length === 0) {
@@ -453,7 +450,6 @@ const HeteroBanyumas = () => {
             
             setIsExporting(true);
             
-            // Format data untuk export - lengkap dengan semua field yang ada
             const exportData = filteredMembers.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
@@ -490,32 +486,29 @@ const HeteroBanyumas = () => {
                     : '-'
             }));
 
-            // Buat worksheet dengan styling
             const ws = XLSX.utils.json_to_sheet(exportData);
             
-            // Atur lebar kolom yang sesuai
             const wscols = [
-                { wch: 5 },    // No
-                { wch: 25 },   // Full Name
-                { wch: 30 },   // Email
-                { wch: 10 },   // Gender
-                { wch: 15 },   // Phone
-                { wch: 25 },   // Space
-                { wch: 30 },   // Company
-                { wch: 15 },   // Duration
-                { wch: 15 },   // Status
-                { wch: 40 },   // Address
-                { wch: 15 },   // Start Date
-                { wch: 15 },   // End Date
-                { wch: 15 },   // Add On
-                { wch: 30 },   // Add Information
-                { wch: 40 },   // Notes
-                { wch: 20 },   // Created Date
-                { wch: 20 },   // Last Updated
+                { wch: 5 },   
+                { wch: 25 },   
+                { wch: 30 },  
+                { wch: 10 },  
+                { wch: 15 },  
+                { wch: 25 }, 
+                { wch: 30 },  
+                { wch: 15 },  
+                { wch: 15 },  
+                { wch: 40 },
+                { wch: 15 },   
+                { wch: 15 },  
+                { wch: 15 },  
+                { wch: 30 },   
+                { wch: 40 },   
+                { wch: 20 },  
+                { wch: 20 },  
             ];
             ws['!cols'] = wscols;
             
-            // Tambahkan styling untuk header (baris pertama)
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let C = range.s.c; C <= range.e.c; ++C) {
                 const cell_address = { c: C, r: 0 };
@@ -528,11 +521,9 @@ const HeteroBanyumas = () => {
                 };
             }
             
-            // Buat workbook dengan sheet tambahan untuk info export
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Hetero Banyumas Members");
             
-            // Tambahkan sheet info filter seperti di kode Program
             const filterInfo = [
                 ['HETERO BANYUMAS MEMBERS EXPORT'],
                 ['', ''],
@@ -567,14 +558,12 @@ const HeteroBanyumas = () => {
             
             const wsInfo = XLSX.utils.aoa_to_sheet(filterInfo);
             
-            // Atur lebar kolom untuk sheet info
             const infoCols = [
                 { wch: 25 },
                 { wch: 40 }
             ];
             wsInfo['!cols'] = infoCols;
             
-            // Styling untuk header sheet info
             const infoRange = XLSX.utils.decode_range(wsInfo['!ref']);
             for (let R = 0; R <= Math.min(2, infoRange.e.r); R++) {
                 for (let C = infoRange.s.c; C <= infoRange.e.c; C++) {
@@ -592,11 +581,9 @@ const HeteroBanyumas = () => {
             
             XLSX.utils.book_append_sheet(wb, wsInfo, "Export Info");
             
-            // Generate nama file dengan timestamp
             const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-').replace(/\..+/, '');
             const fileName = `hetero_banyumas_members_export_${timestamp}.xlsx`;
             
-            // Download file
             XLSX.writeFile(wb, fileName);
             
             toast.success(`Successfully exported ${exportData.length} members to Excel`);
@@ -724,7 +711,6 @@ const HeteroBanyumas = () => {
         setSearchTerm(term);
     };
 
-    // Handler untuk filter sementara
     const handleTempGenderChange = (gender) => {
         setTempFilters(prev => ({ 
             ...prev, 
@@ -736,7 +722,6 @@ const HeteroBanyumas = () => {
         setTempFilters(prev => ({ ...prev, space }));
     };
 
-    // Handler untuk apply filter
     const handleApplyFilters = () => {
         setFilters({
             gender: tempFilters.gender || null,
@@ -745,7 +730,6 @@ const HeteroBanyumas = () => {
         setIsFilterOpen(false);
     };
 
-    // Handler untuk cancel filter
     const handleCancelFilters = () => {
         setTempFilters({
             gender: filters.gender || '',
@@ -754,7 +738,6 @@ const HeteroBanyumas = () => {
         setIsFilterOpen(false);
     };
 
-    // Handler untuk clear semua filter sementara
     const handleClearAllTempFilters = () => {
         setTempFilters({
             gender: '',
@@ -762,7 +745,6 @@ const HeteroBanyumas = () => {
         });
     };
 
-    // Handler untuk clear semua filter permanen
     const handleClearAllFilters = () => {
         setSearchTerm("");
         setFilters({
@@ -780,7 +762,6 @@ const HeteroBanyumas = () => {
         return count;
     };
 
-    // Handler untuk menghitung filter sementara yang aktif
     const getTempActiveFiltersCount = () => {
         let count = 0;
         if (tempFilters.gender) count++;
@@ -796,7 +777,6 @@ const HeteroBanyumas = () => {
         return count;
     };
 
-    // Fungsi clear filter spesifik
     const clearFilter = (filterType) => {
         if (filterType === 'search') {
             setSearchTerm("");

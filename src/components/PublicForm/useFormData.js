@@ -41,41 +41,6 @@ const useFormData = (template, formConfig, toast) => {
             village_name: apiData.village_name || '',
 
             category: apiData.category || '',
-
-            // business_name: apiData.business_name || '',
-            // business_type: apiData.business_type || '',
-            // business_form: apiData.business_form || '',
-            // business_address: apiData.business_address || '',
-            // established_year: apiData.established_year || '',
-            // monthly_revenue: apiData.monthly_revenue || '',
-            // employee_count: apiData.employee_count || '',
-            // certifications: apiData.certifications || '',
-            // social_media: apiData.social_media || '',
-            // marketplace: apiData.marketplace || '',
-            // website: apiData.website || '',
-
-            // institution: apiData.institution || '',
-            // major: apiData.major || '',
-            // enrollment_year: apiData.enrollment_year || '',
-            // semester: apiData.semester || '',
-            // career_interest: apiData.career_interest || '',
-            // core_competency: apiData.core_competency || '',
-
-            // workplace: apiData.workplace || '',
-            // position: apiData.position || '',
-            // work_duration: apiData.work_duration || '',
-            // industry_sector: apiData.industry_sector || '',
-            // skills: apiData.skills || '',
-
-            // community_name: apiData.community_name || '',
-            // community_role: apiData.community_role || '',
-            // member_count: apiData.member_count || '',
-            // focus_area: apiData.focus_area || '',
-            // operational_area: apiData.operational_area || '',
-
-            // areas_interest: apiData.areas_interest || '',
-            // background: apiData.background || '',
-            // experience_level: apiData.experience_level || '',
         }
     }
 
@@ -95,10 +60,6 @@ const useFormData = (template, formConfig, toast) => {
                             updates[key] = formattedData[key]
                         }
                     })
-
-                    // if (formattedData.category && !selectedCategory) {
-                    //     setSelectedCategory(formattedData.category)
-                    // }
 
                     return { ...prev, ...updates }
                 })

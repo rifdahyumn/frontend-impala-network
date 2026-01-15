@@ -1,4 +1,3 @@
-// src/components/Client/constants/businessTypes.js
 export const BUSINESS_TYPES = [
     { value: 'Retail', label: 'Retail' },
     { value: 'Technology', label: 'Technology' },
@@ -23,8 +22,7 @@ export const BUSINESS_TYPES = [
     { value: 'Energy & Utilities', label: 'Energy & Utilities' }
 ];
 
-// Format untuk FilterDropdown
 export const BUSINESS_TYPES_FOR_FILTER = BUSINESS_TYPES.map(type => ({
     value: type.value,
-    original: type.label // FilterDropdown menggunakan 'original'
+    original: type.label 
 }));

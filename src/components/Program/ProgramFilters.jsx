@@ -10,7 +10,6 @@ const ProgramFilters = ({
     setSearchTerm,
     showAllOnSearch,
     isShowAllMode,
-    // availableCategories,
     handleSearch,
     handleToggleShowAll,
     handleResetToPagination,
@@ -147,7 +146,6 @@ const ProgramFilters = ({
         setIsFilterOpen(false);
     };
 
-    // Handler untuk clear semua filter
     const handleClearAllFilters = () => {
         setTempFilters({
             status: '',

@@ -13,12 +13,11 @@ const AccountContent = ({
     onDelete, 
     onUserEdited, 
     onActivateUser,
-    // Tambahkan props untuk konfirmasi modal
-    showConfirm, // Fungsi untuk menampilkan modal konfirmasi
-    handleConfirm, // Fungsi untuk menangani konfirmasi
-    handleCancel, // Fungsi untuk menangani pembatalan
-    isOpen: isConfirmOpen, // Status modal terbuka/tutup
-    config: confirmConfig // Konfigurasi modal
+    showConfirm,
+    handleConfirm, 
+    handleCancel,
+    isOpen: isConfirmOpen, 
+    config: confirmConfig
 }) => {
     const [activeCategory, setActiveCategory] = useState('Account Information');
     const [showPassword, setShowPassword] = useState(false)

@@ -48,7 +48,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
         },
     ];
 
-    // ===== EVENT DISPATCH FUNCTION =====
     const dispatchProgramEvent = (type, programData) => {
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent(type, {
@@ -93,17 +92,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 }
 
                 toast.success('Program updated successfully');
-                
-                // ===== EMIT UPDATE EVENT =====
-                dispatchProgramEvent('programAddedOrUpdated', {
-                    type: 'updated',
-                    program: {
-                        name: updatedProgram.program_name || selectedProgram.program_name,
-                        client: updatedProgram.client || selectedProgram.client,
-                        category: updatedProgram.category || selectedProgram.category,
-                        status: updatedProgram.status || selectedProgram.status
-                    }
-                });
             });
         }
     };
@@ -111,7 +99,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
     const handleDelete = async () => {
         if (!selectedProgram) return;
         
-        // Use confirmation modal if provided, otherwise use browser confirm
         if (showConfirm && typeof showConfirm === 'function') {
             showConfirm({
                 title: 'Delete Program',
@@ -127,7 +114,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 }
             });
         } else {
-            // Fallback to browser confirm
             const confirmed = window.confirm(`Are you sure you want to delete "${selectedProgram.program_name}"? This action cannot be undone.`);
             if (confirmed) {
                 await performDelete();
@@ -139,7 +125,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
         setDeleteLoading(true);
         
         try {
-            // ===== EMIT DELETE EVENT BEFORE DELETE =====
             dispatchProgramEvent('programDeleted', {
                 type: 'deleted',
                 program: {
@@ -150,10 +135,8 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 }
             });
             
-            // Call the actual delete function
             await onDelete(selectedProgram.id);
             
-            // ===== EMIT SUCCESS EVENT AFTER DELETE =====
             dispatchProgramEvent('programDeletedSuccess', {
                 type: 'deleted_success',
                 program: {
@@ -168,7 +151,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
         } catch (error) {
             console.error('Error in handleDelete:', error);
             
-            // ===== EMIT ERROR EVENT =====
             dispatchProgramEvent('programDeleteError', {
                 type: 'deleted_error',
                 program: {
@@ -207,7 +189,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                         const formattedUrl = isLinkField ? formatUrl(value) : '';
                         const isValidLink = isLinkField && isValidUrl(formattedUrl);
 
-                        // Handle array fields (instructors, tags)
                         const isArrayField = Array.isArray(value);
                         const displayValue = isArrayField ? 
                             value.join(', ') : 
@@ -259,7 +240,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
         );
     };
 
-    // Format currency if price exists
     const formatPrice = (price) => {
         if (!price) return '-';
         
@@ -277,7 +257,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
         }
     };
 
-    // Prepare program data with formatted values
     const preparedProgram = selectedProgram ? {
         ...selectedProgram,
         price: formatPrice(selectedProgram.price),
@@ -330,47 +309,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
             <CardContent>
                 {preparedProgram ? (
                     <div className='space-y-6'>
-                        {/* Program Summary Header */}
-                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-lg p-4 mb-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-lg font-bold text-gray-900">{preparedProgram.program_name}</h3>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <Building className="h-4 w-4 text-gray-500" />
-                                        <span className="text-sm text-gray-600">{preparedProgram.client}</span>
-                                        <span className="text-gray-300 mx-2">•</span>
-                                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
-                                            {preparedProgram.category}
-                                        </span>
-                                        <span className="text-gray-300 mx-2">•</span>
-                                        <span className={`text-xs px-2 py-1 rounded-full ${
-                                            preparedProgram.status === 'Active' 
-                                                ? 'bg-green-100 text-green-800' 
-                                                : 'bg-gray-100 text-gray-800'
-                                        }`}>
-                                            {preparedProgram.status}
-                                        </span>
-                                    </div>
-                                </div>
-                                
-                                {preparedProgram.start_date && preparedProgram.end_date && (
-                                    <div className="text-right">
-                                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                                            <Calendar className="h-4 w-4" />
-                                            <span>
-                                                {new Date(preparedProgram.start_date).toLocaleDateString('id-ID')} - 
-                                                {new Date(preparedProgram.end_date).toLocaleDateString('id-ID')}
-                                            </span>
-                                        </div>
-                                        <div className="text-sm text-gray-500 mt-1">
-                                            {preparedProgram.location}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Category Tabs */}
                         <div className='flex flex-wrap gap-2 mb-4'>
                             {detailFields.map((category, index) => {
                                 const CategoryIcon = category.icon;
@@ -390,16 +328,7 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                             })}
                         </div>
 
-                        {/* Active Category Content */}
                         <ActiveCategoryContent />
-                        
-                        {/* Description (if exists and not in active category) */}
-                        {preparedProgram.description && activeCategory !== 'Program Information' && (
-                            <div className="mt-4 pt-4 border-t border-gray-200">
-                                <h4 className="text-sm font-semibold text-gray-700 mb-2">Description:</h4>
-                                <p className="text-gray-600 text-sm">{preparedProgram.description}</p>
-                            </div>
-                        )}
                     </div>
                 ) : (
                     <div className='text-center py-8 text-gray-500'>

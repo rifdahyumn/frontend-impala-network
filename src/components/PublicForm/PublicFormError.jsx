@@ -1,10 +1,8 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Home } from 'lucide-react';
 
 const PublicFormError = ({ loadError, hasTimeout, slug }) => {
-    const navigate = useNavigate();
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -39,14 +37,6 @@ const PublicFormError = ({ loadError, hasTimeout, slug }) => {
                         className="w-full bg-blue-600 hover:bg-blue-700"
                     >
                         Coba Lagi
-                    </Button>
-                    <Button 
-                        onClick={() => navigate('/')}
-                        variant="outline"
-                        className="w-full"
-                    >
-                        <Home className="h-4 w-4 mr-2" />
-                        Kembali ke Beranda
                     </Button>
                 </div>
             </div>

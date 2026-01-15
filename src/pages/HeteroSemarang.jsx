@@ -55,7 +55,6 @@ const HeteroSemarang = () => {
         updateMemberHeteroSemarang, deleteMemberHeteroSemarang, showConfirm, handleConfirm, handleCancel,
         isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroSemarang()
 
-    // Definisi allSpaceOptions dan getSpaceLabel di awal untuk menghindari circular dependency
     const allSpaceOptions = [
         { value: "maneka personal", label: "🏠 Maneka Personal", original: "Maneka Personal" },
         { value: "maneka group", label: "👥 Maneka Group", original: "Maneka Group" },
@@ -438,7 +437,6 @@ const HeteroSemarang = () => {
         }
     }, []);
 
-    // MODIFIKASI: Fungsi handleExport tanpa dropdown, langsung export ke Excel
     const handleExport = useCallback(async () => {
         try {
             if (!filteredMembers || filteredMembers.length === 0) {
@@ -448,7 +446,6 @@ const HeteroSemarang = () => {
             
             setIsExporting(true);
             
-            // Format data untuk export
             const exportData = filteredMembers.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
@@ -472,31 +469,28 @@ const HeteroSemarang = () => {
                     : '-'
             }));
 
-            // Buat worksheet dengan styling
             const ws = XLSX.utils.json_to_sheet(exportData);
             
-            // Atur lebar kolom
             const wscols = [
-                { wch: 5 },    // No
-                { wch: 25 },   // Full Name
-                { wch: 30 },   // Email
-                { wch: 10 },   // Gender
-                { wch: 15 },   // Phone
-                { wch: 25 },   // Space
-                { wch: 30 },   // Company
-                { wch: 15 },   // Status
-                { wch: 40 },   // Address
-                { wch: 12 },   // Start Date
-                { wch: 12 },   // End Date
-                { wch: 10 },   // Duration
-                { wch: 15 },   // Add On
-                { wch: 20 },   // Add Information
-                { wch: 15 },   // Created Date
-                { wch: 15 },   // Last Updated
+                { wch: 5 },   
+                { wch: 25 },  
+                { wch: 30 }, 
+                { wch: 10 }, 
+                { wch: 15 },  
+                { wch: 25 },  
+                { wch: 30 }, 
+                { wch: 15 }, 
+                { wch: 40 },  
+                { wch: 12 },   
+                { wch: 12 }, 
+                { wch: 10 },  
+                { wch: 15 },  
+                { wch: 20 },  
+                { wch: 15 },  
+                { wch: 15 },  
             ];
             ws['!cols'] = wscols;
             
-            // Tambahkan styling untuk header
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let C = range.s.c; C <= range.e.c; ++C) {
                 const cell_address = { c: C, r: 0 };
@@ -507,12 +501,10 @@ const HeteroSemarang = () => {
                     fill: { fgColor: { rgb: "E0E0E0" } }
                 };
             }
-            
-            // Buat workbook dengan sheet tambahan untuk info export
+
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Hetero Surakarta Members");
-            
-            // Tambahkan sheet info filter seperti di kode Program
+
             const filterInfo = [
                 ['HETERO SURAKARTA MEMBERS EXPORT'],
                 ['', ''],
@@ -534,11 +526,9 @@ const HeteroSemarang = () => {
             const wsInfo = XLSX.utils.aoa_to_sheet(filterInfo);
             XLSX.utils.book_append_sheet(wb, wsInfo, "Export Info");
             
-            // Generate nama file dengan timestamp
             const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
             const fileName = `hetero_surakarta_members_export_${dateStr}.xlsx`;
             
-            // Download file
             XLSX.writeFile(wb, fileName);
             
             toast.success(`Successfully exported ${exportData.length} members to Excel`);
@@ -663,7 +653,6 @@ const HeteroSemarang = () => {
         setSearchTerm(term);
     };
 
-    // Handler untuk filter sementara
     const handleTempGenderChange = (gender) => {
         setTempFilters(prev => ({ 
             ...prev, 
@@ -675,7 +664,6 @@ const HeteroSemarang = () => {
         setTempFilters(prev => ({ ...prev, space }));
     };
 
-    // Handler untuk apply filter
     const handleApplyFilters = () => {
         setFilters({
             gender: tempFilters.gender || null,
@@ -684,7 +672,6 @@ const HeteroSemarang = () => {
         setIsFilterOpen(false);
     };
 
-    // Handler untuk cancel filter
     const handleCancelFilters = () => {
         setTempFilters({
             gender: filters.gender || '',
@@ -693,7 +680,6 @@ const HeteroSemarang = () => {
         setIsFilterOpen(false);
     };
 
-    // Handler untuk clear semua filter sementara
     const handleClearAllTempFilters = () => {
         setTempFilters({
             gender: '',
@@ -701,7 +687,6 @@ const HeteroSemarang = () => {
         });
     };
 
-    // Handler untuk clear semua filter permanen
     const handleClearAllFilters = () => {
         setSearchTerm("");
         setFilters({

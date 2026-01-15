@@ -192,7 +192,7 @@ export const useClients = (initialFilters = {}) => {
         setShowAllOnSearch(false);
         
         fetchClients(1, clearedFilters, false);
-    }, [fetchClients]); // ← Hanya depend on fetchClients
+    }, [fetchClients]); 
 
     const clearSearch = useCallback(() => {
         const updatedFilters = {
@@ -211,7 +211,6 @@ export const useClients = (initialFilters = {}) => {
         fetchClients(1, updatedFilters, false)
     }, [fetchClients])
 
-    // TAMBAHKAN: Fungsi untuk clear gender filter secara spesifik
     const clearGenderFilter = useCallback(() => {
         const updatedFilters = {
             ...filtersRef.current,
@@ -320,7 +319,6 @@ export const useClients = (initialFilters = {}) => {
                 
                 toast.success(`Exported ${dataToExport.length} clients to CSV`)
             } else {
-                // PERBAIKAN: Kirim gender filter ke fetchAllClients
                 const result = await clientService.fetchAllClients(filtersRef.current)
                 dataToExport = result.data || []
                 
@@ -467,7 +465,6 @@ export const useClients = (initialFilters = {}) => {
         } else if (pagination.showingAllResults) {
             return `Showing all ${members.length} clients`
         } else {
-            // Return empty string for normal pagination mode
             return '';
         }
     }, [pagination, members.length])
@@ -476,7 +473,6 @@ export const useClients = (initialFilters = {}) => {
         fetchClients(pagination.page, filtersRef.current, showAllOnSearch)
     }, [fetchClients, pagination.page, showAllOnSearch])
 
-    // TAMBAHKAN: Fungsi untuk reset ke pagination mode
     const resetToPaginationMode = useCallback(() => {
         setShowAllOnSearch(false);
         fetchClients(1, filtersRef.current, false);
@@ -495,10 +491,10 @@ export const useClients = (initialFilters = {}) => {
         updateFiltersAndFetch,
         clearFilters,
         clearSearch,
-        clearGenderFilter, // ← TAMBAHKAN INI (opsional)
+        clearGenderFilter, 
         searchClients,
         toggleShowAllOnSearch,
-        resetToPaginationMode, // ← TAMBAHKAN INI
+        resetToPaginationMode,
         isShowAllMode: () => pagination.showingAllResults || false,
         getDisplayText,
         refetch, 

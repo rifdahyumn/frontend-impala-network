@@ -27,27 +27,6 @@ const PublicFormContent = ({
     const personalFields = getPersonalInfoFields(formConfig, formData, locationData, loadingLocation);
     const categoryFields = getCategoryFields(formConfig, selectedCategory);
 
-    // const renderCustomDisabilityField = () => {
-    //     if (formData.disability_status !== 'Lainnya') return null;
-        
-    //     return (
-    //         <div className="space-y-2">
-    //             <label htmlFor="disability_type" className="text-gray-900">
-    //                 Jenis Disabilitas (jika memilih Lainnya)
-    //             </label>
-    //             <input
-    //                 id="disability_type"
-    //                 name="disability_type"
-    //                 type="text"
-    //                 value={formData.disability_type || ''}
-    //                 onChange={(e) => handleInputChange('disability_type', e.target.value)}
-    //                 placeholder="Jelaskan jenis disabilitas Anda"
-    //                 className="w-full border border-blue-200 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-    //             />
-    //         </div>
-    //     );
-    // };
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
             <div className="container mx-auto px-4 max-w-6xl">
@@ -69,7 +48,6 @@ const PublicFormContent = ({
                                 personalFields={personalFields}
                                 formData={formData}
                                 handleInputChange={handleInputChange}
-                                // renderCustomDisabilityField={renderCustomDisabilityField}
                             />
 
                             <CategorySelector
