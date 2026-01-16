@@ -207,7 +207,6 @@ const FilterDropdown = ({
                     </div>
 
                     <div className="p-3">
-                        {/* Status */}
                         <div className="mb-3">
                             <div className="flex items-center justify-between mb-1">
                                 <h4 className="font-semibold text-gray-900 text-xs">STATUS</h4>

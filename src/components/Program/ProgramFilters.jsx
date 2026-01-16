@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Upload, Filter, Tag, X, Check, CheckSquare } from "lucide-react";
 import { Button } from "../ui/button";
 import SearchBar from "../SearchFilter/SearchBar";
@@ -8,10 +8,10 @@ const ProgramFilters = ({
     filters,
     searchTerm,
     setSearchTerm,
-    showAllOnSearch,
+    // showAllOnSearch,
     isShowAllMode,
     handleSearch,
-    handleToggleShowAll,
+    // handleToggleShowAll,
     handleResetToPagination,
     updateFiltersAndFetch,
     clearFilters,
@@ -28,11 +28,30 @@ const ProgramFilters = ({
         { value: 'Inactive', label: 'Inactive', color: 'text-red-600 bg-red-50' },
     ];
 
+    const filterRef = useRef(null)
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [tempFilters, setTempFilters] = useState({
         status: filters.status || '',
         category: filters.category || 'all'
     });
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (filterRef.current && !filterRef.current.contains(event.target)) {
+                setIsFilterOpen(false)
+            }
+        }
+
+        if (isFilterOpen) {
+            document.addEventListener('mousedown', handleClickOutside)
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [isFilterOpen])
 
     useEffect(() => {
         setTempFilters({
@@ -184,18 +203,6 @@ const ProgramFilters = ({
                     
                     {filters.search && filters.search.trim() !== '' && (
                         <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
-                            {/* <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={showAllOnSearch}
-                                    onChange={(e) => handleToggleShowAll(e.target.checked)}
-                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm font-medium text-blue-700">
-                                    Show all results
-                                </span>
-                            </label> */}
-                            
                             {isShowAllMode() && (
                                 <button
                                     onClick={handleResetToPagination}
@@ -207,7 +214,6 @@ const ProgramFilters = ({
                         </div>
                     )}
                     
-                    {/* Custom Filter Dropdown */}
                     <div className="relative">
                         <Button 
                             variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
@@ -230,7 +236,10 @@ const ProgramFilters = ({
                         </Button>
 
                         {isFilterOpen && (
-                            <div className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]">
+                            <div 
+                                ref={filterRef}
+                                className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]"
+                            >
                                 <div className="p-3 border-b">
                                     <div className="flex items-center justify-between">
                                         <h3 className="font-bold text-gray-900 text-xs">Filter Options</h3>

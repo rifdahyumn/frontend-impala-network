@@ -548,30 +548,38 @@ export const usePrograms = (initialFilters = {}) => {
         }
     }
 
-    const deleteProgram = async (programId) => {
+   const deleteProgram = async (programId) => {
         try {
-            setLoading(true)
-            await programService.deleteProgram(programId)
+            setLoading(true);
+            
+            await programService.deleteProgram(programId);
 
             setPrograms(prevPrograms =>
                 prevPrograms.filter(program => program.id !== programId)
-            )
+            );
 
             setPagination(prev => ({
                 ...prev,
                 total: Math.max(0, prev.total - 1)
-            }))
+            }));
 
-            await fetchAllStats()
+            try {
+                await fetchAllStats();
+            } catch (statsError) {
+                console.warn('⚠️ Stats update error (non-critical):', statsError);
+            }
 
-            return { success: true }
+            toast.success('Program deleted successfully');
+            return { success: true };
+            
         } catch (error) {
-            toast.error('Failed to delete program')
+            console.error('Error deleting program:', error);
+            toast.error('Failed to delete program');
             throw error;
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }
+    };
 
     const bulkImport = useCallback(async (programsData, options = {}) => {
         const {

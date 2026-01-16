@@ -2,7 +2,7 @@ import clientService from "../services/clientService"
 import { useState, useEffect, useCallback, useRef } from "react"
 import toast from "react-hot-toast"
 import { debounce } from 'lodash'
-import * as XLSX from 'xlsx'
+// import * as XLSX from 'xlsx'
 
 export const useClients = (initialFilters = {}) => {
     const [members, setMembers] = useState([])

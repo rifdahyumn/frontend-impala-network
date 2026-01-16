@@ -6,7 +6,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import toast from "react-hot-toast";
 import { usePrograms } from "../hooks/usePrograms";
 import AddProgram from "../components/AddButton/AddProgram";
-import ProgramContent from "../components/Content/ProgramClient";
+import ProgramContent from "../components/Content/ProgramContent";
 
 import ProgramFilters from '../components/Program/ProgramFilters';
 import ProgramExport from '../components/Program/ProgramExport';
@@ -106,30 +106,26 @@ const Program = () => {
     };
 
     const handleDeleteProgram = async (programId) => {
-        if (!selectedProgram) return;
+        try {
+            const programToDelete = programs.find(p => p.id === programId);
+            
+            if (!programToDelete) {
+                toast.error('Program not found');
+                return;
+            }
 
-        if (showConfirm && typeof showConfirm === 'function') {
-            showConfirm({
-                title: 'Delete Program',
-                message: `Are you sure you want to delete "${selectedProgram.program_name}"? This action cannot be undone.`,
-                type: 'danger',
-                confirmText: 'Delete',
-                cancelText: 'Cancel',
-                onConfirm: async () => {
-                    try {
-                        await deleteProgram(programId);
-                        setSelectedProgram(null);
-                        toast.success('Program deleted successfully');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    } catch (error) {
-                        console.error('Error deleting program:', error);
-                        toast.error(error.message || 'Failed to delete program');
-                    }
-                },
-                onCancel: () => {
-                    toast('Deletion cancelled', { icon: AlertTriangle });
-                }
-            })
+            await deleteProgram(programId);
+            
+            if (selectedProgram && selectedProgram.id === programId) {
+                setSelectedProgram(null);
+            }
+            
+            toast.success(`"${programToDelete.program_name}" deleted successfully`);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            refreshData();
+            
+        } catch (error) {
+            console.error('Delete failed:', error);
         }
     };
 
