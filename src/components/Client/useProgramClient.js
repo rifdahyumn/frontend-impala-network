@@ -5,7 +5,6 @@ import { getBusinessDisplayName, exportToExcel, validateExcelFile, parseExcelDat
 import { statusOptions } from './constants/statusOptions';
 import clientService from '../../services/clientService';
 
-import { BUSINESS_TYPES_FOR_FILTER } from './constants/businessTypes';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import axios from 'axios';
 
@@ -77,13 +76,10 @@ export const useProgramClient = () => {
         try {
             let filteredMembers = [...members];
             
-            if (currentFilters.search) {
-                const searchLower = currentFilters.search.toLowerCase();
+            if (currentFilters.business && currentFilters.business !== 'all') {
                 filteredMembers = filteredMembers.filter(member =>
-                    member.full_name?.toLowerCase().includes(searchLower) ||
-                    member.email?.toLowerCase().includes(searchLower) ||
-                    member.company?.toLowerCase().includes(searchLower) ||
-                    member.program_name?.toLowerCase().includes(searchLower)
+                    member.business?.toLowerCase() === currentFilters.business.toLowerCase() ||
+                    member.business_type?.toLowerCase() === currentFilters.business.toLowerCase()
                 );
             }
             
@@ -311,7 +307,7 @@ export const useProgramClient = () => {
         setLocalFilters({
             search: '',
             status: '',
-            businessType: '',
+            business: '',
             gender: ''
         });
         
@@ -402,14 +398,22 @@ export const useProgramClient = () => {
     const handleExport = useCallback(async (format = 'excel') => {
         try {
             setIsExporting(true);
-            await exportToExcel(members, format, getBusinessDisplayName);
+
+            const exportFilters = {
+                search: localFilters.search,
+                status: localFilters.status,
+                business: localFilters.businessType,
+                gender: localFilters.gender
+            }
+
+            await exportToExcel(exportFilters, format, getBusinessDisplayName);
         } catch (error) {
             console.error('Export failed:', error);
             toast.error(`Failed to export: ${error.message}`);
         } finally {
             setIsExporting(false);
         }
-    }, [members, getBusinessDisplayName]);
+    }, [localFilters, getBusinessDisplayName]);
 
     const handleOpenImportModal = useCallback(() => {
         setImportFile(null);
@@ -841,7 +845,7 @@ export const useProgramClient = () => {
         handleDeleteClient, handleRefreshWithReset, handlePageChange, handleExport, handleOpenImportModal,
         handleImportExcel, handleDownloadTemplate, handleDragOver, handleDragEnter, handleDragLeave, handleDrop, handleFileUpload,
         handleTriggerFileInput, handleRemoveFile, getBusinessTypeLabel, getStatusLabel, getGenderLabel, getBusinessDisplayName,
-        updateClientStatus, normalizeGenderForFilter
+        updateClientStatus, normalizeGenderForFilter, isLoadingBusinessTypes
     };
 };
 

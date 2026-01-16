@@ -366,62 +366,62 @@ export const useImpala = (initialFilters = {}) => {
                             return String(fieldValue).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
                         };
 
-                            const exportData = dataToExport.map((p, index) => ({
-                                'No': index + 1,
-                                'Nama Lengkap': p.full_name || '',
-                                'Email': p.email || '',
-                                'Nomor Telepon': p.phone || '',
-                                'Jenis Kelamin': p.gender || '',
-                                'Kategori': p.category || '',
-                                'Program': p.program_name || '',
-                                'Tanggal Lahir': p.date_of_birth || '',
-                                'Usia': p.age || '',
-                                'Alamat': p.address || '',
-                                'Kota/Kabupaten': p.regency_name || '',
-                                'Provinsi': p.province_name || '',
-                                'Pendidikan': p.education || '',
-                                'NIK': p.nik || '',
-                                'Kode Pos': p.postal_code || '',
-                                'Status Disabilitas': p.disability_status || '',
-                                'Alasan Bergabung': p.reason_join_program || '',
-                                'Tanggal Dibuat': formatFieldValue(p.created_at, 'created_at'),
-                                'Tanggal Diperbarui': formatFieldValue(p.updated_at, 'updated_at'),
+                        const exportData = dataToExport.map((p, index) => ({
+                            'No': index + 1,
+                            'Nama Lengkap': p.full_name || '',
+                            'Email': p.email || '',
+                            'Nomor Telepon': p.phone || '',
+                            'Jenis Kelamin': p.gender || '',
+                            'Kategori': p.category || '',
+                            'Program': p.program_name || '',
+                            'Tanggal Lahir': p.date_of_birth || '',
+                            'Usia': p.age || '',
+                            'Alamat': p.address || '',
+                            'Kota/Kabupaten': p.regency_name || '',
+                            'Provinsi': p.province_name || '',
+                            'Pendidikan': p.education || '',
+                            'NIK': p.nik || '',
+                            'Kode Pos': p.postal_code || '',
+                            'Status Disabilitas': p.disability_status || '',
+                            'Alasan Bergabung': p.reason_join_program || '',
+                            'Tanggal Dibuat': formatFieldValue(p.created_at, 'created_at'),
+                            'Tanggal Diperbarui': formatFieldValue(p.updated_at, 'updated_at'),
 
-                                'Nama Usaha': p.business_name || '',
-                                'Jenis Usaha': p.business_type || '',
-                                'Alamat Usaha': p.business_address || '',
-                                'Bentuk Usaha': p.business_form || '',
-                                'Tahun Berdiri': p.established_year || '',
-                                'Pendapatan Bulanan': p.monthly_revenue || '',
-                                'Jumlah Karyawan': p.employee_count || '',
-                                'Sertifikasi': formatFieldValue(p.certifications, 'certifications'),
-                                'Media Sosial': formatFieldValue(p.social_media, 'social_media'),
-                                'Marketplace': formatFieldValue(p.marketplace, 'marketplace'),
-                                'Website': formatFieldValue(p.website, 'website'),
+                            'Nama Usaha': p.business_name || '',
+                            'Jenis Usaha': p.business_type || '',
+                            'Alamat Usaha': p.business_address || '',
+                            'Bentuk Usaha': p.business_form || '',
+                            'Tahun Berdiri': p.established_year || '',
+                            'Pendapatan Bulanan': p.monthly_revenue || '',
+                            'Jumlah Karyawan': p.employee_count || '',
+                            'Sertifikasi': formatFieldValue(p.certifications, 'certifications'),
+                            'Media Sosial': formatFieldValue(p.social_media, 'social_media'),
+                            'Marketplace': formatFieldValue(p.marketplace, 'marketplace'),
+                            'Website': formatFieldValue(p.website, 'website'),
 
-                                'Institusi': p.institution || '',
-                                'Jurusan': p.major || '',
-                                'Semester': p.semester || '',
-                                'Tahun Masuk': p.enrollment_year || '',
-                                'Minat Karir': p.career_interest || '',
-                                'Kompetensi Inti': p.core_competency || '',
+                            'Institusi': p.institution || '',
+                            'Jurusan': p.major || '',
+                            'Semester': p.semester || '',
+                            'Tahun Masuk': p.enrollment_year || '',
+                            'Minat Karir': p.career_interest || '',
+                            'Kompetensi Inti': p.core_competency || '',
 
-                                'Tempat Kerja': p.workplace || '',
-                                'Posisi': p.position || '',
-                                'Lama Bekerja': p.work_duration || '',
-                                'Sektor Industri': p.industry_sector || '',
-                                'Keahlian': formatFieldValue(p.skills, 'skills'),
+                            'Tempat Kerja': p.workplace || '',
+                            'Posisi': p.position || '',
+                            'Lama Bekerja': p.work_duration || '',
+                            'Sektor Industri': p.industry_sector || '',
+                            'Keahlian': formatFieldValue(p.skills, 'skills'),
 
-                                'Nama Komunitas': p.community_name || '',
-                                'Bidang Fokus': p.focus_area || '',
-                                'Jumlah Anggota': p.member_count || '',
-                                'Area Operasional': p.operational_area || '',
-                                'Peran dalam Komunitas': p.community_role || '',
+                            'Nama Komunitas': p.community_name || '',
+                            'Bidang Fokus': p.focus_area || '',
+                            'Jumlah Anggota': p.member_count || '',
+                            'Area Operasional': p.operational_area || '',
+                            'Peran dalam Komunitas': p.community_role || '',
 
-                                'Bidang Minat': p.areas_interest || '',
-                                'Latar Belakang': p.backgorund || '',
-                                'Tingkat Pengalaman': p.experience_level || ''
-                            }));
+                            'Bidang Minat': p.areas_interest || '',
+                            'Latar Belakang': p.backgorund || '',
+                            'Tingkat Pengalaman': p.experience_level || ''
+                        }));
 
                         const safeExportData = exportData.map(row => {
                             const safeRow = {};
@@ -497,7 +497,6 @@ export const useImpala = (initialFilters = {}) => {
                 } catch (error) {
                     console.error('Excel export error:', error);
     
-                    // Fallback: Use local data with FULL format
                     try {
                         if (pagination.showingAllResults && currentFilters.search) {
                             dataToExport = participant;
@@ -507,7 +506,6 @@ export const useImpala = (initialFilters = {}) => {
                         }
 
                         if (dataToExport.length > 0) {
-                            // GUNAKAN FORMAT YANG SAMA seperti di success block
                             const formatArrayField = (fieldValue) => {
                                 if (!fieldValue) return '';
                                 if (Array.isArray(fieldValue)) {
@@ -521,7 +519,7 @@ export const useImpala = (initialFilters = {}) => {
                                             return parsed.filter(item => item != null && item !== '').join(', ');
                                         }
                                     } catch {
-                                        // Not JSON, return as is
+                                        // 
                                     }
                                     return fieldValue;
                                 }
@@ -627,7 +625,6 @@ export const useImpala = (initialFilters = {}) => {
                             const workbook = XLSX.utils.book_new();
                             const worksheet = XLSX.utils.json_to_sheet(safeExportData);
                             
-                            // Set column widths
                             const wscols = [
                                 { wch: 5 },    { wch: 25 },   { wch: 30 },   { wch: 15 },
                                 { wch: 15 },   { wch: 20 },   { wch: 30 },   { wch: 15 },

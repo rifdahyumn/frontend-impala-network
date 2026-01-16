@@ -1,3 +1,5 @@
+import * as XLSX from 'xlsx'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 class ClientService {
@@ -242,70 +244,6 @@ class ClientService {
                 }
             };
         }
-    }
-
-    async exportClients(filters = {}, format = 'csv') {
-        try {
-            const result = await this.fetchAllClients(filters);
-            
-            if (!result.data || result.data.length === 0) {
-                throw new Error('No data to export');
-            }
-
-            if (format.toLowerCase() === 'csv') {
-                const csvContent = this.convertToCSV(result.data);
-
-                this.downloadFile(csvContent, `clients_export_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
-                
-                return {
-                    success: true,
-                    message: `Exported ${result.data.length} clients to CSV`,
-                    data: result.data
-                };
-            } else if (format.toLowerCase() === 'json') {
-                const jsonContent = JSON.stringify(result.data, null, 2);
-                this.downloadFile(jsonContent, `clients_export_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
-                
-                return {
-                    success: true,
-                    message: `Exported ${result.data.length} clients to JSON`,
-                    data: result.data
-                };
-            } else {
-                throw new Error(`Unsupported format: ${format}. Supported formats: csv, json`);
-            }
-
-        } catch (error) {
-            console.error('Error exporting clients:', error);
-            throw error;
-        }
-    }
-
-    convertToCSV(data) {
-        if (!data || data.length === 0) return '';
-        const headers = Object.keys(data[0] || {});
-        const csvRows = [
-            headers.join(','), 
-            ...data.map(row => 
-                headers.map(header => {
-                    const value = row[header];
-
-                    if (value === null || value === undefined) {
-                        return '';
-                    }
-
-                    const stringValue = String(value).replace(/"/g, '""');
-                    
-                    if (stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('"')) {
-                        return `"${stringValue}"`;
-                    }
-                    
-                    return stringValue;
-                }).join(',')
-            )
-        ];
-
-        return csvRows.join('\n');
     }
 
     downloadFile(content, filename, mimeType) {
@@ -562,6 +500,175 @@ class ClientService {
             };
         }
     }
+
+    // async exportClients(format = 'excel', filters = {}, exportAll = false) {
+    //     try {
+    //         const queryParams = new URLSearchParams({
+    //             ...this.validateFilters(filters),
+    //             format,
+    //             ...(exportAll && { exportAll: 'true' })
+    //         });
+
+    //         const response = await fetch(`${this.baseURL}/client/export?${queryParams}`, {
+    //             method: 'GET',
+    //             headers: {
+    //                 ...this.defaultHeaders,
+    //                 'Accept': format === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/json'
+    //             }
+    //         });
+
+    //         if (!response.ok) {
+    //             throw new Error(`Export failed: ${response.status}`);
+    //         }
+
+    //         if (format === 'excel' || format === 'xlsx') {
+    //             const blob = await response.blob();
+    //             const filename = this.getFilenameFromResponse(response) || 
+    //                         `clients_${new Date().toISOString().split('T')[0]}.xlsx`;
+                
+    //             this.downloadBlob(blob, filename);
+                
+    //             return {
+    //                 success: true,
+    //                 filename,
+    //                 message: 'Export completed successfully'
+    //             };
+    //         }
+
+    //         return await this.handleResponse(response);
+            
+    //     } catch (error) {
+    //         console.error('Error exporting clients:', error);
+    //         throw error;
+    //     }
+    // }
+
+    // async exportClientsToExcel(filters = {}) {
+    //     try {
+    //         return await this.exportClients('excel', filters);
+    //     } catch (error) {
+    //         console.warn('Direct export failed, falling back to manual export:', error);
+            
+    //         const result = await this.fetchAllClients(filters);
+    //         const data = result.data || [];
+            
+    //         if (data.length === 0) {
+    //             throw new Error('No data to export');
+    //         }
+            
+    //         return await this.createExcelFromData(data, filters);
+    //     }
+    // }
+
+    // async createExcelFromData(data, filters = {}) {
+    //     try {
+    //         const formatDataForExcel = (clients) => {
+    //             return clients.map((client, index) => ({
+    //                 'No': index + 1,
+    //                 'ID': client.id || '',
+    //                 'Nama Lengkap': client.full_name || '',
+    //                 'Email': client.email || '',
+    //                 'Nomor Telepon': client.phone || '',
+    //                 'Jenis Kelamin': this.formatGender(client.gender),
+    //                 'Perusahaan': client.company || '',
+    //                 'Posisi': client.position || '',
+    //                 'Tipe Bisnis': client.business || '',
+    //                 'Jumlah Karyawan': client.total_employee || '',
+    //                 'Status': client.status || '',
+    //                 'Alamat': client.address || '',
+    //                 'Provinsi': client.province_name || '',
+    //                 'Kota': client.regency_name || '',
+    //                 'Kecamatan': client.district_name || '',
+    //                 'Kelurahan': client.village_name || '',
+    //                 'Tanggal Bergabung': this.formatDate(client.join_date),
+    //                 'Catatan': client.notes || '',
+    //                 'Tanggal Dibuat': this.formatDate(client.created_at),
+    //                 'Tanggal Diperbarui': this.formatDate(client.updated_at)
+    //             }));
+    //         };
+
+    //         this.formatDate = (dateString) => {
+    //             if (!dateString) return '';
+    //             try {
+    //                 const date = new Date(dateString);
+    //                 return date.toLocaleDateString('id-ID');
+    //             } catch {
+    //                 return dateString;
+    //             }
+    //         };
+
+    //         this.formatGender = (gender) => {
+    //             if (!gender) return '';
+    //             const genderLower = gender.toLowerCase();
+    //             if (genderLower === 'male') return 'Laki-laki';
+    //             if (genderLower === 'female') return 'Perempuan';
+    //             return gender;
+    //         };
+
+    //         const formattedData = formatDataForExcel(data);
+
+    //         const workbook = XLSX.utils.book_new();
+    //         const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
+    //         const columnWidths = [
+    //             { wch: 5 },  
+    //             { wch: 10 }, 
+    //             { wch: 25 }, 
+    //             { wch: 30 }, 
+    //             { wch: 15 }, 
+    //             { wch: 15 },  
+    //             { wch: 25 }, 
+    //             { wch: 20 }, 
+    //             { wch: 20 },  
+    //             { wch: 15 }, 
+    //             { wch: 10 }, 
+    //             { wch: 40 },  
+    //             { wch: 15 },  
+    //             { wch: 20 }, 
+    //             { wch: 15 }, 
+    //             { wch: 15 },  
+    //             { wch: 15 }, 
+    //             { wch: 30 },  
+    //             { wch: 15 }, 
+    //             { wch: 15 }   
+    //         ];
+    //         worksheet['!cols'] = columnWidths;
+
+    //         const range = XLSX.utils.decode_range(worksheet['!ref']);
+    //         for (let C = range.s.c; C <= range.e.c; ++C) {
+    //             const cellAddress = { c: C, r: 0 };
+    //             const cellRef = XLSX.utils.encode_cell(cellAddress);
+    //             if (worksheet[cellRef]) {
+    //                 worksheet[cellRef].s = {
+    //                     font: { bold: true, color: { rgb: "FFFFFF" } },
+    //                     fill: { fgColor: { rgb: "2D5AA0" } },
+    //                     alignment: { vertical: "center", horizontal: "center" }
+    //                 };
+    //             }
+    //         }
+
+    //         XLSX.utils.book_append_sheet(workbook, worksheet, 'Clients');
+
+    //         const timestamp = new Date().toISOString()
+    //             .replace(/[:.]/g, '-')
+    //             .replace('T', '_')
+    //             .substring(0, 19);
+    //         const filename = `clients_export_${timestamp}.xlsx`;
+
+    //         XLSX.writeFile(workbook, filename);
+
+    //         return {
+    //             success: true,
+    //             filename,
+    //             count: data.length,
+    //             message: `Exported ${data.length} clients successfully`
+    //         };
+
+    //     } catch (error) {
+    //         console.error('Error creating Excel from data:', error);
+    //         throw error;
+    //     }
+    // }
 }
 
 export default new ClientService();

@@ -2,6 +2,7 @@ import clientService from "../services/clientService"
 import { useState, useEffect, useCallback, useRef } from "react"
 import toast from "react-hot-toast"
 import { debounce } from 'lodash'
+import * as XLSX from 'xlsx'
 
 export const useClients = (initialFilters = {}) => {
     const [members, setMembers] = useState([])
@@ -296,61 +297,63 @@ export const useClients = (initialFilters = {}) => {
         fetchClientStats()
     }, [fetchClientStats])
 
-    const exportClients = useCallback(async (format = 'csv') => {
+    const exportClients = useCallback(async (format = 'excel', exportFilters = null, exportAll = false) => {
         try {
-            setLoading(true)
+            setLoading(true);
+            
+            const currentFilters = exportFilters || filtersRef.current;
+            
+            console.log('📤 Exporting clients with filters:', currentFilters);
 
-            let dataToExport
+            // Gunakan service untuk export
+            const result = await clientService.exportClientsToExcel(currentFilters);
             
-            if (pagination.showingAllResults && format === 'csv') {
-                dataToExport = members
-                
-                const csvContent = clientService.convertToCSV(dataToExport)
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-                const url = window.URL.createObjectURL(blob)
-                const link = document.createElement('a')
-                link.href = url
-                link.setAttribute('download', `clients_${filtersRef.current.search || 'all'}_${new Date().toISOString().split('T')[0]}.csv`)
-                document.body.appendChild(link)
-                link.click()
-                document.body.removeChild(link)
-                window.URL.revokeObjectURL(url)
-                
-                toast.success(`Exported ${dataToExport.length} clients to CSV`)
-            } else {
-                const result = await clientService.fetchAllClients(filtersRef.current)
-                dataToExport = result.data || []
-                
-                if (format === 'csv') {
-                    const csvContent = clientService.convertToCSV(dataToExport)
-                    
-                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-                    const url = window.URL.createObjectURL(blob)
-                    const link = document.createElement('a')
-                    link.href = url
-                    link.setAttribute('download', `clients_${filtersRef.current.search || 'all'}_${new Date().toISOString().split('T')[0]}.csv`)
-                    document.body.appendChild(link)
-                    link.click()
-                    document.body.removeChild(link)
-                    window.URL.revokeObjectURL(url)
-                    
-                    toast.success(`Exported ${dataToExport.length} clients to CSV`)
-                } else {
-                    toast.success(`Prepared ${dataToExport.length} clients for export`)
-                    return dataToExport
-                }
-            }
+            toast.success(`✅ Successfully exported ${result.count || members.length} clients`, {
+                duration: 4000,
+                icon: '✅'
+            });
             
-            return dataToExport
+            return result;
+            
         } catch (error) {
-            console.error('Error exporting clients:', error)
-            toast.error('Failed to export clients')
-            throw error
+            console.error('Error exporting clients:', error);
+            
+            // Fallback: Create Excel from local data
+            if (members.length > 0) {
+                try {
+                    const fallbackResult = await clientService.createExcelFromData(members, currentFilters);
+                    
+                    toast.success(`✅ Exported ${fallbackResult.count} clients (local data)`, {
+                        duration: 4000,
+                        icon: '⚠️'
+                    });
+                    
+                    return fallbackResult;
+                } catch (fallbackError) {
+                    toast.error(`Failed to export: ${error.message}`, {
+                        duration: 5000,
+                        icon: '❌'
+                    });
+                    throw fallbackError;
+                }
+            } else {
+                toast.error('No data available to export', {
+                    duration: 4000,
+                    icon: '❌'
+                });
+                throw new Error('No data available to export');
+            }
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [members, pagination.showingAllResults, showAllOnSearch])
+    }, [members]);
+
+    const getBusinessDisplayName = useCallback((businessValue) => {
+        if (!businessValue) return '-';
+        if (typeof businessValue === 'string') return businessValue;
+        if (Array.isArray(businessValue)) return businessValue.join(', ');
+        return String(businessValue);
+    }, []);
 
     const addClient = async (clientData) => {
         try {

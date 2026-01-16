@@ -173,6 +173,8 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
     try {
         const params = new URLSearchParams()
 
+        console.log('Current filters in export:', currentFilters);
+
         if (currentFilters.search?.trim()) {
             params.append('search', currentFilters.search.trim())
         }
@@ -181,8 +183,12 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
             params.append('status', currentFilters.status.trim())
         }
 
-        if (currentFilters.business?.trim() && currentFilters.business !== 'all') {
-            params.append('business_type', currentFilters.business.trim())
+        const businessFilterValue = currentFilters.businessType || currentFilters.business;
+        console.log('Business filter value to use:', businessFilterValue);
+        
+        if (businessFilterValue?.trim() && businessFilterValue !== 'all') {
+            params.append('business', businessFilterValue.trim());
+            params.append('business_type', businessFilterValue.trim());
         }
 
         if (currentFilters.gender?.trim()) {
@@ -198,6 +204,7 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
         }
 
         const result = await response.json()
+        console.log('Export result count:', result.data?.length);
 
         const members = result.data || []
 
@@ -245,6 +252,7 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
             { wch: 12 },
             { wch: 12 }
             ];
+
             ws['!cols'] = wscols;
             
             const range = XLSX.utils.decode_range(ws['!ref']);
@@ -267,25 +275,6 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
             XLSX.writeFile(wb, fileName);
             
             return `Exported ${exportData.length} clients to Excel`;
-        } else if (format === 'csv') {
-            const csvContent = [
-            Object.keys(exportData[0]).join(','),
-            ...exportData.map(row => Object.values(row).join(','))
-            ].join('\n');
-            
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            
-            link.setAttribute("href", url);
-            link.setAttribute("download", `clients_export_${new Date().getTime()}.csv`);
-            link.style.visibility = 'hidden';
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            return `Exported ${exportData.length} clients to CSV`;
         }
     } catch (error) {
         console.error('Export error:', error);

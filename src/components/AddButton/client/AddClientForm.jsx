@@ -222,8 +222,10 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
     const handleSubmit = async (e) => {
         e.preventDefault()
 
+        const isUpdateAll = isEditMode ? true : updateAllFields;
+
         const isValid = validateForm(
-            formData, formSections, clientExists && !forceCreateNewClient, setErrors, isEditMode, updateAllFields
+            formData, formSections, clientExists && !forceCreateNewClient, setErrors, isEditMode, isUpdateAll
         )
 
         if (!isValid) {
@@ -236,27 +238,41 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
         try {
             let clientData = { ...formData }
 
-            const locationData = isEditMode ? {
-                address: formData.address || editData?.address || '',
-                province_id: formData.province_id || editData?.province_id || '',
-                province_name: formData.province_name || editData?.province_name || '',
-                regency_id: formData.regency_id || editData?.regency_id || '',
-                regency_name: formData.regency_name || editData?.regency_name || '',
-                district_id: formData.district_id || editData?.district_id || '',
-                district_name: formData.district_name || editData?.district_name || '',
-                village_id: formData.village_id || editData?.village_id || '',
-                village_name: formData.village_name || editData?.village_name || '',
-            } : {
-                address: formData.address,
-                province_id: formData.province_id,
-                province_name: formData.province_name,
-                regency_id: formData.regency_id,
-                regency_name: formData.regency_name,
-                district_id: formData.district_id,
-                district_name: formData.district_name,
-                village_id: formData.village_id,
-                village_name: formData.village_name,
-            };
+            const shouldUpdateLocation = isEditMode && (
+                formData.address !== editData?.address ||
+                formData.province_id !== editData?.province_id ||
+                formData.regency_id !== editData?.regency_id ||
+                formData.district_id !== editData?.district_id ||
+                formData.village_id !== editData?.village_id
+            );
+
+            const locationData = {};
+            
+            if (isEditMode) {
+                if (shouldUpdateLocation) {
+                    locationData.address = formData.address || '';
+                    locationData.province_id = formData.province_id || '';
+                    locationData.province_name = formData.province_name || '';
+                    locationData.regency_id = formData.regency_id || '';
+                    locationData.regency_name = formData.regency_name || '';
+                    locationData.district_id = formData.district_id || '';
+                    locationData.district_name = formData.district_name || '';
+                    locationData.village_id = formData.village_id || '';
+                    locationData.village_name = formData.village_name || '';
+                } else {
+                    //
+                }
+            } else {
+                locationData.address = formData.address;
+                locationData.province_id = formData.province_id;
+                locationData.province_name = formData.province_name;
+                locationData.regency_id = formData.regency_id;
+                locationData.regency_name = formData.regency_name;
+                locationData.district_id = formData.district_id;
+                locationData.district_name = formData.district_name;
+                locationData.village_id = formData.village_id;
+                locationData.village_name = formData.village_name;
+            }
 
             let programData = []
             if (clientExists && existingClientId) {
@@ -275,49 +291,30 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
             let result;
             
             if (clientExists && existingClientId && !forceCreateNewClient) {
-                if (updateAllFields) {
-                    clientData = {
-                        full_name: formData.full_name,
-                        email: formData.email,
-                        phone: formData.phone,
-                        company: formData.company,
-                        gender: formData.gender,
-                        business: formData.business,
-                        total_employee: formData.total_employee,
-                        position: formData.position,
-                        program_name: programData,
-                        notes: formData.notes || null,
-                        updated_at: new Date().toISOString(),
-                        ...locationData
-                    }
-                } else {
-                    clientData = {
-                        full_name: formData.full_name,
-                        email: formData.email,
-                        phone: formData.phone,
-                        company: formData.company,
-                        gender: editData?.gender || '',
-                        business: editData?.business || '',
-                        total_employee: editData?.total_employee || '',
-                        position: editData?.position || '',
-                        program_name: programData,
-                        notes: editData?.notes || null,
-                        updated_at: new Date().toISOString(),
-                        ...locationData
-                    }
+                clientData = {
+                    full_name: formData.full_name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    company: formData.company,
+                    gender: formData.gender,
+                    business: formData.business,
+                    total_employee: formData.total_employee,
+                    position: formData.position,
+                    program_name: programData,
+                    notes: formData.notes || null,
+                    updated_at: new Date().toISOString(),
+                    ...locationData 
                 }
-                
+
                 if (onEditClient) {
                     result = await onEditClient(existingClientId, clientData)
                 } else {
                     result = await clientService.updateClient(existingClientId, clientData)
                 }
-                toast.success(
-                    updateAllFields 
-                        ? 'Client updated successfully' 
-                        : 'Program added successfully'
-                );
-            } else {
+                
+                toast.success('Client updated successfully');
+            } 
+            else {
                 clientData = {
                     full_name: formData.full_name,
                     email: formData.email,
@@ -330,7 +327,7 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                     program_name: programData,
                     notes: formData.notes || null,
                     status: formData.status || 'active',
-                    ...locationData,
+                    ...locationData, 
                     join_date: formData.join_date || new Date().toISOString().split('T')[0]
                 }
                 
@@ -376,36 +373,6 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            {isEditMode && (
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-start">
-                        <div className="flex items-center h-5">
-                            <input
-                                id="update-all-fields"
-                                type="checkbox"
-                                checked={updateAllFields}
-                                onChange={(e) => setUpdateAllFields(e.target.checked)}
-                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                        </div>
-                        <div className="ml-3 text-sm">
-                            <label htmlFor="update-all-fields" className="font-medium text-gray-900">
-                                {updateAllFields ? '🔄 Update Semua Informasi' : '📝 Tambah Program Saja'}
-                            </label>
-                            <p className="text-gray-500 mt-1">
-                                {updateAllFields 
-                                    ? "Semua field akan diupdate. Field lokasi akan menggunakan data yang sudah ada."
-                                    : "Hanya menambah program baru. Data lain (gender, total employee, lokasi) tidak akan berubah."
-                                }
-                            </p>
-                            <p className="text-xs text-gray-400 mt-2">
-                                Catatan: Field lokasi disabled karena data sudah ada di database.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {formSections.map((section, sectionIndex) => (
                 <div key={section.title} className="space-y-4">
                     <div className="border-b pb-2">
