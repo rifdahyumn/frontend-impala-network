@@ -181,8 +181,6 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
     try {
         const params = new URLSearchParams()
 
-        console.log('Current filters in export:', currentFilters);
-
         if (currentFilters.search?.trim()) {
             params.append('search', currentFilters.search.trim())
         }
@@ -192,7 +190,6 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
         }
 
         const businessFilterValue = currentFilters.businessType || currentFilters.business;
-        console.log('Business filter value to use:', businessFilterValue);
         
         if (businessFilterValue?.trim() && businessFilterValue !== 'all') {
             params.append('business', businessFilterValue.trim());
@@ -212,7 +209,6 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
         }
 
         const result = await response.json()
-        console.log('Export result count:', result.data?.length);
 
         const members = result.data || []
 

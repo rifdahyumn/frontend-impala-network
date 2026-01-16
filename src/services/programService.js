@@ -49,6 +49,7 @@ class ProgramService {
                             'capacity': ['Capacity', 'capacity', 'CAPACITY', 'Kapasitas'],
                             'price': ['Price', 'price', 'PRICE', 'Harga'],
                             'client': ['Client', 'client', 'CLIENT', 'Klien', 'Company'],
+                            'link_rab': ['Link RAB'],
                             'start_date': ['Start Date', 'start date', 'START DATE', 'Start_Date', 'startDate', 'Tanggal Mulai'],
                             'end_date': ['End Date', 'end date', 'END DATE', 'End_Date', 'endDate', 'Tanggal Berakhir'],
                             'description': ['Description', 'description', 'DESCRIPTION', 'Deskripsi'],
@@ -293,10 +294,38 @@ class ProgramService {
         if (!capacity) return '';
     
         const capacityStr = String(capacity);
-        
-        const numeric = capacityStr.replace(/\D/g, '');
-        
-        return numeric || '';
+
+        let normalized = capacityStr.replace(/[–—]/g, '-')
+
+        normalized = normalized
+            .replace(/participants/gi, '')
+            .replace(/beneficiaries/gi, '')
+            .replace(/peserta/gi, '')
+
+        const match = normalized.match(/(\d+)\s*[-]?\s*(\d+)?/)
+
+        if (match) {
+            const start = match[1]
+            const end = match[2]
+
+            if (end) {
+                return `${start}-${end}`
+            } else {
+                return parseInt(start, 10)
+            }
+        }
+
+        const numbers = normalized.match(/\d+/g)
+        if (numbers && numbers.length > 0) {
+            if (numbers.length === 2) {
+                return `${numbers[0]}-${numbers[1]}`
+            } else {
+                return parseInt(numbers[0], 10)
+            }
+        }
+
+        console.warn('Could not parse capacity:', capacityStr)
+        return capacity
     }
 
     generateExceltemplate() {

@@ -297,18 +297,15 @@ export const useClients = (initialFilters = {}) => {
         fetchClientStats()
     }, [fetchClientStats])
 
-    const exportClients = useCallback(async (format = 'excel', exportFilters = null, exportAll = false) => {
+    const exportClients = useCallback(async (exportFilters = null) => {
         try {
             setLoading(true);
             
             const currentFilters = exportFilters || filtersRef.current;
-            
-            console.log('📤 Exporting clients with filters:', currentFilters);
 
-            // Gunakan service untuk export
             const result = await clientService.exportClientsToExcel(currentFilters);
             
-            toast.success(`✅ Successfully exported ${result.count || members.length} clients`, {
+            toast.success(`Successfully exported ${result.count || members.length} clients`, {
                 duration: 4000,
                 icon: '✅'
             });
@@ -320,9 +317,9 @@ export const useClients = (initialFilters = {}) => {
             
             if (members.length > 0) {
                 try {
-                    const fallbackResult = await clientService.createExcelFromData(members, currentFilters);
+                    const fallbackResult = await clientService.createExcelFromData(members);
                     
-                    toast.success(`✅ Exported ${fallbackResult.count} clients (local data)`, {
+                    toast.success(`Exported ${fallbackResult.count} clients (local data)`, {
                         duration: 4000,
                         icon: '⚠️'
                     });
@@ -346,13 +343,6 @@ export const useClients = (initialFilters = {}) => {
             setLoading(false);
         }
     }, [members]);
-
-    const getBusinessDisplayName = useCallback((businessValue) => {
-        if (!businessValue) return '-';
-        if (typeof businessValue === 'string') return businessValue;
-        if (Array.isArray(businessValue)) return businessValue.join(', ');
-        return String(businessValue);
-    }, []);
 
     const addClient = async (clientData) => {
         try {
