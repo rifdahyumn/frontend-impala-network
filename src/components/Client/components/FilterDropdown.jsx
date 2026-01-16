@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from "../../ui/button";
 import { Filter, X, Check, User, Users, UserCheck } from "lucide-react";
 
@@ -12,7 +12,8 @@ const FilterDropdown = ({
     onGenderFilterChange,
     onApplyFilters
 }) => {
-    const [isOpen, setIsOpen] = React.useState(false);
+    const filterRef = useRef(null)
+    const [isOpen, setIsOpen] = useState(false);
     const [tempFilters, setTempFilters] = React.useState({ 
         status: localFilters?.status || '',
         gender: localFilters?.gender || '',
@@ -26,6 +27,24 @@ const FilterDropdown = ({
             businessType: localFilters?.businessType || 'all'
         });
     }, [localFilters]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (filterRef.current && !filterRef.current.contains(event.target)) {
+                setIsOpen(false)
+            }
+        }
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside)
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [isOpen])
 
     const filteredBusinessTypes = React.useMemo(() => {
         if (!Array.isArray(availableBusinessTypes) || availableBusinessTypes.length === 0) {
@@ -175,7 +194,10 @@ const FilterDropdown = ({
             </Button>
 
             {isOpen && (
-                <div className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[480px]">
+                <div 
+                    ref={filterRef}
+                    className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[480px]"
+                >
                     <div className="p-3 border-b">
                         <div className="flex items-center justify-between">
                             <h3 className="font-bold text-gray-900 text-xs">Filter Options</h3>

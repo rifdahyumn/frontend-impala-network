@@ -184,7 +184,7 @@ const ProgramFilters = ({
                     
                     {filters.search && filters.search.trim() !== '' && (
                         <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
-                            <label className="flex items-center gap-2 cursor-pointer">
+                            {/* <label className="flex items-center gap-2 cursor-pointer">
                                 <input
                                     type="checkbox"
                                     checked={showAllOnSearch}
@@ -194,7 +194,7 @@ const ProgramFilters = ({
                                 <span className="text-sm font-medium text-blue-700">
                                     Show all results
                                 </span>
-                            </label>
+                            </label> */}
                             
                             {isShowAllMode() && (
                                 <button

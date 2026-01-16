@@ -1,4 +1,5 @@
-export const validateForm = (formData, formSections, clientExists, setErrors, isEditMode = false, updateAllFields = false) => {
+export const validateForm = (formData, formSections, clientExists, setErrors, isEditMode, updateAllFields) => {
+    let isValid = true
     const newErrors = {};
 
     if (!Array.isArray(formSections)) {
@@ -18,13 +19,15 @@ export const validateForm = (formData, formSections, clientExists, setErrors, is
                 return;
             }
 
+            const isLocationField = ['province_id', 'regency_id', 'district_id', 'village_id'].includes(field.name);
+            
+            if (isEditMode && isLocationField) {
+                return;
+            }
+
             if (field.required) {
-                const value = formData[field.name]
-
-                if (isEditMode && clientExists && !updateAllFields && isLocationField(field.name)) {
-                    return
-                }
-
+                const value = formData[field.name];
+                
                 if (!value || value.toString().trim() === '') {
                     newErrors[field.name] = `${field.label} is required`;
                 }
@@ -40,7 +43,7 @@ export const validateForm = (formData, formSections, clientExists, setErrors, is
         newErrors.phone = 'Phone number is too short';
     }
 
-    if ((!isEditMode && !clientExists) || (isEditMode && updateAllFields)) {
+    if (!isEditMode) {
         if (!formData.province_id) {
             newErrors.province_id = 'Province is required';
         }
@@ -61,13 +64,4 @@ export const validateForm = (formData, formSections, clientExists, setErrors, is
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-};
-
-const isLocationField = (fieldName) => {
-    const locationFields = [
-        'address', 'province_id', 'province_name',
-        'regency_id', 'regency_name', 'district_id',
-        'district_name', 'village_id', 'village_name'
-    ];
-    return locationFields.includes(fieldName);
 };

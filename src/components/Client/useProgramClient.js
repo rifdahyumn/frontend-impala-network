@@ -7,7 +7,7 @@ import clientService from '../../services/clientService';
 
 import { BUSINESS_TYPES_FOR_FILTER } from './constants/businessTypes';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
-import { AlertTriangle } from 'lucide-react';
+import axios from 'axios';
 
 export const useProgramClient = () => {
     const [selectedMember, setSelectedMember] = useState(null);
@@ -22,6 +22,8 @@ export const useProgramClient = () => {
     const [isDragging, setIsDragging] = useState(false);
     const [highlightDetail, setHighlightDetail] = useState(false);
     const [availableBusinessTypes, setAvailableBusinessTypes] = useState([]);
+    const [businessTypes, setBusinessTypes] = useState([])
+    const [isLoadingBusinessTypes, setIsLoadingBusinessTypes] = useState(false)
     
     const [localFilters, setLocalFilters] = useState({
         search: '',
@@ -730,32 +732,66 @@ export const useProgramClient = () => {
         }
     }, [members, normalizeGenderForFilter]);
 
+    const fetchBusinessTypesFromBE = async () => {
+        setIsLoadingBusinessTypes(true)
+
+        try {
+            const response = await axios.get('/api/client/business-types')
+
+            if (response.data.success && response.data.data) {
+                const typesFromBE = response.data.data
+
+                setBusinessTypes(typesFromBE)
+
+                const filterTypes = typesFromBE.map(type => ({
+                    value: type.value,
+                    original: type.label
+                }))
+
+                setAvailableBusinessTypes(filterTypes)
+            }
+        } catch (error) {
+            console.error('Error fetching business types from BE:', error);
+        } finally {
+            setIsLoadingBusinessTypes(false)
+        }
+    }
+
     useEffect(() => {
-        setAvailableBusinessTypes(BUSINESS_TYPES_FOR_FILTER);
-        
+        fetchBusinessTypesFromBE()
+    }, [])
+
+    useEffect(() => {
+       const businessTypesFilter = businessTypes.map(type => ({
+        value: type.value,
+        original: type.label
+       }))
+
+       setAvailableBusinessTypes(businessTypesFilter)
+
         if (members.length > 0) {
-            const businessTypesFromMembers = formatBusinessTypes(members);
-            
-            const businessTypesMap = new Map();
-            
-            BUSINESS_TYPES_FOR_FILTER.forEach(type => {
+            const businessTypesFromMembers = formatBusinessTypes(members)
+
+            const businessTypesMap = new Map()
+
+            businessTypesFilter.forEach(type => {
                 if (type.value && type.original) {
-                    businessTypesMap.set(type.value, type);
+                    businessTypesMap.set(type.value, type)
                 }
-            });
-            
+            })
+
             businessTypesFromMembers.forEach(type => {
                 if (type.value && type.original && !businessTypesMap.has(type.value)) {
-                    businessTypesMap.set(type.value, type);
+                    businessTypesMap.set(type.value, type)
                 }
-            });
-            
+            })
+
             const combinedBusinessTypes = Array.from(businessTypesMap.values())
-                .sort((a, b) => a.original.localeCompare(b.original));
-            
-            setAvailableBusinessTypes(combinedBusinessTypes);
+                .sort((a, b) => a.original.localeCompare(b.original))
+
+            setAvailableBusinessTypes(combinedBusinessTypes)
         }
-    }, [members]);
+    }, [members, businessTypes]);
 
     useEffect(() => {
         if (selectedMember && members.length > 0) {

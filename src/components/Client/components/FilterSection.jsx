@@ -4,11 +4,11 @@ import FilterDropdown from './FilterDropdown';
 
 const FiltersSection = ({
     localFilters = {}, 
-    showAllOnSearch,
-    isInShowAllMode,
+    // showAllOnSearch,
+    // isInShowAllMode,
     onSearch,
-    onToggleShowAll,
-    onResetToPagination,
+    // onToggleShowAll,
+    // onResetToPagination,
     onStatusFilterChange,
     onBusinessTypeFilterChange,
     onGenderFilterChange, 
@@ -31,7 +31,7 @@ const FiltersSection = ({
                     />
                 </div>
                 
-                {searchValue.trim() !== '' && ( 
+                {/* {searchValue.trim() !== '' && ( 
                     <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
                         <label className="flex items-center gap-2 cursor-pointer">
                         <input
@@ -54,7 +54,7 @@ const FiltersSection = ({
                             </button>
                         )}
                     </div>
-                )}
+                )} */}
                 
                 <FilterDropdown
                     localFilters={localFilters}
