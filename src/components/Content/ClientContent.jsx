@@ -29,6 +29,10 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
                 { key: 'business', label: 'Business Type', icon: Building },
                 { key: 'total_employee', label: 'Total Employee', icon: Building },
                 { key: 'address', label: 'Address', icon: MapPin },
+                { key: 'province_name', label: 'Province', icon: MapPin },
+                { key: 'regency_name', label: 'Regency / City', icon: MapPin },
+                { key: 'district_name', label: 'District', icon: MapPin },
+                { key: 'village_name', label: 'Village', icon: MapPin },
             ]
         },
         {

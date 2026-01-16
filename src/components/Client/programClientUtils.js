@@ -95,6 +95,10 @@ export const parseExcelData = (data) => {
             'Program Name': 'program_name',
             'Status': 'status',
             'Address': 'address',
+            'Province': 'province_name',
+            'Regency/City': 'regency_name',
+            'District': 'district_name',
+            'Village': 'village_name',
             'Notes': 'notes',
             'Join Date': 'join_date',
 
@@ -109,6 +113,10 @@ export const parseExcelData = (data) => {
             'program_name': 'program_name',
             'status': 'status',
             'address': 'address',
+            'province_name': 'province_name',
+            'regency_name': 'regency_name',
+            'district_name': 'district_name',
+            'village_name': 'village_name',
             'notes': 'notes',
             'join_date': 'join_date'
         }
@@ -288,13 +296,17 @@ export const downloadTemplate = () => {
             'Full Name': 'Contoh: Jonathan Ardi Wijaya',
             'Email': 'Contoh: jonathan.wijaya@auroratech.co.id',
             'Phone': 'Contoh: +62 812 3456 7890',
-            'Gender': 'Contoh: Male',
+            'Gender': 'Male/Female',
             'Company': 'Contoh: Aurora Tech Solutions',
             'Position': 'Contoh: Head of Digital Transformation',
             'Total Employee': 'Contoh: 50-100 employees',
             'Business': 'Contoh: Technology',
             'Program Name': 'Contoh: Enterprise Digital Acceleration 2025',
-            'Address': 'Contoh: Jl. MT Haryono No. 35, Komplek Bisnis Sentra Mahakam',
+            'Address': 'Contoh: Jl. Pierre Tendean No. 18, Gedung Samudra Tech',
+            'Province': 'Contoh: Sulawesi Selatan',
+            'Regency/City': 'Contoh: Kota Makasar',
+            'District': 'Contoh: Tamalate',
+            'Village': 'Contoh: Manuruki',
             'Notes': 'Contoh: Client focused on modernizing internal systems'
         },
     ];
@@ -306,13 +318,17 @@ export const downloadTemplate = () => {
             'Full Name': 'Contoh: Jonathan Ardi Wijaya',
             'Email': 'Contoh: jonathan.wijaya@auroratech.co.id',
             'Phone': 'Contoh: +62 812 3456 7890',
-            'Gender': 'Contoh: Male',
+            'Gender': 'Male/Female',
             'Company': 'Contoh: Aurora Tech Solutions',
             'Position': 'Contoh: Head of Digital Transformation',
             'Total Employee': 'Contoh: 50-100 employees',
             'Business': 'Contoh: Technology',
             'Program Name': 'Contoh: Enterprise Digital Acceleration 2025',
-            'Address': 'Contoh: Jl. MT Haryono No. 35, Komplek Bisnis Sentra Mahakam',
+            'Address': 'Contoh: Jl. Pierre Tendean No. 18, Gedung Samudra Tech',
+            'Province': 'Contoh: Sulawesi Selatan',
+            'Regency/City': 'Contoh: Kota Makasar',
+            'District': 'Contoh: Tamalate',
+            'Village': 'Contoh: Manuruki',
             'Notes': 'Contoh: Client focused on modernizing internal systems'
         }
     ]

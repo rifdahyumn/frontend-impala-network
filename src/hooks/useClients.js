@@ -318,7 +318,6 @@ export const useClients = (initialFilters = {}) => {
         } catch (error) {
             console.error('Error exporting clients:', error);
             
-            // Fallback: Create Excel from local data
             if (members.length > 0) {
                 try {
                     const fallbackResult = await clientService.createExcelFromData(members, currentFilters);
