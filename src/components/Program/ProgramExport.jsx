@@ -7,15 +7,47 @@ import toast from "react-hot-toast";
 const ProgramExport = ({ 
     disabled = false,
     formatInstructorsForExport,
-    formatTagsForExport 
+    formatTagsForExport,
+    filters = {},
+    showAllOnSearch = false
 }) => {
     const [isExporting, setIsExporting] = useState(false);
+
+    const buildExportQuery = () => {
+        const queryParams = new URLSearchParams();
+        
+        queryParams.append('limit', '10000');
+        queryParams.append('page', '1');
+        
+        if (filters.search) {
+            queryParams.append('search', filters.search);
+        }
+        
+        if (filters.status) {
+            queryParams.append('status', filters.status);
+        }
+        
+        if (filters.category && filters.category !== 'all') {
+            queryParams.append('category', filters.category);
+        }
+        
+        if (filters.client) {
+            queryParams.append('client', filters.client);
+        }
+        
+        if (showAllOnSearch && filters.search) {
+            queryParams.append('showAllOnSearch', 'true');
+        }
+        
+        return queryParams.toString();
+    };
 
     const handleExport = async (format = 'excel') => {
         try {
             setIsExporting(true);
-
-            const response = await fetch(`/api/program?limit=10000&page=1`);
+            
+            const queryString = buildExportQuery();
+            const response = await fetch(`/api/program?${queryString}`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch data from server');
@@ -29,6 +61,10 @@ const ProgramExport = ({
                 return;
             }
 
+            const activeFilters = Object.keys(filters).filter(key => 
+                filters[key] && filters[key].toString().trim() !== ''
+            ).length;
+            
             const exportData = allPrograms.map((program, index) => ({
                 'No': index + 1,
                 'Program Name': program.program_name || '-',
@@ -79,11 +115,25 @@ const ProgramExport = ({
                 XLSX.utils.book_append_sheet(wb, ws, "Programs");
                 
                 const dateStr = new Date().toISOString().split('T')[0];
-                const fileName = `programs_export_${dateStr}.xlsx`;
+                let fileName = `programs_export_${dateStr}`;
+                
+                if (activeFilters > 0) {
+                    if (filters.search) {
+                        fileName += `_search-${filters.search.substring(0, 10)}`;
+                    }
+                    if (filters.status) {
+                        fileName += `_status-${filters.status}`;
+                    }
+                    if (filters.category && filters.category !== 'all') {
+                        fileName += `_category-${filters.category}`;
+                    }
+                }
+                
+                fileName += '.xlsx';
                 
                 XLSX.writeFile(wb, fileName);
                 
-                toast.success(`Exported ${exportData.length} programs to Excel`);
+                toast.success(`Exported ${exportData.length} filtered programs to Excel`);
             }
         } catch (error) {
             console.error('Export failed:', error);
@@ -99,6 +149,7 @@ const ProgramExport = ({
             onClick={() => handleExport('excel')}
             className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
             disabled={disabled || isExporting}
+            title={isExporting ? "Exporting..." : "Export filtered data"}
         >
             {isExporting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

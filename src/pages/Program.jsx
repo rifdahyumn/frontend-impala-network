@@ -263,6 +263,8 @@ const Program = () => {
                                     disabled={isImporting}
                                     formatInstructorsForExport={formatInstructorsForExport}
                                     formatTagsForExport={formatTagsForExport}
+                                    filters={filters}
+                                    showAllOnSearch={showAllOnSearch}
                                 />
                             }
                         />
