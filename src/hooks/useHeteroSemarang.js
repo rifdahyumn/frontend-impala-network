@@ -3,6 +3,11 @@ import heteroSemarangService from "../services/heteroSemarangService"
 import { useCallback, useEffect, useState } from "react"
 import { useConfirmDialog } from "./useConfirmDialog"
 
+const genderOptions = [
+    { value: 'male', label: 'Male' },
+    { value: 'female', label: 'Female' },
+]
+
 export const useHeteroSemarang = (initialFilters = {}) => {
     const confirmDialog = useConfirmDialog()
 
@@ -29,6 +34,81 @@ export const useHeteroSemarang = (initialFilters = {}) => {
 
     const [statsLoading, setStatsLoading] = useState(false)
 
+    const [spaceOptions, setSpaceOptions] = useState([])
+    const [loadingSpaceOptions, setLoadingSpaceOptions] = useState(false)
+    const [spaceOptionsError, setSpaceOptionsError] = useState(null)
+
+    const fetchSpaceOptions = useCallback(async () => {
+        try {
+            setLoadingSpaceOptions(true)
+            setSpaceOptionsError(null)
+
+            const result = await heteroSemarangService.fetchSpaceOptions()
+
+            if (result && result.success) {
+                setSpaceOptions(result.data)
+            } else {
+                throw new Error(result?.message || 'Failed to fetch space options')
+            }
+
+        } catch (error) {
+            console.error('Error fetching space options:', error)
+            setSpaceOptionsError(error.message)
+            setSpaceOptions([])
+        } finally {
+            setLoadingSpaceOptions(false)
+        }
+    }, [])
+
+    const extractSpacesFromMembers = useCallback((membersList) => {
+        if (!membersList.length) return []
+
+        const existingSpaces = membersList
+            .map(member => member.space)
+            .filter(space => space && space.trim() !== "")
+
+        const dataSpaces = existingSpaces.map(space => {
+            const lowerSpace = space.toLowerCase()
+
+            if (lowerSpace.includes('maneka personal'));
+            else if (lowerSpace.includes('maneka group'));
+            else if (lowerSpace.includes('rembug 1'));
+            else if (lowerSpace.includes('rembug 2'));
+            else if (lowerSpace.includes('rembug 3'));
+            else if (lowerSpace.includes('private office 1-3'));
+            else if (lowerSpace.includes('private office 4-5'));
+            else if (lowerSpace.includes('private office 6'));
+            else if (lowerSpace.includes('space gatra'));
+            else if (lowerSpace.includes('space maneka'));
+            else if (lowerSpace.includes('space outdoor'));
+            else if (lowerSpace.includes('virtual office'));
+            else if (lowerSpace.includes('course'));
+
+            return {
+                value: lowerSpace,
+                label: `${space}`,
+                original: space
+            }
+        })
+
+        const uniqueDataSPaces = [...new Map(dataSpaces.map(item => [item.value, item])).values()]
+
+        return uniqueDataSPaces.sort((a, b) => a.original.localeCompare(b.original))
+    }, [])
+
+    const getSpaceLabel = useCallback((spaceValue) => {
+        if (!spaceValue || spaceValue === 'all') return 'All Spaces'
+
+        const space = spaceOptions.find(s => s.value === spaceValue)
+        return space ? space.original : spaceValue
+    }, [spaceOptions])
+
+    const getGenderLabel = useCallback((genderValue) => {
+        if (!genderValue) return ""
+        const gender = genderOptions.find(g => g.value === genderValue)
+        return gender ? gender.label : genderValue
+    }, [])
+
     const fetchMembers = useCallback(async (page = 1, customFilters = null) => {
         try {
             setLoading(true)
@@ -49,6 +129,12 @@ export const useHeteroSemarang = (initialFilters = {}) => {
                 total: result.metadata?.pagination?.total || 0,
                 totalPages: result.metadata?.pagination?.totalPages || 0,
             }))
+
+            if (spaceOptions.length === 0 && result.data && result.data.length > 0) {
+                const extractedSpaces = extractSpacesFromMembers(result.data)
+                setSpaceOptions(extractedSpaces)
+            }
+
         } catch (error) {
             console.error('Error fetching members:', error)
             setError(error.message)
@@ -56,7 +142,7 @@ export const useHeteroSemarang = (initialFilters = {}) => {
         } finally {
             setLoading(false)
         }
-    }, [filters, pagination.limit])
+    }, [filters, pagination.limit, spaceOptions.length, extractSpacesFromMembers])
 
     const fetchMemberStats  = useCallback(async () => {
         try {
@@ -108,12 +194,18 @@ export const useHeteroSemarang = (initialFilters = {}) => {
     useEffect(() => {
         fetchMembers(1)
         fetchMemberStats()
-    }, [fetchMembers])
+        fetchSpaceOptions()
+    }, [fetchMembers, fetchMemberStats, fetchSpaceOptions])
 
     const addMemberHeteroSemarang = async (memberData) => {
         try {
             const result = await heteroSemarangService.addMemberHeteroSemarang(memberData)
             toast.success('Member add successfully')
+
+            const newSpace = memberData.space
+            if (newSpace && !spaceOptions.some(s => s.original === newSpace)) {
+                await fetchSpaceOptions()
+            }
 
             await fetchMembers(pagination.page)
             await fetchMemberStats()
@@ -138,6 +230,11 @@ export const useHeteroSemarang = (initialFilters = {}) => {
                         : member
                 )
             )
+
+            const newSpace = memberData.space
+            if (newSpace && !spaceOptions.some(s => s.original === newSpace)) {
+                await fetchSpaceOptions()
+            }
 
             await fetchMemberStats()
             return result.data || result
@@ -176,13 +273,20 @@ export const useHeteroSemarang = (initialFilters = {}) => {
     const refreshAll = useCallback(async () => {
         await Promise.all([
             fetchMembers(pagination.page),
-            fetchMemberStats()
+            fetchMemberStats(),
+            fetchSpaceOptions()
         ])
-    }, [fetchMembers, pagination.page, fetchMemberStats])
+    }, [fetchMembers, pagination.page, fetchMemberStats, fetchSpaceOptions])
+
+    const refetchSpaceOptions = useCallback(async () => {
+        await fetchSpaceOptions()
+    }, [fetchSpaceOptions])
 
     return {
-        ...confirmDialog, members, loading, error, pagination, filters, setFilters: refetchWithFilters, 
-        fetchMembers: changePage, addMemberHeteroSemarang, updateMemberHeteroSemarang, deleteMemberHeteroSemarang,
-        fetchMemberStats, stats, statsLoading, refreshAll
+        ...confirmDialog, members, loading, error, pagination, filters, spaceOptions, 
+        loadingSpaceOptions, spaceOptionsError, genderOptions, setFilters: refetchWithFilters, 
+        fetchMembers: changePage, addMemberHeteroSemarang, updateMemberHeteroSemarang, 
+        deleteMemberHeteroSemarang, fetchMemberStats, stats, statsLoading, refreshAll, 
+        fetchSpaceOptions: refetchSpaceOptions, extractSpacesFromMembers, getSpaceLabel, getGenderLabel
     }
 }

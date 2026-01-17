@@ -31,6 +31,7 @@ const HeteroSemarang = () => {
     const [isDragging, setIsDragging] = useState(false);
     
     const fileInputRef = useRef(null);
+    const filterRef = useRef(null)
     const dropZoneRef = useRef(null);
     
     const [highlightDetail, setHighlightDetail] = useState(false);
@@ -43,7 +44,6 @@ const HeteroSemarang = () => {
         space: null, 
     });
     const [filteredMembers, setFilteredMembers] = useState([]);
-    const [availableSpaces, setAvailableSpaces] = useState([]);
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [tempFilters, setTempFilters] = useState({
@@ -53,38 +53,20 @@ const HeteroSemarang = () => {
 
     const { members, loading, error, pagination, fetchMembers, addMemberHeteroSemarang, 
         updateMemberHeteroSemarang, deleteMemberHeteroSemarang, showConfirm, handleConfirm, handleCancel,
-        isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroSemarang()
+        isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading, spaceOptions, loadingSpaceOptions,
+        genderOptions, getSpaceLabel, extractSpacesFromMembers, spaceOptionsError, fetchSpaceOptions } = useHeteroSemarang()
 
-    const allSpaceOptions = [
-        { value: "maneka personal", label: "🏠 Maneka Personal", original: "Maneka Personal" },
-        { value: "maneka group", label: "👥 Maneka Group", original: "Maneka Group" },
-        { value: "rembug 1", label: "🗣️ Rembug 1", original: "Rembug 1" },
-        { value: "rembug 2-6", label: "🗣️ Rembug 2-6", original: "Rembug 2-6" },
-        { value: "rembug 7", label: "🗣️ Rembug 7", original: "Rembug 7" },
-        { value: "private office 1-3", label: "🚪 Private Office 1-3", original: "Private Office 1-3" },
-        { value: "private office 4&5", label: "🚪 Private Office 4&5", original: "Private Office 4&5" },
-        { value: "private office 6", label: "🚪 Private Office 6", original: "Private Office 6" },
-        { value: "space gatra", label: "🏛️ Space Gatra", original: "Space Gatra" },
-        { value: "space gayeng", label: "🎉 Space Gayeng", original: "Space Gayeng" },
-        { value: "markspace", label: "📍 Markspace", original: "Markspace" },
-        { value: "foodlab", label: "🍽️ Foodlab", original: "Foodlab" },
-        { value: "abipraya membership", label: "🎫 Abipraya Membership", original: "Abipraya Membership" },
-        { value: "abipraya event", label: "🎪 Abipraya Event", original: "Abipraya Event" },
-        { value: "virtual office", label: "💻 Virtual Office", original: "Virtual Office" },
-        { value: "outdoorspace", label: "🌳 Outdoor Space", original: "Outdoor Space" }
-    ];
+    const availableSpaces = useMemo(() => {
+        if (spaceOptions.length > 0) {
+            return spaceOptions
+        }
 
-    const genderOptions = [
-        { value: 'male', label: 'Male' },
-        { value: 'female', label: 'Female' },
-    ];
+        if (members.length > 0) {
+            return extractSpacesFromMembers(members)
+        }
 
-    const getSpaceLabel = useCallback((spaceValue) => {
-        if (!spaceValue || spaceValue === "all") return "All Spaces";
-        const space = allSpaceOptions.find(s => s.value === spaceValue) || 
-                     availableSpaces.find(s => s.value === spaceValue);
-        return space ? space.original : spaceValue;
-    }, [availableSpaces]);
+        return []
+    }, [spaceOptions, members, extractSpacesFromMembers])
 
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
@@ -555,63 +537,23 @@ const HeteroSemarang = () => {
         };
     }, []);
 
-    const extractSpaces = useMemo(() => {
-        return (membersList) => {
-            if (!membersList.length) return allSpaceOptions;
-            
-            const existingSpaces = membersList
-                .map(member => member.space)
-                .filter(space => space && space.trim() !== "");
-            
-            const dataSpaces = existingSpaces.map(space => {
-                const lowerSpace = space.toLowerCase();
-                const matchedOption = allSpaceOptions.find(opt => 
-                    lowerSpace.includes(opt.value) || 
-                    opt.value.includes(lowerSpace) ||
-                    space.toLowerCase().includes(opt.value)
-                );
-                
-                if (matchedOption) {
-                    return {
-                        value: matchedOption.value,
-                        label: matchedOption.label,
-                        original: matchedOption.original
-                    };
-                }
-                
-                let emoji = "🏢";
-                if (lowerSpace.includes("maneka")) emoji = "🎨";
-                else if (lowerSpace.includes("rembug")) emoji = "🗣️";
-                else if (lowerSpace.includes("private")) emoji = "🚪";
-                else if (lowerSpace.includes("gatra")) emoji = "🏛️";
-                else if (lowerSpace.includes("gayeng")) emoji = "🎉";
-                else if (lowerSpace.includes("markspace")) emoji = "📍";
-                else if (lowerSpace.includes("foodlab")) emoji = "🍽️";
-                else if (lowerSpace.includes("abipraya")) emoji = "🎫";
-                else if (lowerSpace.includes("virtual")) emoji = "💻";
-                else if (lowerSpace.includes("outdoor")) emoji = "🌳";
-                else if (lowerSpace.includes("course")) emoji = "📚";
-                
-                return {
-                    value: lowerSpace,
-                    label: `${emoji} ${space}`,
-                    original: space
-                };
-            });
-            
-            const uniqueDataSpaces = [...new Map(dataSpaces.map(item => [item.value, item])).values()];
-            
-            const combinedSpaces = [...uniqueDataSpaces];
-            
-            allSpaceOptions.forEach(option => {
-                if (!combinedSpaces.some(s => s.value === option.value)) {
-                    combinedSpaces.push(option);
-                }
-            });
-            
-            return combinedSpaces.sort((a, b) => a.original.localeCompare(b.original));
-        };
-    }, []);
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (filterRef.current && !filterRef.current.contains(event.target)) {
+                setIsFilterOpen(false)
+            }
+        }
+
+        if (setIsFilterOpen) {
+            document.addEventListener('mousedown', handleClickOutside)
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [isFilterOpen])
 
     const applyAllFilters = () => {
         let result = [...members];
@@ -742,13 +684,6 @@ const HeteroSemarang = () => {
             space: filters.space || 'all'
         });
     }, [filters]);
-
-    useEffect(() => {
-        if (members.length > 0) {
-            const extractedSpaces = extractSpaces(members);
-            setAvailableSpaces(extractedSpaces);
-        }
-    }, [members, extractSpaces]);
 
     useEffect(() => {
         if (members.length > 0) {
@@ -996,7 +931,6 @@ const HeteroSemarang = () => {
                                     />
                                 </div>
                                 
-                                {/* Custom Filter Dropdown */}
                                 <div className="relative">
                                     <Button 
                                         variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
@@ -1019,7 +953,10 @@ const HeteroSemarang = () => {
                                     </Button>
 
                                     {isFilterOpen && (
-                                        <div className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]">
+                                        <div 
+                                            ref={filterRef}
+                                            className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]"
+                                        >
                                             <div className="p-3 border-b">
                                                 <div className="flex items-center justify-between">
                                                     <h3 className="font-bold text-gray-900 text-xs">Filter Options</h3>
@@ -1030,7 +967,7 @@ const HeteroSemarang = () => {
                                             </div>
 
                                             <div className="p-3">
-                                                {/* Gender */}
+                                                
                                                 <div className="mb-3">
                                                     <div className="flex items-center justify-between mb-1">
                                                         <h4 className="font-semibold text-gray-900 text-xs">GENDER</h4>
@@ -1073,7 +1010,6 @@ const HeteroSemarang = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Space */}
                                                 <div>
                                                     <div className="flex items-center justify-between mb-1">
                                                         <h4 className="font-semibold text-gray-900 text-xs">SPACE</h4>
@@ -1087,7 +1023,6 @@ const HeteroSemarang = () => {
                                                         )}
                                                     </div>
                                                     
-                                                    {/* All Spaces */}
                                                     <div className="mb-2">
                                                         <button
                                                             className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
@@ -1113,37 +1048,61 @@ const HeteroSemarang = () => {
                                                         </button>
                                                     </div>
 
-                                                    {/* Spaces Grid */}
                                                     <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                                                        {availableSpaces.map((space) => {
-                                                            const isSelected = tempFilters.space === space.value;
-                                                            
-                                                            return (
-                                                                <button
-                                                                    key={space.value}
-                                                                    className={`flex items-center justify-between px-2 py-1.5 rounded-lg border transition-all text-xs ${
-                                                                        isSelected
-                                                                            ? 'border-amber-500 bg-amber-50 text-amber-700'
-                                                                            : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
-                                                                    }`}
-                                                                    onClick={() => handleTempSpaceChange(space.value)}
+                                                        {loadingSpaceOptions ? (
+                                                            <div className="col-span-2 flex items-center justify-center py-4">
+                                                                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                                                                <span className="ml-2 text-xs text-gray-500">Loading Spaces</span>
+                                                            </div>
+                                                        ) : spaceOptionsError ? (
+                                                            <div className="col-span-2 text-center py-4">
+                                                                <AlertCircle className="h-6 w-6 text-red-400 mx-auto mb-2" />
+                                                                <p className="text-xs text-red-500">Failed to load spaces</p>
+                                                                <Button 
+                                                                    variant="outline" 
+                                                                    size="sm" 
+                                                                    onClick={() => fetchSpaceOptions()}
+                                                                    className="mt-2 text-xs"
                                                                 >
-                                                                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                                                        <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
-                                                                            isSelected ? 'bg-amber-500' : 'bg-gray-400'
-                                                                        }`} />
-                                                                        <span className="truncate font-medium text-xs">
-                                                                            {space.original}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-                                                                        {isSelected && (
-                                                                            <Check className="h-2.5 w-2.5 text-amber-600 flex-shrink-0" />
-                                                                        )}
-                                                                    </div>
-                                                                </button>
-                                                            );
-                                                        })}
+                                                                    Retry
+                                                                </Button>
+                                                            </div>
+                                                        ) : availableSpaces.length === 0 ? (
+                                                            <div className="col-span-2 text-center py-4">
+                                                                <p className="text-xs text-gray-500">No spaces available</p>
+                                                            </div>
+                                                        ) : (
+                                                            availableSpaces.map((space) => {
+                                                                const isSelected = tempFilters.space === space.value
+
+                                                                return (
+                                                                    <button
+                                                                        key={space.value}
+                                                                        className={`flex items-center justify-between px-2 py-1.5 rounded-lg border transition-all text-xs ${
+                                                                            isSelected
+                                                                                ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                                                                : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
+                                                                        }`}
+                                                                        onClick={() => handleTempSpaceChange(space.value)}
+                                                                        title={space.original}
+                                                                    >
+                                                                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                                            <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
+                                                                                isSelected ? 'bg-amber-500' : 'bg-gray-400'
+                                                                            }`} />
+                                                                            <span className="truncate font-medium text-xs">
+                                                                                {space.original}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+                                                                            {isSelected && (
+                                                                                <Check className="h-2.5 w-2.5 text-amber-600 flex-shrink-0" />
+                                                                            )}
+                                                                        </div>
+                                                                    </button>
+                                                                )
+                                                            })
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -1218,7 +1177,6 @@ const HeteroSemarang = () => {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 
-                                {/* MODIFIKASI: Button Export tanpa dropdown, langsung export ke Excel */}
                                 <Button
                                     variant="outline"
                                     className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"

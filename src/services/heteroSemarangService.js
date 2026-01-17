@@ -122,6 +122,50 @@ class HeteroSemarangService {
             }
         }
     }
+
+    async fetchSpaceOptions() {
+        try {
+            const response = await fetch(`${this.baseURL}/hetero/semarang/space-options`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            const result = await this.handleResponse(response)
+
+            const formattedSpaces = result.data.map(space => {
+                const lowerSpace = space.toLowerCase()
+
+                if (lowerSpace.includes('maneka personal'));
+                else if (lowerSpace.includes('maneka group'));
+                else if (lowerSpace.includes('rembug 1'));
+                else if (lowerSpace.includes('rembug 2'));
+                else if (lowerSpace.includes('rembug 3'));
+                else if (lowerSpace.includes('private office 1-3'));
+                else if (lowerSpace.includes('private office 4-5'));
+                else if (lowerSpace.includes('private office 6'));
+                else if (lowerSpace.includes('space gatra'));
+                else if (lowerSpace.includes('space maneka'));
+                else if (lowerSpace.includes('space outdoor'));
+                else if (lowerSpace.includes('virtual office'));
+                else if (lowerSpace.includes('course'));
+
+                return {
+                    value: lowerSpace,
+                    label: `${space}`,
+                    original: space
+                }
+            })
+
+            return {
+                ...result,
+                data: formattedSpaces
+            }
+        } catch (error) {
+            console.error('Error fetching space options', error)
+        }
+    }
 }
 
 export default new HeteroSemarangService();

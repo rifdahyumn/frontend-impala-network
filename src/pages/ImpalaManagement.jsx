@@ -563,7 +563,7 @@ const ImpalaManagement = () => {
         headers: ['No', 'Full Name', 'Email', 'Gender', 'Program Name', 'Category', 'Entity', 'Action'],
         title: "Impala Management",
         addButton: "Add Participant",
-        detailTitle: "Participant Details"
+        detailTitle: "Beneficiaries Details"
     };
 
     const handleDownloadTemplate = useCallback(() => {
