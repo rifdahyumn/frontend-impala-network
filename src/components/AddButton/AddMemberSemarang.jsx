@@ -3,7 +3,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Plus, X, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import heteroSemarangService from "../../services/heteroSemarangService";
@@ -79,8 +79,9 @@ const AddMemberSemarang = ({
         districts: false,
         villages: false
     })
+    const [isInitializing, setIsInitializing] = useState(false);
 
-    const loadProvinces = async () => {
+    const loadProvinces = useCallback(async () => {
         setLoadingLocations(prev => ({ ...prev, provinces: true }));
         try {
             const provincesData = await locationService.getProvinces();
@@ -91,111 +92,138 @@ const AddMemberSemarang = ({
         } finally {
             setLoadingLocations(prev => ({ ...prev, provinces: false }));
         }
-    };
+    }, []);
 
-    useEffect(() => {
-        loadProvinces()
-    }, [])
-
-    useEffect(() => {
-        const loadRegencies = async () => {
-            if (!formData.province_id) {
+    const loadRegencies = useCallback(async (provinceId, skipReset = false) => {
+        if (!provinceId) {
+            if (!skipReset) {
                 setRegencies([]);
-                return;
-            }
-
-            setLoadingLocations(prev => ({ ...prev, regencies: true }));
-            try {
-                const regenciesData = await locationService.getRegencies(formData.province_id);
-                setRegencies(regenciesData || []);
-                
                 setFormData(prev => ({
                     ...prev,
                     regency_id: '',
-                    district_id: '',
-                    village_id: '',
                     regency_name: '',
+                    district_id: '',
                     district_name: '',
+                    village_id: '',
                     village_name: ''
                 }));
+            }
+            return;
+        }
+
+        setLoadingLocations(prev => ({ ...prev, regencies: true }));
+        try {
+            const regenciesData = await locationService.getRegencies(provinceId);
+            setRegencies(regenciesData || []);
+            
+            if (!skipReset) {
+                setFormData(prev => ({
+                    ...prev,
+                    regency_id: '',
+                    regency_name: '',
+                    district_id: '',
+                    district_name: '',
+                    village_id: '',
+                    village_name: ''
+                }));
+            }
+            
+            if (!skipReset) {
                 setDistricts([]);
                 setVillages([]);
-            } catch (error) {
-                console.error(`Error fetching regencies:`, error);
-                toast.error('Error loading regency');
-                setRegencies([]);
-            } finally {
-                setLoadingLocations(prev => ({ ...prev, regencies: false }));
             }
-        };
+        } catch (error) {
+            console.error(`Error fetching regencies:`, error);
+            toast.error('Error loading regency');
+            setRegencies([]);
+        } finally {
+            setLoadingLocations(prev => ({ ...prev, regencies: false }));
+        }
+    }, []);
 
-        loadRegencies();
-    }, [formData.province_id]);
-
-    useEffect(() => {
-        const loadDistricts = async () => {
-            if (!formData.regency_id) {
+    const loadDistricts = useCallback(async (regencyId, skipReset = false) => {
+        if (!regencyId) {
+            if (!skipReset) {
                 setDistricts([]);
-                return;
-            }
-
-            setLoadingLocations(prev => ({ ...prev, districts: true }));
-            try {
-                const districtsData = await locationService.getDistricts(formData.regency_id);
-                setDistricts(districtsData || []);
-                
                 setFormData(prev => ({
                     ...prev,
                     district_id: '',
-                    village_id: '',
                     district_name: '',
+                    village_id: '',
                     village_name: ''
                 }));
-                setVillages([]);
-            } catch (error) {
-                console.error(`Error fetching districts:`, error);
-                toast.error('Gagal memuat data kecamatan');
-                setDistricts([]);
-            } finally {
-                setLoadingLocations(prev => ({ ...prev, districts: false }));
             }
-        };
+            return;
+        }
 
-        loadDistricts();
-    }, [formData.regency_id]);
-
-    useEffect(() => {
-        const loadVillages = async () => {
-            if (!formData.district_id) {
-                setVillages([]);
-                return;
+        setLoadingLocations(prev => ({ ...prev, districts: true }));
+        try {
+            const districtsData = await locationService.getDistricts(regencyId);
+            setDistricts(districtsData || []);
+            
+            if (!skipReset) {
+                setFormData(prev => ({
+                    ...prev,
+                    district_id: '',
+                    district_name: '',
+                    village_id: '',
+                    village_name: ''
+                }));
             }
+            
+            if (!skipReset) {
+                setVillages([]);
+            }
+        } catch (error) {
+            console.error(`Error fetching districts:`, error);
+            toast.error('Gagal memuat data kecamatan');
+            setDistricts([]);
+        } finally {
+            setLoadingLocations(prev => ({ ...prev, districts: false }));
+        }
+    }, []);
 
-            setLoadingLocations(prev => ({ ...prev, villages: true }));
-            try {
-                const villagesData = await locationService.getVillages(formData.district_id);
-                setVillages(villagesData || []);
-                
+    const loadVillages = useCallback(async (districtId, skipReset = false) => {
+        if (!districtId) {
+            if (!skipReset) {
+                setVillages([]);
                 setFormData(prev => ({
                     ...prev,
                     village_id: '',
                     village_name: ''
                 }));
-            } catch (error) {
-                console.error(`Error fetching villages:`, error);
-                toast.error('Gagal memuat data desa/kelurahan');
-                setVillages([]);
-            } finally {
-                setLoadingLocations(prev => ({ ...prev, villages: false }));
             }
-        };
+            return;
+        }
 
-        loadVillages();
-    }, [formData.district_id]);
+        setLoadingLocations(prev => ({ ...prev, villages: true }));
+        try {
+            const villagesData = await locationService.getVillages(districtId);
+            setVillages(villagesData || []);
+            
+            if (!skipReset) {
+                setFormData(prev => ({
+                    ...prev,
+                    village_id: '',
+                    village_name: ''
+                }));
+            }
+        } catch (error) {
+            console.error(`Error fetching villages:`, error);
+            toast.error('Gagal memuat data desa/kelurahan');
+            setVillages([]);
+        } finally {
+            setLoadingLocations(prev => ({ ...prev, villages: false }));
+        }
+    }, []);
 
-    useEffect(() => {
-        if (isEditMode && editData) {
-            setFormData({
+    const initializeEditData = useCallback(async () => {
+        if (!isEditMode || !editData) return;
+
+        setIsInitializing(true);
+        
+        try {
+            const initialFormData = {
                 full_name: editData.full_name || '',
                 nik: editData.nik || '',
                 email: editData.email || '',
@@ -220,100 +248,163 @@ const AddMemberSemarang = ({
                 add_on: Array.isArray(editData.add_on) ? editData.add_on : 
                        (editData.add_on ? [editData.add_on] : []),
                 add_information: editData.add_information || '',
-            })
-        } else {
-            setFormData({
-                full_name: '',
-                nik: '',
-                email: '',
-                phone: '',
-                gender: '',
-                date_of_birth: '',
-                education: '',
-                address: '',
-                province_id: '',
-                province_name: '',
-                regency_id: '',
-                regency_name: '',
-                district_id: '',
-                district_name: '',
-                village_id: '',
-                village_name: '',
-                postal_code: '',
-                company: '',
-                space: '',
-                start_date: '',
-                end_date: '',
-                add_on: [],
-                add_information: '',
-            })
+            };
+
+            setFormData(initialFormData);
+
+            if (editData.province_id) {
+                await loadRegencies(editData.province_id, true);
+                
+                if (editData.regency_id) {
+                    await loadDistricts(editData.regency_id, true);
+                    
+                    if (editData.district_id) {
+                        await loadVillages(editData.district_id, true);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error initializing edit data:', error);
+            toast.error('Gagal memuat data lokasi untuk edit');
+        } finally {
+            setIsInitializing(false);
         }
-        setErrors({})
-    }, [isEditMode, editData, isAddMemberModalOpen])
+    }, [isEditMode, editData, loadRegencies, loadDistricts, loadVillages]);
+
+    useEffect(() => {
+        loadProvinces();
+    }, [loadProvinces]);
+
+    useEffect(() => {
+        if (isAddMemberModalOpen) {
+            if (isEditMode) {
+                initializeEditData();
+            } else {
+                setFormData({
+                    full_name: '',
+                    nik: '',
+                    email: '',
+                    phone: '',
+                    gender: '',
+                    date_of_birth: '',
+                    education: '',
+                    address: '',
+                    province_id: '',
+                    province_name: '',
+                    regency_id: '',
+                    regency_name: '',
+                    district_id: '',
+                    district_name: '',
+                    village_id: '',
+                    village_name: '',
+                    postal_code: '',
+                    company: '',
+                    space: '',
+                    start_date: '',
+                    end_date: '',
+                    add_on: [],
+                    add_information: '',
+                });
+                setRegencies([]);
+                setDistricts([]);
+                setVillages([]);
+                setErrors({});
+            }
+        }
+    }, [isAddMemberModalOpen, isEditMode, initializeEditData]);
+
+    useEffect(() => {
+        if (formData.province_id && !isEditMode) {
+            loadRegencies(formData.province_id, false);
+        }
+    }, [formData.province_id, isEditMode, loadRegencies]);
+
+    useEffect(() => {
+        if (formData.regency_id && !isEditMode) {
+            loadDistricts(formData.regency_id, false);
+        }
+    }, [formData.regency_id, isEditMode, loadDistricts]);
+    
+    useEffect(() => {
+        if (formData.district_id && !isEditMode) {
+            loadVillages(formData.district_id, false);
+        }
+    }, [formData.district_id, isEditMode, loadVillages]);
 
     const handleInputChange = (e) => {
-        const { name, value } = e.target
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }))
-    }
-
-    const handleSelectChange = (name, value) => {
-        if (name === 'province_id') {
-            const selectedProvince = provinces.find(p => p.value === value)
-            setFormData(prev => ({
-                ...prev,
-                [name]: value,
-                province_name: selectedProvince?.label || '',
-                regency_id: '',
-                regency_name: '',
-                district_id: '',
-                district_name: '',
-                village_id: '',
-                village_name: ''
-            }))
-        } else if (name === 'regency_id') {
-            const selectedRegency = regencies.find(r => r.value === value)
-            setFormData(prev => ({
-                ...prev,
-                [name]: value,
-                regency_name: selectedRegency?.label || '',
-                district_id: '',
-                district_name: '',
-                village_id: '',
-                village_name: ''
-            }))
-        } else if (name === 'district_id') {
-            const selectedDistrict = districts.find(d => d.value === value)
-            setFormData(prev => ({
-                ...prev,
-                [name]: value,
-                district_name: selectedDistrict?.label || '',
-                village_id: '',
-                village_name: ''
-            }))
-        } else if (name === 'village_id') {
-            const selectedVillage = villages.find(v => v.value === value)
-            setFormData(prev => ({
-                ...prev,
-                [name]: value,
-                village_name: selectedVillage?.label || ''
-            }))
+        const { name, value } = e.target;
+        
+        if (isEditMode && ['province_id', 'regency_id', 'district_id'].includes(name)) {
+            if (name === 'province_id') {
+                setRegencies([]);
+                setDistricts([]);
+                setVillages([]);
+                const selectedProvince = provinces.find(p => p.value === value);
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: value,
+                    province_name: selectedProvince?.label || '',
+                    regency_id: '',
+                    regency_name: '',
+                    district_id: '',
+                    district_name: '',
+                    village_id: '',
+                    village_name: ''
+                }));
+                
+                if (value) {
+                    loadRegencies(value, false);
+                }
+            } else if (name === 'regency_id') {
+                setDistricts([]);
+                setVillages([]);
+                const selectedRegency = regencies.find(r => r.value === value);
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: value,
+                    regency_name: selectedRegency?.label || '',
+                    district_id: '',
+                    district_name: '',
+                    village_id: '',
+                    village_name: ''
+                }));
+                
+                if (value) {
+                    loadDistricts(value, false);
+                }
+            } else if (name === 'district_id') {
+                setVillages([]);
+                const selectedDistrict = districts.find(d => d.value === value);
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: value,
+                    district_name: selectedDistrict?.label || '',
+                    village_id: '',
+                    village_name: ''
+                }));
+                
+                if (value) {
+                    loadVillages(value, false);
+                }
+            }
         } else {
             setFormData(prev => ({
                 ...prev,
                 [name]: value
-            }))
+            }));
         }
 
         if (errors[name]) {
             setErrors(prev => ({
                 ...prev,
                 [name]: ''
-            }))
+            }));
         }
-    }
+    };
+
+    const handleSelectChange = (name, value) => {
+        handleInputChange({ target: { name, value } });
+    };
 
     const handleAddOn = () => {
         let addOnToAdd = '';
@@ -443,20 +534,20 @@ const AddMemberSemarang = ({
                     label: 'City / Regency',
                     type: 'select',
                     required: true,
-                    placeholder: loadingLocations.regencies ? 'Loading regenices...' : 'Select City/Regency',
+                    placeholder: loadingLocations.regencies ? 'Loading regencies...' : 'Select City/Regency',
                     options: regencies,
                     loading: loadingLocations.regencies,
-                    disabled: !formData.province_id
+                    disabled: !formData.province_id && !isEditMode
                 },
                 {
                     name: 'district_id',
-                    label: 'Distric',
+                    label: 'District',
                     type: 'select',
                     required: true,
                     placeholder: loadingLocations.districts ? 'Loading district...' : 'Select District',
                     options: districts,
                     loading: loadingLocations.districts,
-                    disabled: !formData.regency_id
+                    disabled: !formData.regency_id && !isEditMode
                 },
                 {
                     name: 'village_id',
@@ -466,7 +557,7 @@ const AddMemberSemarang = ({
                     placeholder: loadingLocations.villages ? 'Loading villages...' : 'Select Village',
                     options: villages,
                     loading: loadingLocations.villages,
-                    disabled: !formData.district_id
+                    disabled: !formData.district_id && !isEditMode
                 },
                 {
                     name: 'postal_code',
@@ -607,18 +698,26 @@ const AddMemberSemarang = ({
         const newErrors = {};
 
         formSections.forEach(section => {
-
             if (section.fields && Array.isArray(section.fields)) {
                 section.fields.forEach(field => {
-                    if (field.required  && field.name) {
+                    if (field.required && field.name) {
                         const value = formData[field.name];
                         if (!value || value.toString().trim() === '') {
                             newErrors[field.name] = `${field.label} is required`;
-                        } 
+                        }
                     }
                 });
             }
         });
+
+        if (formData.start_date && formData.end_date) {
+            const startDate = new Date(formData.start_date);
+            const endDate = new Date(formData.end_date);
+            
+            if (endDate < startDate) {
+                newErrors.end_date = 'End date must be after start date';
+            }
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -689,9 +788,9 @@ const AddMemberSemarang = ({
     const handleCloseModal = () => {
         setIsAddMemberModalOpen(false);
         setErrors({});
-        setRegencies([])
-        setDistricts([])
-        setVillages([])
+        setRegencies([]);
+        setDistricts([]);
+        setVillages([]);
     };
 
     const renderField = (field, index) => {
@@ -714,7 +813,7 @@ const AddMemberSemarang = ({
                         value={formData[field.name] || ''}
                         onValueChange={(value) => handleSelectChange(field.name, value)}
                         required={field.required}
-                        disabled={field.disabled || field.loading}
+                        disabled={field.disabled || field.loading || isInitializing}
                     >
                         <SelectTrigger>
                             {field.loading ? (
@@ -739,6 +838,9 @@ const AddMemberSemarang = ({
                             </SelectGroup>
                         </SelectContent>
                     </Select>
+                    {errors[field.name] && (
+                        <p className="text-sm text-red-600">{errors[field.name]}</p>
+                    )}
                 </div>
             );
         }
@@ -758,7 +860,11 @@ const AddMemberSemarang = ({
                         onChange={handleInputChange}
                         required={field.required}
                         className="w-full"
+                        disabled={isInitializing}
                     />
+                    {errors[field.name] && (
+                        <p className="text-sm text-red-600">{errors[field.name]}</p>
+                    )}
                 </div>
             );
         }
@@ -778,10 +884,29 @@ const AddMemberSemarang = ({
                     placeholder={field.placeholder}
                     required={field.required}
                     className="w-full"
+                    disabled={isInitializing}
                 />
+                {errors[field.name] && (
+                    <p className="text-sm text-red-600">{errors[field.name]}</p>
+                )}
             </div>
         );
     };
+
+    if (isInitializing) {
+        return (
+            <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
+                <DialogContent className="max-h-[90vh] max-w-[900px] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Loading Member Data...</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex justify-center items-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                    </div>
+                </DialogContent>
+            </Dialog>
+        );
+    }
 
     return (
         <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
@@ -793,10 +918,10 @@ const AddMemberSemarang = ({
                         ) : (
                         <>Add New Member</>
                         )}
-                        </DialogTitle>
+                    </DialogTitle>
                     <DialogDescription>
                         {isEditMode
-                            ? `Update information for ${formData.full_name || 'this member'}`
+                            ? `Update information this member`
                             : 'Fill in the details below to add a new member'
                         }
                     </DialogDescription>
@@ -833,7 +958,7 @@ const AddMemberSemarang = ({
                         <Button 
                             type="submit" 
                             disabled={loading}
-                            className={isEditMode ? "bg-amber-500 hover:bg-amber-300" : ""}
+                            className={isEditMode ? "bg-amber-500 hover:bg-amber-600" : ""}
                         >
                             {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                             {loading 
