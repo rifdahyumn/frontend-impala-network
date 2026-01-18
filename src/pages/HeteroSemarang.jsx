@@ -193,15 +193,25 @@ const HeteroSemarang = () => {
             const templateData = [
                 {
                     'full_name': 'Contoh: John Doe',
+                    'nik': 'Contoh: 3374092209940007',
                     'email': 'Contoh: john@example.com',
-                    'gender': 'Contoh: male',
                     'phone': 'Contoh: 081234567890',
-                    'space': 'Contoh: Maneka Personal',
-                    'company': 'Contoh: PT. Contoh Indonesia',
-                    'duration': 'Contoh: 12 months',
-                    'status': 'Contoh: active',
+                    'gender': 'Contoh: Male/Female',
+                    'date_of_birth': 'Contoh: 09/22/1994',
+                    'education': 'Contoh: Bachelor Degree',
                     'address': 'Contoh: Jl. Contoh No. 123',
-                    'notes': 'Contoh: Catatan tambahan'
+                    'province_name': 'Contoh: Jawa Tengah',
+                    'regency_name': 'Contoh: Kota Semarang',
+                    'district_name': 'Contoh: Semarang Barat',
+                    'village_name': 'Contoh: Kembangarum',
+                    'postal_code': 'Contoh: 50183',
+                    'company': 'Contoh: PT. Contoh Indonesia',
+                    'space': 'Contoh: Maneka Personal',
+                    'start_date': 'Contoh: 06/10/2026',
+                    'end_date': 'Contoh: 06/10/2026',
+                    'status': 'Contoh: Active',
+                    'add_on': 'Contoh: Photografi, Videografi, Snack Box',
+                    'add_information': 'Contoh: Website, Sosial Media'
                 },
             ];
             
@@ -271,12 +281,34 @@ const HeteroSemarang = () => {
         
         if (!row.email || row.email.toString().trim() === '') {
             errors.push(`Baris ${rowIndex}: Kolom "email" wajib diisi`);
+        } else {
+            const email = row.email.toString().trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                errors.push(`Baris ${rowIndex}: Format email tidak valid: "${email}"`);
+            }
         }
         
-        if (row.email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(row.email.toString())) {
-                errors.push(`Baris ${rowIndex}: Format email tidak valid`);
+        if (!row.phone || row.phone.toString().trim() === '') {
+            errors.push(`Baris ${rowIndex}: Kolom "phone" wajib diisi`);
+        } else {
+            const phone = row.phone.toString().replace(/\D/g, '');
+            if (phone.length < 10) {
+                errors.push(`Baris ${rowIndex}: Nomor telepon harus minimal 10 digit`);
+            }
+        }
+        
+        if (!row.space || row.space.toString().trim() === '') {
+            errors.push(`Baris ${rowIndex}: Kolom "space" wajib diisi`);
+        }
+        
+        if (row.nik && row.nik.toString().trim() !== '') {
+            const nik = row.nik.toString().replace(/\D/g, '');
+            
+            if (nik.length === 0) {
+                errors.push(`Baris ${rowIndex}: NIK tidak valid (hanya berisi karakter non-digit)`);
+            } else if (nik.length < 10) {
+                errors.push(`Baris ${rowIndex}: NIK harus minimal 10 digit angka (saat ini ${nik.length} digit)`);
             }
         }
         
@@ -285,59 +317,229 @@ const HeteroSemarang = () => {
 
     const parseExcel = (data) => {
         try {
-            const workbook = XLSX.read(data, { type: 'array' });
+            const workbook = XLSX.read(data, { 
+                type: 'array', 
+                cellDates: true,
+                cellNF: false,
+                cellText: true 
+            });
+            
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
             
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+            const rawData = XLSX.utils.sheet_to_json(worksheet, { 
+                header: 1, 
+                defval: '',
+                raw: false, 
+                dateNF: 'yyyy-mm-dd'
+            });
             
-            if (jsonData.length === 0) {
+            
+            if (rawData.length < 2) {
                 throw new Error('File Excel tidak berisi data');
             }
             
-            const headers = Object.keys(jsonData[0]).map(h => h.trim());
+            const headers = rawData[0].map(header => 
+                header.toString()
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\s+/g, '_')
+                    .replace(/[^a-zA-Z0-9_]/g, '')
+            );
+            
             
             const dataRows = [];
             const errors = [];
             
-            jsonData.forEach((row, index) => {
+            for (let i = 1; i < rawData.length; i++) {
+                const rawRow = rawData[i];
+                
                 try {
-                    const cleanRow = {};
-                    headers.forEach(header => {
-                        const value = row[header];
-                        cleanRow[header] = value !== undefined && value !== null ? 
-                            (typeof value === 'string' ? value.trim() : value.toString().trim()) : '';
+                    if (!rawRow || rawRow.every(cell => 
+                        cell === '' || 
+                        cell === null || 
+                        cell === undefined ||
+                        cell.toString().trim() === ''
+                    )) {
+                        continue;
+                    }
+                    
+                    const rowObj = {};
+                    headers.forEach((header, index) => {
+                        let value = rawRow[index];
+
+                        if (value === undefined || value === null) {
+                            value = '';
+                        } else if (typeof value === 'object' && value instanceof Date) {
+                            const year = value.getFullYear();
+                            const month = String(value.getMonth() + 1).padStart(2, '0');
+                            const day = String(value.getDate()).padStart(2, '0');
+                            value = `${year}-${month}-${day}`;
+                        } else {
+                            value = value.toString().trim();
+                        }
+                        
+                        rowObj[header] = value;
                     });
+
+                    const cleanRow = {
+                        full_name: rowObj.full_name || rowObj.fullname || rowObj.name || rowObj.nama || '',
+                        nik: rowObj.nik || rowObj.nik_number || rowObj.nomor_induk || '',
+                        email: rowObj.email || rowObj.email_address || '',
+                        phone: rowObj.phone || rowObj.phone_number || rowObj.telepon || rowObj.mobile || '',
+                        gender: rowObj.gender || rowObj.sex || rowObj.jenis_kelamin || '',
+                        date_of_birth: rowObj.date_of_birth || rowObj.dob || rowObj.tanggal_lahir || rowObj.birth_date || '',
+                        education: rowObj.education || rowObj.pendidikan || rowObj.last_education || '',
+                        address: rowObj.address || rowObj.alamat || '',
+                        province_name: rowObj.province_name || rowObj.province || rowObj.provinsi || '',
+                        regency_name: rowObj.regency_name || rowObj.city || rowObj.kota || rowObj.kabupaten || '',
+                        district_name: rowObj.district_name || rowObj.district || rowObj.kecamatan || '',
+                        village_name: rowObj.village_name || rowObj.village || rowObj.kelurahan || rowObj.desa || '',
+                        postal_code: rowObj.postal_code || rowObj.postalcode || rowObj.kode_pos || '',
+                        company: rowObj.company || rowObj.company_name || rowObj.perusahaan || '',
+                        space: rowObj.space || rowObj.space_type || rowObj.package || '',
+                        start_date: rowObj.start_date || rowObj.startdate || rowObj.tanggal_mulai || '',
+                        end_date: rowObj.end_date || rowObj.enddate || rowObj.tanggal_selesai || '',
+                        status: rowObj.status || rowObj.member_status || 'Active',
+                        add_on: rowObj.add_on || rowObj.addon || rowObj.additional_services || '',
+                        add_information: rowObj.add_information || rowObj.additional_info || rowObj.information || ''
+                    };
                     
                     if (Object.values(cleanRow).some(value => 
-                        value.toString().includes('Contoh:') || 
-                        value.toString().includes('CONTOH:') ||
-                        value.toString().includes('contoh:')
+                        value.toString().toLowerCase().includes('contoh') ||
+                        value.toString().toLowerCase().includes('example') ||
+                        value.toString().startsWith('Contoh:') ||
+                        value.toString().startsWith('Example:')
                     )) {
-                        return;
+                        continue;
                     }
                     
                     if (Object.values(cleanRow).every(value => value === '')) {
-                        return;
+                        continue;
                     }
                     
-                    const rowErrors = validateRowData(cleanRow, index + 1);
+                    if (cleanRow.nik) {
+                        let nikValue = cleanRow.nik;
+
+                        const cellAddress = XLSX.utils.encode_cell({ r: i, c: headers.indexOf('nik') });
+                        if (worksheet[cellAddress] && worksheet[cellAddress].w) {
+                            nikValue = worksheet[cellAddress].w;
+                        }
+                        
+                        if (nikValue.includes('E+') || nikValue.includes('e+')) {
+                            try {
+                                const numericStr = nikValue.replace(',', '.');
+                                const num = parseFloat(numericStr);
+                                
+                                if (!isNaN(num)) {
+                                    nikValue = num.toFixed(0);
+                                }
+                            } catch (e) {
+                                console.error(`Error converting scientific notation for row ${i + 1}:`, e);
+                            }
+                        }
+                        
+                        cleanRow.nik = nikValue.toString().replace(/\D/g, '');
+                    }
+                    
+                    if (cleanRow.phone) {
+                        cleanRow.phone = cleanRow.phone.replace(/[^\d+]/g, '');
+                    }
+                    
+                    const formatDate = (dateStr) => {
+                        if (!dateStr || dateStr.toString().trim() === '') {
+                            return '';
+                        }
+                        
+                        const str = dateStr.toString().trim();
+                        
+                        const patterns = [
+                            /^(\d{4})-(\d{1,2})-(\d{1,2})$/,
+                            /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
+                            /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
+                            /^(\d{1,2})-(\d{1,2})-(\d{4})$/,
+                            /^(\d{1,2})-(\d{1,2})-(\d{4})$/
+                        ];
+                        
+                        for (const pattern of patterns) {
+                            const match = str.match(pattern);
+                            if (match) {
+                                let year, month, day;
+                                
+                                if (pattern.source.startsWith('^\\d{4}')) {
+                                    year = match[1];
+                                    month = match[2].padStart(2, '0');
+                                    day = match[3].padStart(2, '0');
+                                } else {
+                                    const part1 = parseInt(match[1]);
+                                    const part2 = parseInt(match[2]);
+                                    year = match[3];
+                                    
+                                    if (part1 > 12) {
+                                        day = part1.toString().padStart(2, '0');
+                                        month = part2.toString().padStart(2, '0');
+                                    } else if (part2 > 12) {
+                                        month = part1.toString().padStart(2, '0');
+                                        day = part2.toString().padStart(2, '0');
+                                    } else {
+                                        month = part1.toString().padStart(2, '0');
+                                        day = part2.toString().padStart(2, '0');
+                                    }
+                                }
+                                
+                                const date = new Date(`${year}-${month}-${day}`);
+                                if (!isNaN(date.getTime())) {
+                                    return `${year}-${month}-${day}`;
+                                }
+                            }
+                        }
+                        
+                        const date = new Date(str);
+                        if (!isNaN(date.getTime())) {
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            return `${year}-${month}-${day}`;
+                        }
+                        
+                        return str; 
+                    };
+                    
+                    cleanRow.date_of_birth = formatDate(cleanRow.date_of_birth);
+                    cleanRow.start_date = formatDate(cleanRow.start_date);
+                    cleanRow.end_date = formatDate(cleanRow.end_date);
+                    
+                    if (cleanRow.add_on && typeof cleanRow.add_on === 'string') {
+                        cleanRow.add_on = cleanRow.add_on
+                            .split(/[,;\n]/)
+                            .map(item => item.trim())
+                            .filter(item => item.length > 0);
+                    } else if (!cleanRow.add_on) {
+                        cleanRow.add_on = [];
+                    }
+                    
+                    const rowErrors = validateRowData(cleanRow, i + 1);
                     if (rowErrors.length > 0) {
                         errors.push(...rowErrors);
-                        return;
+                        continue;
                     }
                     
                     dataRows.push(cleanRow);
+                    
                 } catch (error) {
-                    errors.push(`Baris ${index + 1}: ${error.message}`);
+                    console.error(`Error processing row ${i + 1}:`, error);
+                    errors.push(`Baris ${i + 1}: ${error.message}`);
                 }
-            });
+            }
             
-            return { data: dataRows, errors, headers };
+            return { data: dataRows, errors };
+            
         } catch (error) {
+            console.error('Excel parsing error:', error);
             throw new Error(`Gagal membaca file Excel: ${error.message}`);
         }
     };
+
 
     const handleImportExcel = useCallback(async () => {
         if (!importFile) {
@@ -352,7 +554,18 @@ const HeteroSemarang = () => {
             reader.onload = async (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const { data: parsedData } = parseExcel(data);
+                    const { data: parsedData, errors } = parseExcel(data);
+                    
+                    if (errors.length > 0) {
+                        setValidationErrors(errors);
+                        if (parsedData.length === 0) {
+                            toast.error('Tidak ada data valid yang ditemukan dalam file');
+                        } else {
+                            toast.error(`Terdapat ${errors.length} error dalam file`);
+                        }
+                        setIsImporting(false);
+                        return;
+                    }
                     
                     if (parsedData.length === 0) {
                         toast.error('Tidak ada data yang bisa diimport');
@@ -360,20 +573,53 @@ const HeteroSemarang = () => {
                         return;
                     }
                     
-                    const existingMembers = JSON.parse(localStorage.getItem('hetero_semarang_members') || '[]');
-                    const newMembers = [
-                        ...existingMembers,
-                        ...parsedData.map((member, index) => ({
-                            id: Date.now() + index,
-                            ...member,
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString()
-                        }))
-                    ];
-                    localStorage.setItem('hetero_semarang_members', JSON.stringify(newMembers));
+                    let successCount = 0;
+                    let errorCount = 0;
+                    const importErrors = [];
+                    
+                    for (const memberData of parsedData) {
+                        try {
+                            const importData = {
+                                full_name: memberData.full_name,
+                                nik: memberData.nik || null,
+                                email: memberData.email,
+                                phone: memberData.phone,
+                                gender: memberData.gender || null,
+                                date_of_birth: memberData.date_of_birth || null,
+                                education: memberData.education || null,
+                                address: memberData.address || null,
+                                province_name: memberData.province_name || null,
+                                regency_name: memberData.regency_name || null,
+                                district_name: memberData.district_name || null,
+                                village_name: memberData.village_name || null,
+                                postal_code: memberData.postal_code || null,
+                                company: memberData.company || null,
+                                space: memberData.space,
+                                start_date: memberData.start_date || null,
+                                end_date: memberData.end_date || null,
+                                status: memberData.status || 'Active',
+                                add_on: Array.isArray(memberData.add_on) ? memberData.add_on : [],
+                                add_information: memberData.add_information || null
+                            };
+                            
+                            const response = await addMemberHeteroSemarang(importData);
+                            
+                            if (response) {
+                                successCount++;
+                            } else {
+                                errorCount++;
+                                importErrors.push(`Gagal mengimport ${memberData.full_name}`);
+                            }
+                            
+                        } catch (memberError) {
+                            errorCount++;
+                            importErrors.push(`Error mengimport ${memberData.full_name || 'unknown'}: ${memberError.message}`);
+                            console.error('Import member error:', memberError);
+                        }
+                    }
                     
                     setImportFile(null);
-                    setValidationErrors([]);
+                    setValidationErrors(importErrors);
                     setIsDragging(false);
                     if (fileInputRef.current) {
                         fileInputRef.current.value = '';
@@ -383,10 +629,18 @@ const HeteroSemarang = () => {
                     
                     await fetchMembers(pagination.page);
                     
-                    toast.success(`Berhasil mengimport ${parsedData.length} member`);
+                    if (successCount > 0) {
+                        toast.success(`Berhasil mengimport ${successCount} member`);
+                    }
+                    
+                    if (errorCount > 0) {
+                        toast.error(`Gagal mengimport ${errorCount} member`);
+                    }
+                    
                 } catch (parseError) {
                     console.error('Parse error:', parseError);
                     toast.error('Format file Excel tidak valid');
+                    setValidationErrors([parseError.message]);
                 } finally {
                     setIsImporting(false);
                 }
@@ -398,7 +652,7 @@ const HeteroSemarang = () => {
             toast.error('Gagal mengimport data');
             setIsImporting(false);
         }
-    }, [importFile, fetchMembers, pagination.page]);
+    }, [importFile, fetchMembers, pagination.page, addMemberHeteroSemarang]);
 
     const handleOpenImportModal = useCallback(() => {
         setImportFile(null);
