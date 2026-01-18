@@ -57,6 +57,42 @@ class HeteroSemarangService {
         }
     }
 
+    async fetchAllMembers(params = {}) {
+        try {
+            const {
+                search = '',
+                gender = '',
+                space = '',
+                status = '',
+            } = params
+
+            const queryParams = new URLSearchParams({
+                export: 'true'
+            });
+
+            if (search) queryParams.append('search', search);
+            if (gender) queryParams.append('gender', gender);
+            if (space && space !== 'all') queryParams.append('space', space);
+            if (status) queryParams.append('status', status);
+
+            const response = await fetch(`${this.baseURL}/hetero/semarang/export?${queryParams}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.status === 404) {
+                console.log('Export endpoint not found, using regular endpoint with large limit');
+            }
+
+            return await this.handleResponse(response);
+
+        } catch (error) {
+            console.error('Service - Error fetching all members:', error);
+        }
+    }
+
     async addMemberHeteroSemarang(memberData) {
         try {
             const response = await fetch(`${this.baseURL}/hetero/semarang`, {

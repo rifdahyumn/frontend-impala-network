@@ -38,6 +38,9 @@ export const useHeteroSemarang = (initialFilters = {}) => {
     const [loadingSpaceOptions, setLoadingSpaceOptions] = useState(false)
     const [spaceOptionsError, setSpaceOptionsError] = useState(null)
 
+    const [allMembers, setAllMembers] = useState([])
+    const [isFetchingAll, setIsFetchingAll] = useState(false)
+
     const filtersRef = useRef(filters)
     const paginationRef = useRef(pagination)
     const spaceOptionsRef = useRef(spaceOptions)
@@ -124,6 +127,61 @@ export const useHeteroSemarang = (initialFilters = {}) => {
         return gender ? gender.label : genderValue
     }, [])
 
+    const fetchAllMembers = useCallback(async (customFilters = null) => {
+        try {
+            setIsFetchingAll(true)
+
+            const currentFilters = customFilters !== null ? customFilters : filtersRef.current
+
+            const serviceParams = {
+                page: 1,
+                limit: 10000, 
+                search: currentFilters.search || '',
+                gender: currentFilters.gender || '',
+                space: currentFilters.space || '',
+                status: currentFilters.status || '',
+                showAllOnSearch: 'true',
+                export: true 
+            }
+
+            let result;
+            try {
+                if (heteroSemarangService.fetchAllMembers) {
+                    result = await heteroSemarangService.fetchAllMembers({
+                        search: currentFilters.search || '',
+                        gender: currentFilters.gender || '',
+                        space: currentFilters.space || '',
+                        status: currentFilters.status || ''
+                    });
+                } else {
+                    result = await heteroSemarangService.fetchHeteroSemarang(serviceParams);
+                }
+            } catch (error) {
+                console.error('Service error:', error);
+                throw error;
+            }
+
+            if (result && result.data) {
+                setAllMembers(result.data);
+                return result.data;
+            } else if (result && Array.isArray(result)) {
+                setAllMembers(result);
+                return result;
+            }
+
+            console.warn('[fetchAllMembers] No data returned from service');
+            toast.error('Tidak ada data yang ditemukan untuk diexport');
+            return [];
+
+        } catch (error) {
+            console.error('Error fetching all members:', error)
+            toast.error('Failed to fetch all members')
+            return []
+        } finally {
+            setIsFetchingAll(false)
+        }
+    }, [])
+
     const fetchMembers = useCallback(async (page = 1, customFilters = null) => {
         try {
             setLoading(true)
@@ -152,13 +210,13 @@ export const useHeteroSemarang = (initialFilters = {}) => {
             }))
 
         } catch (err) {
-            console.error('❌ Hook - Error:', err)
+            console.error('Hook - Error:', err)
             setError(err.message)
             toast.error('Failed to load members')
         } finally {
             setLoading(false)
         }
-    }, [extractSpacesFromMembers])
+    }, [])
 
     const fetchMemberStats = useCallback(async () => {
         try {
@@ -348,6 +406,9 @@ export const useHeteroSemarang = (initialFilters = {}) => {
         loadingSpaceOptions, 
         spaceOptionsError, 
         genderOptions, 
+        allMembers,
+        isFetchingAll,
+        fetchAllMembers,
         setFilters: refetchWithFilters, 
         updateFilters: refetchWithFilters,
         fetchMembers, 

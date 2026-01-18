@@ -48,11 +48,26 @@ const HeteroSemarang = () => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filteredMembers, setFilteredMembers] = useState([]);
 
+    
+    const getGenderLabel = (genderValue) => {
+        if (!genderValue) return "";
+        if (genderValue === 'male') return 'Male';
+        if (genderValue === 'female') return 'Female';
+        return genderValue;
+    };
+
+    const getStatusLabel = (statusValue) => {
+        if (!statusValue) return "";
+        if (statusValue === 'active') return 'Active';
+        if (statusValue === 'inactive') return 'Inactive';
+        return statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
+    };
+
     const { members, loading, error, pagination, fetchMembers, addMemberHeteroSemarang, 
         updateMemberHeteroSemarang, deleteMemberHeteroSemarang, showConfirm, handleConfirm, handleCancel,
         isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading, spaceOptions, loadingSpaceOptions,
         genderOptions, getSpaceLabel, extractSpacesFromMembers, spaceOptionsError, fetchSpaceOptions,
-        filters, setFilters, handlePageChange } = useHeteroSemarang()
+        filters, setFilters, handlePageChange, fetchAllMembers } = useHeteroSemarang()
 
     useEffect(() => {
         let result = [...members];
@@ -730,55 +745,76 @@ const HeteroSemarang = () => {
 
     const handleExport = useCallback(async () => {
         try {
-            if (!members || members.length === 0) {
+            setIsExporting(true)
+
+            const allData = await fetchAllMembers()
+
+            if (!allData || allData.length === 0) {
                 toast.error('No data to export');
+                setIsExporting(false)
                 return;
             }
             
             setIsExporting(true);
             
-            const exportData = members.map((member, index) => ({
+            const exportData = allData.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
+                'NIK': member.nik || '-',
                 'Email': member.email || '-',
-                'Gender': member.gender || '-',
                 'Phone': member.phone || '-',
-                'Space': member.space || '-',
-                'Company': member.company || '-',
-                'Status': member.status || '-',
+                'Gender': member.gender || '-',
+                'Date of Birth': member.date_of_birth || '-',
+                'Education': member.education || '-',
                 'Address': member.address || '-',
+                'Province': member.province_name || '-',
+                'Regency': member.regency_name || '-',
+                'District': member.district_name || '-',
+                'Village': member.village_name || '-',
+                'Postal Code': member.postal_code || '-',
+                'Company': member.company || '-',
+                'Space': member.space || '-',
                 'Start Date': member.start_date || '-',
                 'End Date': member.end_date || '-',
-                'Duration': member.duration || '-',
-                'Add On': member.add_on || '-',
-                'Add Information': member.add_information || '-',
+                'Status': member.status || '-',
+                'Add On': Array.isArray(member.add_on) 
+                ? member.add_on.join(', ') 
+                : member.add_on || '-',
+                'Additional Information': member.add_information || '-',
                 'Created Date': member.created_at 
-                    ? new Date(member.created_at).toLocaleDateString() 
-                    : '-',
+                ? new Date(member.created_at).toLocaleDateString('id-ID') 
+                : '-',
                 'Last Updated': member.updated_at 
-                    ? new Date(member.updated_at).toLocaleDateString() 
-                    : '-'
+                ? new Date(member.updated_at).toLocaleDateString('id-ID') 
+                : '-'
             }));
 
             const ws = XLSX.utils.json_to_sheet(exportData);
             
             const wscols = [
-                { wch: 5 },   
-                { wch: 25 },  
+                { wch: 5 },  
+                { wch: 25 }, 
+                { wch: 20 }, 
                 { wch: 30 }, 
+                { wch: 15 },
                 { wch: 10 }, 
-                { wch: 15 },  
-                { wch: 25 },  
-                { wch: 30 }, 
                 { wch: 15 }, 
-                { wch: 40 },  
-                { wch: 12 },   
-                { wch: 12 }, 
-                { wch: 10 },  
-                { wch: 15 },  
+                { wch: 20 }, 
+                { wch: 40 }, 
                 { wch: 20 },  
-                { wch: 15 },  
-                { wch: 15 },  
+                { wch: 20 }, 
+                { wch: 20 },
+                { wch: 20 }, 
+                { wch: 10 },  
+                { wch: 30 },  
+                { wch: 25 }, 
+                { wch: 12 },  
+                { wch: 12 },  
+                { wch: 10 }, 
+                { wch: 30 },  
+                { wch: 30 },  
+                { wch: 15 }, 
+                { wch: 15 },
             ];
             ws['!cols'] = wscols;
             
@@ -788,8 +824,9 @@ const HeteroSemarang = () => {
                 const cell_ref = XLSX.utils.encode_cell(cell_address);
                 if (!ws[cell_ref]) continue;
                 ws[cell_ref].s = {
-                    font: { bold: true },
-                    fill: { fgColor: { rgb: "E0E0E0" } }
+                font: { bold: true, color: { rgb: "FFFFFF" } },
+                fill: { fgColor: { rgb: "4F46E5" } },
+                alignment: { horizontal: "center" }
                 };
             }
 
@@ -815,10 +852,13 @@ const HeteroSemarang = () => {
             ];
             
             const wsInfo = XLSX.utils.aoa_to_sheet(filterInfo);
+            wsInfo['A1'].s = {
+                font: { bold: true, sz: 16, color: { rgb: "1E40AF" } }
+            };
             XLSX.utils.book_append_sheet(wb, wsInfo, "Export Info");
             
             const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
-            const fileName = `hetero_surakarta_members_export_${dateStr}.xlsx`;
+            const fileName = `hetero_semarang_members_export_${dateStr}.xlsx`;
             
             XLSX.writeFile(wb, fileName);
             
@@ -829,7 +869,7 @@ const HeteroSemarang = () => {
         } finally {
             setIsExporting(false);
         }
-    }, [members, searchTerm, filters, getSpaceLabel]);
+    }, [fetchAllMembers, searchTerm, filters, getSpaceLabel, getGenderLabel, getStatusLabel]);
 
     useEffect(() => {
         const preventDefaults = (e) => {
@@ -994,20 +1034,6 @@ const HeteroSemarang = () => {
         { value: 'active', label: 'Active' },
         { value: 'inactive', label: 'Inactive' }
     ];
-
-    const getGenderLabel = (genderValue) => {
-        if (!genderValue) return "";
-        if (genderValue === 'male') return 'Male';
-        if (genderValue === 'female') return 'Female';
-        return genderValue;
-    };
-
-    const getStatusLabel = (statusValue) => {
-        if (!statusValue) return "";
-        if (statusValue === 'active') return 'Active';
-        if (statusValue === 'inactive') return 'Inactive';
-        return statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
-    };
 
     useEffect(() => {
         setTempFilters({
