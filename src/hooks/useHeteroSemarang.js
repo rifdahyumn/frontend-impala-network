@@ -1,6 +1,6 @@
 import toast from "react-hot-toast"
 import heteroSemarangService from "../services/heteroSemarangService"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useConfirmDialog } from "./useConfirmDialog"
 
 const genderOptions = [
@@ -38,6 +38,22 @@ export const useHeteroSemarang = (initialFilters = {}) => {
     const [loadingSpaceOptions, setLoadingSpaceOptions] = useState(false)
     const [spaceOptionsError, setSpaceOptionsError] = useState(null)
 
+    const filtersRef = useRef(filters)
+    const paginationRef = useRef(pagination)
+    const spaceOptionsRef = useRef(spaceOptions)
+
+    useEffect(() => {
+        filtersRef.current = filters
+    }, [filters])
+
+    useEffect(() => {
+        paginationRef.current = pagination
+    }, [pagination])
+
+    useEffect(() => {
+        spaceOptionsRef.current = spaceOptions
+    }, [spaceOptions])
+
     const fetchSpaceOptions = useCallback(async () => {
         try {
             setLoadingSpaceOptions(true)
@@ -51,9 +67,8 @@ export const useHeteroSemarang = (initialFilters = {}) => {
                 throw new Error(result?.message || 'Failed to fetch space options')
             }
 
-        } catch (error) {
-            console.error('Error fetching space options:', error)
-            setSpaceOptionsError(error.message)
+        } catch (err) {
+            setSpaceOptionsError(err.message)
             setSpaceOptions([])
         } finally {
             setLoadingSpaceOptions(false)
@@ -91,9 +106,9 @@ export const useHeteroSemarang = (initialFilters = {}) => {
             }
         })
 
-        const uniqueDataSPaces = [...new Map(dataSpaces.map(item => [item.value, item])).values()]
+        const uniqueDataSpaces = [...new Map(dataSpaces.map(item => [item.value, item])).values()]
 
-        return uniqueDataSPaces.sort((a, b) => a.original.localeCompare(b.original))
+        return uniqueDataSpaces.sort((a, b) => a.original.localeCompare(b.original))
     }, [])
 
     const getSpaceLabel = useCallback((spaceValue) => {
@@ -114,13 +129,19 @@ export const useHeteroSemarang = (initialFilters = {}) => {
             setLoading(true)
             setError(null)
 
-            const currentFilters = customFilters || filters;
+            const currentFilters = customFilters !== null ? customFilters : filtersRef.current
 
-            const result = await heteroSemarangService.fetchHeteroSemarang({
+            const serviceParams = {
                 page,
-                limit: pagination.limit,
-                ...currentFilters
-            })
+                limit: paginationRef.current.limit,
+                search: currentFilters.search || '',
+                gender: currentFilters.gender || '',
+                space: currentFilters.space || '',
+                status: currentFilters.status || '',
+                showAllOnSearch: 'false'
+            }
+
+            const result = await heteroSemarangService.fetchHeteroSemarang(serviceParams)
 
             setMembers(result.data || [])
             setPagination(prev => ({
@@ -130,21 +151,16 @@ export const useHeteroSemarang = (initialFilters = {}) => {
                 totalPages: result.metadata?.pagination?.totalPages || 0,
             }))
 
-            if (spaceOptions.length === 0 && result.data && result.data.length > 0) {
-                const extractedSpaces = extractSpacesFromMembers(result.data)
-                setSpaceOptions(extractedSpaces)
-            }
-
-        } catch (error) {
-            console.error('Error fetching members:', error)
-            setError(error.message)
-            toast.error('Failed to load member')
+        } catch (err) {
+            console.error('❌ Hook - Error:', err)
+            setError(err.message)
+            toast.error('Failed to load members')
         } finally {
             setLoading(false)
         }
-    }, [filters, pagination.limit, spaceOptions.length, extractSpacesFromMembers])
+    }, [extractSpacesFromMembers])
 
-    const fetchMemberStats  = useCallback(async () => {
+    const fetchMemberStats = useCallback(async () => {
         try {
             setStatsLoading(true)
             const result = await heteroSemarangService.fetchMemberStats()
@@ -163,10 +179,7 @@ export const useHeteroSemarang = (initialFilters = {}) => {
                     activePercentage
                 })
             }
-        } catch (error) {
-            console.error('Error fetching member stats:', error)
-            toast.error('Failed to load statistics')
-            
+        } catch {
             const total = members.length
             const active = members.filter(m => m.status === 'active').length
             const activePercentage = total > 0 ? ((active / total) * 100).toFixed(1) : "0.0"
@@ -177,25 +190,67 @@ export const useHeteroSemarang = (initialFilters = {}) => {
                 growthPercentage: "0",
                 activePercentage
             })
+            toast.error('Failed to load statistics')
         } finally {
             setStatsLoading(false)
         }
     }, [members.length])
 
-    const refetchWithFilters = useCallback((newFilters) => {
+    const refetchWithFilters = useCallback((newFilters, resetPage = true) => {
         setFilters(newFilters)
+    
+        if (resetPage) {
+            const newPagination = { ...paginationRef.current, page: 1 }
+            setPagination(newPagination)
+            paginationRef.current = newPagination
+            
+            fetchMembers(1, newFilters)
+        } else {
+            fetchMembers(paginationRef.current.page, newFilters)
+        }
+    }, [fetchMembers])
+
+    const searchAndFilter = useCallback((searchTerm, filterOptions = {}) => {
+        const newFilters = {
+            search: searchTerm || undefined,
+            status: filterOptions.status || undefined,
+            gender: filterOptions.gender || undefined,
+            space: filterOptions.space || undefined
+        }
+        
+        Object.keys(newFilters).forEach(key => {
+            if (newFilters[key] === undefined) {
+                delete newFilters[key]
+            }
+        })
+        
+        setFilters(newFilters)
+        
+        const newPagination = { ...paginationRef.current, page: 1 }
+        setPagination(newPagination)
+        paginationRef.current = newPagination
+        
         fetchMembers(1, newFilters)
     }, [fetchMembers])
 
     const changePage = useCallback((page) => {
-        fetchMembers(page)
+        setPagination(prev => ({ ...prev, page }))
+        fetchMembers(page, filtersRef.current)
     }, [fetchMembers])
 
     useEffect(() => {
-        fetchMembers(1)
-        fetchMemberStats()
-        fetchSpaceOptions()
-    }, [fetchMembers, fetchMemberStats, fetchSpaceOptions])
+        const initializeData = async () => {
+            try {
+                await fetchMembers(1)
+                await fetchMemberStats()
+                await fetchSpaceOptions()
+            } catch {
+                // 
+            }
+        }
+        
+        initializeData()
+    }, [])
 
     const addMemberHeteroSemarang = async (memberData) => {
         try {
@@ -207,12 +262,12 @@ export const useHeteroSemarang = (initialFilters = {}) => {
                 await fetchSpaceOptions()
             }
 
-            await fetchMembers(pagination.page)
+            await fetchMembers(paginationRef.current.page)
             await fetchMemberStats()
             return result
-        } catch (error) {
+        } catch (err) {
             toast.error('Failed to add member')
-            throw error
+            throw err
         }
     }
 
@@ -238,9 +293,9 @@ export const useHeteroSemarang = (initialFilters = {}) => {
 
             await fetchMemberStats()
             return result.data || result
-        } catch (error) {
+        } catch (err) {
             toast.error('Failed to update member')
-            throw error
+            throw err
         } finally {
             setLoading(false)
         }
@@ -262,9 +317,9 @@ export const useHeteroSemarang = (initialFilters = {}) => {
             }))
 
             await fetchMemberStats()    
-        } catch (error) {
+        } catch (err) {
             toast.error('Failed to delete member')
-            throw error
+            throw err
         } finally {
             setLoading(false)
         }
@@ -272,21 +327,42 @@ export const useHeteroSemarang = (initialFilters = {}) => {
 
     const refreshAll = useCallback(async () => {
         await Promise.all([
-            fetchMembers(pagination.page),
+            fetchMembers(paginationRef.current.page),
             fetchMemberStats(),
             fetchSpaceOptions()
         ])
-    }, [fetchMembers, pagination.page, fetchMemberStats, fetchSpaceOptions])
+    }, [fetchMembers, fetchMemberStats, fetchSpaceOptions])
 
     const refetchSpaceOptions = useCallback(async () => {
         await fetchSpaceOptions()
     }, [fetchSpaceOptions])
 
     return {
-        ...confirmDialog, members, loading, error, pagination, filters, spaceOptions, 
-        loadingSpaceOptions, spaceOptionsError, genderOptions, setFilters: refetchWithFilters, 
-        fetchMembers: changePage, addMemberHeteroSemarang, updateMemberHeteroSemarang, 
-        deleteMemberHeteroSemarang, fetchMemberStats, stats, statsLoading, refreshAll, 
-        fetchSpaceOptions: refetchSpaceOptions, extractSpacesFromMembers, getSpaceLabel, getGenderLabel
+        ...confirmDialog, 
+        members, 
+        loading, 
+        error, 
+        pagination, 
+        filters, 
+        spaceOptions, 
+        loadingSpaceOptions, 
+        spaceOptionsError, 
+        genderOptions, 
+        setFilters: refetchWithFilters, 
+        updateFilters: refetchWithFilters,
+        fetchMembers, 
+        handlePageChange: changePage, 
+        addMemberHeteroSemarang, 
+        updateMemberHeteroSemarang, 
+        deleteMemberHeteroSemarang, 
+        fetchMemberStats, 
+        stats, 
+        statsLoading, 
+        refreshAll, 
+        searchAndFilter, 
+        fetchSpaceOptions: refetchSpaceOptions, 
+        extractSpacesFromMembers, 
+        getSpaceLabel, 
+        getGenderLabel
     }
 }

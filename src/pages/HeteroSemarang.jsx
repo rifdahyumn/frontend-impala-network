@@ -39,22 +39,70 @@ const HeteroSemarang = () => {
     const memberDetailRef = useRef(null);
     
     const [searchTerm, setSearchTerm] = useState("");
-    const [filters, setFilters] = useState({
-        gender: null, 
-        space: null, 
+    const [tempFilters, setTempFilters] = useState({
+        gender: '',
+        space: 'all',
+        status: ''
     });
-    const [filteredMembers, setFilteredMembers] = useState([]);
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [tempFilters, setTempFilters] = useState({
-        gender: filters.gender || '',
-        space: filters.space || 'all'
-    });
+    const [filteredMembers, setFilteredMembers] = useState([]);
 
     const { members, loading, error, pagination, fetchMembers, addMemberHeteroSemarang, 
         updateMemberHeteroSemarang, deleteMemberHeteroSemarang, showConfirm, handleConfirm, handleCancel,
         isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading, spaceOptions, loadingSpaceOptions,
-        genderOptions, getSpaceLabel, extractSpacesFromMembers, spaceOptionsError, fetchSpaceOptions } = useHeteroSemarang()
+        genderOptions, getSpaceLabel, extractSpacesFromMembers, spaceOptionsError, fetchSpaceOptions,
+        filters, setFilters, handlePageChange } = useHeteroSemarang()
+
+    useEffect(() => {
+        let result = [...members];
+        
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            result = result.filter(member => 
+                member.full_name?.toLowerCase().includes(term) ||
+                member.email?.toLowerCase().includes(term) ||
+                member.phone?.toLowerCase().includes(term) ||
+                member.company?.toLowerCase().includes(term) ||
+                member.space?.toLowerCase().includes(term) ||
+                member.status?.toLowerCase().includes(term)
+            );
+        }
+        
+        if (filters.gender) {
+            result = result.filter(member => 
+                member.gender?.toLowerCase() === filters.gender.toLowerCase()
+            );
+        }
+        
+        if (filters.space && filters.space !== 'all') {
+            result = result.filter(member => 
+                member.space?.toLowerCase() === filters.space.toLowerCase()
+            );
+        }
+
+        if (filters.status) {
+            result = result.filter(member => 
+                member.status?.toLowerCase() === filters.status.toLowerCase()
+            );
+        }
+        
+        setFilteredMembers(result);
+        
+        if ((searchTerm || filters.gender || filters.space || filters.status) && pagination.page !== 1) {
+            handlePageChange(1);
+        }
+    }, [members, searchTerm, filters, pagination.page, handlePageChange]);
+
+    useEffect(() => {
+        if (filters) {
+            setTempFilters({
+                gender: filters.gender || '',
+                space: filters.space || 'all',
+                status: filters.status || ''
+            });
+        }
+    }, [filters]);
 
     const availableSpaces = useMemo(() => {
         if (spaceOptions.length > 0) {
@@ -122,6 +170,13 @@ const HeteroSemarang = () => {
             processFile(file);
         }
     }, []);
+
+    const handleTempStatusChange = (status) => {
+        setTempFilters(prev => ({ 
+            ...prev, 
+            status: prev.status === status ? '' : status 
+        }));
+    };
 
     const processFile = useCallback((file) => {
         setValidationErrors([]);
@@ -675,14 +730,14 @@ const HeteroSemarang = () => {
 
     const handleExport = useCallback(async () => {
         try {
-            if (!filteredMembers || filteredMembers.length === 0) {
+            if (!members || members.length === 0) {
                 toast.error('No data to export');
                 return;
             }
             
             setIsExporting(true);
             
-            const exportData = filteredMembers.map((member, index) => ({
+            const exportData = members.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
                 'Email': member.email || '-',
@@ -745,15 +800,15 @@ const HeteroSemarang = () => {
                 ['HETERO SURAKARTA MEMBERS EXPORT'],
                 ['', ''],
                 ['Export Date', new Date().toLocaleString()],
-                ['Total Records Exported', filteredMembers.length],
+                ['Total Records Exported', members.length],
                 ['', ''],
                 ['APPLIED FILTERS'],
                 ['Search Term', searchTerm || 'None'],
                 ['Gender Filter', filters.gender ? (filters.gender === 'male' ? 'Male' : 'Female') : 'All'],
                 ['Space Filter', filters.space && filters.space !== 'all' ? getSpaceLabel(filters.space) : 'All'],
                 ['', ''],
-                ['Total Active Members', filteredMembers.filter(m => m.status === 'active').length],
-                ['Total Inactive Members', filteredMembers.filter(m => m.status !== 'active').length],
+                ['Total Active Members', members.filter(m => m.status === 'active').length],
+                ['Total Inactive Members', members.filter(m => m.status !== 'active').length],
                 ['', ''],
                 ['GENERATED ON', new Date().toLocaleDateString()],
                 ['SYSTEM', 'Hetero Surakarta Management System']
@@ -774,7 +829,7 @@ const HeteroSemarang = () => {
         } finally {
             setIsExporting(false);
         }
-    }, [filteredMembers, searchTerm, filters, getSpaceLabel]);
+    }, [members, searchTerm, filters, getSpaceLabel]);
 
     useEffect(() => {
         const preventDefaults = (e) => {
@@ -809,45 +864,24 @@ const HeteroSemarang = () => {
         }
     }, [isFilterOpen])
 
-    const applyAllFilters = () => {
-        let result = [...members];
-        
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase();
-            result = result.filter(member =>
-                member.full_name?.toLowerCase().includes(term) ||
-                member.email?.toLowerCase().includes(term) ||
-                member.space?.toLowerCase().includes(term) ||
-                member.company?.toLowerCase().includes(term) ||
-                member.phone?.toLowerCase().includes(term)
-            );
-        }
-        
-        if (filters.gender) {
-            result = result.filter(member => {
-                const memberGender = member.gender?.toLowerCase();
-                return memberGender === filters.gender.toLowerCase();
-            });
-        }
-        
-        if (filters.space && filters.space !== 'all') {
-            result = result.filter(member => {
-                const memberSpace = member.space?.toLowerCase();
-                if (!memberSpace) return false;
-                
-                if (memberSpace === filters.space) return true;
-                
-                return memberSpace.includes(filters.space) || 
-                       filters.space.includes(memberSpace);
-            });
-        }
-        
-        setFilteredMembers(result);
-    };
-
-    const handleSearch = (term) => {
+    const handleSearch = useCallback((term) => {
         setSearchTerm(term);
-    };
+
+        const apiFilters = {
+            search: term.trim() || undefined,
+            gender: filters.gender || undefined,
+            space: filters.space || undefined,
+            status: filters.status || undefined
+        };
+
+        Object.keys(apiFilters).forEach(key => {
+            if (apiFilters[key] === undefined) {
+                delete apiFilters[key];
+            }
+        });
+
+        setFilters(apiFilters, true);
+    }, [filters, setFilters]);
 
     const handleTempGenderChange = (gender) => {
         setTempFilters(prev => ({ 
@@ -861,17 +895,28 @@ const HeteroSemarang = () => {
     };
 
     const handleApplyFilters = () => {
-        setFilters({
-            gender: tempFilters.gender || null,
-            space: tempFilters.space || null
+        const newFilters = {
+            gender: tempFilters.gender || undefined,
+            space: tempFilters.space && tempFilters.space !== 'all' ? tempFilters.space : undefined,
+            status: tempFilters.status || undefined,
+            search: filters.search || undefined 
+        };
+        
+        Object.keys(newFilters).forEach(key => {
+            if (newFilters[key] === undefined) {
+                delete newFilters[key];
+            }
         });
+        
+        setFilters(newFilters, true); 
         setIsFilterOpen(false);
     };
 
     const handleCancelFilters = () => {
         setTempFilters({
             gender: filters.gender || '',
-            space: filters.space || 'all'
+            space: filters.space || 'all',
+            status: filters.status || ''
         });
         setIsFilterOpen(false);
     };
@@ -879,15 +924,19 @@ const HeteroSemarang = () => {
     const handleClearAllTempFilters = () => {
         setTempFilters({
             gender: '',
-            space: 'all'
+            space: 'all',
+            status: ''
         });
     };
 
     const handleClearAllFilters = () => {
         setSearchTerm("");
-        setFilters({
-            gender: null,
-            space: null,
+        const emptyFilters = {};
+        setFilters(emptyFilters, true); 
+        setTempFilters({
+            gender: '',
+            space: 'all',
+            status: ''
         });
         setSelectedMember(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -897,6 +946,7 @@ const HeteroSemarang = () => {
         let count = 0;
         if (filters.gender) count++;
         if (filters.space && filters.space !== 'all') count++;
+        if (filters.status) count++;
         return count;
     };
 
@@ -904,6 +954,7 @@ const HeteroSemarang = () => {
         let count = 0;
         if (tempFilters.gender) count++;
         if (tempFilters.space && tempFilters.space !== 'all') count++;
+        if (tempFilters.status) count++;
         return count;
     };
 
@@ -912,18 +963,37 @@ const HeteroSemarang = () => {
         if (searchTerm) count++;
         if (filters.gender) count++;
         if (filters.space && filters.space !== 'all') count++;
+        if (filters.status) count++;
         return count;
     };
 
     const clearFilter = (filterType) => {
+        const newFilters = { ...filters };
+        
         if (filterType === 'search') {
             setSearchTerm("");
+            delete newFilters.search;
         } else if (filterType === 'gender') {
-            setFilters(prev => ({ ...prev, gender: null }));
+            delete newFilters.gender;
         } else if (filterType === 'space') {
-            setFilters(prev => ({ ...prev, space: null }));
+            delete newFilters.space;
+        } else if (filterType === 'status') { 
+            delete newFilters.status;
         }
+        
+        setFilters(newFilters, false);
+        
+        setTempFilters({
+            gender: newFilters.gender || '',
+            space: newFilters.space || 'all',
+            status: newFilters.status || ''
+        });
     };
+
+    const statusOptions = [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' }
+    ];
 
     const getGenderLabel = (genderValue) => {
         if (!genderValue) return "";
@@ -932,23 +1002,20 @@ const HeteroSemarang = () => {
         return genderValue;
     };
 
+    const getStatusLabel = (statusValue) => {
+        if (!statusValue) return "";
+        if (statusValue === 'active') return 'Active';
+        if (statusValue === 'inactive') return 'Inactive';
+        return statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
+    };
+
     useEffect(() => {
         setTempFilters({
             gender: filters.gender || '',
-            space: filters.space || 'all'
+            space: filters.space || 'all',
+            status: filters.status || ''
         });
     }, [filters]);
-
-    useEffect(() => {
-        if (members.length > 0) {
-            setFilteredMembers(members);
-            applyAllFilters();
-        }
-    }, [members]);
-
-    useEffect(() => {
-        applyAllFilters();
-    }, [searchTerm, filters]);
 
     const memberStats = useMemo(() => {
         if (statsLoading) {
@@ -974,8 +1041,8 @@ const HeteroSemarang = () => {
             ];
         }
 
-        const totalMembers = stats?.totalMembers || filteredMembers.length;
-        const activeMembers = stats?.activeMembers || filteredMembers.filter(member => 
+        const totalMembers = stats?.totalMembers || members .length;
+        const activeMembers = stats?.activeMembers || members.filter(member => 
             member.status?.toLowerCase() === 'Active' 
         ).length;
         
@@ -1012,7 +1079,7 @@ const HeteroSemarang = () => {
                 loading: false
             }
         ];
-    }, [filteredMembers, filters.space, getSpaceLabel, stats, statsLoading]);
+    }, [members, filters.space, getSpaceLabel, stats, statsLoading]);
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
@@ -1098,13 +1165,14 @@ const HeteroSemarang = () => {
     }, [members, selectedMember?.id]);
 
     const handleRefresh = () => {
-        fetchMembers(pagination.page);
-        handleClearAllFilters();
+        setFilters(filters, false); 
+        setSelectedMember(null);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handlePageChange = (page) => {
+    const handlePageChangeLocal = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        fetchMembers(page);
+        handlePageChange(page);
     };
 
     const tableConfig = {
@@ -1221,6 +1289,52 @@ const HeteroSemarang = () => {
                                             </div>
 
                                             <div className="p-3">
+
+                                                <div className="mb-3">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <h4 className="font-semibold text-gray-900 text-xs">STATUS</h4>
+                                                        {tempFilters.status && (
+                                                            <button 
+                                                                onClick={() => setTempFilters(prev => ({ ...prev, status: '' }))}
+                                                                className="text-xs text-gray-400 hover:text-red-500"
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        {statusOptions.map((option) => {
+                                                            const isSelected = tempFilters.status === option.value;
+                                                            return (
+                                                                <button
+                                                                    key={option.value}
+                                                                    className={`flex items-center justify-between px-2 py-1.5 rounded-md border transition-all text-xs flex-1 ${
+                                                                        isSelected
+                                                                            ? option.value === 'active' 
+                                                                                ? 'border-green-500 bg-green-50 text-green-700'
+                                                                                : 'border-red-500 bg-red-50 text-red-700'
+                                                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
+                                                                    }`}
+                                                                    onClick={() => handleTempStatusChange(option.value)}
+                                                                >
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <div className={`h-1.5 w-1.5 rounded-full ${
+                                                                            isSelected 
+                                                                                ? option.value === 'active' ? 'bg-green-500' : 'bg-red-500'
+                                                                                : 'bg-gray-400'
+                                                                        }`} />
+                                                                        <span className="text-xs">{option.label}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1">
+                                                                        {isSelected && (
+                                                                            <Check className="h-3 w-3" />
+                                                                        )}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
                                                 
                                                 <div className="mb-3">
                                                     <div className="flex items-center justify-between mb-1">
@@ -1434,7 +1548,7 @@ const HeteroSemarang = () => {
                                 <Button
                                     variant="outline"
                                     className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
-                                    disabled={loading || filteredMembers.length === 0 || isExporting}
+                                    disabled={loading || members.length === 0 || isExporting}
                                     onClick={handleExport}
                                 >
                                     {isExporting ? (
@@ -1468,6 +1582,18 @@ const HeteroSemarang = () => {
                                         {getGenderLabel(filters.gender)}
                                         <button 
                                             onClick={() => clearFilter('gender')}
+                                            className="text-pink-600 hover:text-pink-800 ml-1"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                )}
+
+                                {filters.status && (
+                                    <span className="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                        {getStatusLabel(filters.status)}
+                                        <button 
+                                            onClick={() => clearFilter('status')}
                                             className="text-pink-600 hover:text-pink-800 ml-1"
                                         >
                                             ×
@@ -1512,7 +1638,7 @@ const HeteroSemarang = () => {
                             </div>
                         )}
 
-                        {loading && members.length === 0 ? (
+                        {loading && filteredMembers.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4">
                                 <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                                 <span className="text-gray-600">Loading members...</span>
@@ -1581,7 +1707,7 @@ const HeteroSemarang = () => {
                                         totalPages={pagination.totalPages}
                                         totalItems={pagination.total}
                                         itemsPerPage={pagination.limit}
-                                        onPageChange={handlePageChange}
+                                        onPageChange={handlePageChangeLocal}
                                         disabled={loading}
                                     />
                                 </div>

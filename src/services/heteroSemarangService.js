@@ -24,15 +24,22 @@ class HeteroSemarangService {
         try {
             const {
                 page = 1,
-                limit = 10,
+                limit = 20,
                 search = '',
+                gender = '',
+                space = '',
+                status = '',
             } = params
 
             const queryParams = new URLSearchParams({
                 page: page.toString(),
                 limit: limit.toString(),
-                ...(search && { search })
             })
+
+            if (search) queryParams.append('search', search)
+            if (gender) queryParams.append('gender', gender)
+            if (space && space !== 'all') queryParams.append('space', space)
+            if (status) queryParams.append('status', status)
 
             const response = await fetch(`${this.baseURL}/hetero/semarang?${queryParams}`, {
                 method: 'GET',
@@ -41,9 +48,12 @@ class HeteroSemarangService {
                 }
             })
 
-            return await this.handleResponse(response)
+            const result = await this.handleResponse(response)
+
+            return result
         } catch (error) {
-            console.error('Error fetching member', error)
+            console.error('Service - Error:', error)
+            throw error
         }
     }
 
