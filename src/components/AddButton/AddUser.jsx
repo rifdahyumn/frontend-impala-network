@@ -80,7 +80,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                 {
                     name: 'phone',
                     label: 'Phone',
-                    type: 'tel',
+                    type: 'text',
                     required: true,
                     placeholder: 'Enter phone number'
                 },

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, User, Mail, Phone,Shield, History, CheckCircle, Lock, Image, EyeClosed, EyeOffIcon, EyeOff, Eye, Loader2, UserCheck, AlertTriangle } from "lucide-react";
+import { Edit, Trash2, User, Mail, Phone, Shield, History, CheckCircle, Lock, Image, EyeOff, Eye, Loader2, UserCheck, AlertTriangle } from "lucide-react";
 import toast from 'react-hot-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import ConfirmModal from "./ConfirmModal"; 
+import ConfirmModal from "./ConfirmModal";
 
 const AccountContent = ({ 
     selectedUser, 
@@ -12,17 +12,13 @@ const AccountContent = ({
     detailTitle, 
     onDelete, 
     onUserEdited, 
-    onActivateUser,
-    showConfirm,
-    handleConfirm, 
-    handleCancel,
-    isOpen: isConfirmOpen, 
-    config: confirmConfig
+    onActivateUser
 }) => {
     const [activeCategory, setActiveCategory] = useState('Account Information');
-    const [showPassword, setShowPassword] = useState(false)
-    const [deleteLoading, setDeleteLoading] = useState(false)
-    const [activateLoading, setActivateLoading] = useState(false)
+    const [showPassword, setShowPassword] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [activateLoading, setActivateLoading] = useState(false);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
     const detailFields = [
         {
@@ -62,78 +58,77 @@ const AccountContent = ({
     };
 
     const handleEdit = () => {
-        if (!selectedUser) return
+        if (!selectedUser) return;
         if (onOpenEditModal) {
             onOpenEditModal(selectedUser, (updatedUser) => {
                 if (onUserEdited) {
-                    onUserEdited(updatedUser)
+                    onUserEdited(updatedUser);
                 }
-
-                toast.success('User updated successfully')
-            })
+                toast.success('User updated successfully');
+            });
         }
-    }
+    };
 
-    const handleDelete = async () => {
-        if (!selectedUser) return
+    const handleDelete = () => {
+        if (!selectedUser) return;
+        setDeleteModalOpen(true);
+    };
 
-        if (showConfirm && typeof showConfirm === 'function') {
-            showConfirm({
-                title: 'Deactivate User',
-                message: `Are you sure you want to deactivate "${selectedUser.full_name}"? User will not be able to access the system.`,
-                type: 'danger',
-                confirmText: 'Deactivate',
-                cancelText: 'Cancel',
-                onConfirm: async () => {
-                    setDeleteLoading(true)
-                    try {
-                        if (onDelete) {
-                            await onDelete(selectedUser.id)
-                            toast.success('User deactivated successfully');
-                        }
-                    } catch (error) {
-                        console.error('Error deactivating user:', error)
-                        toast.error(error.message || 'Failed to deactivate user')
-                    } finally {
-                        setDeleteLoading(false)
-                    }
-                },
-                onCancel: () => {
-                    toast('Deactivation cancelled', { icon: AlertTriangle });
+    const handleConfirmDelete = async () => {
+        if (!selectedUser) return;
+        
+        setDeleteLoading(true);
+        try {
+            if (onDelete) {
+                await onDelete(selectedUser.id);
+                toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
+                
+                // Update status lokal untuk menghilangkan button deactivate
+                if (onUserEdited) {
+                    onUserEdited({ ...selectedUser, status: 'Inactive' });
                 }
-            })
+            }
+        } catch (error) {
+            console.error('Error deactivating user:', error);
+            toast.error(error.message || 'Failed to deactivate user');
+        } finally {
+            setDeleteLoading(false);
+            setDeleteModalOpen(false);
         }
-    }
+    };
 
     const handleActivate = async () => {
-        if (!selectedUser) return
+        if (!selectedUser) return;
 
-        if (!window.confirm(`Are you sure want to activate user ${selectedUser.full_name}?`)){
-            return
+        if (!window.confirm(`Are you sure want to activate user ${selectedUser.full_name}?`)) {
+            return;
         }
 
-        setActivateLoading(true)
+        setActivateLoading(true);
         try {
             if (onActivateUser) {
                 await onActivateUser(selectedUser.id);
+                toast.success(`User "${selectedUser.full_name}" activated successfully`);
+                
+                // Update status lokal untuk menghilangkan button activate
+                if (onUserEdited) {
+                    onUserEdited({ ...selectedUser, status: 'Active' });
+                }
             }
-
-            toast.success(`User "${selectedUser.full_name}" activated successfully`);
         } catch (error) {
             console.error('❌ Error activating user:', error);
             toast.error(error.message || 'Failed to activate user');
         } finally {
-            setActivateLoading(false)
+            setActivateLoading(false);
         }
-    }
+    };
 
     const maskPassword = (password) => {
-        if (!password) return '-'
+        if (!password) return '-';
         return '•'.repeat(8);
-    }
+    };
 
     const getAvatarUrl = (avatarPath) => {
-        
         if (!avatarPath) return null;
         
         if (avatarPath.startsWith('http')) {
@@ -157,11 +152,11 @@ const AccountContent = ({
     };
 
     const ActiveCategoryContent = () => {
-        const activeCategoryData = getActiveCategoryData()
+        const activeCategoryData = getActiveCategoryData();
 
-        if(!activeCategoryData || !selectedUser) return null;
+        if (!activeCategoryData || !selectedUser) return null;
 
-        const CategoryIcon = activeCategoryData.icon
+        const CategoryIcon = activeCategoryData.icon;
 
         return (
             <div className='border border-gray-200 rounded-lg p-4'>
@@ -172,17 +167,17 @@ const AccountContent = ({
 
                 <div className='grid grid-cols-2 gap-4'>
                     {activeCategoryData.fields.map((field, index) => {
-                        const FieldIcon = field.icon
-                        let displayValue = selectedUser[field.key]
+                        const FieldIcon = field.icon;
+                        let displayValue = selectedUser[field.key];
 
                         if (field.key === 'emailVerified' || field.key === 'twoFactorEnabled') {
-                            displayValue = selectedUser[field.key] ? 'Yes' : 'No'
+                            displayValue = selectedUser[field.key] ? 'Yes' : 'No';
                         }
 
                         if (field.isPassword) {
                             return (
                                 <div key={index} className='flex items-start gap-3'>
-                                    <FieldIcon cla ssName='h-4 w-4 text-gray-400 mt-1 flex-shrink-0'  />
+                                    <FieldIcon className='h-4 w-4 text-gray-400 mt-1 flex-shrink-0' />
 
                                     <div className='flex-1'>
                                         <label className='text-sm text-gray-500 block mb-1'>
@@ -208,11 +203,11 @@ const AccountContent = ({
                                         </div>
                                     </div>
                                 </div>
-                            )
+                            );
                         }
 
                         if (field.isImage) {
-                            const avatarUrl = getAvatarUrl(displayValue)
+                            const avatarUrl = getAvatarUrl(displayValue);
                             return (
                                 <div key={index} className='flex items-start gap-3'>
                                     <FieldIcon className='h-4 w-4 text-gray-400 mt-1 flex-shrink-0' />
@@ -241,7 +236,7 @@ const AccountContent = ({
                                         </div>
                                     </div>
                                 </div>
-                            )
+                            );
                         }
 
                         return (
@@ -260,8 +255,8 @@ const AccountContent = ({
                     })}
                 </div>
             </div>
-        )
-    }
+        );
+    };
 
     return (
         <>
@@ -285,82 +280,98 @@ const AccountContent = ({
                                                 size="sm"
                                                 className="flex items-center gap-2"
                                                 onClick={() => {
-                                                    setActiveCategory(category.category)
-                                                    setShowPassword(false)
+                                                    setActiveCategory(category.category);
+                                                    setShowPassword(false);
                                                 }}
                                             >
                                                 <CategoryIcon className='h-4 w-4' />
                                                 {category.category}
                                             </Button>
-                                        )
+                                        );
                                     })}
                                 </div>
 
-                                {selectedUser && (
-                                    <div className="flex gap-2">
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm"
-                                            className="flex items-center gap-2"
-                                            onClick={handleEdit}
+                                <div className="flex gap-2">
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        className="flex items-center gap-2"
+                                        onClick={handleEdit}
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                        Edit
+                                    </Button>
+
+                                    {/* Button Activate (muncul hanya untuk user Inactive) */}
+                                    {selectedUser.status === 'Inactive' && (
+                                        <Button
+                                            onClick={handleActivate}
+                                            disabled={activateLoading}
+                                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
                                         >
-                                            <Edit className="h-4 w-4" />
-                                            Edit
+                                            {activateLoading ? (
+                                                <Loader2 className='h-4 w-4 animate-spin' />
+                                            ) : (
+                                                <UserCheck className='h-4 w-4' />
+                                            )}
+                                            {activateLoading ? 'Activating...' : 'Activate'}
                                         </Button>
+                                    )}
 
-                                        {selectedUser.status === 'Inactive' && (
-                                            <Button
-                                                onClick={handleActivate}
-                                            >
-                                                {activateLoading ? (
-                                                    <Loader2 className='h-4 w-4 animate-spin' />
-                                                ) : (
-                                                    <UserCheck className='h-4 w-4' />
-                                                )}
-                                                {activateLoading ? 'Activating...' : 'Activate'}
-                                            </Button>
-                                        )}
-
-                                        {selectedUser.status === 'Active' && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                onClick={handleDelete}
-                                                disabled={deleteLoading}
-                                            >
-                                                {deleteLoading ? (
-                                                    <Loader2 className='h-4 w-4 animate-spin' />
-                                                ) : (
-                                                    <Trash2 className='h-4 w-4' />
-                                                )}
-                                                {deleteLoading ? 'Deactivating...' : 'Deactivate'}
-                                            </Button>
-                                        )}
-                                    </div>
-                                )}
+                                    {/* Button Deactivate (muncul hanya untuk user Active) */}
+                                    {selectedUser.status === 'Active' && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                            onClick={handleDelete}
+                                            disabled={deleteLoading || deleteModalOpen}
+                                        >
+                                            {deleteLoading ? (
+                                                <Loader2 className='h-4 w-4 animate-spin' />
+                                            ) : (
+                                                <Trash2 className='h-4 w-4' />
+                                            )}
+                                            {deleteLoading ? 'Deactivating...' : 'Deactivate'}
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
 
                             <ActiveCategoryContent />
                         </div>
                     ) : (
-                        <div className='text-center py-4 text-gray-500'>
-                            <p>Select a client to view details</p>
-                        </div>
-                    )}
+                        <div className='text-center py-8 text-gray-500'>
+                                            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                                                <User className="w-8 h-8 text-gray-400" />
+                                            </div>
+                                            <h3 className="text-lg font-medium text-gray-700 mb-2">No User Selected</h3>
+                                            <p className="text-sm text-gray-500 max-w-md mx-auto">
+                                                Select a user from the list to view its details, edit information, or delete it.
+                                            </p>
+                                        </div>
+                                    )}
                 </CardContent>
             </Card>
 
-            {/* Tambahkan ConfirmModal di sini */}
+            {/* Modal Konfirmasi Deactivate */}
             <ConfirmModal 
-                isOpen={isConfirmOpen}
-                config={confirmConfig}
-                onConfirm={handleConfirm}
-                onCancel={handleCancel}
+                isOpen={deleteModalOpen}
+                config={{
+                    title: 'Deactivate User',
+                    message: selectedUser ? `Are you sure you want to deactivate "${selectedUser.full_name}"? User will not be able to access the system.` : '',
+                    type: 'danger',
+                    confirmText: 'Deactivate',
+                    cancelText: 'Cancel',
+                }}
+                onConfirm={handleConfirmDelete}
+                onCancel={() => {
+                    setDeleteModalOpen(false);
+                    toast('Deactivation cancelled', { icon: AlertTriangle });
+                }}
             />
         </>
-    )
-
-}
+    );
+};
 
 export default AccountContent;

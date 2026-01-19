@@ -1,4 +1,4 @@
-import { Edit, Trash2, Save, X } from "lucide-react";
+import { Edit, Trash2, Clipboard, Save, X } from "lucide-react";
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
@@ -464,10 +464,16 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
                             <ActiveCategoryContent />
                         </div>
                     ) : (
-                        <div className='text-center py-4 text-gray-500'>
-                            <p>Pilih member untuk melihat detail</p>
+                         <div className='text-center py-8 text-gray-500'>
+                        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                            <Clipboard className="w-8 h-8 text-gray-400" />
                         </div>
-                    )}
+                        <h3 className="text-lg font-medium text-gray-700 mb-2">No Beneficiary Selected</h3>
+                        <p className="text-sm text-gray-500 max-w-md mx-auto">
+                            Select a beneficiary from the list to view its details, edit information, or delete it.
+                        </p>
+                    </div>
+                )}
                 </CardContent>
             </Card>
 
