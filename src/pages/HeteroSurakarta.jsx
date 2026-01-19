@@ -817,69 +817,70 @@ const HeteroSurakarta = () => {
         applyAllFilters();
     }, [searchTerm, filters]);
 
-    const memberStats = useMemo(() => {
-        if (statsLoading) {
-            return [
-                {
-                    title: "Total Members",
-                    value: "Loading...",
-                    percentage: "0%",
-                    trend: "neutral",
-                    icon: Users,
-                    color: "blue",
-                    description: "Loading..."
-                },
-                {
-                    title: "Active Members",
-                    value: "Loading...",
-                    percentage: "0%",
-                    trend: "neutral",
-                    icon: UserCheck,
-                    color: "green",
-                    description: "Loading..."
-                }
-            ];
-        }
-
-        const totalMembers = stats?.totalMembers || filteredMembers.length;
-        const activeMembers = stats?.activeMembers || filteredMembers.filter(member => 
-            member.status?.toLowerCase() === 'active' 
-        ).length;
-        
-        const activePercentage = totalMembers > 0 
-            ? ((activeMembers / totalMembers) * 100).toFixed(1) 
-            : "0";
-        
-        const growthPercentage = stats?.growthPercentage || "0";
-
+const memberStats = useMemo(() => {
+    if (statsLoading) {
         return [
             {
                 title: "Total Members",
-                value: totalMembers.toString(),
-                subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
-                percentage: `${growthPercentage}%`,
-                trend: parseFloat(growthPercentage) > 0 ? "up" :
-                        parseFloat(growthPercentage) < 0 ? "down" : "neutral",
-                period: "Last Month",
+                value: "Loading...",
+                trend: "neutral",
                 icon: Users,
                 color: "blue",
-                description: `${growthPercentage}% Growth`,
-                loading: false
+                description: "Loading..."
             },
             {
                 title: "Active Members",
-                value: activeMembers.toString(),
-                subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
-                percentage: `${activePercentage}%`,
-                trend: parseFloat(activePercentage) > 70 ? "up" : "down",
-                period: "Current",
+                value: "Loading...",
+                trend: "neutral",
                 icon: UserCheck,
                 color: "green",
-                description: `${activePercentage}% of total`,
-                loading: false
+                description: "Loading..."
             }
         ];
-    }, [filteredMembers, filters.space, getSpaceLabel, stats, statsLoading]);
+    }
+
+    const totalMembers = stats?.totalMembers || filteredMembers.length;
+    const activeMembers = stats?.activeMembers || filteredMembers.filter(member => 
+        member.status?.toLowerCase() === 'active' 
+    ).length;
+    
+    const activePercentage = totalMembers > 0 
+        ? ((activeMembers / totalMembers) * 100).toFixed(1) 
+        : "0";
+    
+    let growthPercentage = stats?.growthPercentage || "0";
+    
+    // Hapus karakter % dari growthPercentage jika ada
+    if (typeof growthPercentage === 'string') {
+        growthPercentage = growthPercentage.replace('%', '');
+    }
+
+    return [
+        {
+            title: "Total Members",
+            value: totalMembers.toString(),
+            subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
+            trend: parseFloat(growthPercentage) > 0 ? "up" :
+                    parseFloat(growthPercentage) < 0 ? "down" : "neutral",
+            period: "Last Month",
+            icon: Users,
+            color: "blue",
+            description: `${growthPercentage}% Growth`,  // Sekarang hanya ada satu %
+            loading: false
+        },
+        {
+            title: "Active Members",
+            value: activeMembers.toString(),
+            subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
+            trend: parseFloat(activePercentage) > 70 ? "up" : "down",
+            period: "Current",
+            icon: UserCheck,
+            color: "green",
+            description: `${activePercentage}% of total`,  // Hanya satu %
+            loading: false
+        }
+    ];
+}, [filteredMembers, filters.space, getSpaceLabel, stats, statsLoading]);
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
