@@ -270,7 +270,7 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
         <Card className="mb-6">
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl">{detailTitle}</CardTitle>
+                    <CardTitle className="text-base font-semibold">{detailTitle}</CardTitle>
                     {preparedProgram && (
                         <div className="flex gap-2">
                             <Button 

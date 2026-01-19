@@ -38,13 +38,11 @@ const MemberStatsCards = ({ statsData }) => {
                         className="bg-white border-gray-200 hover:shadow-md transition-shadow"
                     >
                         <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-4">
+                            {/* Hanya icon, tanpa persentase badge */}
+                            <div className="flex items-center mb-4">
                                 <div className={cn("p-2 rounded-lg", colorClasses.bg)}>
                                     <Icon className={cn("h-5 w-5", colorClasses.icon)} />
                                 </div>
-                                <span className={cn("text-sm font-medium", colorClasses.text)}>
-                                    {stat.trend === "up" ? "+" : ""}{stat.percentage}
-                                </span>
                             </div>
                             
                             <div className="mb-2">
@@ -59,7 +57,7 @@ const MemberStatsCards = ({ statsData }) => {
                             <div className="flex items-center gap-2">
                                 {getTrendIcon(stat.trend)}
                                 <span className={cn("text-xs font-medium", getTrendColor(stat.trend))}>
-                                    {stat.description}
+                                    {stat.description}  {/* Sudah mengandung persentase yang benar */}
                                 </span>
                             </div>
                         </CardContent>

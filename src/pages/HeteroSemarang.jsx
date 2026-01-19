@@ -1096,7 +1096,6 @@ const HeteroSemarang = () => {
                 {
                     title: "Total Members",
                     value: "Loading...",
-                    percentage: "0%",
                     trend: "neutral",
                     icon: Users,
                     color: "blue",
@@ -1105,7 +1104,6 @@ const HeteroSemarang = () => {
                 {
                     title: "Active Members",
                     value: "Loading...",
-                    percentage: "0%",
                     trend: "neutral",
                     icon: UserCheck,
                     color: "green",
@@ -1114,7 +1112,7 @@ const HeteroSemarang = () => {
             ];
         }
 
-        const totalMembers = stats?.totalMembers || members .length;
+        const totalMembers = stats?.totalMembers || members.length;
         const activeMembers = stats?.activeMembers || members.filter(member => 
             member.status?.toLowerCase() === 'Active' 
         ).length;
@@ -1123,27 +1121,29 @@ const HeteroSemarang = () => {
             ? ((activeMembers / totalMembers) * 100).toFixed(1) 
             : "0";
         
-        const growthPercentage = stats?.growthPercentage || "0";
+        let growthPercentage = stats?.growthPercentage || "0";
+        
+        if (typeof growthPercentage === 'string') {
+            growthPercentage = growthPercentage.replace('%', '');
+        }
 
         return [
             {
                 title: "Total Members",
                 value: totalMembers.toString(),
                 subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
-                percentage: `${growthPercentage}%`,
                 trend: parseFloat(growthPercentage) > 0 ? "up" :
                         parseFloat(growthPercentage) < 0 ? "down" : "neutral",
                 period: "Last Month",
                 icon: Users,
                 color: "blue",
-                description: `${growthPercentage}% Growth`,
+                description: `${growthPercentage}% Growth`,  // Sekarang hanya ada satu %
                 loading: false
             },
             {
                 title: "Active Members",
                 value: activeMembers.toString(),
                 subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
-                percentage: `${activePercentage}%`,
                 trend: parseFloat(activePercentage) > 70 ? "up" : "down",
                 period: "Current",
                 icon: UserCheck,
