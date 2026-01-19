@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/impalalogo.png";
 import logo2 from "../assets/heterologo.png";
-import { loginService } from "../services/authServices";
+import { loginService, saveTokens, setupTokenMaintenance } from "../services/authServices";
 import { validateEmail } from "../utils/validation";
 
 export default function LoginPage() {
@@ -54,7 +54,7 @@ export default function LoginPage() {
             case 'komunitas':
                 return '/hetero/banyumas';
             case 'admin':
-            case 'manajer':
+            case 'manajer_program': 
                 return '/';
             default:
                 return '/';
@@ -85,30 +85,59 @@ export default function LoginPage() {
         setAuthError("");
 
         try {
-            const { token, user: userData } = await loginService({
+            const result = await loginService({
                 email: formData.email.trim(),
                 password: formData.password
             });
-
-            login(token, userData);
+            
+            let userData, tokens;
+            
+            if (result.data?.user && result.data?.tokens) {
+                userData = result.data.user;
+                tokens = result.data.tokens;
+            } else if (result.user && result.tokens) {
+                userData = result.user;
+                tokens = result.tokens;
+            } else if (result.token) {
+                userData = result.user || { email: formData.email };
+                tokens = { access_token: result.token };
+            } else {
+                console.error('Unexpected response structure:', result);
+                throw new Error('Invalid server response format');
+            }
+            
+            if (tokens?.access_token) {
+                saveTokens(tokens);
+                
+                setupTokenMaintenance();
+            } else {
+                console.warn('No access token in response');
+            }
+            
+            login(tokens?.access_token, userData);
 
             const redirectPath = getRedirectPath(userData.role);
-            navigate(redirectPath, { replace: true });
+            
+            setTimeout(() => {
+                navigate(redirectPath, { replace: true });
+            }, 100);
             
         } catch (err) {
-            let errorMessage = "Login failed. Please check your email and password.";
+            console.error('Login error details:', err);
             
-            if (err.message.includes("network") || err.message.includes("Network")) {
+            let errorMessage = "Login gagal. Periksa email dan password anda.";
+            
+            if (err.message.includes("User not found") || err.message.includes("not registered")) {
+                errorMessage = "Akun tidak terdaftar di sistem.";
+            } else if (err.message.includes("inactive") || err.message.includes("tidak aktif")) {
+                errorMessage = "Akun tidak aktif. Hubungi administrator.";
+            } else if (err.message.includes("network") || err.message.includes("Network")) {
                 errorMessage = "Koneksi jaringan bermasalah. Coba lagi.";
-            } else if (err.message.includes("timeout")) {
-                errorMessage = "Waktu login habis. Coba lagi.";
+            } else if (err.message.includes("credentials") || err.message.includes("kredensial")) {
+                errorMessage = "Email atau password salah.";
             }
             
             setAuthError(errorMessage);
-            
-            if (import.meta.env.DEV) {
-                console.error('Login error:', err);
-            }
         } finally {
             setLoading(false);
         }
@@ -132,11 +161,13 @@ export default function LoginPage() {
                         <img src={logo2} alt="Logo Hetero" className="login-logo" />
                     </div>
 
-                    {/* Mode indicator (opsional, hanya untuk development) */}
                     {isDevelopment && (
                         <div className="mb-4 p-2 bg-yellow-100 border border-yellow-300 rounded text-center">
                             <p className="text-xs text-yellow-800">
                                 Development Mode - {appUrl}
+                            </p>
+                            <p className="text-xs text-yellow-800 mt-1">
+                                Backend: {import.meta.env.VITE_API_BASE_URL}
                             </p>
                         </div>
                     )}
@@ -154,6 +185,7 @@ export default function LoginPage() {
                                 required
                                 autoComplete="email"
                                 aria-label="Email"
+                                className={errors.email ? "border-red-500" : ""}
                             />
                         </div>
                         {errors.email && (
@@ -172,6 +204,7 @@ export default function LoginPage() {
                                 required
                                 autoComplete="current-password"
                                 aria-label="Password"
+                                className={errors.password ? "border-red-500" : ""}
                             />
                         </div>
                         {errors.password && (
@@ -193,7 +226,7 @@ export default function LoginPage() {
                                     navigate('/forgot-password');
                                 }}
                             >
-                                Forgot Password?
+                                Lupa Password?
                             </a>
                         </div>
 

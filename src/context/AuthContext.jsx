@@ -1,97 +1,143 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect } from 'react'
+import authServices from '../services/authServices'
 
-const AuthContext = createContext();
+const { 
+    getTokens, 
+    setupTokenMaintenance, 
+    validateSessionService,
+    logoutService,
+    clearTokens 
+} = authServices
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const AuthContext = createContext(null)
 
 export const AuthProvider = ({ children }) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(null);
-    const [user, setUser] = useState(null);
-
-    const isTokenExpired = (token) => {
-        if (!token) return true
-
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]))
-            const expirationTime = payload.exp * 1000
-            const currentTime = Date.now()
-
-            return currentTime > expirationTime
-        } catch (error) {
-            console.error('Error checking token expiration:', error)
-            return true
-        }
-    }
-
-    const checkAuth = () => {
-        const token = localStorage.getItem('token');
-        const userData = localStorage.getItem('user');
-
-        if (token && userData) {
-            try {
-                if (isTokenExpired(token)) {
-                    logout()
-                    return
-                }
-
-                const parsedUser = JSON.parse(userData);
-                setIsAuthenticated(true);
-                setUser(parsedUser);
-                
-            } catch { 
-                logout();
-            }
-        } else {
-            setIsAuthenticated(false);
-            setUser(null);
-        }
-    };
-
-
-    const login = (token, userData) => {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(userData));
-        setIsAuthenticated(true);
-        setUser(userData);
-    };
-
-
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setIsAuthenticated(false);
-        setUser(null);
-    };
+    const [user, setUser] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
 
     useEffect(() => {
-        checkAuth();
-
-        const interval = setInterval(() => {
-            const token = localStorage.getItem('token')
-            if (token && isTokenExpired(token)) {
-                logout()
+        initializeAuth()
+        
+        if (user) {
+            const cleanup = setupTokenMaintenance()
+            return () => {
+                if (cleanup) cleanup()
             }
-        }, 60000)
-        return () => clearInterval(interval)
+        }
+    }, [user])
 
-    }, []);
+    const initializeAuth = async () => {
+        try {
+            const tokens = getTokens()
+            
+            if (!tokens.access_token || !tokens.refresh_token) {
+                setLoading(false)
+                return
+            }
+            
+            await validateSession()
+            setLoading(false)
+            
+        } catch (err) {
+            setError(err.message)
+            setLoading(false)
+        }
+    }
+
+    const validateSession = async () => {
+        try {
+            const response = await validateSessionService()
+            
+            let userData;
+            
+            if (response.data?.user) {
+                userData = response.data.user;
+            } else if (response.user) {
+                userData = response.user;
+            } else if (response.data) {
+                userData = response.data;
+            } else {
+                userData = response;
+            }
+            
+            if (userData && (userData.id || userData.email)) {
+                setUser(userData)
+                setError(null)
+                return true
+            } else {
+                throw new Error('Invalid user data')
+            }
+        } catch (error) {
+            if (error.message.includes('User not found') || 
+                error.message.includes('USER_NOT_FOUND') ||
+                error.message.includes('SESSION_EXPIRED') ||
+                error.message.includes('Invalid token') ||
+                error.message.includes('No token')) {
+                
+                clearTokens()
+                setUser(null)
+            }
+            
+            setError(error.message)
+            throw error
+        }
+    }
+
+    const login = (tokens, userData) => {
+        if (tokens && tokens.access_token) {
+            localStorage.setItem('access_token', tokens.access_token)
+            localStorage.setItem('refresh_token', tokens.refresh_token)
+        }
+        
+        setUser(userData)
+        setError(null)
+        setLoading(false)
+    }
+
+    const logout = async () => {
+        try {
+            await logoutService()
+        } catch {
+            // 
+        } finally {
+            setUser(null)
+            setError(null)
+            clearTokens()
+            
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login'
+            }
+        }
+    }
+
+    const updateUser = (updatedUserData) => {
+        setUser(prev => ({
+            ...prev,
+            ...updatedUserData
+        }))
+    }
+
+    const isAuthenticated = () => {
+        const tokens = getTokens()
+        return !!(user && tokens.access_token)
+    }
+
+    const value = {
+        user,
+        loading,
+        error,
+        login,
+        logout,
+        updateUser,
+        isAuthenticated,
+        clearTokens
+    }
 
     return (
-        <AuthContext.Provider value={{ 
-            isAuthenticated, 
-            user, 
-            login, 
-            logout, 
-            checkAuth 
-        }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
-    );
-};
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within AuthProvider');
-    }
-    return context;
-};
-
-export { AuthContext }
+    )
+}

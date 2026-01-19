@@ -26,13 +26,20 @@ class HeteroSoloService {
                 page = 1,
                 limit = 10,
                 search = '',
+                gender = '',
+                space = '',
+                status = '',
             } = params
 
             const queryParams = new URLSearchParams({
                 page: page.toString(),
                 limit: limit.toString(),
-                ...(search && { search })
             })
+
+            if (search) queryParams.append('search', search)
+            if (gender) queryParams.append('gender', gender)
+            if (space && space !== 'all') queryParams.append('space', space)
+            if (status) queryParams.append('status', status)
 
             const response = await fetch(`${this.baseURL}/hetero/solo?${queryParams}`, {
                 method: 'GET',
@@ -41,9 +48,43 @@ class HeteroSoloService {
                 }
             })
 
-            return await this.handleResponse(response)
+            const result = await this.handleResponse(response)
+
+            return result
         } catch (error) {
             console.error('Error fetching member', error)
+        }
+    }
+
+    async fetchAllMembers(params = {}) {
+        try {
+            const {
+                search = '',
+                gender = '',
+                space = '',
+                status = '',
+            } = params
+
+            const queryParams = new URLSearchParams({
+                export: 'true'
+            });
+
+            if (search) queryParams.append('search', search);
+            if (gender) queryParams.append('gender', gender);
+            if (space && space !== 'all') queryParams.append('space', space);
+            if (status) queryParams.append('status', status);
+
+            const response = await fetch(`${this.baseURL}/hetero/solo/export?${queryParams}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            return await this.handleResponse(response);
+
+        } catch (error) {
+            console.error('Service - Error fetching all members:', error);
         }
     }
 
@@ -120,6 +161,53 @@ class HeteroSoloService {
                     isFallback: true
                 }
             }
+        }
+    }
+
+    async fetchSpaceOptions() {
+        try {
+            const response = await fetch(`${this.baseURL}/hetero/solo/space-options`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            const result = await this.handleResponse(response)
+
+            const formattedSpaces = result.data.map(space => {
+                const lowerSpace = space.toLowerCase()
+
+                if (lowerSpace.includes('maneka personal'));
+                else if (lowerSpace.includes('maneka group'));
+                else if (lowerSpace.includes('rembug 1'));
+                else if (lowerSpace.includes('rembug 2'));
+                else if (lowerSpace.includes('rembug 3'));
+                else if (lowerSpace.includes('private office 1'));
+                else if (lowerSpace.includes('private office 2-6'));
+                else if (lowerSpace.includes('private office 7'));
+                else if (lowerSpace.includes('space gatra'));
+                else if (lowerSpace.includes('space gayeng'));
+                else if (lowerSpace.includes('makerspace'));
+                else if (lowerSpace.includes('foodlab'));
+                else if (lowerSpace.includes('abipraya membership'));
+                else if (lowerSpace.includes('abipraya event'));
+                else if (lowerSpace.includes('virtual office'));
+                else if (lowerSpace.includes('outdoorspace'));
+
+                return {
+                    value: lowerSpace,
+                    label: `${space}`,
+                    original: space
+                }
+            })
+
+            return {
+                ...result,
+                data: formattedSpaces
+            }
+        } catch (error) {
+            console.error('Error fetching space options', error)
         }
     }
 }
