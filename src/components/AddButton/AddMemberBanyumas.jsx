@@ -81,7 +81,7 @@ const AddMemberBanyumas = ({
             const diffTime = Math.abs(end - start);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             return `${diffDays} days`;
-        } catch (error) {
+        } catch  {
             return '';
         }
     }, []);
@@ -105,7 +105,7 @@ const AddMemberBanyumas = ({
             try {
                 const data = await locationService.getProvinces()
                 setProvinces(data || [])
-            } catch (error) {
+            } catch {
                 toast.error('Failed to load provinces data')
             } finally {
                 setLoadingLocations(prev => ({ ...prev, provinces: false }))
@@ -152,7 +152,7 @@ const AddMemberBanyumas = ({
                         village_name: ''
                     }))
                 }
-            } catch (error) {
+            } catch {
                 toast.error('Failed to load regencies data')
                 setRegencies([])
             } finally {
@@ -193,7 +193,7 @@ const AddMemberBanyumas = ({
                         village_name: '',
                     }))
                 }
-            } catch (error) {
+            } catch {
                 toast.error('Failed to load districts data')
                 setDistricts([])
             } finally {
@@ -229,7 +229,7 @@ const AddMemberBanyumas = ({
                         village_name: ''
                     }))
                 }
-            } catch (error) {
+            } catch {
                 toast.error('Failed to load villages data')
                 setVillages([])
             } finally {
@@ -278,7 +278,7 @@ const AddMemberBanyumas = ({
 
                 setFormData(initialFormData);
                 
-            } catch (error) {
+            } catch {
                 toast.error('Failed to initialize edit data');
             } finally {
                 setIsInitializing(false);

@@ -60,7 +60,50 @@ const ProtectedRoute = ({ children }) => {
     }, [user, loading]);
 
     if (loading) {
-        return <LoadingSpinner />;
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 via-white to-blue-50">
+
+                <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
+                    <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse delay-1000"></div>
+                </div>
+
+                <div className="relative z-10 mb-8">
+                    <div className="relative">
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-r from-amber-500 to-pink-600 flex items-center justify-center shadow-xl animate-pulse">
+                            <svg 
+                                className="w-10 h-10 text-white" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                            >
+                                <path 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round" 
+                                    strokeWidth="2" 
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                            </svg>
+                        </div>
+                        <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 opacity-20 blur-md animate-ping"></div>
+                    </div>
+                </div>
+
+                <div className="relative z-10 text-center">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                        Loading IMPALA Dashboard
+                    </h3>
+                    
+                    <div className="w-64 h-1.5 bg-gray-200 rounded-full overflow-hidden mb-2">
+                        <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-loadingBar"></div>
+                    </div>
+                    
+                    <p className="text-sm text-gray-500 animate-pulse">
+                        Preparing your workspace...
+                    </p>
+                </div>
+            </div>
+        );
     }
 
     if (!isAuthenticated) {
@@ -107,7 +150,6 @@ const PublicRoute = ({ children }) => {
         );
     }
 
-    // PERBAIKAN: isAuthenticated adalah boolean, bukan fungsi
     if (isAuthenticated) {
         return <Navigate to="/" replace />;
     }

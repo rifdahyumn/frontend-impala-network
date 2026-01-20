@@ -17,6 +17,22 @@ class FormTemplateService {
         }
     }
 
+    async getAllFormTemplatesForSubmission() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/form-templates/submission`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            return await response.json()
+        } catch (error) {
+            console.error('Error fetching form templates:', error)
+            throw error
+        }
+    }
+
     async createFormTemplate(templateData) {
         try {
             const whatsapp_group_link = templateData.form_config?.settings?.whatsappGroupLink || "";

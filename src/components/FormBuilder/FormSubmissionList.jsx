@@ -16,7 +16,7 @@ const FormSubmissionsList = () => {
     const [loadingSubmissions, setLoadingSubmissions] = useState(false);
     const [programStats, setProgramStats] = useState({});
     const [exporting, setExporting] = useState(false);
-    const [filters, setFilters] = useState({
+    const [setFilters] = useState({
         category: '',
         gender: '',
         search: ''
@@ -46,14 +46,14 @@ const FormSubmissionsList = () => {
     const loadAllPrograms = async () => {
         try {
             setLoadingTemplates(true);
-            const response = await formTemplateService.getAllFormTemplates();
+            const response = await formTemplateService.getAllFormTemplatesForSubmission();
             const templatesData = response.data || [];
+
+            setTemplates(templatesData);
+            setFilteredTemplates(templatesData);
             
-            const publishedTemplates = templatesData.filter(t => t.is_published);
-            setTemplates(publishedTemplates);
-            setFilteredTemplates(publishedTemplates);
             
-            const programNames = publishedTemplates.map(t => t.program_name)
+            const programNames = templatesData.map(t => t.program_name)
             if (programNames.length > 0) {
                 const stats = await formSubmissionService.getMultipleProgramStats(programNames)
                 setProgramStats(stats.data || {})
@@ -246,8 +246,8 @@ const FormSubmissionsList = () => {
                 address: item.address || '',
                 province_name: item.province_name || '',
                 regency_name: item.regency_name || '',
-                district: item.district || item.kecamatan || '',
-                village: item.village || item.kelurahan || '',
+                district_name: item.district_name || item.kecamatan || '',
+                village_name: item.village_name || item.kelurahan || '',
                 postal_code: item.postal_code || '',
                 
                 created_at: formatDateForExcel(item.created_at),
@@ -389,6 +389,11 @@ const FormSubmissionsList = () => {
             { key: 'category', label: 'Kategori', width: 15 },
             { key: 'program', label: 'Program', width: 30 },
             { key: 'reason_join_program', label: 'Alasan Bergabung', width: 40 },
+            { key: 'address', label: 'Alamat', width: 40 },
+            { key: 'province_name', label: 'Provinsi', width: 30 },
+            { key: 'regency_name', label: 'Kabupaten/Kota', width: 30 },
+            { key: 'district_name', label: 'Kecamatan', width: 30 },
+            { key: 'village_name', label: 'Kelurahan', width: 30 },
         ];
         
         switch (categoryKey) {
@@ -402,7 +407,10 @@ const FormSubmissionsList = () => {
                     { key: 'established_year', label: 'Tahun Berdiri', width: 12 },
                     { key: 'monthly_revenue', label: 'Pendapatan Bulanan', width: 15 },
                     { key: 'employee_count', label: 'Jumlah Karyawan', width: 10 },
-                    { key: 'certifications', label: 'Sertifikasi', width: 30 }
+                    { key: 'certifications', label: 'Sertifikasi', width: 30 },
+                    { key: 'social_media', label: 'Sosial Media', width: 30 },
+                    { key: 'marketplace', label: 'Marketplace', width: 30 },
+                    { key: 'website', label: 'Website', width: 30 },
                 ];
             case 'mahasiswa':
                 return [

@@ -165,3 +165,49 @@ html, body {
     scrollbar-width: thin;
     scrollbar-color: #fbbf24 #fefce8;
 }
+
+@keyframes loadingBar {
+    0% {
+        width: 0%;
+        transform: translateX(-100%);
+    }
+    50% {
+        width: 60%;
+    }
+    100% {
+        width: 100%;
+        transform: translateX(0%);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-loadingBar {
+    animation: loadingBar 2s ease-in-out infinite;
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Delay utilities */
+.delay-500 {
+    animation-delay: 500ms;
+}
+
+.delay-1000 {
+    animation-delay: 1000ms;
+}
+
+.delay-1500 {
+    animation-delay: 1500ms;
+}
