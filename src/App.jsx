@@ -63,9 +63,8 @@ const ProtectedRoute = ({ children }) => {
         return <LoadingSpinner />;
     }
 
-    const authenticated = isAuthenticated();
-    
-    if (!authenticated) {
+    // PERBAIKAN: isAuthenticated adalah boolean, bukan fungsi
+    if (!isAuthenticated) {
         const tokens = getTokens();
         if (tokens.access_token) {
             clearTokens();
@@ -88,7 +87,8 @@ const ProtectedRouteMinimal = ({ children }) => {
         return <LoadingSpinner />;
     }
 
-    if (!isAuthenticated()) {
+    // PERBAIKAN: isAuthenticated adalah boolean, bukan fungsi
+    if (!isAuthenticated) {
         if (user?.role === 'komunitas') {
             return <Navigate to="/hetero/semarang" replace />;
         }
@@ -109,7 +109,8 @@ const PublicRoute = ({ children }) => {
         );
     }
 
-    if (isAuthenticated()) {
+    // PERBAIKAN: isAuthenticated adalah boolean, bukan fungsi
+    if (isAuthenticated) {
         return <Navigate to="/" replace />;
     }
 
