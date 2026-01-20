@@ -1,3 +1,5 @@
+import { authApi } from "./authServices"
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 class UserService {
@@ -6,9 +8,41 @@ class UserService {
     }
 
     async handleResponse(response) {
-        const result = await response.json()
+        if (!response.success) {
+            throw new Error(response.message || 'Request failed');
+        }
+        return response;
+    }
 
-        return result
+    async makeRequest(method, url, data = null, options = {}) {
+        try {
+            let response;
+            
+            switch (method.toLowerCase()) {
+                case 'get':
+                    response = await authApi.get(url, options);
+                    break;
+                case 'post':
+                    response = await authApi.post(url, data, options);
+                    break;
+                case 'put':
+                    response = await authApi.put(url, data, options);
+                    break;
+                case 'patch':
+                    response = await authApi.patch(url, data, options);
+                    break;
+                case 'delete':
+                    response = await authApi.delete(url, options);
+                    break;
+                default:
+                    throw new Error(`Unsupported method: ${method}`);
+            }
+            
+            return this.handleResponse(response);
+            
+        } catch (error) {
+            console.error(`${method.toUpperCase()} ${url} failed:`, error);
+        }
     }
 
     async fetchUsers(params = {}) {
@@ -16,27 +50,23 @@ class UserService {
             const {
                 page = 1,
                 limit = 10,
-                search = ''
+                search = '',
+                sortBy = 'created_at',
+                sortOrder = 'desc'
             } = params
-
-            const token = localStorage.getItem('token');
-            if (!token) throw new Error('Token not found. Please log in again.');
 
             const queryParams = new URLSearchParams({
                 page: page.toString(),
                 limit: limit.toString(),
+                sort_by: sortBy,
+                sort_order: sortOrder,
                 ...(search && { search }),
             })
 
-            const response = await fetch(`${this.baseURL}/user?${queryParams}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-
-            return await this.handleResponse(response)
+            return await this.makeRequest(
+                'get',
+                `/user?${queryParams}`
+            );
 
         } catch (error) {
             console.error('Error fetching client', error)
@@ -46,18 +76,13 @@ class UserService {
 
     async addUser(formData) {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) throw new Error('Token not found. Please log in again.');
-
-            const response = await fetch(`${this.baseURL}/user`, {
-                method: 'POST',
+            const response = await authApi.post('/user', formData, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body:formData
-            })
-
-            return await this.handleResponse(response)
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            
+            return this.handleResponse(response);
         } catch (error) {
             console.error('Error updating user: ', error)
             throw error
@@ -66,18 +91,17 @@ class UserService {
 
     async updateUser(userId, formData) {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) throw new Error('Token not found. Please log in again.');
-
-            const response = await fetch(`${this.baseURL}/user/${userId}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            })
-
-            return await this.handleResponse(response)
+            const isFormData = formData instanceof FormData;
+            
+            const response = await authApi.put(`/user/${userId}`, formData, {
+                headers: isFormData ? {
+                    'Content-Type': 'multipart/form-data'
+                } : {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            return this.handleResponse(response);
         } catch (error) {
             console.error('Error updating user: ', error)
             throw error
@@ -86,17 +110,7 @@ class UserService {
 
     async deleteUser(userId) {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) throw new Error('Token not found. Please log in again.');
-            
-            const response = await fetch(`${this.baseURL}/user/${userId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-
-            return await this.handleResponse(response)
+            return await this.makeRequest('delete', `/user/${userId}`);
         } catch (error) {
             console.error('Error deleting user:', error)
             throw error
@@ -105,21 +119,27 @@ class UserService {
 
     async activateUser(userId) {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) throw new Error('Token not found. Please log in again.');
-
-            const response = await fetch(`${this.baseURL}/user/${userId}/activate`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            })
-
-            const result = await this.handleResponse(response);
-            return result;
+            return await this.makeRequest('patch', `/user/${userId}/activate`);
         } catch (error) {
             console.error('Error activating user:', error);
+            throw error;
+        }
+    }
+
+    async deactivateUser(userId) {
+        try {
+            return await this.makeRequest('patch', `/user/${userId}/deactivate`);
+        } catch (error) {
+            console.error('Error deactivating user:', error);
+            throw error;
+        }
+    }
+
+    async getUserById(userId) {
+        try {
+            return await this.makeRequest('get', `/user/${userId}`);
+        } catch (error) {
+            console.error('Error fetching user:', error);
             throw error;
         }
     }

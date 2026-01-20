@@ -1,12 +1,16 @@
-import { createContext, useState, useEffect } from 'react'
+import { createContext, useState, useEffect, useCallback } from 'react'
 import authServices from '../services/authServices'
 
 const { 
     getTokens, 
+    saveTokens,
     setupTokenMaintenance, 
     validateSessionService,
+    loginService,
     logoutService,
-    clearTokens 
+    clearTokens, 
+    getProfileService,
+    refreshTokenService 
 } = authServices
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -16,41 +20,61 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [initialized, setInitialized] = useState(false);
 
     useEffect(() => {
-        initializeAuth()
+        initializeAuth();
+    }, []);
+
+    useEffect(() => {
+        let cleanup;
         
         if (user) {
-            const cleanup = setupTokenMaintenance()
-            return () => {
-                if (cleanup) cleanup()
-            }
+            cleanup = setupTokenMaintenance();
         }
-    }, [user])
+        
+        return () => {
+            if (cleanup) cleanup();
+        };
+    }, [user]);
 
     const initializeAuth = async () => {
         try {
-            const tokens = getTokens()
+            setLoading(true);
+            setError(null);
+            
+            const tokens = getTokens();
             
             if (!tokens.access_token || !tokens.refresh_token) {
-                setLoading(false)
-                return
+                setLoading(false);
+                setInitialized(true);
+                return;
             }
             
-            await validateSession()
-            setLoading(false)
+            const isValid = await validateSession();
+            
+            if (!isValid) {
+                const refreshed = await refreshSession();
+                if (!refreshed) {
+                    clearAuth();
+                }
+            }
             
         } catch (err) {
-            setError(err.message)
-            setLoading(false)
+            console.error('Auth initialization error:', err);
+            setError(err.message);
+            clearAuth();
+        } finally {
+            setLoading(false);
+            setInitialized(true);
         }
-    }
+    };
 
     const validateSession = async () => {
         try {
-            const response = await validateSessionService()
+            const response = await validateSessionService();
             
-            let userData;
+            let userData = null;
             
             if (response.data?.user) {
                 userData = response.data.user;
@@ -62,77 +86,194 @@ export const AuthProvider = ({ children }) => {
                 userData = response;
             }
             
-            if (userData && (userData.id || userData.email)) {
-                setUser(userData)
-                setError(null)
-                return true
+            if (userData && (userData.id || userData.email || userData.user_id)) {
+                setUser(userData);
+                setError(null);
+                return true;
             } else {
-                throw new Error('Invalid user data')
+                throw new Error('Invalid user data received');
             }
         } catch (error) {
-            if (error.message.includes('User not found') || 
-                error.message.includes('USER_NOT_FOUND') ||
-                error.message.includes('SESSION_EXPIRED') ||
-                error.message.includes('Invalid token') ||
-                error.message.includes('No token')) {
+            console.error('Session validation error:', error);
+            
+            const errorMsg = error.message || error.toString();
+            
+            if (errorMsg.includes('User not found') || 
+                errorMsg.includes('USER_NOT_FOUND') ||
+                errorMsg.includes('SESSION_EXPIRED') ||
+                errorMsg.includes('Invalid token') ||
+                errorMsg.includes('No token') ||
+                errorMsg.includes('401') ||
+                errorMsg.includes('expired')) {
                 
-                clearTokens()
-                setUser(null)
+                return false;
             }
             
-            setError(error.message)
-            throw error
+            setError(errorMsg);
+            return false;
         }
-    }
+    };
 
-    const login = (tokens, userData) => {
-        if (tokens && tokens.access_token) {
-            localStorage.setItem('access_token', tokens.access_token)
-            localStorage.setItem('refresh_token', tokens.refresh_token)
-        }
-        
-        setUser(userData)
-        setError(null)
-        setLoading(false)
-    }
-
-    const logout = async () => {
+    const refreshSession = async () => {
         try {
-            await logoutService()
-        } catch {
-            // 
+            const tokens = getTokens();
+            
+            if (!tokens.refresh_token) {
+                throw new Error('No refresh token available');
+            }
+            
+            const response = await refreshTokenService(tokens.refresh_token);
+            
+            if (response.success && response.tokens?.access_token) {
+                saveTokens(response.tokens);
+                
+                const profileResponse = await getProfileService();
+                
+                if (profileResponse.data) {
+                    setUser(profileResponse.data);
+                    setError(null);
+                    return true;
+                }
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('Session refresh error:', error);
+            return false;
+        }
+    };
+
+    const login = useCallback(async (email, password) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const result = await loginService({ email, password });     
+            
+            if (result.success) {
+                let userData = null;
+                let tokens = null;
+                
+                if (result.user && result.tokens) {
+                    userData = result.user;
+                    tokens = result.tokens;
+                } else if (result.data?.user && result.data?.tokens) {
+                    userData = result.data.user;
+                    tokens = result.data.tokens;
+                } else if (result.data) {
+                    userData = result.data.user || result.data;
+                    tokens = result.data.tokens || result.data.session;
+                } else if (result.token) {
+                    userData = result.user;
+                    tokens = {
+                        access_token: result.token,
+                        refresh_token: result.refresh_token || '',
+                        expires_at: result.expires_at || Math.floor(Date.now() / 1000) + 3600
+                    };
+                }
+                
+                if (tokens?.access_token) {
+                    saveTokens(tokens);
+                    setUser(userData);
+                    
+                    localStorage.setItem('user', JSON.stringify(userData));
+                    
+                    setError(null);
+                    return { success: true, user: userData };
+                } else {
+                    throw new Error('No access token received');
+                }
+            } else {
+                throw new Error(result.message || 'Login failed');
+            }
+        } catch (error) {
+            const errorMsg = error.message || 'Login failed. Please check your credentials.';
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
         } finally {
-            setUser(null)
-            setError(null)
-            clearTokens()
+            setLoading(false);
+        }
+    }, []);
+
+    const logout = useCallback(async () => {
+        try {
+            setLoading(true);
+            await logoutService();
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            clearAuth();
             
             if (window.location.pathname !== '/login') {
-                window.location.href = '/login'
+                window.location.href = '/login';
             }
         }
-    }
+    }, []);
+
+    const clearAuth = () => {
+        setUser(null);
+        setError(null);
+        setLoading(false);
+        clearTokens();
+    };
 
     const updateUser = (updatedUserData) => {
         setUser(prev => ({
             ...prev,
             ...updatedUserData
-        }))
-    }
+        }));
+    };
+
+    const updateProfile = async (userData) => {
+        try {
+            if (userData) {
+                localStorage.setItem('user_profile', JSON.stringify(userData));
+            }
+            
+            setUser(prev => ({
+                ...prev,
+                ...userData
+            }));
+            
+            return { success: true };
+        } catch (error) {
+            console.error('Update profile error:', error);
+            return { success: false, error: error.message };
+        }
+    };
 
     const isAuthenticated = () => {
-        const tokens = getTokens()
-        return !!(user && tokens.access_token)
-    }
+        const tokens = getTokens();
+        return !!(user && tokens.access_token);
+    };
+
+    const getAuthHeaders = () => {
+        const tokens = getTokens();
+        
+        if (!tokens.access_token) {
+            throw new Error('No access token available');
+        }
+        
+        return {
+            'Authorization': `Bearer ${tokens.access_token}`,
+            'Content-Type': 'application/json'
+        };
+    };
 
     const value = {
         user,
         loading,
         error,
+        initialized,
         login,
         logout,
         updateUser,
+        updateProfile,
         isAuthenticated,
-        clearTokens
+        getAuthHeaders,
+        clearAuth,
+        refreshSession,
+        setError
     }
 
     return (

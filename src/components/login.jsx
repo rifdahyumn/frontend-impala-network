@@ -5,7 +5,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/impalalogo.png";
 import logo2 from "../assets/heterologo.png";
-import { loginService, saveTokens, setupTokenMaintenance } from "../services/authServices";
 import { validateEmail } from "../utils/validation";
 
 export default function LoginPage() {
@@ -77,67 +76,27 @@ export default function LoginPage() {
     const handleLogin = async (e) => {
         e.preventDefault();
         
-        if (!validateForm()) {
-            return;
-        }
-
+        if (!validateForm()) return;
+        
         setLoading(true);
         setAuthError("");
 
         try {
-            const result = await loginService({
-                email: formData.email.trim(),
-                password: formData.password
-            });
+            const result = await login(formData.email.trim(), formData.password);
             
-            let userData, tokens;
-            
-            if (result.data?.user && result.data?.tokens) {
-                userData = result.data.user;
-                tokens = result.data.tokens;
-            } else if (result.user && result.tokens) {
-                userData = result.user;
-                tokens = result.tokens;
-            } else if (result.token) {
-                userData = result.user || { email: formData.email };
-                tokens = { access_token: result.token };
-            } else {
-                console.error('Unexpected response structure:', result);
-                throw new Error('Invalid server response format');
-            }
-            
-            if (tokens?.access_token) {
-                saveTokens(tokens);
+            if (result.success) {
+                const redirectPath = getRedirectPath(result.user.role);
                 
-                setupTokenMaintenance();
+                setTimeout(() => {
+                    navigate(redirectPath, { replace: true });
+                }, 100);
             } else {
-                console.warn('No access token in response');
+                throw new Error(result.error || 'Login failed');
             }
-            
-            login(tokens?.access_token, userData);
-
-            const redirectPath = getRedirectPath(userData.role);
-            
-            setTimeout(() => {
-                navigate(redirectPath, { replace: true });
-            }, 100);
             
         } catch (err) {
-            console.error('Login error details:', err);
-            
-            let errorMessage = "Login gagal. Periksa email dan password anda.";
-            
-            if (err.message.includes("User not found") || err.message.includes("not registered")) {
-                errorMessage = "Akun tidak terdaftar di sistem.";
-            } else if (err.message.includes("inactive") || err.message.includes("tidak aktif")) {
-                errorMessage = "Akun tidak aktif. Hubungi administrator.";
-            } else if (err.message.includes("network") || err.message.includes("Network")) {
-                errorMessage = "Koneksi jaringan bermasalah. Coba lagi.";
-            } else if (err.message.includes("credentials") || err.message.includes("kredensial")) {
-                errorMessage = "Email atau password salah.";
-            }
-            
-            setAuthError(errorMessage);
+            console.error('Login error:', err);
+            setAuthError(err.message.includes('credentials') ? 'Email atau password salah' : 'Login gagal');
         } finally {
             setLoading(false);
         }

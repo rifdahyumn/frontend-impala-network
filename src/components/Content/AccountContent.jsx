@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import ConfirmModal from "./ConfirmModal";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL
+
 const AccountContent = ({ 
     selectedUser, 
     onOpenEditModal, 
@@ -83,7 +85,6 @@ const AccountContent = ({
                 await onDelete(selectedUser.id);
                 toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
                 
-                // Update status lokal untuk menghilangkan button deactivate
                 if (onUserEdited) {
                     onUserEdited({ ...selectedUser, status: 'Inactive' });
                 }
@@ -110,13 +111,12 @@ const AccountContent = ({
                 await onActivateUser(selectedUser.id);
                 toast.success(`User "${selectedUser.full_name}" activated successfully`);
                 
-                // Update status lokal untuk menghilangkan button activate
                 if (onUserEdited) {
                     onUserEdited({ ...selectedUser, status: 'Active' });
                 }
             }
         } catch (error) {
-            console.error('❌ Error activating user:', error);
+            console.error('Error activating user:', error);
             toast.error(error.message || 'Failed to activate user');
         } finally {
             setActivateLoading(false);
@@ -135,8 +135,7 @@ const AccountContent = ({
             return avatarPath;
         }
         
-        // eslint-disable-next-line no-undef
-        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+        const baseUrl = API_BASE_URL
         const fullUrl = `${baseUrl}${avatarPath}`;
         return fullUrl;
     };
