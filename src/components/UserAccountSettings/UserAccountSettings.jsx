@@ -6,12 +6,13 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Card, CardContent } from "../ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Upload, X, ChevronDown, LogOut } from "lucide-react";
+import { Upload, X, ChevronDown, LogOut, Loader2 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
+import { toast } from "react-hot-toast"; // Anda bisa install react-hot-toast atau gunakan alert
 
 const UserAccountSettings = () => {
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
+    const { user, logout, updateUser } = useAuth(); // Tambahkan updateUser dari useAuth jika ada
     const dropdownRef = useRef(null);
     
     const [formData, setFormData] = useState({
@@ -27,8 +28,10 @@ const UserAccountSettings = () => {
 
     const [changePassword, setChangePassword] = useState(false);
     const [avatarPreview, setAvatarPreview] = useState(null);
+    const [avatarFile, setAvatarFile] = useState(null); // State untuk file avatar
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
+    const [isLoading, setIsLoading] = useState(false); // State untuk loading
+    const [errors, setErrors] = useState({}); // State untuk error validasi
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -171,6 +174,10 @@ const UserAccountSettings = () => {
             ...prev,
             [field]: value
         }));
+        // Clear error saat user mengubah field
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: '' }));
+        }
     };
 
     const handleSelectChange = (name, value) => {
@@ -186,30 +193,166 @@ const UserAccountSettings = () => {
         const file = e.target.files[0];
         if (file) {
             if (!file.type.startsWith('image/')) {
-                alert("Please select an image file");
+                setErrors(prev => ({ ...prev, avatar: "Please select an image file" }));
                 return;
             }
 
             if (file.size > 5 * 1024 * 1024) {
-                alert('Image size should be less than 5MB');
+                setErrors(prev => ({ ...prev, avatar: 'Image size should be less than 5MB' }));
                 return;
             }
 
+            setAvatarFile(file); // Simpan file untuk dikirim ke backend
             const reader = new FileReader();
             reader.onload = (e) => {
                 setAvatarPreview(e.target.result);
             };
             reader.readAsDataURL(file);
+            
+            // Clear error jika ada
+            if (errors.avatar) {
+                setErrors(prev => ({ ...prev, avatar: '' }));
+            }
         }
     };
 
     const removeAvatar = () => {
         setAvatarPreview(null);
+        setAvatarFile(null);
     };
 
-    const handleSubmit = (e) => {
+    const validateForm = () => {
+        const newErrors = {};
+        
+        // Validasi email
+        if (!formData.email) {
+            newErrors.email = 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = 'Email is invalid';
+        }
+        
+        // Validasi full name
+        if (!formData.fullName) {
+            newErrors.fullName = 'Full name is required';
+        }
+        
+        // Validasi phone (optional)
+        if (formData.phone && !/^[\+]?[0-9\s\-\(\)]+$/.test(formData.phone)) {
+            newErrors.phone = 'Phone number is invalid';
+        }
+        
+        // Validasi password jika changePassword aktif
+        if (changePassword) {
+            if (!formData.currentPassword) {
+                newErrors.currentPassword = 'Current password is required';
+            }
+            if (!formData.newPassword) {
+                newErrors.newPassword = 'New password is required';
+            } else if (formData.newPassword.length < 6) {
+                newErrors.newPassword = 'Password must be at least 6 characters';
+            }
+            if (formData.newPassword !== formData.confirmPassword) {
+                newErrors.confirmPassword = 'Passwords do not match';
+            }
+        }
+        
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        alert('Settings saved successfully!');
+        
+        // Validasi form
+        if (!validateForm()) {
+            toast.error('Please fix the errors in the form');
+            return;
+        }
+        
+        setIsLoading(true);
+        
+        try {
+            // Buat FormData untuk mengirim file
+            const formDataToSend = new FormData();
+            
+            // Tambahkan field teks
+            formDataToSend.append('email', formData.email);
+            formDataToSend.append('fullName', formData.fullName);
+            formDataToSend.append('phone', formData.phone || '');
+            formDataToSend.append('position', formData.position);
+            
+            // Tambahkan field password jika diubah
+            if (changePassword) {
+                formDataToSend.append('currentPassword', formData.currentPassword);
+                formDataToSend.append('newPassword', formData.newPassword);
+            }
+            
+            // Tambahkan file avatar jika ada
+            if (avatarFile) {
+                formDataToSend.append('avatar', avatarFile);
+            }
+            
+            const token = localStorage.getItem('token');
+            
+            // Kirim request ke backend
+            const response = await fetch('http://localhost:3000/api/user/update', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                    // Jangan set Content-Type untuk FormData, browser akan otomatis set
+                },
+                body: formDataToSend
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Update user context jika ada
+                if (updateUser) {
+                    const updatedUser = {
+                        ...user,
+                        email: formData.email,
+                        full_name: formData.fullName,
+                        phone: formData.phone,
+                        position: formData.position,
+                        avatar: data.avatar || user?.avatar // Gunakan avatar baru dari response
+                    };
+                    updateUser(updatedUser);
+                }
+                
+                toast.success('Profile updated successfully!');
+                
+                // Reset password fields jika berhasil
+                if (changePassword) {
+                    setFormData(prev => ({
+                        ...prev,
+                        currentPassword: '',
+                        newPassword: '',
+                        confirmPassword: ''
+                    }));
+                    setChangePassword(false);
+                }
+                
+            } else {
+                // Handle error dari server
+                if (data.message) {
+                    toast.error(data.message);
+                } else {
+                    toast.error('Failed to update profile');
+                }
+                
+                // Set error spesifik jika ada
+                if (data.errors) {
+                    setErrors(data.errors);
+                }
+            }
+            
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            toast.error('Network error. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleBack = () => {
@@ -265,6 +408,9 @@ const UserAccountSettings = () => {
                                         className="w-full cursor-pointer border-amber-200 focus:border-amber-500"
                                     />
                                 </div>
+                                {errors.avatar && (
+                                    <p className="text-sm text-red-600">{errors.avatar}</p>
+                                )}
                                 <p className="text-sm text-gray-500">
                                     Supported: JPG, PNG, GIF • Max: {field.maxSize}MB
                                 </p>
@@ -298,6 +444,9 @@ const UserAccountSettings = () => {
                             ))}
                         </SelectContent>
                     </Select>
+                    {errors[field.name] && (
+                        <p className="text-sm text-red-600">{errors[field.name]}</p>
+                    )}
                 </div>
             );
         }
@@ -322,6 +471,9 @@ const UserAccountSettings = () => {
                     required={field.required}
                     className="w-full border-amber-200 focus:border-amber-500"
                 />
+                {errors[field.name] && (
+                    <p className="text-sm text-red-600">{errors[field.name]}</p>
+                )}
             </div>
         );
     };
@@ -448,6 +600,9 @@ const UserAccountSettings = () => {
                                                 placeholder="Enter current password"
                                                 className="w-full border-amber-200 focus:border-amber-500"
                                             />
+                                            {errors.currentPassword && (
+                                                <p className="text-sm text-red-600">{errors.currentPassword}</p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="newPassword" className="text-gray-900">
@@ -462,6 +617,9 @@ const UserAccountSettings = () => {
                                                 placeholder="Enter new password"
                                                 className="w-full border-amber-200 focus:border-amber-500"
                                             />
+                                            {errors.newPassword && (
+                                                <p className="text-sm text-red-600">{errors.newPassword}</p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="confirmPassword" className="text-gray-900">
@@ -476,6 +634,9 @@ const UserAccountSettings = () => {
                                                 placeholder="Confirm new password"
                                                 className="w-full border-amber-200 focus:border-amber-500"
                                             />
+                                            {errors.confirmPassword && (
+                                                <p className="text-sm text-red-600">{errors.confirmPassword}</p>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -494,15 +655,24 @@ const UserAccountSettings = () => {
                             <Button
                                 type="button"
                                 onClick={handleBack}
-                                className="bg-white text-gray-700 px-6 py-2 rounded-lg border border-amber-200 hover:bg-amber-50 transition-colors"
+                                disabled={isLoading}
+                                className="bg-white text-gray-700 px-6 py-2 rounded-lg border border-amber-200 hover:bg-amber-50 transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
-                                className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-6 py-2 rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-colors shadow-lg"
+                                disabled={isLoading}
+                                className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-6 py-2 rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-colors shadow-lg disabled:opacity-50 flex items-center gap-2"
                             >
-                                Save Changes
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    'Save Changes'
+                                )}
                             </Button>
                         </div>
                     </form>
