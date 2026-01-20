@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useState, useEffect, useCallback, useContext } from 'react'
 import authServices from '../services/authServices'
 
 const { 
@@ -21,7 +21,6 @@ export const AuthProvider = ({ children }) => {
     const [error, setError] = useState(null)
     const [initialized, setInitialized] = useState(false);
 
-    // Fungsi untuk mengecek token expired
     const isTokenExpired = (token) => {
         if (!token) return true;
 
@@ -37,7 +36,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Fungsi untuk mengecek auth dari localStorage
     const checkAuth = () => {
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
         const userData = localStorage.getItem('user');
@@ -45,27 +43,24 @@ export const AuthProvider = ({ children }) => {
         if (token && userData) {
             try {
                 if (isTokenExpired(token)) {
-                    handleLogout();
+                    logout();
                     return false;
                 }
 
                 const parsedUser = JSON.parse(userData);
-                setIsAuthenticated(true);
                 setUser(parsedUser);
                 return true;
             } catch (error) {
                 console.error('Error parsing user data:', error);
-                handleLogout();
+                logout();
                 return false;
             }
         } else {
-            setIsAuthenticated(false);
             setUser(null);
             return false;
         }
     };
 
-    // Initialize auth
     useEffect(() => {
         initializeAuth();
     }, []);
@@ -73,7 +68,6 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         let cleanup;
         
-        // Setup token maintenance jika user ada
         if (user) {
             cleanup = setupTokenMaintenance();
         }
@@ -249,12 +243,15 @@ export const AuthProvider = ({ children }) => {
         } finally {
             clearAuth();
             
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            
             setUser(null);
-            setIsAuthenticated(false);
             setError(null);
             setLoading(false);
             
-            // Redirect ke login
             if (window.location.pathname !== '/login') {
                 window.location.href = '/login';
             }
@@ -266,6 +263,11 @@ export const AuthProvider = ({ children }) => {
         setError(null);
         setLoading(false);
         clearTokens();
+        
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
     };
 
     const updateUser = (updatedUserData) => {
@@ -312,17 +314,16 @@ export const AuthProvider = ({ children }) => {
     };
 
     const value = {
-        isAuthenticated: checkIsAuthenticated(),
+        isAuthenticated: isAuthenticated(), 
         user,
         loading,
         error,
         initialized,
         login,
-        logout: handleLogout,
+        logout, 
         checkAuth,
         updateUser,
         updateProfile,
-        // isAuthenticated,
         getAuthHeaders,
         clearAuth,
         refreshSession,
