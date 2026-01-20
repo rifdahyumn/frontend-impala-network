@@ -31,6 +31,7 @@ const HeteroSurakarta = () => {
     const [isDragging, setIsDragging] = useState(false);
     
     const fileInputRef = useRef(null);
+    const filterRef = useRef(null)
     const dropZoneRef = useRef(null);
     
     const [highlightDetail, setHighlightDetail] = useState(false);
@@ -38,53 +39,96 @@ const HeteroSurakarta = () => {
     const memberDetailRef = useRef(null);
     
     const [searchTerm, setSearchTerm] = useState("");
-    const [filters, setFilters] = useState({
-        gender: null, 
-        space: null, 
+    const [tempFilters, setTempFilters] = useState({
+        gender: '', 
+        space: 'all',
+        status: ''
     });
-    const [filteredMembers, setFilteredMembers] = useState([]);
-    const [availableSpaces, setAvailableSpaces] = useState([]);
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [tempFilters, setTempFilters] = useState({
-        gender: filters.gender || '',
-        space: filters.space || 'all'
-    });
+    const [filteredMembers, setFilteredMembers] = useState([]);
+
+    const getGenderLabel = (genderValue) => {
+        if (!genderValue) return "";
+        if (genderValue === 'male') return 'Male';
+        if (genderValue === 'female') return 'Female';
+        return genderValue;
+    };
+
+    const getStatusLabel = (statusValue) => {
+        if (!statusValue) return "";
+        if (statusValue === 'active') return 'Active';
+        if (statusValue === 'inactive') return 'Inactive';
+        return statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
+    };
 
     const { members, loading, error, pagination, fetchMembers, addMemberHeteroSolo, 
         updateMemberHeteroSolo, deleteMemberHeteroSolo, showConfirm, handleConfirm, handleCancel,
-        isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading } = useHeteroSolo()
+        isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading, spaceOptions, loadingSpaceOptions,
+        genderOptions, getSpaceLabel, extractSpacesFromMembers, spaceOptionsError, fetchSpaceOptions,
+        filters, setFilters, handlePageChange, fetchAllMembers } = useHeteroSolo()
 
-    const allSpaceOptions = [
-        { value: "maneka personal", label: "🏠 Maneka Personal", original: "Maneka Personal" },
-        { value: "maneka group", label: "👥 Maneka Group", original: "Maneka Group" },
-        { value: "rembug 1", label: "🗣️ Rembug 1", original: "Rembug 1" },
-        { value: "rembug 2-6", label: "🗣️ Rembug 2-6", original: "Rembug 2-6" },
-        { value: "rembug 7", label: "🗣️ Rembug 7", original: "Rembug 7" },
-        { value: "private office 1-3", label: "🚪 Private Office 1-3", original: "Private Office 1-3" },
-        { value: "private office 4&5", label: "🚪 Private Office 4&5", original: "Private Office 4&5" },
-        { value: "private office 6", label: "🚪 Private Office 6", original: "Private Office 6" },
-        { value: "space gatra", label: "🏛️ Space Gatra", original: "Space Gatra" },
-        { value: "space gayeng", label: "🎉 Space Gayeng", original: "Space Gayeng" },
-        { value: "markspace", label: "📍 Markspace", original: "Markspace" },
-        { value: "foodlab", label: "🍽️ Foodlab", original: "Foodlab" },
-        { value: "abipraya membership", label: "🎫 Abipraya Membership", original: "Abipraya Membership" },
-        { value: "abipraya event", label: "🎪 Abipraya Event", original: "Abipraya Event" },
-        { value: "virtual office", label: "💻 Virtual Office", original: "Virtual Office" },
-        { value: "outdoorspace", label: "🌳 Outdoor Space", original: "Outdoor Space" }
-    ];
+    useEffect(() => {
+        let result = [...members];
+        
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            result = result.filter(member => 
+                member.full_name?.toLowerCase().includes(term) ||
+                member.email?.toLowerCase().includes(term) ||
+                member.phone?.toLowerCase().includes(term) ||
+                member.company?.toLowerCase().includes(term) ||
+                member.space?.toLowerCase().includes(term) ||
+                member.status?.toLowerCase().includes(term)
+            );
+        }
+        
+        if (filters.gender) {
+            result = result.filter(member => 
+                member.gender?.toLowerCase() === filters.gender.toLowerCase()
+            );
+        }
+        
+        if (filters.space && filters.space !== 'all') {
+            result = result.filter(member => 
+                member.space?.toLowerCase() === filters.space.toLowerCase()
+            );
+        }
 
-    const genderOptions = [
-        { value: 'male', label: 'Male' },
-        { value: 'female', label: 'Female' },
-    ];
+        if (filters.status) {
+            result = result.filter(member => 
+                member.status?.toLowerCase() === filters.status.toLowerCase()
+            );
+        }
+        
+        setFilteredMembers(result);
+        
+        if ((searchTerm || filters.gender || filters.space || filters.status) && pagination.page !== 1) {
+            handlePageChange(1);
+        }
+    }, [members, searchTerm, filters, pagination.page, handlePageChange]);
 
-    const getSpaceLabel = useCallback((spaceValue) => {
-        if (!spaceValue || spaceValue === "all") return "All Spaces";
-        const space = allSpaceOptions.find(s => s.value === spaceValue) || 
-                     availableSpaces.find(s => s.value === spaceValue);
-        return space ? space.original : spaceValue;
-    }, [availableSpaces]);
+    useEffect(() => {
+        if (filters) {
+            setTempFilters({
+                gender: filters.gender || '',
+                space: filters.space || 'all',
+                status: filters.status || ''
+            });
+        }
+    }, [filters]);
+
+    const availableSpaces = useMemo(() => {
+        if (spaceOptions.length > 0) {
+            return spaceOptions
+        }
+
+        if (members.length > 0) {
+            return extractSpacesFromMembers(members)
+        }
+
+        return []
+    }, [spaceOptions, members, extractSpacesFromMembers])
 
     const handleSelectMember = useCallback((member) => {
         setSelectedMember(member);
@@ -140,6 +184,13 @@ const HeteroSurakarta = () => {
             processFile(file);
         }
     }, []);
+
+    const handleTempStatusChange = (status) => {
+        setTempFilters(prev => ({ 
+            ...prev, 
+            status: prev.status === status ? '' : status 
+        }));
+    };
 
     const processFile = useCallback((file) => {
         setValidationErrors([]);
@@ -211,15 +262,25 @@ const HeteroSurakarta = () => {
             const templateData = [
                 {
                     'full_name': 'Contoh: John Doe',
+                    'nik': 'Contoh: 3374092209940007',
                     'email': 'Contoh: john@example.com',
-                    'gender': 'Contoh: male',
                     'phone': 'Contoh: 081234567890',
-                    'space': 'Contoh: Maneka Personal',
-                    'company': 'Contoh: PT. Contoh Indonesia',
-                    'duration': 'Contoh: 12 months',
-                    'status': 'Contoh: active',
+                    'gender': 'Contoh: Male/Female',
+                    'date_of_birth': 'Contoh: 09/22/1994',
+                    'education': 'Contoh: Bachelor Degree',
                     'address': 'Contoh: Jl. Contoh No. 123',
-                    'notes': 'Contoh: Catatan tambahan'
+                    'province_name': 'Contoh: Jawa Tengah',
+                    'regency_name': 'Contoh: Kota Semarang',
+                    'district_name': 'Contoh: Semarang Barat',
+                    'village_name': 'Contoh: Kembangarum',
+                    'postal_code': 'Contoh: 50183',
+                    'company': 'Contoh: PT. Contoh Indonesia',
+                    'space': 'Contoh: Maneka Personal',
+                    'start_date': 'Contoh: 06/10/2026',
+                    'end_date': 'Contoh: 06/10/2026',
+                    'status': 'Contoh: Active',
+                    'add_on': 'Contoh: Photografi, Videografi, Snack Box',
+                    'add_information': 'Contoh: Website, Sosial Media'
                 },
             ];
             
@@ -289,12 +350,34 @@ const HeteroSurakarta = () => {
         
         if (!row.email || row.email.toString().trim() === '') {
             errors.push(`Baris ${rowIndex}: Kolom "email" wajib diisi`);
+        } else {
+            const email = row.email.toString().trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                errors.push(`Baris ${rowIndex}: Format email tidak valid: "${email}"`);
+            }
         }
         
-        if (row.email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(row.email.toString())) {
-                errors.push(`Baris ${rowIndex}: Format email tidak valid`);
+        if (!row.phone || row.phone.toString().trim() === '') {
+            errors.push(`Baris ${rowIndex}: Kolom "phone" wajib diisi`);
+        } else {
+            const phone = row.phone.toString().replace(/\D/g, '');
+            if (phone.length < 10) {
+                errors.push(`Baris ${rowIndex}: Nomor telepon harus minimal 10 digit`);
+            }
+        }
+        
+        if (!row.space || row.space.toString().trim() === '') {
+            errors.push(`Baris ${rowIndex}: Kolom "space" wajib diisi`);
+        }
+        
+        if (row.nik && row.nik.toString().trim() !== '') {
+            const nik = row.nik.toString().replace(/\D/g, '');
+            
+            if (nik.length === 0) {
+                errors.push(`Baris ${rowIndex}: NIK tidak valid (hanya berisi karakter non-digit)`);
+            } else if (nik.length < 10) {
+                errors.push(`Baris ${rowIndex}: NIK harus minimal 10 digit angka (saat ini ${nik.length} digit)`);
             }
         }
         
@@ -303,55 +386,272 @@ const HeteroSurakarta = () => {
 
     const parseExcel = (data) => {
         try {
-            const workbook = XLSX.read(data, { type: 'array' });
+            const workbook = XLSX.read(data, { 
+                type: 'array', 
+                cellDates: true,
+                cellNF: false,
+                cellText: true
+            });
+            
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
             
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+            const rawData = XLSX.utils.sheet_to_json(worksheet, { 
+                header: 1, 
+                defval: '',
+                raw: true,
+                dateNF: 'yyyy-mm-dd'
+            });
             
-            if (jsonData.length === 0) {
+            if (rawData.length < 2) {
                 throw new Error('File Excel tidak berisi data');
             }
             
-            const headers = Object.keys(jsonData[0]).map(h => h.trim());
+            const headers = rawData[0].map(header => 
+                header.toString()
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\s+/g, '_')
+                    .replace(/[^a-zA-Z0-9_]/g, '')
+            );
             
             const dataRows = [];
             const errors = [];
             
-            jsonData.forEach((row, index) => {
+            for (let i = 1; i < rawData.length; i++) {
+                const rawRow = rawData[i];
+                
                 try {
-                    const cleanRow = {};
-                    headers.forEach(header => {
-                        const value = row[header];
-                        cleanRow[header] = value !== undefined && value !== null ? 
-                            (typeof value === 'string' ? value.trim() : value.toString().trim()) : '';
+                    if (!rawRow || rawRow.every(cell => 
+                        cell === '' || 
+                        cell === null || 
+                        cell === undefined ||
+                        cell.toString().trim() === ''
+                    )) {
+                        continue;
+                    }
+                    
+                    const rowObj = {};
+                    headers.forEach((header, index) => {
+                        let value = rawRow[index];
+
+                        if (value === undefined || value === null) {
+                            value = '';
+                        } else if (typeof value === 'object' && value instanceof Date) {
+                            const year = value.getFullYear();
+                            const month = String(value.getMonth() + 1).padStart(2, '0');
+                            const day = String(value.getDate()).padStart(2, '0');
+                            value = `${year}-${month}-${day}`;
+                        } else {
+                            value = value.toString().trim();
+                        }
+                        
+                        rowObj[header] = value;
                     });
+
+                    const cleanRow = {
+                        full_name: rowObj.full_name || rowObj.fullname || rowObj.name || rowObj.nama || '',
+                        nik: rowObj.nik || rowObj.nik_number || rowObj.nomor_induk || '',
+                        email: rowObj.email || rowObj.email_address || '',
+                        phone: rowObj.phone || rowObj.phone_number || rowObj.telepon || rowObj.mobile || '',
+                        gender: rowObj.gender || rowObj.sex || rowObj.jenis_kelamin || '',
+                        date_of_birth: rowObj.date_of_birth || rowObj.dob || rowObj.tanggal_lahir || rowObj.birth_date || '',
+                        education: rowObj.education || rowObj.pendidikan || rowObj.last_education || '',
+                        address: rowObj.address || rowObj.alamat || '',
+                        province_name: rowObj.province_name || rowObj.province || rowObj.provinsi || '',
+                        regency_name: rowObj.regency_name || rowObj.city || rowObj.kota || rowObj.kabupaten || '',
+                        district_name: rowObj.district_name || rowObj.district || rowObj.kecamatan || '',
+                        village_name: rowObj.village_name || rowObj.village || rowObj.kelurahan || rowObj.desa || '',
+                        postal_code: rowObj.postal_code || rowObj.postalcode || rowObj.kode_pos || '',
+                        company: rowObj.company || rowObj.company_name || rowObj.perusahaan || '',
+                        space: rowObj.space || rowObj.space_type || rowObj.package || '',
+                        start_date: rowObj.start_date || rowObj.startdate || rowObj.tanggal_mulai || '',
+                        end_date: rowObj.end_date || rowObj.enddate || rowObj.tanggal_selesai || '',
+                        status: rowObj.status || rowObj.member_status || 'Active',
+                        add_on: rowObj.add_on || rowObj.addon || rowObj.additional_services || '',
+                        add_information: rowObj.add_information || rowObj.additional_info || rowObj.information || ''
+                    };
                     
                     if (Object.values(cleanRow).some(value => 
-                        value.toString().includes('Contoh:') || 
-                        value.toString().includes('CONTOH:') ||
-                        value.toString().includes('contoh:')
+                        value.toString().toLowerCase().includes('contoh') ||
+                        value.toString().toLowerCase().includes('example') ||
+                        value.toString().startsWith('Contoh:') ||
+                        value.toString().startsWith('Example:')
                     )) {
-                        return;
+                        continue;
                     }
                     
                     if (Object.values(cleanRow).every(value => value === '')) {
-                        return;
+                        continue;
                     }
                     
-                    const rowErrors = validateRowData(cleanRow, index + 1);
+                    if (cleanRow.nik) {
+                        const nikColIndex = headers.findIndex(h => 
+                            h.includes('nik') || h.includes('nik_number') || h.includes('nomor_induk')
+                        );
+                        
+                        let nikValue = cleanRow.nik;
+                        
+                        if (nikColIndex >= 0) {
+                            const cellAddress = XLSX.utils.encode_cell({ r: i, c: nikColIndex });
+                            const cell = worksheet[cellAddress];
+                            
+                            if (cell && cell.w) {
+                                nikValue = cell.w.toString();
+                            } else if (cell && cell.t === 'n') {
+                                const numValue = cell.v;
+                                const strValue = numValue.toString();
+                                
+                                if (strValue.includes('e+') || strValue.includes('E+')) {
+                                    const parts = strValue.toLowerCase().split('e+');
+                                    const coefficient = parseFloat(parts[0]);
+                                    const exponent = parseInt(parts[1]);
+                                    
+                                    const coefficientStr = coefficient.toString();
+                                    const hasDecimal = coefficientStr.includes('.');
+                                    
+                                    if (hasDecimal) {
+                                        const [intPart, decPart] = coefficientStr.split('.');
+                                        // const totalDigits = intPart.length + decPart.length;
+                                        
+                                        if (exponent >= decPart.length) {
+                                            const zerosToAdd = exponent - decPart.length;
+                                            nikValue = intPart + decPart + '0'.repeat(zerosToAdd);
+                                        } else {
+                                            const position = intPart.length + exponent;
+                                            const allDigits = intPart + decPart;
+                                            nikValue = allDigits.substring(0, position) + '.' + allDigits.substring(position);
+                                            nikValue = nikValue.replace('.', '');
+                                        }
+                                    } else {
+                                        nikValue = coefficientStr + '0'.repeat(exponent);
+                                    }
+                                } else {
+                                    nikValue = Number(numValue).toFixed(0);
+                                }
+                            }
+                        }
+                        
+                        nikValue = nikValue.toString().replace(/\./g, '').replace(/\D/g, '');
+                        
+                        if (nikValue.length < 10 && nikValue.length > 0) {
+                            const originalValue = rawRow[nikColIndex];
+                            if (originalValue !== undefined && originalValue !== null) {
+                                const originalStr = originalValue.toString();
+                                
+                                if (originalStr.includes('e+') || originalStr.includes('E+')) {
+                                    try {
+                                        const num = parseFloat(originalStr);
+                                        if (!isNaN(num)) {
+                                            const bigNum = BigInt(Math.floor(num));
+                                            nikValue = bigNum.toString();
+                                        }
+                                    } catch {
+                                        try {
+                                            const num = parseFloat(originalStr);
+                                            const fixedStr = num.toFixed(0);
+                                            nikValue = fixedStr;
+                                        } catch {
+                                            //
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        cleanRow.nik = nikValue;
+                    }
+                    
+                    if (cleanRow.phone) {
+                        cleanRow.phone = cleanRow.phone.replace(/[^\d+]/g, '');
+                    }
+                    
+                    const formatDate = (dateStr) => {
+                        if (!dateStr || dateStr.toString().trim() === '') {
+                            return '';
+                        }
+                        
+                        const str = dateStr.toString().trim();
+                        
+                        const patterns = [
+                            /^(\d{4})-(\d{1,2})-(\d{1,2})$/,
+                            /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
+                            /^(\d{1,2})-(\d{1,2})-(\d{4})$/,
+                            /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/
+                        ];
+                        
+                        for (const pattern of patterns) {
+                            const match = str.match(pattern);
+                            if (match) {
+                                let year, month, day;
+                                
+                                if (pattern.source.startsWith('^\\d{4}')) {
+                                    year = match[1];
+                                    month = match[2].padStart(2, '0');
+                                    day = match[3].padStart(2, '0');
+                                } else {
+                                    const part1 = parseInt(match[1]);
+                                    const part2 = parseInt(match[2]);
+                                    year = match[3];
+                                    
+                                    if (part1 > 12 && part1 <= 31) {
+                                        day = part1.toString().padStart(2, '0');
+                                        month = part2.toString().padStart(2, '0');
+                                    } else if (part2 > 12 && part2 <= 31) {
+                                        month = part1.toString().padStart(2, '0');
+                                        day = part2.toString().padStart(2, '0');
+                                    } else {
+                                        month = part1.toString().padStart(2, '0');
+                                        day = part2.toString().padStart(2, '0');
+                                    }
+                                }
+                                
+                                const date = new Date(`${year}-${month}-${day}`);
+                                if (!isNaN(date.getTime()) && date.getFullYear() == year) {
+                                    return `${year}-${month}-${day}`;
+                                }
+                            }
+                        }
+                        
+                        const date = new Date(str);
+                        if (!isNaN(date.getTime())) {
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            return `${year}-${month}-${day}`;
+                        }
+                        
+                        return str;
+                    };
+                    
+                    cleanRow.date_of_birth = formatDate(cleanRow.date_of_birth);
+                    cleanRow.start_date = formatDate(cleanRow.start_date);
+                    cleanRow.end_date = formatDate(cleanRow.end_date);
+                    
+                    if (cleanRow.add_on && typeof cleanRow.add_on === 'string') {
+                        cleanRow.add_on = cleanRow.add_on
+                            .split(/[,;\n]/)
+                            .map(item => item.trim())
+                            .filter(item => item.length > 0);
+                    } else if (!cleanRow.add_on) {
+                        cleanRow.add_on = [];
+                    }
+                    
+                    const rowErrors = validateRowData(cleanRow, i + 1);
                     if (rowErrors.length > 0) {
                         errors.push(...rowErrors);
-                        return;
+                        continue;
                     }
                     
                     dataRows.push(cleanRow);
+                    
                 } catch (error) {
-                    errors.push(`Baris ${index + 1}: ${error.message}`);
+                    errors.push(`Baris ${i + 1}: ${error.message}`);
                 }
-            });
+            }
             
-            return { data: dataRows, errors, headers };
+            return { data: dataRows, errors };
+            
         } catch (error) {
             throw new Error(`Gagal membaca file Excel: ${error.message}`);
         }
@@ -370,7 +670,18 @@ const HeteroSurakarta = () => {
             reader.onload = async (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const { data: parsedData } = parseExcel(data);
+                    const { data: parsedData, errors } = parseExcel(data);
+                    
+                    if (errors.length > 0) {
+                        setValidationErrors(errors);
+                        if (parsedData.length === 0) {
+                            toast.error('Tidak ada data valid yang ditemukan dalam file');
+                        } else {
+                            toast.error(`Terdapat ${errors.length} error dalam file`);
+                        }
+                        setIsImporting(false);
+                        return;
+                    }
                     
                     if (parsedData.length === 0) {
                         toast.error('Tidak ada data yang bisa diimport');
@@ -378,20 +689,53 @@ const HeteroSurakarta = () => {
                         return;
                     }
                     
-                    const existingMembers = JSON.parse(localStorage.getItem('hetero_surakarta_members') || '[]');
-                    const newMembers = [
-                        ...existingMembers,
-                        ...parsedData.map((member, index) => ({
-                            id: Date.now() + index,
-                            ...member,
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString()
-                        }))
-                    ];
-                    localStorage.setItem('hetero_surakarta_members', JSON.stringify(newMembers));
+                    let successCount = 0;
+                    let errorCount = 0;
+                    const importErrors = [];
+                    
+                    for (const memberData of parsedData) {
+                        try {
+                            const importData = {
+                                full_name: memberData.full_name,
+                                nik: memberData.nik || null,
+                                email: memberData.email,
+                                phone: memberData.phone,
+                                gender: memberData.gender || null,
+                                date_of_birth: memberData.date_of_birth || null,
+                                education: memberData.education || null,
+                                address: memberData.address || null,
+                                province_name: memberData.province_name || null,
+                                regency_name: memberData.regency_name || null,
+                                district_name: memberData.district_name || null,
+                                village_name: memberData.village_name || null,
+                                postal_code: memberData.postal_code || null,
+                                company: memberData.company || null,
+                                space: memberData.space,
+                                start_date: memberData.start_date || null,
+                                end_date: memberData.end_date || null,
+                                status: memberData.status || 'Active',
+                                add_on: Array.isArray(memberData.add_on) ? memberData.add_on : [],
+                                add_information: memberData.add_information || null
+                            };
+                            
+                            const response = await addMemberHeteroSolo(importData);
+                            
+                            if (response) {
+                                successCount++;
+                            } else {
+                                errorCount++;
+                                importErrors.push(`Gagal mengimport ${memberData.full_name}`);
+                            }
+                            
+                        } catch (memberError) {
+                            errorCount++;
+                            importErrors.push(`Error mengimport ${memberData.full_name || 'unknown'}: ${memberError.message}`);
+                            console.error('Import member error:', memberError);
+                        }
+                    }
                     
                     setImportFile(null);
-                    setValidationErrors([]);
+                    setValidationErrors(importErrors);
                     setIsDragging(false);
                     if (fileInputRef.current) {
                         fileInputRef.current.value = '';
@@ -401,10 +745,18 @@ const HeteroSurakarta = () => {
                     
                     await fetchMembers(pagination.page);
                     
-                    toast.success(`Berhasil mengimport ${parsedData.length} member`);
+                    if (successCount > 0) {
+                        toast.success(`Berhasil mengimport ${successCount} member`);
+                    }
+                    
+                    if (errorCount > 0) {
+                        toast.error(`Gagal mengimport ${errorCount} member`);
+                    }
+                    
                 } catch (parseError) {
                     console.error('Parse error:', parseError);
                     toast.error('Format file Excel tidak valid');
+                    setValidationErrors([parseError.message]);
                 } finally {
                     setIsImporting(false);
                 }
@@ -416,7 +768,8 @@ const HeteroSurakarta = () => {
             toast.error('Gagal mengimport data');
             setIsImporting(false);
         }
-    }, [importFile, fetchMembers, pagination.page]);
+    }, [importFile, fetchMembers, pagination.page, addMemberHeteroSolo]);
+
 
     const handleOpenImportModal = useCallback(() => {
         setImportFile(null);
@@ -439,69 +792,76 @@ const HeteroSurakarta = () => {
 
     const handleExport = useCallback(async () => {
         try {
-            if (!filteredMembers || filteredMembers.length === 0) {
+            setIsExporting(true)
+
+            const allData = await fetchAllMembers()
+
+            if (!allData || allData.length === 0) {
                 toast.error('No data to export');
+                setIsExporting(false)
                 return;
             }
             
             setIsExporting(true);
             
-            const exportData = filteredMembers.map((member, index) => ({
+            const exportData = allData.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
+                'NIK': member.nik || '-',
                 'Email': member.email || '-',
-                'Gender': member.gender || '-',
                 'Phone': member.phone || '-',
-                'Space': member.space || '-',
-                'Company': member.company || '-',
-                'Duration': member.duration || '-',
-                'Status': member.status || '-',
+                'Gender': member.gender || '-',
+                'Date of Birth': member.date_of_birth || '-',
+                'Education': member.education || '-',
                 'Address': member.address || '-',
+                'Province': member.province_name || '-',
+                'Regency': member.regency_name || '-',
+                'District': member.district_name || '-',
+                'Village': member.village_name || '-',
+                'Postal Code': member.postal_code || '-',
+                'Company': member.company || '-',
+                'Space': member.space || '-',
                 'Start Date': member.start_date || '-',
                 'End Date': member.end_date || '-',
-                'Add On': member.add_on || '-',
-                'Add Information': member.add_information || '-',
-                'Notes': member.notes || '-',
+                'Status': member.status || '-',
+                'Add On': Array.isArray(member.add_on) 
+                    ? member.add_on.join(', ') 
+                    : member.add_on || '-',
+                'Additional Information': member.add_information || '-',
                 'Created Date': member.created_at 
-                    ? new Date(member.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }) 
+                    ? new Date(member.created_at).toLocaleDateString('id-ID') 
                     : '-',
                 'Last Updated': member.updated_at 
-                    ? new Date(member.updated_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }) 
+                    ? new Date(member.updated_at).toLocaleDateString('id-ID') 
                     : '-'
             }));
 
             const ws = XLSX.utils.json_to_sheet(exportData);
             
             const wscols = [
-                { wch: 5 },    
-                { wch: 25 },  
-                { wch: 30 }, 
-                { wch: 10 }, 
-                { wch: 15 },  
+                { wch: 5 },  
                 { wch: 25 }, 
-                { wch: 30 },  
-                { wch: 15 },  
-                { wch: 15 },  
-                { wch: 40 },  
-                { wch: 15 },  
-                { wch: 15 },  
+                { wch: 20 }, 
+                { wch: 30 }, 
+                { wch: 15 },
+                { wch: 10 }, 
                 { wch: 15 }, 
-                { wch: 30 },  
+                { wch: 20 }, 
                 { wch: 40 }, 
                 { wch: 20 },  
-                { wch: 20 },  
+                { wch: 20 }, 
+                { wch: 20 },
+                { wch: 20 }, 
+                { wch: 10 },  
+                { wch: 30 },  
+                { wch: 25 }, 
+                { wch: 12 },  
+                { wch: 12 },  
+                { wch: 10 }, 
+                { wch: 30 },  
+                { wch: 30 },  
+                { wch: 15 }, 
+                { wch: 15 },
             ];
             ws['!cols'] = wscols;
             
@@ -511,79 +871,17 @@ const HeteroSurakarta = () => {
                 const cell_ref = XLSX.utils.encode_cell(cell_address);
                 if (!ws[cell_ref]) continue;
                 ws[cell_ref].s = {
-                    font: { bold: true },
-                    fill: { fgColor: { rgb: "E0E0E0" } },
-                    alignment: { vertical: "center", horizontal: "center" }
+                    font: { bold: true, color: { rgb: "FFFFFF" } },
+                    fill: { fgColor: { rgb: "4F46E5" } },
+                    alignment: { horizontal: "center" }
                 };
             }
-            
+
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Hetero Surakarta Members");
             
-            const activeMembers = filteredMembers.filter(m => 
-                m.status?.toLowerCase() === 'active'
-            ).length;
-            const inactiveMembers = filteredMembers.length - activeMembers;
-            
-            const filterInfo = [
-                ['HETERO SURAKARTA MEMBERS EXPORT'],
-                ['', ''],
-                ['Export Date', new Date().toLocaleString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                })],
-                ['Total Records Exported', filteredMembers.length],
-                ['', ''],
-                ['APPLIED FILTERS'],
-                ['Search Term', searchTerm || 'None'],
-                ['Gender Filter', filters.gender ? (filters.gender === 'male' ? 'Male' : 'Female') : 'All'],
-                ['Space Filter', filters.space && filters.space !== 'all' ? getSpaceLabel(filters.space) : 'All'],
-                ['', ''],
-                ['STATISTICS'],
-                ['Total Active Members', activeMembers],
-                ['Total Inactive Members', inactiveMembers],
-                ['', ''],
-                ['EXPORT INFORMATION'],
-                ['Generated On', new Date().toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                })],
-                ['System', 'Hetero Surakarta Management System'],
-                ['Version', '1.0.0']
-            ];
-            
-            const wsInfo = XLSX.utils.aoa_to_sheet(filterInfo);
-            
-            const infoCols = [
-                { wch: 25 },
-                { wch: 40 }
-            ];
-            wsInfo['!cols'] = infoCols;
-            
-            const infoRange = XLSX.utils.decode_range(wsInfo['!ref']);
-            for (let R = 0; R <= Math.min(2, infoRange.e.r); R++) {
-                for (let C = infoRange.s.c; C <= infoRange.e.c; C++) {
-                    const cell_address = { c: C, r: R };
-                    const cell_ref = XLSX.utils.encode_cell(cell_address);
-                    if (wsInfo[cell_ref]) {
-                        wsInfo[cell_ref].s = {
-                            font: { bold: true, color: { rgb: "FFFFFF" } },
-                            fill: { fgColor: { rgb: "4F46E5" } },
-                            alignment: { vertical: "center", horizontal: "center" }
-                        };
-                    }
-                }
-            }
-            
-            XLSX.utils.book_append_sheet(wb, wsInfo, "Export Info");
-            
-            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-').replace(/\..+/, '');
-            const fileName = `hetero_surakarta_members_export_${timestamp}.xlsx`;
+            const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+            const fileName = `hetero_solo_members_export_${dateStr}.xlsx`;
             
             XLSX.writeFile(wb, fileName);
             
@@ -594,7 +892,7 @@ const HeteroSurakarta = () => {
         } finally {
             setIsExporting(false);
         }
-    }, [filteredMembers, searchTerm, filters, getSpaceLabel]);
+    }, [fetchAllMembers, searchTerm, filters, getSpaceLabel, getGenderLabel, getStatusLabel]);
 
     useEffect(() => {
         const preventDefaults = (e) => {
@@ -611,103 +909,42 @@ const HeteroSurakarta = () => {
         };
     }, []);
 
-    const extractSpaces = useMemo(() => {
-        return (membersList) => {
-            if (!membersList.length) return allSpaceOptions;
-            
-            const existingSpaces = membersList
-                .map(member => member.space)
-                .filter(space => space && space.trim() !== "");
-            
-            const dataSpaces = existingSpaces.map(space => {
-                const lowerSpace = space.toLowerCase();
-                const matchedOption = allSpaceOptions.find(opt => 
-                    lowerSpace.includes(opt.value) || 
-                    opt.value.includes(lowerSpace) ||
-                    space.toLowerCase().includes(opt.value)
-                );
-                
-                if (matchedOption) {
-                    return {
-                        value: matchedOption.value,
-                        label: matchedOption.label,
-                        original: matchedOption.original
-                    };
-                }
-                
-                let emoji = "🏢";
-                if (lowerSpace.includes("maneka")) emoji = "🎨";
-                else if (lowerSpace.includes("rembug")) emoji = "🗣️";
-                else if (lowerSpace.includes("private")) emoji = "🚪";
-                else if (lowerSpace.includes("gatra")) emoji = "🏛️";
-                else if (lowerSpace.includes("gayeng")) emoji = "🎉";
-                else if (lowerSpace.includes("markspace")) emoji = "📍";
-                else if (lowerSpace.includes("foodlab")) emoji = "🍽️";
-                else if (lowerSpace.includes("abipraya")) emoji = "🎫";
-                else if (lowerSpace.includes("virtual")) emoji = "💻";
-                else if (lowerSpace.includes("outdoor")) emoji = "🌳";
-                else if (lowerSpace.includes("course")) emoji = "📚";
-                
-                return {
-                    value: lowerSpace,
-                    label: `${emoji} ${space}`,
-                    original: space
-                };
-            });
-            
-            const uniqueDataSpaces = [...new Map(dataSpaces.map(item => [item.value, item])).values()];
-            
-            const combinedSpaces = [...uniqueDataSpaces];
-            
-            allSpaceOptions.forEach(option => {
-                if (!combinedSpaces.some(s => s.value === option.value)) {
-                    combinedSpaces.push(option);
-                }
-            });
-            
-            return combinedSpaces.sort((a, b) => a.original.localeCompare(b.original));
-        };
-    }, []);
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (filterRef.current && !filterRef.current.contains(event.target)) {
+                setIsFilterOpen(false)
+            }
+        }
 
-    const applyAllFilters = () => {
-        let result = [...members];
-        
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase();
-            result = result.filter(member =>
-                member.full_name?.toLowerCase().includes(term) ||
-                member.email?.toLowerCase().includes(term) ||
-                member.space?.toLowerCase().includes(term) ||
-                member.company?.toLowerCase().includes(term) ||
-                member.phone?.toLowerCase().includes(term)
-            );
+        if (setIsFilterOpen) {
+            document.addEventListener('mousedown', handleClickOutside)
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside)
         }
-        
-        if (filters.gender) {
-            result = result.filter(member => {
-                const memberGender = member.gender?.toLowerCase();
-                return memberGender === filters.gender.toLowerCase();
-            });
-        }
-        
-        if (filters.space && filters.space !== 'all') {
-            result = result.filter(member => {
-                const memberSpace = member.space?.toLowerCase();
-                if (!memberSpace) return false;
-                
-                if (memberSpace === filters.space) return true;
-                
-                return memberSpace.includes(filters.space) || 
-                       filters.space.includes(memberSpace);
-            });
-        }
-        
-        setFilteredMembers(result);
-    };
 
-    const handleSearch = (term) => {
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [isFilterOpen])
+
+    const handleSearch = useCallback((term) => {
         setSearchTerm(term);
-    };
+
+        const apiFilters = {
+            search: term.trim() || undefined,
+            gender: filters.gender || undefined,
+            space: filters.space || undefined,
+            status: filters.status || undefined
+        };
+
+        Object.keys(apiFilters).forEach(key => {
+            if (apiFilters[key] === undefined) {
+                delete apiFilters[key];
+            }
+        });
+
+        setFilters(apiFilters, true);
+    }, [filters, setFilters]);
 
     const handleTempGenderChange = (gender) => {
         setTempFilters(prev => ({ 
@@ -721,17 +958,28 @@ const HeteroSurakarta = () => {
     };
 
     const handleApplyFilters = () => {
-        setFilters({
-            gender: tempFilters.gender || null,
-            space: tempFilters.space || null
+        const newFilters = {
+            gender: tempFilters.gender || undefined,
+            space: tempFilters.space && tempFilters.space !== 'all' ? tempFilters.space : undefined,
+            status: tempFilters.status || undefined,
+            search: filters.search || undefined 
+        };
+        
+        Object.keys(newFilters).forEach(key => {
+            if (newFilters[key] === undefined) {
+                delete newFilters[key];
+            }
         });
+        
+        setFilters(newFilters, true); 
         setIsFilterOpen(false);
     };
 
     const handleCancelFilters = () => {
         setTempFilters({
             gender: filters.gender || '',
-            space: filters.space || 'all'
+            space: filters.space || 'all',
+            status: filters.status || ''
         });
         setIsFilterOpen(false);
     };
@@ -739,15 +987,19 @@ const HeteroSurakarta = () => {
     const handleClearAllTempFilters = () => {
         setTempFilters({
             gender: '',
-            space: 'all'
+            space: 'all',
+            status: ''
         });
     };
 
     const handleClearAllFilters = () => {
         setSearchTerm("");
-        setFilters({
-            gender: null,
-            space: null,
+        const emptyFilters = {};
+        setFilters(emptyFilters, true); 
+        setTempFilters({
+            gender: '',
+            space: 'all',
+            status: ''
         });
         setSelectedMember(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -757,6 +1009,7 @@ const HeteroSurakarta = () => {
         let count = 0;
         if (filters.gender) count++;
         if (filters.space && filters.space !== 'all') count++;
+        if (filters.status) count++;
         return count;
     };
 
@@ -764,6 +1017,7 @@ const HeteroSurakarta = () => {
         let count = 0;
         if (tempFilters.gender) count++;
         if (tempFilters.space && tempFilters.space !== 'all') count++;
+        if (tempFilters.status) count++;
         return count;
     };
 
@@ -772,115 +1026,109 @@ const HeteroSurakarta = () => {
         if (searchTerm) count++;
         if (filters.gender) count++;
         if (filters.space && filters.space !== 'all') count++;
+        if (filters.status) count++;
         return count;
     };
 
     const clearFilter = (filterType) => {
+        const newFilters = { ...filters };
+        
         if (filterType === 'search') {
             setSearchTerm("");
+            delete newFilters.search;
         } else if (filterType === 'gender') {
-            setFilters(prev => ({ ...prev, gender: null }));
+            delete newFilters.gender;
         } else if (filterType === 'space') {
-            setFilters(prev => ({ ...prev, space: null }));
+            delete newFilters.space;
+        } else if (filterType === 'status') { 
+            delete newFilters.status;
         }
+        
+        setFilters(newFilters, false);
+        
+        setTempFilters({
+            gender: newFilters.gender || '',
+            space: newFilters.space || 'all',
+            status: newFilters.status || ''
+        });
     };
 
-    const getGenderLabel = (genderValue) => {
-        if (!genderValue) return "";
-        if (genderValue === 'male') return 'Male';
-        if (genderValue === 'female') return 'Female';
-        return genderValue;
-    };
+    const statusOptions = [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' }
+    ];
 
     useEffect(() => {
         setTempFilters({
             gender: filters.gender || '',
-            space: filters.space || 'all'
+            space: filters.space || 'all',
+            status: filters.status || ''
         });
     }, [filters]);
 
-    useEffect(() => {
-        if (members.length > 0) {
-            const extractedSpaces = extractSpaces(members);
-            setAvailableSpaces(extractedSpaces);
+    const memberStats = useMemo(() => {
+        if (statsLoading) {
+            return [
+                {
+                    title: "Total Members",
+                    value: "Loading...",
+                    trend: "neutral",
+                    icon: Users,
+                    color: "blue",
+                    description: "Loading..."
+                },
+                {
+                    title: "Active Members",
+                    value: "Loading...",
+                    trend: "neutral",
+                    icon: UserCheck,
+                    color: "green",
+                    description: "Loading..."
+                }
+            ];
         }
-    }, [members, extractSpaces]);
 
-    useEffect(() => {
-        if (members.length > 0) {
-            setFilteredMembers(members);
-            applyAllFilters();
+        const totalMembers = stats?.totalMembers || members.length;
+        const activeMembers = stats?.activeMembers || members.filter(member => 
+            member.status?.toLowerCase() === 'Active' 
+        ).length;
+        
+        const activePercentage = totalMembers > 0 
+            ? ((activeMembers / totalMembers) * 100).toFixed(1) 
+            : "0";
+        
+        let growthPercentage = stats?.growthPercentage || "0";
+        
+        if (typeof growthPercentage === 'string') {
+            growthPercentage = growthPercentage.replace('%', '');
         }
-    }, [members]);
 
-    useEffect(() => {
-        applyAllFilters();
-    }, [searchTerm, filters]);
-
-const memberStats = useMemo(() => {
-    if (statsLoading) {
         return [
             {
                 title: "Total Members",
-                value: "Loading...",
-                trend: "neutral",
+                value: totalMembers.toString(),
+                subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
+                trend: parseFloat(growthPercentage) > 0 ? "up" :
+                        parseFloat(growthPercentage) < 0 ? "down" : "neutral",
+                period: "Last Month",
                 icon: Users,
                 color: "blue",
-                description: "Loading..."
+                description: `${growthPercentage}% Growth`, 
+                loading: false
             },
             {
                 title: "Active Members",
-                value: "Loading...",
-                trend: "neutral",
+                value: activeMembers.toString(),
+                subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
+                trend: parseFloat(activePercentage) > 70 ? "up" : "down",
+                period: "Current",
                 icon: UserCheck,
                 color: "green",
-                description: "Loading..."
+                description: `${activePercentage}% of total`,
+                loading: false
             }
         ];
-    }
-
-    const totalMembers = stats?.totalMembers || filteredMembers.length;
-    const activeMembers = stats?.activeMembers || filteredMembers.filter(member => 
-        member.status?.toLowerCase() === 'active' 
-    ).length;
-    
-    const activePercentage = totalMembers > 0 
-        ? ((activeMembers / totalMembers) * 100).toFixed(1) 
-        : "0";
-    
-    let growthPercentage = stats?.growthPercentage || "0";
-    
-    // Hapus karakter % dari growthPercentage jika ada
-    if (typeof growthPercentage === 'string') {
-        growthPercentage = growthPercentage.replace('%', '');
-    }
-
-    return [
-        {
-            title: "Total Members",
-            value: totalMembers.toString(),
-            subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
-            trend: parseFloat(growthPercentage) > 0 ? "up" :
-                    parseFloat(growthPercentage) < 0 ? "down" : "neutral",
-            period: "Last Month",
-            icon: Users,
-            color: "blue",
-            description: `${growthPercentage}% Growth`,  // Sekarang hanya ada satu %
-            loading: false
-        },
-        {
-            title: "Active Members",
-            value: activeMembers.toString(),
-            subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
-            trend: parseFloat(activePercentage) > 70 ? "up" : "down",
-            period: "Current",
-            icon: UserCheck,
-            color: "green",
-            description: `${activePercentage}% of total`,  // Hanya satu %
-            loading: false
-        }
-    ];
-}, [filteredMembers, filters.space, getSpaceLabel, stats, statsLoading]);
+    }, [members, filters.space, getSpaceLabel, stats, statsLoading]);
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
@@ -918,7 +1166,7 @@ const memberStats = useMemo(() => {
             await addMemberHeteroSolo(memberData);
             setIsAddMemberModalOpen(false);
             toast.success('Member added successfully');
-            await fetchMembers(pagination.page);
+            fetchMembers(pagination.page);
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
@@ -966,13 +1214,14 @@ const memberStats = useMemo(() => {
     }, [members, selectedMember?.id]);
 
     const handleRefresh = () => {
-        fetchMembers(pagination.page);
-        handleClearAllFilters();
+        setFilters(filters, false); 
+        setSelectedMember(null);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handlePageChange = (page) => {
+    const handlePageChangeLocal = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        fetchMembers(page);
+        handlePageChange(page);
     };
 
     const tableConfig = {
@@ -1053,7 +1302,6 @@ const memberStats = useMemo(() => {
                                     />
                                 </div>
                                 
-                                {/* Custom Filter Dropdown */}
                                 <div className="relative">
                                     <Button 
                                         variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
@@ -1076,7 +1324,10 @@ const memberStats = useMemo(() => {
                                     </Button>
 
                                     {isFilterOpen && (
-                                        <div className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]">
+                                        <div 
+                                            ref={filterRef}
+                                            className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]"
+                                        >
                                             <div className="p-3 border-b">
                                                 <div className="flex items-center justify-between">
                                                     <h3 className="font-bold text-gray-900 text-xs">Filter Options</h3>
@@ -1087,7 +1338,53 @@ const memberStats = useMemo(() => {
                                             </div>
 
                                             <div className="p-3">
-                                                {/* Gender */}
+                                                
+                                                <div className="mb-3">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <h4 className="font-semibold text-gray-900 text-xs">STATUS</h4>
+                                                        {tempFilters.status && (
+                                                            <button 
+                                                                onClick={() => setTempFilters(prev => ({ ...prev, status: '' }))}
+                                                                className="text-xs text-gray-400 hover:text-red-500"
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        {statusOptions.map((option) => {
+                                                            const isSelected = tempFilters.status === option.value;
+                                                            return (
+                                                                <button
+                                                                    key={option.value}
+                                                                    className={`flex items-center justify-between px-2 py-1.5 rounded-md border transition-all text-xs flex-1 ${
+                                                                        isSelected
+                                                                            ? option.value === 'active' 
+                                                                                ? 'border-green-500 bg-green-50 text-green-700'
+                                                                                : 'border-red-500 bg-red-50 text-red-700'
+                                                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
+                                                                    }`}
+                                                                    onClick={() => handleTempStatusChange(option.value)}
+                                                                >
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <div className={`h-1.5 w-1.5 rounded-full ${
+                                                                            isSelected 
+                                                                                ? option.value === 'active' ? 'bg-green-500' : 'bg-red-500'
+                                                                                : 'bg-gray-400'
+                                                                        }`} />
+                                                                        <span className="text-xs">{option.label}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1">
+                                                                        {isSelected && (
+                                                                            <Check className="h-3 w-3" />
+                                                                        )}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
                                                 <div className="mb-3">
                                                     <div className="flex items-center justify-between mb-1">
                                                         <h4 className="font-semibold text-gray-900 text-xs">GENDER</h4>
@@ -1130,7 +1427,6 @@ const memberStats = useMemo(() => {
                                                     </div>
                                                 </div>
 
-                                                {/* Space */}
                                                 <div>
                                                     <div className="flex items-center justify-between mb-1">
                                                         <h4 className="font-semibold text-gray-900 text-xs">SPACE</h4>
@@ -1144,7 +1440,6 @@ const memberStats = useMemo(() => {
                                                         )}
                                                     </div>
                                                     
-                                                    {/* All Spaces */}
                                                     <div className="mb-2">
                                                         <button
                                                             className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
@@ -1170,37 +1465,61 @@ const memberStats = useMemo(() => {
                                                         </button>
                                                     </div>
 
-                                                    {/* Spaces Grid */}
                                                     <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                                                        {availableSpaces.map((space) => {
-                                                            const isSelected = tempFilters.space === space.value;
-                                                            
-                                                            return (
-                                                                <button
-                                                                    key={space.value}
-                                                                    className={`flex items-center justify-between px-2 py-1.5 rounded-lg border transition-all text-xs ${
-                                                                        isSelected
-                                                                            ? 'border-amber-500 bg-amber-50 text-amber-700'
-                                                                            : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
-                                                                    }`}
-                                                                    onClick={() => handleTempSpaceChange(space.value)}
+                                                        {loadingSpaceOptions ? (
+                                                            <div className="col-span-2 flex items-center justify-center py-4">
+                                                                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                                                                <span className="ml-2 text-xs text-gray-500">Loading Spaces</span>
+                                                            </div>
+                                                        ) : spaceOptionsError ? (
+                                                            <div className="col-span-2 text-center py-4">
+                                                                <AlertCircle className="h-6 w-6 text-red-400 mx-auto mb-2" />
+                                                                <p className="text-xs text-red-500">Failed to load spaces</p>
+                                                                <Button 
+                                                                    variant="outline" 
+                                                                    size="sm" 
+                                                                    onClick={() => fetchSpaceOptions()}
+                                                                    className="mt-2 text-xs"
                                                                 >
-                                                                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                                                        <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
-                                                                            isSelected ? 'bg-amber-500' : 'bg-gray-400'
-                                                                        }`} />
-                                                                        <span className="truncate font-medium text-xs">
-                                                                            {space.original}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-                                                                        {isSelected && (
-                                                                            <Check className="h-2.5 w-2.5 text-amber-600 flex-shrink-0" />
-                                                                        )}
-                                                                    </div>
-                                                                </button>
-                                                            );
-                                                        })}
+                                                                    Retry
+                                                                </Button>
+                                                            </div>
+                                                        ) : availableSpaces.length === 0 ? (
+                                                            <div className="col-span-2 text-center py-4">
+                                                                <p className="text-xs text-gray-500">No spaces available</p>
+                                                            </div>
+                                                        ) : (
+                                                            availableSpaces.map((space) => {
+                                                                const isSelected = tempFilters.space === space.value
+
+                                                                return (
+                                                                    <button
+                                                                        key={space.value}
+                                                                        className={`flex items-center justify-between px-2 py-1.5 rounded-lg border transition-all text-xs ${
+                                                                            isSelected
+                                                                                ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                                                                : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
+                                                                        }`}
+                                                                        onClick={() => handleTempSpaceChange(space.value)}
+                                                                        title={space.original}
+                                                                    >
+                                                                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                                            <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
+                                                                                isSelected ? 'bg-amber-500' : 'bg-gray-400'
+                                                                            }`} />
+                                                                            <span className="truncate font-medium text-xs">
+                                                                                {space.original}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+                                                                            {isSelected && (
+                                                                                <Check className="h-2.5 w-2.5 text-amber-600 flex-shrink-0" />
+                                                                            )}
+                                                                        </div>
+                                                                    </button>
+                                                                )
+                                                            })
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -1275,11 +1594,10 @@ const memberStats = useMemo(() => {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 
-                                {/* MODIFIKASI: Button Export tanpa dropdown, langsung export ke Excel */}
                                 <Button
                                     variant="outline"
                                     className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
-                                    disabled={loading || filteredMembers.length === 0 || isExporting}
+                                    disabled={loading || members.length === 0 || isExporting}
                                     onClick={handleExport}
                                 >
                                     {isExporting ? (
@@ -1426,7 +1744,7 @@ const memberStats = useMemo(() => {
                                         totalPages={pagination.totalPages}
                                         totalItems={pagination.total}
                                         itemsPerPage={pagination.limit}
-                                        onPageChange={handlePageChange}
+                                        onPageChange={handlePageChangeLocal}
                                         disabled={loading}
                                     />
                                 </div>

@@ -47,7 +47,6 @@ const HeteroSemarang = () => {
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filteredMembers, setFilteredMembers] = useState([]);
-
     
     const getGenderLabel = (genderValue) => {
         if (!genderValue) return "";
@@ -386,229 +385,277 @@ const HeteroSemarang = () => {
     };
 
     const parseExcel = (data) => {
-        try {
-            const workbook = XLSX.read(data, { 
-                type: 'array', 
-                cellDates: true,
-                cellNF: false,
-                cellText: true 
-            });
-            
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            
-            const rawData = XLSX.utils.sheet_to_json(worksheet, { 
-                header: 1, 
-                defval: '',
-                raw: false, 
-                dateNF: 'yyyy-mm-dd'
-            });
-            
-            
-            if (rawData.length < 2) {
-                throw new Error('File Excel tidak berisi data');
-            }
-            
-            const headers = rawData[0].map(header => 
-                header.toString()
-                    .trim()
-                    .toLowerCase()
-                    .replace(/\s+/g, '_')
-                    .replace(/[^a-zA-Z0-9_]/g, '')
-            );
-            
-            
-            const dataRows = [];
-            const errors = [];
-            
-            for (let i = 1; i < rawData.length; i++) {
-                const rawRow = rawData[i];
+            try {
+                const workbook = XLSX.read(data, { 
+                    type: 'array', 
+                    cellDates: true,
+                    cellNF: false,
+                    cellText: true
+                });
                 
-                try {
-                    if (!rawRow || rawRow.every(cell => 
-                        cell === '' || 
-                        cell === null || 
-                        cell === undefined ||
-                        cell.toString().trim() === ''
-                    )) {
-                        continue;
-                    }
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                
+                const rawData = XLSX.utils.sheet_to_json(worksheet, { 
+                    header: 1, 
+                    defval: '',
+                    raw: true,
+                    dateNF: 'yyyy-mm-dd'
+                });
+                
+                if (rawData.length < 2) {
+                    throw new Error('File Excel tidak berisi data');
+                }
+                
+                const headers = rawData[0].map(header => 
+                    header.toString()
+                        .trim()
+                        .toLowerCase()
+                        .replace(/\s+/g, '_')
+                        .replace(/[^a-zA-Z0-9_]/g, '')
+                );
+                
+                const dataRows = [];
+                const errors = [];
+                
+                for (let i = 1; i < rawData.length; i++) {
+                    const rawRow = rawData[i];
                     
-                    const rowObj = {};
-                    headers.forEach((header, index) => {
-                        let value = rawRow[index];
-
-                        if (value === undefined || value === null) {
-                            value = '';
-                        } else if (typeof value === 'object' && value instanceof Date) {
-                            const year = value.getFullYear();
-                            const month = String(value.getMonth() + 1).padStart(2, '0');
-                            const day = String(value.getDate()).padStart(2, '0');
-                            value = `${year}-${month}-${day}`;
-                        } else {
-                            value = value.toString().trim();
+                    try {
+                        if (!rawRow || rawRow.every(cell => 
+                            cell === '' || 
+                            cell === null || 
+                            cell === undefined ||
+                            cell.toString().trim() === ''
+                        )) {
+                            continue;
                         }
                         
-                        rowObj[header] = value;
-                    });
-
-                    const cleanRow = {
-                        full_name: rowObj.full_name || rowObj.fullname || rowObj.name || rowObj.nama || '',
-                        nik: rowObj.nik || rowObj.nik_number || rowObj.nomor_induk || '',
-                        email: rowObj.email || rowObj.email_address || '',
-                        phone: rowObj.phone || rowObj.phone_number || rowObj.telepon || rowObj.mobile || '',
-                        gender: rowObj.gender || rowObj.sex || rowObj.jenis_kelamin || '',
-                        date_of_birth: rowObj.date_of_birth || rowObj.dob || rowObj.tanggal_lahir || rowObj.birth_date || '',
-                        education: rowObj.education || rowObj.pendidikan || rowObj.last_education || '',
-                        address: rowObj.address || rowObj.alamat || '',
-                        province_name: rowObj.province_name || rowObj.province || rowObj.provinsi || '',
-                        regency_name: rowObj.regency_name || rowObj.city || rowObj.kota || rowObj.kabupaten || '',
-                        district_name: rowObj.district_name || rowObj.district || rowObj.kecamatan || '',
-                        village_name: rowObj.village_name || rowObj.village || rowObj.kelurahan || rowObj.desa || '',
-                        postal_code: rowObj.postal_code || rowObj.postalcode || rowObj.kode_pos || '',
-                        company: rowObj.company || rowObj.company_name || rowObj.perusahaan || '',
-                        space: rowObj.space || rowObj.space_type || rowObj.package || '',
-                        start_date: rowObj.start_date || rowObj.startdate || rowObj.tanggal_mulai || '',
-                        end_date: rowObj.end_date || rowObj.enddate || rowObj.tanggal_selesai || '',
-                        status: rowObj.status || rowObj.member_status || 'Active',
-                        add_on: rowObj.add_on || rowObj.addon || rowObj.additional_services || '',
-                        add_information: rowObj.add_information || rowObj.additional_info || rowObj.information || ''
-                    };
-                    
-                    if (Object.values(cleanRow).some(value => 
-                        value.toString().toLowerCase().includes('contoh') ||
-                        value.toString().toLowerCase().includes('example') ||
-                        value.toString().startsWith('Contoh:') ||
-                        value.toString().startsWith('Example:')
-                    )) {
-                        continue;
-                    }
-                    
-                    if (Object.values(cleanRow).every(value => value === '')) {
-                        continue;
-                    }
-                    
-                    if (cleanRow.nik) {
-                        let nikValue = cleanRow.nik;
-
-                        const cellAddress = XLSX.utils.encode_cell({ r: i, c: headers.indexOf('nik') });
-                        if (worksheet[cellAddress] && worksheet[cellAddress].w) {
-                            nikValue = worksheet[cellAddress].w;
-                        }
-                        
-                        if (nikValue.includes('E+') || nikValue.includes('e+')) {
-                            try {
-                                const numericStr = nikValue.replace(',', '.');
-                                const num = parseFloat(numericStr);
-                                
-                                if (!isNaN(num)) {
-                                    nikValue = num.toFixed(0);
-                                }
-                            } catch (e) {
-                                console.error(`Error converting scientific notation for row ${i + 1}:`, e);
+                        const rowObj = {};
+                        headers.forEach((header, index) => {
+                            let value = rawRow[index];
+    
+                            if (value === undefined || value === null) {
+                                value = '';
+                            } else if (typeof value === 'object' && value instanceof Date) {
+                                const year = value.getFullYear();
+                                const month = String(value.getMonth() + 1).padStart(2, '0');
+                                const day = String(value.getDate()).padStart(2, '0');
+                                value = `${year}-${month}-${day}`;
+                            } else {
+                                value = value.toString().trim();
                             }
+                            
+                            rowObj[header] = value;
+                        });
+    
+                        const cleanRow = {
+                            full_name: rowObj.full_name || rowObj.fullname || rowObj.name || rowObj.nama || '',
+                            nik: rowObj.nik || rowObj.nik_number || rowObj.nomor_induk || '',
+                            email: rowObj.email || rowObj.email_address || '',
+                            phone: rowObj.phone || rowObj.phone_number || rowObj.telepon || rowObj.mobile || '',
+                            gender: rowObj.gender || rowObj.sex || rowObj.jenis_kelamin || '',
+                            date_of_birth: rowObj.date_of_birth || rowObj.dob || rowObj.tanggal_lahir || rowObj.birth_date || '',
+                            education: rowObj.education || rowObj.pendidikan || rowObj.last_education || '',
+                            address: rowObj.address || rowObj.alamat || '',
+                            province_name: rowObj.province_name || rowObj.province || rowObj.provinsi || '',
+                            regency_name: rowObj.regency_name || rowObj.city || rowObj.kota || rowObj.kabupaten || '',
+                            district_name: rowObj.district_name || rowObj.district || rowObj.kecamatan || '',
+                            village_name: rowObj.village_name || rowObj.village || rowObj.kelurahan || rowObj.desa || '',
+                            postal_code: rowObj.postal_code || rowObj.postalcode || rowObj.kode_pos || '',
+                            company: rowObj.company || rowObj.company_name || rowObj.perusahaan || '',
+                            space: rowObj.space || rowObj.space_type || rowObj.package || '',
+                            start_date: rowObj.start_date || rowObj.startdate || rowObj.tanggal_mulai || '',
+                            end_date: rowObj.end_date || rowObj.enddate || rowObj.tanggal_selesai || '',
+                            status: rowObj.status || rowObj.member_status || 'Active',
+                            add_on: rowObj.add_on || rowObj.addon || rowObj.additional_services || '',
+                            add_information: rowObj.add_information || rowObj.additional_info || rowObj.information || ''
+                        };
+                        
+                        if (Object.values(cleanRow).some(value => 
+                            value.toString().toLowerCase().includes('contoh') ||
+                            value.toString().toLowerCase().includes('example') ||
+                            value.toString().startsWith('Contoh:') ||
+                            value.toString().startsWith('Example:')
+                        )) {
+                            continue;
                         }
                         
-                        cleanRow.nik = nikValue.toString().replace(/\D/g, '');
-                    }
-                    
-                    if (cleanRow.phone) {
-                        cleanRow.phone = cleanRow.phone.replace(/[^\d+]/g, '');
-                    }
-                    
-                    const formatDate = (dateStr) => {
-                        if (!dateStr || dateStr.toString().trim() === '') {
-                            return '';
+                        if (Object.values(cleanRow).every(value => value === '')) {
+                            continue;
                         }
                         
-                        const str = dateStr.toString().trim();
-                        
-                        const patterns = [
-                            /^(\d{4})-(\d{1,2})-(\d{1,2})$/,
-                            /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
-                            /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
-                            /^(\d{1,2})-(\d{1,2})-(\d{4})$/,
-                            /^(\d{1,2})-(\d{1,2})-(\d{4})$/
-                        ];
-                        
-                        for (const pattern of patterns) {
-                            const match = str.match(pattern);
-                            if (match) {
-                                let year, month, day;
+                        if (cleanRow.nik) {
+                            const nikColIndex = headers.findIndex(h => 
+                                h.includes('nik') || h.includes('nik_number') || h.includes('nomor_induk')
+                            );
+                            
+                            let nikValue = cleanRow.nik;
+                            
+                            if (nikColIndex >= 0) {
+                                const cellAddress = XLSX.utils.encode_cell({ r: i, c: nikColIndex });
+                                const cell = worksheet[cellAddress];
                                 
-                                if (pattern.source.startsWith('^\\d{4}')) {
-                                    year = match[1];
-                                    month = match[2].padStart(2, '0');
-                                    day = match[3].padStart(2, '0');
-                                } else {
-                                    const part1 = parseInt(match[1]);
-                                    const part2 = parseInt(match[2]);
-                                    year = match[3];
+                                if (cell && cell.w) {
+                                    nikValue = cell.w.toString();
+                                } else if (cell && cell.t === 'n') {
+                                    const numValue = cell.v;
+                                    const strValue = numValue.toString();
                                     
-                                    if (part1 > 12) {
-                                        day = part1.toString().padStart(2, '0');
-                                        month = part2.toString().padStart(2, '0');
-                                    } else if (part2 > 12) {
-                                        month = part1.toString().padStart(2, '0');
-                                        day = part2.toString().padStart(2, '0');
+                                    if (strValue.includes('e+') || strValue.includes('E+')) {
+                                        const parts = strValue.toLowerCase().split('e+');
+                                        const coefficient = parseFloat(parts[0]);
+                                        const exponent = parseInt(parts[1]);
+                                        
+                                        const coefficientStr = coefficient.toString();
+                                        const hasDecimal = coefficientStr.includes('.');
+                                        
+                                        if (hasDecimal) {
+                                            const [intPart, decPart] = coefficientStr.split('.');
+                                            // const totalDigits = intPart.length + decPart.length;
+                                            
+                                            if (exponent >= decPart.length) {
+                                                const zerosToAdd = exponent - decPart.length;
+                                                nikValue = intPart + decPart + '0'.repeat(zerosToAdd);
+                                            } else {
+                                                const position = intPart.length + exponent;
+                                                const allDigits = intPart + decPart;
+                                                nikValue = allDigits.substring(0, position) + '.' + allDigits.substring(position);
+                                                nikValue = nikValue.replace('.', '');
+                                            }
+                                        } else {
+                                            nikValue = coefficientStr + '0'.repeat(exponent);
+                                        }
                                     } else {
-                                        month = part1.toString().padStart(2, '0');
-                                        day = part2.toString().padStart(2, '0');
+                                        nikValue = Number(numValue).toFixed(0);
                                     }
                                 }
-                                
-                                const date = new Date(`${year}-${month}-${day}`);
-                                if (!isNaN(date.getTime())) {
-                                    return `${year}-${month}-${day}`;
+                            }
+                            
+                            nikValue = nikValue.toString().replace(/\./g, '').replace(/\D/g, '');
+                            
+                            if (nikValue.length < 10 && nikValue.length > 0) {
+                                const originalValue = rawRow[nikColIndex];
+                                if (originalValue !== undefined && originalValue !== null) {
+                                    const originalStr = originalValue.toString();
+                                    
+                                    if (originalStr.includes('e+') || originalStr.includes('E+')) {
+                                        try {
+                                            const num = parseFloat(originalStr);
+                                            if (!isNaN(num)) {
+                                                const bigNum = BigInt(Math.floor(num));
+                                                nikValue = bigNum.toString();
+                                            }
+                                        } catch {
+                                            try {
+                                                const num = parseFloat(originalStr);
+                                                const fixedStr = num.toFixed(0);
+                                                nikValue = fixedStr;
+                                            } catch {
+                                                //
+                                            }
+                                        }
+                                    }
                                 }
                             }
+                            
+                            cleanRow.nik = nikValue;
                         }
                         
-                        const date = new Date(str);
-                        if (!isNaN(date.getTime())) {
-                            const year = date.getFullYear();
-                            const month = String(date.getMonth() + 1).padStart(2, '0');
-                            const day = String(date.getDate()).padStart(2, '0');
-                            return `${year}-${month}-${day}`;
+                        if (cleanRow.phone) {
+                            cleanRow.phone = cleanRow.phone.replace(/[^\d+]/g, '');
                         }
                         
-                        return str; 
-                    };
-                    
-                    cleanRow.date_of_birth = formatDate(cleanRow.date_of_birth);
-                    cleanRow.start_date = formatDate(cleanRow.start_date);
-                    cleanRow.end_date = formatDate(cleanRow.end_date);
-                    
-                    if (cleanRow.add_on && typeof cleanRow.add_on === 'string') {
-                        cleanRow.add_on = cleanRow.add_on
-                            .split(/[,;\n]/)
-                            .map(item => item.trim())
-                            .filter(item => item.length > 0);
-                    } else if (!cleanRow.add_on) {
-                        cleanRow.add_on = [];
+                        const formatDate = (dateStr) => {
+                            if (!dateStr || dateStr.toString().trim() === '') {
+                                return '';
+                            }
+                            
+                            const str = dateStr.toString().trim();
+                            
+                            const patterns = [
+                                /^(\d{4})-(\d{1,2})-(\d{1,2})$/,
+                                /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
+                                /^(\d{1,2})-(\d{1,2})-(\d{4})$/,
+                                /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/
+                            ];
+                            
+                            for (const pattern of patterns) {
+                                const match = str.match(pattern);
+                                if (match) {
+                                    let year, month, day;
+                                    
+                                    if (pattern.source.startsWith('^\\d{4}')) {
+                                        year = match[1];
+                                        month = match[2].padStart(2, '0');
+                                        day = match[3].padStart(2, '0');
+                                    } else {
+                                        const part1 = parseInt(match[1]);
+                                        const part2 = parseInt(match[2]);
+                                        year = match[3];
+                                        
+                                        if (part1 > 12 && part1 <= 31) {
+                                            day = part1.toString().padStart(2, '0');
+                                            month = part2.toString().padStart(2, '0');
+                                        } else if (part2 > 12 && part2 <= 31) {
+                                            month = part1.toString().padStart(2, '0');
+                                            day = part2.toString().padStart(2, '0');
+                                        } else {
+                                            month = part1.toString().padStart(2, '0');
+                                            day = part2.toString().padStart(2, '0');
+                                        }
+                                    }
+                                    
+                                    const date = new Date(`${year}-${month}-${day}`);
+                                    if (!isNaN(date.getTime()) && date.getFullYear() == year) {
+                                        return `${year}-${month}-${day}`;
+                                    }
+                                }
+                            }
+                            
+                            const date = new Date(str);
+                            if (!isNaN(date.getTime())) {
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                return `${year}-${month}-${day}`;
+                            }
+                            
+                            return str;
+                        };
+                        
+                        cleanRow.date_of_birth = formatDate(cleanRow.date_of_birth);
+                        cleanRow.start_date = formatDate(cleanRow.start_date);
+                        cleanRow.end_date = formatDate(cleanRow.end_date);
+                        
+                        if (cleanRow.add_on && typeof cleanRow.add_on === 'string') {
+                            cleanRow.add_on = cleanRow.add_on
+                                .split(/[,;\n]/)
+                                .map(item => item.trim())
+                                .filter(item => item.length > 0);
+                        } else if (!cleanRow.add_on) {
+                            cleanRow.add_on = [];
+                        }
+                        
+                        const rowErrors = validateRowData(cleanRow, i + 1);
+                        if (rowErrors.length > 0) {
+                            errors.push(...rowErrors);
+                            continue;
+                        }
+                        
+                        dataRows.push(cleanRow);
+                        
+                    } catch (error) {
+                        errors.push(`Baris ${i + 1}: ${error.message}`);
                     }
-                    
-                    const rowErrors = validateRowData(cleanRow, i + 1);
-                    if (rowErrors.length > 0) {
-                        errors.push(...rowErrors);
-                        continue;
-                    }
-                    
-                    dataRows.push(cleanRow);
-                    
-                } catch (error) {
-                    console.error(`Error processing row ${i + 1}:`, error);
-                    errors.push(`Baris ${i + 1}: ${error.message}`);
                 }
+                
+                return { data: dataRows, errors };
+                
+            } catch (error) {
+                throw new Error(`Gagal membaca file Excel: ${error.message}`);
             }
-            
-            return { data: dataRows, errors };
-            
-        } catch (error) {
-            console.error('Excel parsing error:', error);
-            throw new Error(`Gagal membaca file Excel: ${error.message}`);
-        }
-    };
+        };
 
 
     const handleImportExcel = useCallback(async () => {
@@ -1043,70 +1090,69 @@ const HeteroSemarang = () => {
         });
     }, [filters]);
 
-const memberStats = useMemo(() => {
-    if (statsLoading) {
+    const memberStats = useMemo(() => {
+        if (statsLoading) {
+            return [
+                {
+                    title: "Total Members",
+                    value: "Loading...",
+                    trend: "neutral",
+                    icon: Users,
+                    color: "blue",
+                    description: "Loading..."
+                },
+                {
+                    title: "Active Members",
+                    value: "Loading...",
+                    trend: "neutral",
+                    icon: UserCheck,
+                    color: "green",
+                    description: "Loading..."
+                }
+            ];
+        }
+
+        const totalMembers = stats?.totalMembers || members.length;
+        const activeMembers = stats?.activeMembers || members.filter(member => 
+            member.status?.toLowerCase() === 'Active' 
+        ).length;
+        
+        const activePercentage = totalMembers > 0 
+            ? ((activeMembers / totalMembers) * 100).toFixed(1) 
+            : "0";
+        
+        let growthPercentage = stats?.growthPercentage || "0";
+        
+        if (typeof growthPercentage === 'string') {
+            growthPercentage = growthPercentage.replace('%', '');
+        }
+
         return [
             {
                 title: "Total Members",
-                value: "Loading...",
-                trend: "neutral",
+                value: totalMembers.toString(),
+                subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
+                trend: parseFloat(growthPercentage) > 0 ? "up" :
+                        parseFloat(growthPercentage) < 0 ? "down" : "neutral",
+                period: "Last Month",
                 icon: Users,
                 color: "blue",
-                description: "Loading..."
+                description: `${growthPercentage}% Growth`,  // Sekarang hanya ada satu %
+                loading: false
             },
             {
                 title: "Active Members",
-                value: "Loading...",
-                trend: "neutral",
+                value: activeMembers.toString(),
+                subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
+                trend: parseFloat(activePercentage) > 70 ? "up" : "down",
+                period: "Current",
                 icon: UserCheck,
                 color: "green",
-                description: "Loading..."
+                description: `${activePercentage}% of total`,
+                loading: false
             }
         ];
-    }
-
-    const totalMembers = stats?.totalMembers || members.length;
-    const activeMembers = stats?.activeMembers || members.filter(member => 
-        member.status?.toLowerCase() === 'Active' 
-    ).length;
-    
-    const activePercentage = totalMembers > 0 
-        ? ((activeMembers / totalMembers) * 100).toFixed(1) 
-        : "0";
-    
-    let growthPercentage = stats?.growthPercentage || "0";
-    
-    // Hapus karakter % dari growthPercentage jika ada
-    if (typeof growthPercentage === 'string') {
-        growthPercentage = growthPercentage.replace('%', '');
-    }
-
-    return [
-        {
-            title: "Total Members",
-            value: totalMembers.toString(),
-            subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
-            trend: parseFloat(growthPercentage) > 0 ? "up" :
-                    parseFloat(growthPercentage) < 0 ? "down" : "neutral",
-            period: "Last Month",
-            icon: Users,
-            color: "blue",
-            description: `${growthPercentage}% Growth`,  // Sekarang hanya ada satu %
-            loading: false
-        },
-        {
-            title: "Active Members",
-            value: activeMembers.toString(),
-            subtitle: filters.space && filters.space !== "all" ? `in ${getSpaceLabel(filters.space)}` : "",
-            trend: parseFloat(activePercentage) > 70 ? "up" : "down",
-            period: "Current",
-            icon: UserCheck,
-            color: "green",
-            description: `${activePercentage}% of total`,
-            loading: false
-        }
-    ];
-}, [members, filters.space, getSpaceLabel, stats, statsLoading]);
+    }, [members, filters.space, getSpaceLabel, stats, statsLoading]);
 
     const handleAddMember = () => {
         setIsAddMemberModalOpen(true);
@@ -1132,7 +1178,7 @@ const memberStats = useMemo(() => {
             setIsEditModalOpen(false);
             setEditingMember(null);
             toast.success('Member updated successfully');
-            fetchMembers(pagination.page);
+            await fetchMembers(pagination.page);
         } catch (error) {
             console.error('Error updating', error);
             toast.error(error.message || 'Failed to update member');

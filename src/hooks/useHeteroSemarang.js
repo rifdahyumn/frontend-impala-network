@@ -239,7 +239,7 @@ export const useHeteroSemarang = (initialFilters = {}) => {
             }
         } catch {
             const total = members.length
-            const active = members.filter(m => m.status === 'active').length
+            const active = members.filter(m => m.status === 'Active').length
             const activePercentage = total > 0 ? ((active / total) * 100).toFixed(1) : "0.0"
 
             setStats({

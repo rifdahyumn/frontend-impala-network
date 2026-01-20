@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './hooks/useAuth';
+import { getTokens, clearTokens } from './services/authServices';
 import ImpalaManagement from './pages/ImpalaManagement';
 import './App.css';
 import Sidebar from './components/Layout/Sidebar';
@@ -19,7 +21,6 @@ import PublicForm from './components/PublicForm';
 import UserAccountSettings from "./components/UserAccountSettings/UserAccountSettings";
 import { LoadingSpinner } from './components/Loading';
 
-
 const MainLayout = ({ children }) => {
     return (
         <div className="flex min-h-screen bg-gray-50">
@@ -37,7 +38,6 @@ const MainLayout = ({ children }) => {
     );
 };
 
-
 const MinimalLayout = ({ children }) => {
     return (
         <div className="min-h-screen bg-gray-50">
@@ -49,46 +49,59 @@ const MinimalLayout = ({ children }) => {
 };
 
 const ProtectedRoute = ({ children }) => {
-    const { isAuthenticated, user } = useAuth();
+    const { user, loading, isAuthenticated } = useAuth();
     const location = useLocation();
 
-    if (isAuthenticated === null) {
-        return <LoadingSpinner />
+    useEffect(() => {
+        const tokens = getTokens();
+        if (tokens.access_token && !user && !loading) {
+            clearTokens();
+        }
+    }, [user, loading]);
+
+    if (loading) {
+        return <LoadingSpinner />;
     }
 
-    if (!isAuthenticated) {
+    const authenticated = isAuthenticated();
+    
+    if (!authenticated) {
+        const tokens = getTokens();
+        if (tokens.access_token) {
+            clearTokens();
+        }
+        
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
     if (user?.role === 'komunitas' && location.pathname === '/') {
-        return <Navigate to="/hetero/semarang" replace />
+        return <Navigate to="/hetero/semarang" replace />;
     }
 
-  return <MainLayout>{children}</MainLayout>;
+    return <MainLayout>{children}</MainLayout>;
 };
 
 const ProtectedRouteMinimal = ({ children }) => {
-    const { isAuthenticated, user } = useAuth();
+    const { user, loading, isAuthenticated } = useAuth();
 
-    if (isAuthenticated === null) {
-        return <LoadingSpinner />
+    if (loading) {
+        return <LoadingSpinner />;
     }
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated()) {
         if (user?.role === 'komunitas') {
-            return <Navigate to="/hetero/semarang" replace />
+            return <Navigate to="/hetero/semarang" replace />;
         }
-
-        return <Navigate to='/' replace />
+        return <Navigate to="/login" replace />;
     }
 
-    return children
+    return children;
 };
 
 const PublicRoute = ({ children }) => {
-    const { isAuthenticated } = useAuth();
+    const { loading, isAuthenticated } = useAuth();
 
-    if (isAuthenticated === null) {
+    if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gray-50">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -96,7 +109,7 @@ const PublicRoute = ({ children }) => {
         );
     }
 
-    if (isAuthenticated) {
+    if (isAuthenticated()) {
         return <Navigate to="/" replace />;
     }
 
@@ -116,134 +129,134 @@ function App() {
         <AuthProvider>
             <Router>
                 <Routes>
-                <Route 
-                    path="/register/:slug" 
-                    element={
-                        <PublicFormRoute>
-                            <PublicForm />
-                        </PublicFormRoute>
-                    } 
-                />
-                
-                <Route 
-                    path="/register" 
-                    element={
-                        <ProtectedRoute>
-                            <div className="p-6">
-                                <h1>Register Page Lainnya</h1>
-                                <p>Halaman register untuk keperluan internal</p>
+                    <Route 
+                        path="/register/:slug" 
+                        element={
+                            <PublicFormRoute>
+                                <PublicForm />
+                            </PublicFormRoute>
+                        } 
+                    />
+                    
+                    <Route 
+                        path="/register" 
+                        element={
+                            <ProtectedRoute>
+                                <div className="p-6">
+                                    <h1>Register Page Lainnya</h1>
+                                    <p>Halaman register untuk keperluan internal</p>
+                                </div>
+                            </ProtectedRoute>
+                        } 
+                    />
+                    
+                    <Route 
+                        path="/account-settings" 
+                        element={
+                            <ProtectedRouteMinimal>
+                                <UserAccountSettings />
+                            </ProtectedRouteMinimal>
+                        }
+                    />
+                    
+                    <Route 
+                        path="/login" 
+                        element={
+                            <PublicRoute>
+                                <LoginPage />
+                            </PublicRoute>
+                        } 
+                    />
+                    
+                    <Route 
+                        path="/" 
+                        element={
+                            <ProtectedRoute>
+                                <Home />
+                            </ProtectedRoute>
+                        } 
+                    />
+                    
+                    <Route 
+                        path="/client" 
+                        element={
+                            <ProtectedRoute>
+                                <ProgramClient />
+                            </ProtectedRoute>
+                        } 
+                    />
+                    
+                    <Route 
+                        path="/program" 
+                        element={
+                            <ProtectedRoute>
+                                <Program />
+                            </ProtectedRoute>
+                        } 
+                    />
+                    
+                    <Route 
+                        path="/impala" 
+                        element={
+                            <ProtectedRoute>
+                                <ImpalaManagement />
+                            </ProtectedRoute>
+                        } 
+                    />
+                    
+                    <Route 
+                        path="/hetero/semarang" 
+                        element={
+                            <ProtectedRoute>
+                                <HeteroSemarang />
+                            </ProtectedRoute>
+                        } 
+                    />
+                    
+                    <Route 
+                        path="/hetero/banyumas" 
+                        element={
+                            <ProtectedRoute>
+                                <HeteroBanyumas />
+                            </ProtectedRoute>
+                        } 
+                    />
+                    
+                    <Route 
+                        path="/hetero/surakarta" 
+                        element={
+                            <ProtectedRoute>
+                                <HeteroSurakarta />
+                            </ProtectedRoute>
+                        } 
+                    />
+                    
+                    <Route 
+                        path="/form-builder" 
+                        element={
+                            <ProtectedRoute>
+                                <FormBuilder />
+                            </ProtectedRoute>
+                        } 
+                    />
+                    
+                    <Route 
+                        path="/user" 
+                        element={
+                            <ProtectedRoute>
+                                <Account />
+                            </ProtectedRoute>
+                        } 
+                    />
+                    
+                    <Route path="*" element={
+                        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                            <div className="text-center">
+                                <h1 className="text-2xl font-bold text-gray-800 mb-2">Halaman Tidak Ditemukan</h1>
+                                <p className="text-gray-600">URL yang Anda cari tidak ada.</p>
                             </div>
-                        </ProtectedRoute>
-                    } 
-                />
-                
-                <Route 
-                    path="/account-settings" 
-                    element={
-                        <ProtectedRouteMinimal>
-                            <UserAccountSettings />
-                        </ProtectedRouteMinimal>
-                    }
-                />
-                
-                <Route 
-                    path="/login" 
-                    element={
-                        <PublicRoute>
-                            <LoginPage />
-                        </PublicRoute>
-                    } 
-                />
-                
-                <Route 
-                    path="/" 
-                    element={
-                        <ProtectedRoute>
-                            <Home />
-                        </ProtectedRoute>
-                    } 
-                />
-                
-                <Route 
-                    path="/client" 
-                    element={
-                        <ProtectedRoute>
-                            <ProgramClient />
-                        </ProtectedRoute>
-                    } 
-                />
-                
-                <Route 
-                    path="/program" 
-                    element={
-                        <ProtectedRoute>
-                            <Program />
-                        </ProtectedRoute>
-                    } 
-                />
-                
-                <Route 
-                    path="/impala" 
-                    element={
-                        <ProtectedRoute>
-                            <ImpalaManagement />
-                        </ProtectedRoute>
-                    } 
-                />
-                
-                <Route 
-                    path="/hetero/semarang" 
-                    element={
-                        <ProtectedRoute>
-                            <HeteroSemarang />
-                        </ProtectedRoute>
-                    } 
-                />
-                
-                <Route 
-                    path="/hetero/banyumas" 
-                    element={
-                        <ProtectedRoute>
-                            <HeteroBanyumas />
-                        </ProtectedRoute>
-                    } 
-                />
-                
-                <Route 
-                    path="/hetero/surakarta" 
-                    element={
-                        <ProtectedRoute>
-                            <HeteroSurakarta />
-                        </ProtectedRoute>
-                    } 
-                />
-                
-                <Route 
-                    path="/form-builder" 
-                    element={
-                        <ProtectedRoute>
-                            <FormBuilder />
-                        </ProtectedRoute>
-                    } 
-                />
-                
-                <Route 
-                    path="/user" 
-                    element={
-                        <ProtectedRoute>
-                            <Account />
-                        </ProtectedRoute>
-                    } 
-                />
-                
-                <Route path="*" element={
-                    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                        <div className="text-center">
-                            <h1 className="text-2xl font-bold text-gray-800 mb-2">Halaman Tidak Ditemukan</h1>
-                            <p className="text-gray-600">URL yang Anda cari tidak ada.</p>
                         </div>
-                    </div>
-                } />
+                    } />
                 </Routes>
             </Router>
         </AuthProvider>

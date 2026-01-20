@@ -82,10 +82,6 @@ class HeteroSemarangService {
                 }
             });
 
-            if (response.status === 404) {
-                console.log('Export endpoint not found, using regular endpoint with large limit');
-            }
-
             return await this.handleResponse(response);
 
         } catch (error) {
