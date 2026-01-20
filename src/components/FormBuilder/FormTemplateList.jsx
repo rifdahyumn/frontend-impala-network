@@ -13,6 +13,19 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
 
     const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin
 
+    const getExpiryStatus = (endDate) => {
+        if (!endDate) return 'no_date';
+        
+        const now = new Date();
+        const expiryDate = new Date(endDate);
+        const diffTime = expiryDate - now;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < 0) return 'expired';
+        if (diffDays <= 3) return 'soon';
+        return 'active';
+    }
+
     const copyFullLink = (template) => {
         const fullLink = `${baseUrl}/register/${template.unique_slug}`
         navigator.clipboard.writeText(fullLink)
@@ -169,11 +182,13 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                     <FileText className="h-5 w-5 text-blue-600" />
                                 </div>
                                 Form Templates
+                                <Badge
+                                    variant='outline'
+                                    className='ml-2 bg-blue-50 text-blue-700 border-blue-200 text-xs'
+                                >
+                                    {templates.length} aktif
+                                </Badge>
                             </CardTitle>
-
-                            <CardDescription className="text-gray-600 mt-1.5">
-                                Pilih template form yang dibuat
-                            </CardDescription>
                         </div>
                     </div>
                 </CardHeader>
@@ -185,137 +200,181 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                 <div className="p-4 bg-gray-50 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
                                     <FileText className='h-10 w-10 text-gray-400' />
                                 </div>
-                                <p className="text-gray-600">Belum ada template</p>
-                                <p className="text-sm text-gray-500 mt-1">Buat form baru untuk memulai</p>
+                                <p className="text-gray-600">
+                                    Tidak ada template aktif
+                                </p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Semua template telah berakhir atau program tidak ditemukan
+                                </p>
                             </div>
                         ) : (
                             <div className='space-y-4'>
-                                {templates.map(template => (
-                                    <div
-                                        key={template.id}
-                                        className={`p-5 border rounded-xl cursor-pointer transition-all duration-300 hover:shadow-md group ${
-                                            selectedTemplate?.id === template.id
-                                                ? 'border-blue-300 bg-blue-50 shadow-sm'
-                                                : 'border-gray-200 hover:border-blue-200 bg-white'
-                                        }`}
-                                        onClick={() => onTemplateSelect(template)}
-                                    >
-                                        <div className='flex justify-between items-start mb-3'>
-                                            <div className="flex-1">
-                                                <h4 className='font-semibold text-gray-800 text-lg group-hover:text-blue-700 transition-colors'>
-                                                    {template.program_name}
-                                                </h4>
+                                {templates.map(template => {
+                                    const expiryStatus = getExpiryStatus(template.end_date)
+
+                                    return (
+                                        <div
+                                            key={template.id}
+                                            className={`p-5 border rounded-xl cursor-pointer transition-all duration-300 hover:shadow-md group ${
+                                                selectedTemplate?.id === template.id
+                                                    ? 'border-blue-300 bg-blue-50 shadow-sm'
+                                                    : 'border-gray-200 hover:border-blue-200 bg-white'
+                                            }`}
+                                            onClick={() => onTemplateSelect(template)}
+                                        >
+                                            <div className='flex justify-between items-start mb-3'>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <h4 className='font-semibold text-gray-800 text-lg group-hover:text-blue-700 transition-colors'>
+                                                            {template.program_name}
+                                                        </h4>
+                                                        {expiryStatus === 'soon' && (
+                                                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
+                                                                Akan berakhir
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className='flex gap-2 ml-2'>
+                                                    {template.is_published && (
+                                                        <Badge variant="default" className="bg-green-500 text-white text-xs border-0">
+                                                            Published
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            <div className='flex gap-2 ml-2'>
-                                                {template.is_published && (
-                                                    <Badge variant="default" className="bg-green-500 text-white text-xs border-0">
-                                                        Published
-                                                    </Badge>
+                                            <div>
+                                                <div className='flex items-center gap-2 text-sm text-green-600 mb-4'>
+                                                    <Calendar className='h-4 w-4 text-green-500' />
+                                                    <span className="font-medium">
+                                                        Dibuat : {new Date(template.created_at).toLocaleDateString('id-ID', {
+                                                            day: 'numeric',
+                                                            month: 'long',
+                                                            year: 'numeric'
+                                                        })}
+                                                    </span>
+                                                </div>
+
+                                                {template.end_date && (
+                                                    <div className={`flex items-center gap-2 text-sm -mt-2 mb-4 ${
+                                                        expiryStatus === 'soon' ? 'text-amber-600' : 'text-red-600'
+                                                    }`}>
+                                                        <Calendar className={`h-4 w-4 ${
+                                                            expiryStatus === 'soon' ? 'text-amber-500' : 'text-red-500'
+                                                        }`} />
+                                                        <span className="font-medium">
+                                                            Berakhir: {new Date(template.end_date).toLocaleDateString('id-ID', {
+                                                                day: 'numeric',
+                                                                month: 'long',
+                                                                year: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </span>
+                                                        {expiryStatus === 'soon' && (
+                                                            <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                                                                Segera berakhir
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
-                                        </div>
 
-                                        <div className='flex items-center gap-2 text-sm text-gray-600 mb-4'>
-                                            <Calendar className='h-4 w-4 text-gray-500' />
-                                            <span className="font-medium">
-                                                {new Date(template.created_at).toLocaleDateString('id-ID', {
-                                                    day: 'numeric',
-                                                    month: 'long',
-                                                    year: 'numeric'
-                                                })}
-                                            </span>
-                                        </div>
+                                            {template.unique_slug && (
+                                                <div className='space-y-3'>
+                                                    <div className="flex items-center justify-between">
+                                                        <p className='text-sm text-blue-700 font-medium bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100'>
+                                                            <span className="text-gray-600">Link: </span>
+                                                            /register/{template.unique_slug}
+                                                        </p>
+                                                    </div>
 
-                                        {template.unique_slug && (
-                                            <div className='space-y-3'>
-                                                <div className="flex items-center justify-between">
-                                                    <p className='text-sm text-blue-700 font-medium bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100'>
-                                                        <span className="text-gray-600">Link: </span>
-                                                        /register/{template.unique_slug}
+                                                    <div className='flex gap-2 pt-2'>
+                                                        <Button
+                                                            size='sm'
+                                                            variant='outline'
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                copyFullLink(template)
+                                                            }}
+                                                            className={`flex items-center gap-1.5 text-xs transition-all duration-300 ${
+                                                                copiedTemplateId === template.id
+                                                                    ? 'bg-green-50 text-green-600 border-green-300 hover:bg-green-50 hover:text-green-600 hover:border-green-300'
+                                                                    : 'hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300'
+                                                            }`}
+                                                        >
+                                                            {copiedTemplateId === template.id ? (
+                                                                <>
+                                                                    <Check className='h-3.5 w-3.5' />
+                                                                    Copied!
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Copy className='h-3.5 w-3.5' />
+                                                                    Copy Form
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                        <Button
+                                                            size='sm'
+                                                            variant='outline'
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                openFullLink(template)
+                                                            }}
+                                                            className='flex items-center gap-1.5 text-xs hover:bg-green-50 hover:text-green-600 hover:border-green-300 transition-all'
+                                                        >
+                                                            <ExternalLink className='h-3.5 w-3.5' />
+                                                            Buka Form
+                                                        </Button>
+                                                        <Button
+                                                            size='sm'
+                                                            variant='destructive'
+                                                            onClick={(e) => handleDeleteClick(template, e)}
+                                                            disabled={deletingId === template.id}
+                                                            className='flex items-center gap-1.5 text-xs'
+                                                        >
+                                                            {deletingId === template.id ? (
+                                                                <Loader2 className='w-3.5 h-3.5 animate-spin' />
+                                                            ) : (
+                                                                <Trash2 className='w-3.5 h-3.5' />
+                                                            )}
+                                                            Hapus
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {!template.unique_slug && (
+                                                <div className="space-y-3">
+                                                    <p className='text-sm text-gray-500 italic bg-gray-50 px-3 py-2 rounded-lg'>
+                                                        Belum memiliki link (belum dipublish)
                                                     </p>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="destructive"
+                                                            onClick={(e) => handleDeleteClick(template, e)}
+                                                            disabled={deletingId === template.id}
+                                                            className="flex items-center gap-1.5 text-xs"
+                                                        >
+                                                            {deletingId === template.id ? (
+                                                                <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                                                            ) : (
+                                                                <Trash2 className='h-3.5 w-3.5' />
+                                                            )}
+                                                            Hapus
+                                                        </Button>
+                                                    </div>
                                                 </div>
-
-                                                <div className='flex gap-2 pt-2'>
-                                                    <Button
-                                                        size='sm'
-                                                        variant='outline'
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            copyFullLink(template)
-                                                        }}
-                                                        className={`flex items-center gap-1.5 text-xs transition-all duration-300 ${
-                                                            copiedTemplateId === template.id
-                                                                ? 'bg-green-50 text-green-600 border-green-300 hover:bg-green-50 hover:text-green-600 hover:border-green-300'
-                                                                : 'hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300'
-                                                        }`}
-                                                    >
-                                                        {copiedTemplateId === template.id ? (
-                                                            <>
-                                                                <Check className='h-3.5 w-3.5' />
-                                                                Copied!
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Copy className='h-3.5 w-3.5' />
-                                                                Copy Form
-                                                            </>
-                                                        )}
-                                                    </Button>
-                                                    <Button
-                                                        size='sm'
-                                                        variant='outline'
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            openFullLink(template)
-                                                        }}
-                                                        className='flex items-center gap-1.5 text-xs hover:bg-green-50 hover:text-green-600 hover:border-green-300 transition-all'
-                                                    >
-                                                        <ExternalLink className='h-3.5 w-3.5' />
-                                                        Buka Form
-                                                    </Button>
-                                                    <Button
-                                                        size='sm'
-                                                        variant='destructive'
-                                                        onClick={(e) => handleDeleteClick(template, e)}
-                                                        disabled={deletingId === template.id}
-                                                        className='flex items-center gap-1.5 text-xs'
-                                                    >
-                                                        {deletingId === template.id ? (
-                                                            <Loader2 className='w-3.5 h-3.5 animate-spin' />
-                                                        ) : (
-                                                            <Trash2 className='w-3.5 h-3.5' />
-                                                        )}
-                                                        Hapus
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {!template.unique_slug && (
-                                            <div className="space-y-3">
-                                                <p className='text-sm text-gray-500 italic bg-gray-50 px-3 py-2 rounded-lg'>
-                                                    ⚠️ Belum memiliki link (belum dipublish)
-                                                </p>
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="destructive"
-                                                        onClick={(e) => handleDeleteClick(template, e)}
-                                                        disabled={deletingId === template.id}
-                                                        className="flex items-center gap-1.5 text-xs"
-                                                    >
-                                                        {deletingId === template.id ? (
-                                                            <Loader2 className='h-3.5 w-3.5 animate-spin' />
-                                                        ) : (
-                                                            <Trash2 className='h-3.5 w-3.5' />
-                                                        )}
-                                                        Hapus
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                            )}
+                                        </div>
+                                    )
+                                
+                                    
+                                })}
                             </div>
                         )}
                     </ScrollArea>
