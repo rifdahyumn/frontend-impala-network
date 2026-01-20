@@ -3,7 +3,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Plus, X, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import heteroBanyumasService from "../../services/heteroBanyumasService";
@@ -67,6 +67,36 @@ const AddMemberBanyumas = ({
         districts: false,
         villages: false
     })
+    const [isInitializing, setIsInitializing] = useState(false);
+
+    const calculateDuration = useCallback((startDate, endDate) => {
+        if (!startDate || !endDate) return '';
+        
+        try {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            if (end < start) return 'Invalid date range';
+            
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return `${diffDays} days`;
+        } catch (error) {
+            return '';
+        }
+    }, []);
+
+    useEffect(() => {
+        if (formData.start_date && formData.end_date) {
+            const duration = calculateDuration(formData.start_date, formData.end_date);
+            setFormData(prev => ({ 
+                ...prev, 
+                duration: duration === 'Invalid date range' ? '' : duration 
+            }));
+        } else {
+            setFormData(prev => ({ ...prev, duration: '' }));
+        }
+    }, [formData.start_date, formData.end_date, calculateDuration]);
 
     useEffect(() => {
         const fetchProvinces = async () => {
@@ -74,9 +104,8 @@ const AddMemberBanyumas = ({
 
             try {
                 const data = await locationService.getProvinces()
-                setProvinces(data)
+                setProvinces(data || [])
             } catch (error) {
-                console.error('Error fetching provinces:', error)
                 toast.error('Failed to load provinces data')
             } finally {
                 setLoadingLocations(prev => ({ ...prev, provinces: false }))
@@ -90,7 +119,7 @@ const AddMemberBanyumas = ({
 
     useEffect(() => {
         const fetchRegencies = async () => {
-            if (!formData.province_id) {
+            if (!formData.province_id && !isEditMode) {
                 setRegencies([])
                 setFormData(prev => ({
                     ...prev,
@@ -101,7 +130,6 @@ const AddMemberBanyumas = ({
                     village_id: '',
                     village_name: ''
                 }))
-
                 return
             }
 
@@ -109,33 +137,35 @@ const AddMemberBanyumas = ({
 
             try {
                 const data = await locationService.getRegencies(formData.province_id)
-
-                setRegencies(data)
-                setDistricts([])
-                setVillages([])
-                setFormData(prev => ({
-                    ...prev,
-                    regency_id: '',
-                    regency_name: '',
-                    district_id: '',
-                    district_name: '',
-                    village_id: '',
-                    village_name: ''
-                }))
+                setRegencies(data || [])
+                
+                if (!isEditMode) {
+                    setDistricts([])
+                    setVillages([])
+                    setFormData(prev => ({
+                        ...prev,
+                        regency_id: '',
+                        regency_name: '',
+                        district_id: '',
+                        district_name: '',
+                        village_id: '',
+                        village_name: ''
+                    }))
+                }
             } catch (error) {
-                console.error('Error fetching regenices:', error)
-                toast.error('Failed to load regenices data')
+                toast.error('Failed to load regencies data')
+                setRegencies([])
             } finally {
                 setLoadingLocations(prev => ({ ...prev, regencies: false }))
             }
         }
 
         fetchRegencies()
-    }, [formData.province_id])
+    }, [formData.province_id, isEditMode])
 
     useEffect(() => {
-        const fetchDistrics = async () => {
-            if (!formData.regency_id) {
+        const fetchDistricts = async () => {
+            if (!formData.regency_id && !isEditMode) {
                 setDistricts([])
                 setFormData(prev => ({
                     ...prev,
@@ -144,7 +174,6 @@ const AddMemberBanyumas = ({
                     village_id: '',
                     village_name: ''
                 }))
-
                 return
             }
 
@@ -152,37 +181,38 @@ const AddMemberBanyumas = ({
 
             try {
                 const data = await locationService.getDistricts(formData.regency_id)
-
-                setDistricts(data)
-                setVillages([])
-                setFormData(prev => ({
-                    ...prev,
-                    district_id: '',
-                    district_name: '',
-                    village_id: '',
-                    village_name: '',
-                }))
+                setDistricts(data || [])
+                
+                if (!isEditMode) {
+                    setVillages([])
+                    setFormData(prev => ({
+                        ...prev,
+                        district_id: '',
+                        district_name: '',
+                        village_id: '',
+                        village_name: '',
+                    }))
+                }
             } catch (error) {
-                console.error('Error fetching districts:', error)
                 toast.error('Failed to load districts data')
+                setDistricts([])
             } finally {
                 setLoadingLocations(prev => ({ ...prev, districts: false }))
             }
         }
 
-        fetchDistrics()
-    }, [formData.regency_id])
+        fetchDistricts()
+    }, [formData.regency_id, isEditMode])
 
     useEffect(() => {
         const fetchVillages = async () => {
-            if (!formData.district_id) {
+            if (!formData.district_id && !isEditMode) {
                 setVillages([])
                 setFormData(prev => ({
                     ...prev,
                     village_id: '',
                     village_name: ''
                 }))
-
                 return
             }
 
@@ -190,53 +220,78 @@ const AddMemberBanyumas = ({
 
             try {
                 const data = await locationService.getVillages(formData.district_id)
-
-                setVillages(data)
-                setFormData(prev => ({
-                    ...prev,
-                    village_id: '',
-                    village_name: ''
-                }))
+                setVillages(data || [])
+                
+                if (!isEditMode) {
+                    setFormData(prev => ({
+                        ...prev,
+                        village_id: '',
+                        village_name: ''
+                    }))
+                }
             } catch (error) {
-                console.error('Error fetching villages:', error)
                 toast.error('Failed to load villages data')
+                setVillages([])
             } finally {
                 setLoadingLocations(prev => ({ ...prev, villages: false }))
             }
         }
 
         fetchVillages()
-    }, [formData.district_id])
+    }, [formData.district_id, isEditMode])
 
     useEffect(() => {
-        if (isEditMode && editData) {
-            setFormData({
-                full_name: editData.full_name || '',
-                nik: editData.nik || '',
-                email: editData.email || '',
-                phone: editData.phone || '',
-                gender: editData.gender || '',
-                date_of_birth: editData.date_of_birth || '',
-                education: editData.education || '',
-                address: editData.address || '',
-                province_id: editData.province_id || '',
-                province_name: editData.province_name || '',
-                regency_id: editData.regency_id || '',
-                regency_name: editData.regency_name || '',
-                district_id: editData.district_id || '',
-                district_name: editData.district_name || '',
-                village_id: editData.village_id || '',
-                village_name: editData.village_name || '',
-                postal_code: editData.postal_code || '',
-                company: editData.company || '',
-                space: editData.space || '',
-                start_date: editData.start_date || '',
-                end_date: editData.end_date || '',
-                add_on: Array.isArray(editData.add_on) ? editData.add_on : 
-                       (editData.add_on ? [editData.add_on] : []),
-                add_information: editData.add_information || '',
-            })
-        } else {
+        const initializeEditData = async () => {
+            if (!isEditMode || !editData || !isAddMemberModalOpen) return;
+            
+            setIsInitializing(true);
+            
+            try {
+                const initialFormData = {
+                    full_name: editData.full_name || '',
+                    nik: editData.nik || '',
+                    email: editData.email || '',
+                    phone: editData.phone || '',
+                    gender: editData.gender || '',
+                    date_of_birth: editData.date_of_birth || '',
+                    education: editData.education || '',
+                    address: editData.address || '',
+                    province_id: editData.province_id || '',
+                    province_name: editData.province_name || '',
+                    regency_id: editData.regency_id || '',
+                    regency_name: editData.regency_name || '',
+                    district_id: editData.district_id || '',
+                    district_name: editData.district_name || '',
+                    village_id: editData.village_id || '',
+                    village_name: editData.village_name || '',
+                    postal_code: editData.postal_code || '',
+                    company: editData.company || '',
+                    space: editData.space || '',
+                    start_date: editData.start_date || '',
+                    end_date: editData.end_date || '',
+                    add_on: Array.isArray(editData.add_on) ? editData.add_on : 
+                           (editData.add_on ? [editData.add_on] : []),
+                    add_information: editData.add_information || '',
+                    duration: editData.duration || calculateDuration(editData.start_date || '', editData.end_date || '') || '',
+                    status: editData.status || 'Active'
+                };
+
+                setFormData(initialFormData);
+                
+            } catch (error) {
+                toast.error('Failed to initialize edit data');
+            } finally {
+                setIsInitializing(false);
+            }
+        };
+
+        if (isEditMode && editData && isAddMemberModalOpen) {
+            initializeEditData();
+        }
+    }, [isEditMode, editData, isAddMemberModalOpen, calculateDuration])
+
+    useEffect(() => {
+        if (!isEditMode && isAddMemberModalOpen) {
             setFormData({
                 full_name: '',
                 nik: '',
@@ -259,12 +314,20 @@ const AddMemberBanyumas = ({
                 space: '',
                 start_date: '',
                 end_date: '',
+                duration: '',
                 add_on: [],
                 add_information: '',
-            })
+                status: 'Active'
+            });
+            setSelectedAddOn('');
+            setNewAddOn('');
+            setErrors({});
+            
+            setRegencies([]);
+            setDistricts([]);
+            setVillages([]);
         }
-        setErrors({})
-    }, [isEditMode, editData, isAddMemberModalOpen])
+    }, [isEditMode, isAddMemberModalOpen])
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -272,6 +335,13 @@ const AddMemberBanyumas = ({
             ...prev,
             [name]: value
         }))
+        
+        if (errors[name]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }))
+        }
     }
 
     const handleSelectChange = (name, value) => {
@@ -288,6 +358,10 @@ const AddMemberBanyumas = ({
                 village_id: '',
                 village_name: ''
             }))
+            
+            setRegencies([]);
+            setDistricts([]);
+            setVillages([]);
         } else if (name === 'regency_id') {
             const selectedRegency = regencies.find(r => r.value === value)
             setFormData(prev => ({
@@ -299,6 +373,9 @@ const AddMemberBanyumas = ({
                 village_id: '',
                 village_name: ''
             }))
+            
+            setDistricts([]);
+            setVillages([]);
         } else if (name === 'district_id') {
             const selectedDistrict = districts.find(d => d.value === value)
             setFormData(prev => ({
@@ -308,6 +385,8 @@ const AddMemberBanyumas = ({
                 village_id: '',
                 village_name: ''
             }))
+            
+            setVillages([]);
         } else if (name === 'village_id') {
             const selectedVillage = villages.find(v => v.value === value)
             setFormData(prev => ({
@@ -458,20 +537,20 @@ const AddMemberBanyumas = ({
                     label: 'City / Regency',
                     type: 'select',
                     required: true,
-                    placeholder: loadingLocations.regencies ? 'Loading regenices...' : 'Select City/Regency',
+                    placeholder: loadingLocations.regencies ? 'Loading regencies...' : 'Select City/Regency',
                     options: regencies,
                     loading: loadingLocations.regencies,
-                    disabled: !formData.province_id
+                    disabled: !formData.province_id && !isEditMode
                 },
                 {
                     name: 'district_id',
-                    label: 'Distric',
+                    label: 'District',
                     type: 'select',
                     required: true,
                     placeholder: loadingLocations.districts ? 'Loading district...' : 'Select District',
                     options: districts,
                     loading: loadingLocations.districts,
-                    disabled: !formData.regency_id
+                    disabled: !formData.regency_id && !isEditMode
                 },
                 {
                     name: 'village_id',
@@ -481,7 +560,7 @@ const AddMemberBanyumas = ({
                     placeholder: loadingLocations.villages ? 'Loading villages...' : 'Select Village',
                     options: villages,
                     loading: loadingLocations.villages,
-                    disabled: !formData.district_id
+                    disabled: !formData.district_id && !isEditMode
                 },
                 {
                     name: 'postal_code',
@@ -550,7 +629,15 @@ const AddMemberBanyumas = ({
                     required: true,
                     placeholder: 'Select end date'
                 },
-               {
+                {
+                    name: 'duration',
+                    label: 'Duration',
+                    type: 'text',
+                    required: false,
+                    placeholder: 'Auto-calculated',
+                    disabled: true
+                },
+                {
                     customComponent: true,
                     render: () => (
                         <div className="space-y-3 md:col-span-2">
@@ -646,6 +733,15 @@ const AddMemberBanyumas = ({
             }
         });
 
+        if (formData.start_date && formData.end_date) {
+            const startDate = new Date(formData.start_date);
+            const endDate = new Date(formData.end_date);
+            
+            if (endDate < startDate) {
+                newErrors.end_date = 'End date must be after start date';
+            }
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -653,8 +749,8 @@ const AddMemberBanyumas = ({
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if(!validateForm()){ 
-            toast.error('Please fix the error in the form');
+        if (!validateForm()) { 
+            toast.error('Please fix the errors in the form');
             return;
         }
 
@@ -662,35 +758,42 @@ const AddMemberBanyumas = ({
         
         try {
             const memberData = {
-                full_name: formData.full_name,
-                nik: formData.nik,
-                email: formData.email,
-                phone: formData.phone,
-                gender: formData.gender,
-                date_of_birth: formData.date_of_birth,
-                education: formData.education,
-                address: formData.address,
-                province_id: formData.province_id,
-                province_name: formData.province_name,
-                regency_id: formData.regency_id,
-                regency_name: formData.regency_name,
-                district_id: formData.district_id,
-                district_name: formData.district_name,
-                village_id: formData.village_id,
-                village_name: formData.village_name,
-                postal_code: formData.postal_code,
-                company: formData.company,
-                space: formData.space,
-                start_date: formData.start_date,
-                end_date: formData.end_date,
-                add_on: Array.isArray(formData.add_on) ? formData.add_on : [formData.add_on],
-                add_information: formData.add_information,
+                full_name: formData.full_name || '',
+                nik: formData.nik || '',
+                email: formData.email || '',
+                phone: formData.phone || '',
+                gender: formData.gender || '',
+                date_of_birth: formData.date_of_birth || '',
+                education: formData.education || '',
+                address: formData.address || '',
+                province_id: formData.province_id || '',
+                province_name: formData.province_name || '',
+                regency_id: formData.regency_id || '',
+                regency_name: formData.regency_name || '',
+                district_id: formData.district_id || '',
+                district_name: formData.district_name || '',
+                village_id: formData.village_id || '',
+                village_name: formData.village_name || '',
+                postal_code: formData.postal_code || '',
+                company: formData.company || '',
+                space: formData.space || '',
+                start_date: formData.start_date || '',
+                end_date: formData.end_date || '',
+                duration: formData.duration || '',
+                add_on: Array.isArray(formData.add_on) ? formData.add_on : 
+                       (formData.add_on ? [formData.add_on] : []),
+                add_information: formData.add_information || '',
                 status: formData.status || 'Active'
             };
 
             if (isEditMode) {
+                if (!editData?.id) {
+                    throw new Error('No member ID provided for update');
+                }
+                
                 if (onEditMember) {
                     await onEditMember(editData.id, memberData);
+                    toast.success('Member updated successfully');
                 } else {
                     await heteroBanyumasService.updateMemberHeteroBanyumas(editData.id, memberData);
                     toast.success('Member updated successfully');
@@ -698,6 +801,7 @@ const AddMemberBanyumas = ({
             } else {
                 if (onAddMember) {
                     await onAddMember(memberData);
+                    toast.success('Member added successfully');
                 } else {
                     await heteroBanyumasService.addMemberHeteroBanyumas(memberData);
                     toast.success('Member added successfully');
@@ -706,7 +810,10 @@ const AddMemberBanyumas = ({
 
             handleCloseModal();
         } catch (error) {
-            toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'add'} member`);
+            const errorMessage = error.response?.data?.message 
+                || error.message 
+                || `Failed to ${isEditMode ? 'update' : 'add'} member`;
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -715,6 +822,8 @@ const AddMemberBanyumas = ({
     const handleCloseModal = () => {
         setIsAddMemberModalOpen(false);
         setErrors({});
+        setSelectedAddOn('');
+        setNewAddOn('');
         setRegencies([])
         setDistricts([])
         setVillages([])
@@ -740,22 +849,34 @@ const AddMemberBanyumas = ({
                         value={formData[field.name] || ''}
                         onValueChange={(value) => handleSelectChange(field.name, value)}
                         required={field.required}
-                        disabled={field.disabled || field.loading}
+                        disabled={field.disabled || field.loading || isInitializing}
                     >
                         <SelectTrigger>
-                            <SelectValue placeholder={field.placeholder} />
+                            {field.loading ? (
+                                <div className="flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <span>{field.placeholder}</span>
+                                </div>
+                            ) : (
+                                <SelectValue placeholder={field.placeholder} />
+                            )}
                         </SelectTrigger>
                         <SelectContent>
-                            {field.options.map((option) => (
-                                <SelectItem 
-                                    key={`${field.name}-${option.value}`}
-                                    value={option.value}
-                                >
-                                    {option.label}
-                                </SelectItem>
-                            ))}
+                            <SelectGroup>
+                                {field.options && field.options.map((option) => (
+                                    <SelectItem 
+                                        key={`${field.name}-${option.value}`}
+                                        value={option.value}
+                                    >
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
                         </SelectContent>
                     </Select>
+                    {errors[field.name] && (
+                        <p className="text-sm text-red-600">{errors[field.name]}</p>
+                    )}
                 </div>
             );
         }
@@ -771,11 +892,15 @@ const AddMemberBanyumas = ({
                         id={field.name}
                         name={field.name}
                         type="date"
-                        value={formData[field.name]}
+                        value={formData[field.name] || ''}
                         onChange={handleInputChange}
                         required={field.required}
                         className="w-full"
+                        disabled={isInitializing}
                     />
+                    {errors[field.name] && (
+                        <p className="text-sm text-red-600">{errors[field.name]}</p>
+                    )}
                 </div>
             );
         }
@@ -790,22 +915,46 @@ const AddMemberBanyumas = ({
                     id={field.name}
                     name={field.name}
                     type={field.type}
-                    value={formData[field.name]}
+                    value={formData[field.name] || ''}
                     onChange={handleInputChange}
                     placeholder={field.placeholder}
                     required={field.required}
                     className="w-full"
+                    disabled={isInitializing || field.disabled}
+                    readOnly={field.disabled}
                 />
+                {errors[field.name] && (
+                    <p className="text-sm text-red-600">{errors[field.name]}</p>
+                )}
             </div>
         );
     };
+
+    if (isInitializing) {
+        return (
+            <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
+                <DialogContent className="max-h-[90vh] max-w-[900px] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Loading Member Data...</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex justify-center items-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                    </div>
+                </DialogContent>
+            </Dialog>
+        );
+    }
 
     return (
         <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
             <DialogContent className="max-h-[90vh] max-w-[900px] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>
-                        {isEditMode ? `Edit Member: ${formData.full_name || ''}` : 'Add New Member'}
+                    <DialogTitle className="flex items-center gap-2">
+                        {isEditMode ? (
+                            <>Edit Member: {formData.full_name || 'Loading...'}</>
+                        ) : (
+                            <>Add New Member</>
+                        )}
                     </DialogTitle>
                     <DialogDescription>
                         {isEditMode
@@ -845,8 +994,8 @@ const AddMemberBanyumas = ({
                         </Button>
                         <Button 
                             type="submit" 
-                            disabled={loading}
-                            className={isEditMode ? "bg-amber-500 hover:bg-amber-300" : ""}
+                            disabled={loading || isInitializing}
+                            className={isEditMode ? "bg-amber-500 hover:bg-amber-600 text-white" : ""}
                         >
                             {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                             {loading 

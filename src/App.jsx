@@ -63,7 +63,6 @@ const ProtectedRoute = ({ children }) => {
         return <LoadingSpinner />;
     }
 
-    // PERBAIKAN: isAuthenticated adalah boolean, bukan fungsi
     if (!isAuthenticated) {
         const tokens = getTokens();
         if (tokens.access_token) {
@@ -87,7 +86,6 @@ const ProtectedRouteMinimal = ({ children }) => {
         return <LoadingSpinner />;
     }
 
-    // PERBAIKAN: isAuthenticated adalah boolean, bukan fungsi
     if (!isAuthenticated) {
         if (user?.role === 'komunitas') {
             return <Navigate to="/hetero/semarang" replace />;

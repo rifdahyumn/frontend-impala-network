@@ -81,6 +81,36 @@ const AddMemberSemarang = ({
     })
     const [isInitializing, setIsInitializing] = useState(false);
 
+    const calculateDuration = useCallback((startDate, endDate) => {
+        if (!startDate || !endDate) return '';
+        
+        try {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            if (end < start) return 'Invalid date range';
+            
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return `${diffDays} days`;
+        } catch (error) {
+            console.error('Error calculating duration:', error);
+            return '';
+        }
+    }, []);
+
+    useEffect(() => {
+        if (formData.start_date && formData.end_date) {
+            const duration = calculateDuration(formData.start_date, formData.end_date);
+            setFormData(prev => ({ 
+                ...prev, 
+                duration: duration === 'Invalid date range' ? '' : duration 
+            }));
+        } else {
+            setFormData(prev => ({ ...prev, duration: '' }));
+        }
+    }, [formData.start_date, formData.end_date, calculateDuration]);
+
     const loadProvinces = useCallback(async () => {
         setLoadingLocations(prev => ({ ...prev, provinces: true }));
         try {
@@ -248,6 +278,8 @@ const AddMemberSemarang = ({
                 add_on: Array.isArray(editData.add_on) ? editData.add_on : 
                        (editData.add_on ? [editData.add_on] : []),
                 add_information: editData.add_information || '',
+                duration: editData.duration || calculateDuration(editData.start_date || '', editData.end_date || '') || '',
+                status: editData.status || 'Active'
             };
 
             setFormData(initialFormData);
@@ -269,7 +301,7 @@ const AddMemberSemarang = ({
         } finally {
             setIsInitializing(false);
         }
-    }, [isEditMode, editData, loadRegencies, loadDistricts, loadVillages]);
+    }, [isEditMode, editData, loadRegencies, loadDistricts, loadVillages, calculateDuration]);
 
     useEffect(() => {
         loadProvinces();
@@ -302,9 +334,13 @@ const AddMemberSemarang = ({
                     space: '',
                     start_date: '',
                     end_date: '',
+                    duration: '',
                     add_on: [],
                     add_information: '',
+                    status: 'Active'
                 });
+                setSelectedAddOn('');
+                setNewAddOn('');
                 setRegencies([]);
                 setDistricts([]);
                 setVillages([]);
@@ -615,6 +651,14 @@ const AddMemberSemarang = ({
                     placeholder: 'Select end date'
                 },
                 {
+                    name: 'duration',
+                    label: 'Duration',
+                    type: 'text',
+                    required: false,
+                    placeholder: 'Auto-calculated',
+                    disabled: true
+                },
+                {
                     customComponent: true,
                     render: () => (
                         <div className="space-y-3 md:col-span-2">
@@ -756,6 +800,7 @@ const AddMemberSemarang = ({
                 space: formData.space,
                 start_date: formData.start_date,
                 end_date: formData.end_date,
+                duration: formData.duration,
                 add_on: Array.isArray(formData.add_on) ? formData.add_on : [formData.add_on],
                 add_information: formData.add_information,
                 status: formData.status || 'Active'
@@ -764,6 +809,7 @@ const AddMemberSemarang = ({
             if (isEditMode) {
                 if (onEditMember) {
                     await onEditMember(editData.id, memberData);
+                    toast.success('Member updated successfully');
                 } else {
                     await heteroSemarangService.updateMemberHeteroSemarang(editData.id, memberData);
                     toast.success('Member updated successfully');
@@ -771,6 +817,7 @@ const AddMemberSemarang = ({
             } else {
                 if (onAddMember) {
                     await onAddMember(memberData);
+                    toast.success('Member added successfully');
                 } else {
                     await heteroSemarangService.addMemberHeteroSemarang(memberData);
                     toast.success('Member added successfully');
@@ -779,7 +826,11 @@ const AddMemberSemarang = ({
 
             handleCloseModal();
         } catch (error) {
-            toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'add'} member`);
+            console.error('Error saving member:', error);
+            const errorMessage = error.response?.data?.message 
+                || error.message 
+                || `Failed to ${isEditMode ? 'update' : 'add'} member`;
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -788,6 +839,8 @@ const AddMemberSemarang = ({
     const handleCloseModal = () => {
         setIsAddMemberModalOpen(false);
         setErrors({});
+        setSelectedAddOn('');
+        setNewAddOn('');
         setRegencies([]);
         setDistricts([]);
         setVillages([]);
@@ -884,7 +937,8 @@ const AddMemberSemarang = ({
                     placeholder={field.placeholder}
                     required={field.required}
                     className="w-full"
-                    disabled={isInitializing}
+                    disabled={isInitializing || field.disabled}
+                    readOnly={field.disabled}
                 />
                 {errors[field.name] && (
                     <p className="text-sm text-red-600">{errors[field.name]}</p>

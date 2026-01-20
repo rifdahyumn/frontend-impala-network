@@ -8,11 +8,11 @@ import { Card, CardContent } from "../ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Upload, X, ChevronDown, LogOut, Loader2 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
-import { toast } from "react-hot-toast"; // Anda bisa install react-hot-toast atau gunakan alert
+import { toast } from "react-hot-toast"; 
 
 const UserAccountSettings = () => {
     const navigate = useNavigate();
-    const { user, logout, updateUser } = useAuth(); // Tambahkan updateUser dari useAuth jika ada
+    const { user, logout, updateUser } = useAuth(); 
     const dropdownRef = useRef(null);
     
     const [formData, setFormData] = useState({
@@ -28,10 +28,10 @@ const UserAccountSettings = () => {
 
     const [changePassword, setChangePassword] = useState(false);
     const [avatarPreview, setAvatarPreview] = useState(null);
-    const [avatarFile, setAvatarFile] = useState(null); // State untuk file avatar
+    const [avatarFile, setAvatarFile] = useState(null); 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState(false); // State untuk loading
-    const [errors, setErrors] = useState({}); // State untuk error validasi
+    const [isLoading, setIsLoading] = useState(false); 
+    const [errors, setErrors] = useState({}); 
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -174,7 +174,7 @@ const UserAccountSettings = () => {
             ...prev,
             [field]: value
         }));
-        // Clear error saat user mengubah field
+
         if (errors[field]) {
             setErrors(prev => ({ ...prev, [field]: '' }));
         }
@@ -202,14 +202,13 @@ const UserAccountSettings = () => {
                 return;
             }
 
-            setAvatarFile(file); // Simpan file untuk dikirim ke backend
+            setAvatarFile(file); 
             const reader = new FileReader();
             reader.onload = (e) => {
                 setAvatarPreview(e.target.result);
             };
             reader.readAsDataURL(file);
-            
-            // Clear error jika ada
+
             if (errors.avatar) {
                 setErrors(prev => ({ ...prev, avatar: '' }));
             }
@@ -224,24 +223,20 @@ const UserAccountSettings = () => {
     const validateForm = () => {
         const newErrors = {};
         
-        // Validasi email
         if (!formData.email) {
             newErrors.email = 'Email is required';
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
             newErrors.email = 'Email is invalid';
         }
-        
-        // Validasi full name
+
         if (!formData.fullName) {
             newErrors.fullName = 'Full name is required';
         }
-        
-        // Validasi phone (optional)
+
         if (formData.phone && !/^[\+]?[0-9\s\-\(\)]+$/.test(formData.phone)) {
             newErrors.phone = 'Phone number is invalid';
         }
-        
-        // Validasi password jika changePassword aktif
+
         if (changePassword) {
             if (!formData.currentPassword) {
                 newErrors.currentPassword = 'Current password is required';
@@ -262,8 +257,7 @@ const UserAccountSettings = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        // Validasi form
+
         if (!validateForm()) {
             toast.error('Please fix the errors in the form');
             return;
@@ -272,34 +266,28 @@ const UserAccountSettings = () => {
         setIsLoading(true);
         
         try {
-            // Buat FormData untuk mengirim file
             const formDataToSend = new FormData();
-            
-            // Tambahkan field teks
+
             formDataToSend.append('email', formData.email);
             formDataToSend.append('fullName', formData.fullName);
             formDataToSend.append('phone', formData.phone || '');
             formDataToSend.append('position', formData.position);
-            
-            // Tambahkan field password jika diubah
+
             if (changePassword) {
                 formDataToSend.append('currentPassword', formData.currentPassword);
                 formDataToSend.append('newPassword', formData.newPassword);
             }
-            
-            // Tambahkan file avatar jika ada
+
             if (avatarFile) {
                 formDataToSend.append('avatar', avatarFile);
             }
             
             const token = localStorage.getItem('token');
-            
-            // Kirim request ke backend
+
             const response = await fetch('http://localhost:3000/api/user/update', {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`
-                    // Jangan set Content-Type untuk FormData, browser akan otomatis set
                 },
                 body: formDataToSend
             });
@@ -307,7 +295,6 @@ const UserAccountSettings = () => {
             const data = await response.json();
             
             if (response.ok) {
-                // Update user context jika ada
                 if (updateUser) {
                     const updatedUser = {
                         ...user,
@@ -315,14 +302,13 @@ const UserAccountSettings = () => {
                         full_name: formData.fullName,
                         phone: formData.phone,
                         position: formData.position,
-                        avatar: data.avatar || user?.avatar // Gunakan avatar baru dari response
+                        avatar: data.avatar || user?.avatar
                     };
                     updateUser(updatedUser);
                 }
                 
                 toast.success('Profile updated successfully!');
-                
-                // Reset password fields jika berhasil
+
                 if (changePassword) {
                     setFormData(prev => ({
                         ...prev,
@@ -334,14 +320,12 @@ const UserAccountSettings = () => {
                 }
                 
             } else {
-                // Handle error dari server
                 if (data.message) {
                     toast.error(data.message);
                 } else {
                     toast.error('Failed to update profile');
                 }
                 
-                // Set error spesifik jika ada
                 if (data.errors) {
                     setErrors(data.errors);
                 }
