@@ -13,8 +13,7 @@ const {
     refreshTokenService 
 } = authServices
 
-// eslint-disable-next-line react-refresh/only-export-components
-export const AuthContext = createContext(null)
+export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null)
@@ -22,6 +21,51 @@ export const AuthProvider = ({ children }) => {
     const [error, setError] = useState(null)
     const [initialized, setInitialized] = useState(false);
 
+    // Fungsi untuk mengecek token expired
+    const isTokenExpired = (token) => {
+        if (!token) return true;
+
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const expirationTime = payload.exp * 1000;
+            const currentTime = Date.now();
+
+            return currentTime > expirationTime;
+        } catch (error) {
+            console.error('Error checking token expiration:', error);
+            return true;
+        }
+    };
+
+    // Fungsi untuk mengecek auth dari localStorage
+    const checkAuth = () => {
+        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+        const userData = localStorage.getItem('user');
+
+        if (token && userData) {
+            try {
+                if (isTokenExpired(token)) {
+                    handleLogout();
+                    return false;
+                }
+
+                const parsedUser = JSON.parse(userData);
+                setIsAuthenticated(true);
+                setUser(parsedUser);
+                return true;
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+                handleLogout();
+                return false;
+            }
+        } else {
+            setIsAuthenticated(false);
+            setUser(null);
+            return false;
+        }
+    };
+
+    // Initialize auth
     useEffect(() => {
         initializeAuth();
     }, []);
@@ -29,6 +73,7 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         let cleanup;
         
+        // Setup token maintenance jika user ada
         if (user) {
             cleanup = setupTokenMaintenance();
         }
@@ -204,6 +249,12 @@ export const AuthProvider = ({ children }) => {
         } finally {
             clearAuth();
             
+            setUser(null);
+            setIsAuthenticated(false);
+            setError(null);
+            setLoading(false);
+            
+            // Redirect ke login
             if (window.location.pathname !== '/login') {
                 window.location.href = '/login';
             }
@@ -261,15 +312,17 @@ export const AuthProvider = ({ children }) => {
     };
 
     const value = {
+        isAuthenticated: checkIsAuthenticated(),
         user,
         loading,
         error,
         initialized,
         login,
-        logout,
+        logout: handleLogout,
+        checkAuth,
         updateUser,
         updateProfile,
-        isAuthenticated,
+        // isAuthenticated,
         getAuthHeaders,
         clearAuth,
         refreshSession,
@@ -280,5 +333,13 @@ export const AuthProvider = ({ children }) => {
         <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
-    )
-}
+    );
+};
+
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within AuthProvider');
+    }
+    return context;
+};
