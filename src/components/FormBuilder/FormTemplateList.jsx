@@ -228,11 +228,11 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                                         <h4 className='font-semibold text-gray-800 text-lg group-hover:text-blue-700 transition-colors'>
                                                             {template.program_name}
                                                         </h4>
-                                                        {expiryStatus === 'soon' && (
+                                                        {/* {expiryStatus === 'soon' && (
                                                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
                                                                 Akan berakhir
                                                             </Badge>
-                                                        )}
+                                                        )} */}
                                                     </div>
                                                 </div>
 

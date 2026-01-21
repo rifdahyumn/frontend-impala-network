@@ -85,8 +85,6 @@ export default function LoginPage() {
             const result = await login(formData.email.trim(), formData.password);
             
             if (result?.success) {
-                // JANGAN setLocalLoading(false) di sini
-                // Biar useEffect redirect handle
                 const redirectPath = getRedirectPath(result.user?.role);
                 navigate(redirectPath, { replace: true });
             } else {
@@ -106,7 +104,6 @@ export default function LoginPage() {
         }
     }, [formData, validateForm, login, getRedirectPath, navigate]);
 
-    // Reset loading jika ada error dari context
     useEffect(() => {
         if (authLoading === false && localLoading === true) {
             setLocalLoading(false);

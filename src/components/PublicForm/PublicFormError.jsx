@@ -1,8 +1,6 @@
 import React from 'react';
-import { Button } from '../ui/button';
-import { Home } from 'lucide-react';
 
-const PublicFormError = ({ loadError, hasTimeout, slug }) => {
+const PublicFormError = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -14,30 +12,8 @@ const PublicFormError = ({ loadError, hasTimeout, slug }) => {
                         </svg>
                     </div>
                     <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                        {hasTimeout ? 'Waktu Habis' : 'Formulir Tidak Ditemukan'}
+                        Formulir Tidak Ada
                     </h1>
-                    <p className="text-gray-600 mb-4">
-                        {loadError || `Formulir dengan slug "${slug}" tidak tersedia.`}
-                    </p>
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                        <p className="text-sm text-red-700">
-                            Slug: <strong>{slug}</strong>
-                        </p>
-                        <p className="text-sm text-red-600 mt-2">
-                            {hasTimeout 
-                                ? 'Server membutuhkan waktu terlalu lama untuk merespons.' 
-                                : 'Pastikan formulir sudah dipublish dan URL benar.'
-                            }
-                        </p>
-                    </div>
-                </div>
-                <div className="space-y-4">
-                    <Button 
-                        onClick={() => window.location.reload()}
-                        className="w-full bg-blue-600 hover:bg-blue-700"
-                    >
-                        Coba Lagi
-                    </Button>
                 </div>
             </div>
         </div>
