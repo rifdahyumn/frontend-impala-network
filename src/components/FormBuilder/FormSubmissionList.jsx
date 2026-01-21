@@ -16,7 +16,8 @@ const FormSubmissionsList = () => {
     const [loadingSubmissions, setLoadingSubmissions] = useState(false);
     const [programStats, setProgramStats] = useState({});
     const [exporting, setExporting] = useState(false);
-    const [setFilters] = useState({
+    // eslint-disable-next-line no-unused-vars
+    const [filters, setFilters] = useState({
         category: '',
         gender: '',
         search: ''
@@ -636,9 +637,7 @@ const FormSubmissionsList = () => {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {/* Search Bar */}
                         
-
                         {loadingTemplates ? (
                             <div className="flex items-center justify-center h-40 text-blue-600">
                                 <Loader2 className="h-8 w-8 animate-spin" />
@@ -700,8 +699,12 @@ const FormSubmissionsList = () => {
                                                     </div>
                                                 </div>
                                                 
-                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                                    {template.is_published ? 'Published' : 'Draft'}
+                                                <Badge variant="outline" className={
+                                                    template.is_published
+                                                        ? 'bg-green-50 text-green-700 border-green-200' 
+                                                        : 'bg-red-50 text-red-700 border-red-200'
+                                                }>
+                                                    {template.is_published ? 'Active' : 'Inactive'}
                                                 </Badge>
                                             </div>
                                             

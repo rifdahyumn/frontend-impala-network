@@ -120,6 +120,54 @@ const FormBuilderWorkspace = () => {
         });
     };
 
+    const handleTogglePublish = async (templateId, newPublishStatus) => {
+        try {
+            const template = formTemplates.find(t => t.id === templateId)
+            if (!template) {
+                throw new Error('Template not found')
+            }
+
+            const response = await formTemplateService.updatePublishStatus(templateId, newPublishStatus)
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed update publish status')
+            }
+
+            const updatedTemplate = response.data
+
+            setFormTemplates(prev => 
+                prev.map(t => t.id === templateId ? updatedTemplate : t)
+            )
+
+            if (selectedTemplate && selectedTemplate.id === templateId) {
+                setSelectedTemplate(updatedTemplate)
+            }
+
+            if(activeTab === 'links' && selectedTemplate && selectedTemplate.id === templateId) {
+                document.title = `${newPublishStatus ? 'Published' : 'Unpublished'} - "${updatedTemplate.program_name}" | Impala Network`
+            }
+
+            toast({
+                title: newPublishStatus ? 'Form Published' : 'Form Unpublished',
+                description: newPublishStatus
+                    ? 'The form is now publicly accessible '
+                    : 'The form is no longer publicly accessible',
+                variant: 'default',
+                duration: 30000
+            })
+
+            return updatedTemplate
+        } catch (error) {
+            console.error('Error toggling publish status:', error);
+        toast({
+            title: "Error",
+                description: error.message || "Failed update status publish",
+                variant: "destructive"
+            });
+            throw error;
+        }
+    }
+
     const handleDirectPublish = async () => {
         if (!formConfig || !formConfig.programName) {
             toast({
@@ -426,6 +474,7 @@ const FormBuilderWorkspace = () => {
                     selectedTemplate={selectedTemplate}
                     onTemplateSelect={handleTemplateSelect}
                     onDeleteTemplate={handleDeleteTemplate}
+                    onTogglePublish={handleTogglePublish}
                 />
             )}
 

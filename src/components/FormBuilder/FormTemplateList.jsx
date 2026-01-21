@@ -3,13 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
-import { FileText, Calendar, ExternalLink, Copy, Loader2, Trash2, AlertCircle, Info, Check } from 'lucide-react';
+import { FileText, Calendar, ExternalLink, Copy, Loader2, Trash2, AlertCircle, Info, Check, EyeOff, Eye } from 'lucide-react';
 
-const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCopyLink, onDeleteTemplate }) => {
+const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCopyLink, onDeleteTemplate, onTogglePublish  }) => {
     const [deletingId, setDeletingId] = useState(null)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [templateToDelete, setTemplateToDelete] = useState(null)
     const [copiedTemplateId, setCopiedTemplateId] = useState(null)
+    const [togglingPublishId, setTogglingPublishId] = useState(null)
 
     const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin
 
@@ -66,6 +67,20 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
         e.stopPropagation()
         setTemplateToDelete(template)
         setShowDeleteConfirm(true)
+    }
+
+    const handleTooglePublish = async (template, e) => {
+        e.stopPropagation()
+
+        setTogglingPublishId(template.id)
+
+        try {
+            await onTogglePublish(template.id, !template.is_published)
+        } catch (error) {
+            console.error('Error toggling publish:', error)
+        } finally {
+            setTogglingPublishId(null)
+        }
     }
 
     const confirmDelete = async () => {
@@ -228,11 +243,6 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                                         <h4 className='font-semibold text-gray-800 text-lg group-hover:text-blue-700 transition-colors'>
                                                             {template.program_name}
                                                         </h4>
-                                                        {/* {expiryStatus === 'soon' && (
-                                                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
-                                                                Akan berakhir
-                                                            </Badge>
-                                                        )} */}
                                                     </div>
                                                 </div>
 
@@ -327,8 +337,35 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                                             className='flex items-center gap-1.5 text-xs hover:bg-green-50 hover:text-green-600 hover:border-green-300 transition-all'
                                                         >
                                                             <ExternalLink className='h-3.5 w-3.5' />
-                                                            Buka Form
+                                                            Open Form
                                                         </Button>
+
+                                                        <Button
+                                                            size='sm'
+                                                            variant={template.is_published ? 'outline' : 'default'}
+                                                            onClick={(e) => handleTooglePublish(template, e)}
+                                                            disabled={togglingPublishId === template.id}
+                                                            className={`flex items-center gap-1.5 text-xs ${
+                                                                template.is_published
+                                                                    ? 'bg-red-50 text-red-600 border-red-300 hover:bg-red-100 hover:text-red-700 hover:border-red-400'
+                                                                    : 'bg-green-600 text-white hover:bg-green-700'
+                                                            }`}
+                                                        >
+                                                            {togglingPublishId === template.id ? (
+                                                                <Loader2 className='w-3.5 h-3.5 animate-spin' />
+                                                            ) : template.is_published ? (
+                                                                <>
+                                                                    <EyeOff className='w-3.5 h-3.5' />
+                                                                    Unpublish
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Eye className='w-3.5 h-3.5' />
+                                                                    Publish
+                                                                </>
+                                                            )}
+                                                        </Button>
+
                                                         <Button
                                                             size='sm'
                                                             variant='destructive'
@@ -341,7 +378,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                                             ) : (
                                                                 <Trash2 className='w-3.5 h-3.5' />
                                                             )}
-                                                            Hapus
+                                                            Delete
                                                         </Button>
                                                     </div>
                                                 </div>

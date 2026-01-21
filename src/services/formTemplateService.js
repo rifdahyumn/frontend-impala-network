@@ -230,6 +230,31 @@ class FormTemplateService {
             throw error;
         }
     }
+
+    async updatePublishStatus(templateId, isPublished) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/form-templates/${templateId}/publish-status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    is_published: isPublished
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || `HTTP error! status: ${response.status}`);
+            }
+
+            return result;
+        } catch (error) {
+            console.error('Error updating publish status:', error);
+            throw error;
+        }
+    }
 }
 
 export default new FormTemplateService()
