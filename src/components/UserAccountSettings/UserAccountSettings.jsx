@@ -233,7 +233,7 @@ const UserAccountSettings = () => {
             newErrors.fullName = 'Full name is required';
         }
 
-        if (formData.phone && !/^[\+]?[0-9\s\-\(\)]+$/.test(formData.phone)) {
+        if (formData.phone && !/^[\\+]?[0-9\\s\\-\\(\\)]+$/.test(formData.phone)) {
             newErrors.phone = 'Phone number is invalid';
         }
 
