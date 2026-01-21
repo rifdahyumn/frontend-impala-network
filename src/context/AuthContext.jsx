@@ -1,237 +1,79 @@
-import { createContext, useState, useEffect, useCallback, useContext } from 'react'
-import authServices from '../services/authServices'
+import { createContext, useState, useEffect, useCallback, useContext } from 'react';
+import authServices from '../services/authServices';
 
 const { 
-    getTokens, 
-    saveTokens,
-    setupTokenMaintenance, 
-    validateSessionService,
     loginService,
     logoutService,
-    clearTokens, 
-    getProfileService,
-    refreshTokenService 
-} = authServices
+    clearTokens,
+    isAuthenticated: authServicesIsAuthenticated
+} = authServices;
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
-    const [initialized, setInitialized] = useState(false);
-
-    const isTokenExpired = (token) => {
-        if (!token) return true;
-
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const expirationTime = payload.exp * 1000;
-            const currentTime = Date.now();
-
-            return currentTime > expirationTime;
-        } catch (error) {
-            console.error('Error checking token expiration:', error);
-            return true;
-        }
-    };
-
-    const checkAuth = () => {
-        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-        const userData = localStorage.getItem('user');
-
-        if (token && userData) {
-            try {
-                if (isTokenExpired(token)) {
-                    logout();
-                    return false;
-                }
-
-                const parsedUser = JSON.parse(userData);
-                setUser(parsedUser);
-                return true;
-            } catch (error) {
-                console.error('Error parsing user data:', error);
-                logout();
-                return false;
-            }
-        } else {
-            setUser(null);
-            return false;
-        }
-    };
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
+        const initializeAuth = async () => {  
+            try {
+                if (authServicesIsAuthenticated()) {
+                    
+                    const storedUser = localStorage.getItem('user');
+                    if (storedUser) {
+                        try {
+                            const userData = JSON.parse(storedUser);
+                            setUser(userData);
+                        } catch (e) {
+                            console.error('Error parsing user:', e);
+                        }
+                    }
+                } else {
+                    setUser(null);
+                }
+            } catch (error) {
+                console.error('Auth initialization error:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         initializeAuth();
     }, []);
 
-    useEffect(() => {
-        let cleanup;
-        
-        if (user) {
-            cleanup = setupTokenMaintenance();
-        }
-        
-        return () => {
-            if (cleanup) cleanup();
-        };
-    }, [user]);
-
-    const initializeAuth = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            
-            const tokens = getTokens();
-            
-            if (!tokens.access_token || !tokens.refresh_token) {
-                setLoading(false);
-                setInitialized(true);
-                return;
-            }
-            
-            const isValid = await validateSession();
-            
-            if (!isValid) {
-                const refreshed = await refreshSession();
-                if (!refreshed) {
-                    clearAuth();
-                }
-            }
-            
-        } catch (err) {
-            console.error('Auth initialization error:', err);
-            setError(err.message);
-            clearAuth();
-        } finally {
-            setLoading(false);
-            setInitialized(true);
-        }
-    };
-
-    const validateSession = async () => {
-        try {
-            const response = await validateSessionService();
-            
-            let userData = null;
-            
-            if (response.data?.user) {
-                userData = response.data.user;
-            } else if (response.user) {
-                userData = response.user;
-            } else if (response.data) {
-                userData = response.data;
-            } else {
-                userData = response;
-            }
-            
-            if (userData && (userData.id || userData.email || userData.user_id)) {
-                setUser(userData);
-                setError(null);
-                return true;
-            } else {
-                throw new Error('Invalid user data received');
-            }
-        } catch (error) {
-            console.error('Session validation error:', error);
-            
-            const errorMsg = error.message || error.toString();
-            
-            if (errorMsg.includes('User not found') || 
-                errorMsg.includes('USER_NOT_FOUND') ||
-                errorMsg.includes('SESSION_EXPIRED') ||
-                errorMsg.includes('Invalid token') ||
-                errorMsg.includes('No token') ||
-                errorMsg.includes('401') ||
-                errorMsg.includes('expired')) {
-                
-                return false;
-            }
-            
-            setError(errorMsg);
-            return false;
-        }
-    };
-
-    const refreshSession = async () => {
-        try {
-            const tokens = getTokens();
-            
-            if (!tokens.refresh_token) {
-                throw new Error('No refresh token available');
-            }
-            
-            const response = await refreshTokenService(tokens.refresh_token);
-            
-            if (response.success && response.tokens?.access_token) {
-                saveTokens(response.tokens);
-                
-                const profileResponse = await getProfileService();
-                
-                if (profileResponse.data) {
-                    setUser(profileResponse.data);
-                    setError(null);
-                    return true;
-                }
-            }
-            
-            return false;
-        } catch (error) {
-            console.error('Session refresh error:', error);
-            return false;
-        }
-    };
-
     const login = useCallback(async (email, password) => {
+        setLoading(true);
+        setError(null);
+        
         try {
-            setLoading(true);
-            setError(null);
+            const result = await loginService({ email, password });
             
-            const result = await loginService({ email, password });     
-            
-            if (result.success) {
-                let userData = null;
-                let tokens = null;
+            if (result?.success && result?.user) {
+                setUser(result.user);
+                setError(null);
                 
-                if (result.user && result.tokens) {
-                    userData = result.user;
-                    tokens = result.tokens;
-                } else if (result.data?.user && result.data?.tokens) {
-                    userData = result.data.user;
-                    tokens = result.data.tokens;
-                } else if (result.data) {
-                    userData = result.data.user || result.data;
-                    tokens = result.data.tokens || result.data.session;
-                } else if (result.token) {
-                    userData = result.user;
-                    tokens = {
-                        access_token: result.token,
-                        refresh_token: result.refresh_token || '',
-                        expires_at: result.expires_at || Math.floor(Date.now() / 1000) + 3600
-                    };
-                }
+                await new Promise(resolve => setTimeout(resolve, 100));
                 
-                if (tokens?.access_token) {
-                    saveTokens(tokens);
-                    setUser(userData);
-                    
-                    localStorage.setItem('user', JSON.stringify(userData));
-                    
-                    setError(null);
-                    return { success: true, user: userData };
-                } else {
-                    throw new Error('No access token received');
-                }
+                setLoading(false);
+                return { 
+                    success: true, 
+                    user: result.user 
+                };
             } else {
-                throw new Error(result.message || 'Login failed');
+                const errorMsg = result?.error || 'Login failed';
+                console.error('Login failed:', errorMsg);
+                setError(errorMsg);
+                setLoading(false);
+                return { success: false, error: errorMsg };
             }
         } catch (error) {
-            const errorMsg = error.message || 'Login failed. Please check your credentials.';
+            const errorMsg = error.message || 'Login failed';
+            console.error('Login error:', errorMsg);
             setError(errorMsg);
-            return { success: false, error: errorMsg };
-        } finally {
             setLoading(false);
+            return { success: false, error: errorMsg };
         }
     }, []);
 
@@ -242,94 +84,31 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
-            clearAuth();
-            
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            
             setUser(null);
-            setError(null);
             setLoading(false);
-            
-            if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
-            }
+            setError(null);
+            window.location.href = '/login';
         }
     }, []);
 
-    const clearAuth = () => {
-        setUser(null);
-        setError(null);
-        setLoading(false);
-        clearTokens();
-        
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-    };
-
-    const updateUser = (updatedUserData) => {
-        setUser(prev => ({
-            ...prev,
-            ...updatedUserData
-        }));
-    };
-
-    const updateProfile = async (userData) => {
-        try {
-            if (userData) {
-                localStorage.setItem('user_profile', JSON.stringify(userData));
-            }
-            
-            setUser(prev => ({
-                ...prev,
-                ...userData
-            }));
-            
-            return { success: true };
-        } catch (error) {
-            console.error('Update profile error:', error);
-            return { success: false, error: error.message };
-        }
-    };
-
-    const isAuthenticated = () => {
-        const tokens = getTokens();
-        return !!(user && tokens.access_token);
-    };
-
-    const getAuthHeaders = () => {
-        const tokens = getTokens();
-        
-        if (!tokens.access_token) {
-            throw new Error('No access token available');
-        }
-        
-        return {
-            'Authorization': `Bearer ${tokens.access_token}`,
-            'Content-Type': 'application/json'
-        };
-    };
+    const checkAuthStatus = useCallback(() => {
+        return authServicesIsAuthenticated();
+    }, []);
 
     const value = {
-        isAuthenticated: isAuthenticated(), 
+        isAuthenticated: !!user,
         user,
         loading,
         error,
-        initialized,
         login,
-        logout, 
-        checkAuth,
-        updateUser,
-        updateProfile,
-        getAuthHeaders,
-        clearAuth,
-        refreshSession,
-        setError
-    }
+        logout,
+        checkAuthStatus,
+        clearAuth: () => {
+            setUser(null);
+            clearTokens();
+            window.location.href = '/login';
+        }
+    };
 
     return (
         <AuthContext.Provider value={value}>

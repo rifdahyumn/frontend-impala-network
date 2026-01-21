@@ -199,7 +199,6 @@ html, body {
     animation: fadeIn 0.5s ease-out forwards;
 }
 
-/* Delay utilities */
 .delay-500 {
     animation-delay: 500ms;
 }

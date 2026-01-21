@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import "../App.css";
 import { FaUser, FaLock } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -10,12 +10,12 @@ import { validateEmail } from "../utils/validation";
 export default function LoginPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { login, user } = useAuth();
+    const { login, user, loading: authLoading } = useAuth();
     const [formData, setFormData] = useState({
         email: "",
         password: ""
     });
-    const [loading, setLoading] = useState(false);
+    const [localLoading, setLocalLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [authError, setAuthError] = useState("");
     
@@ -29,7 +29,19 @@ export default function LoginPage() {
         }
     }, [user, navigate, location]);
 
-    const validateForm = () => {
+    const getRedirectPath = useCallback((role) => {
+        switch (role) {
+            case 'komunitas':
+                return '/hetero/banyumas';
+            case 'admin':
+            case 'manajer_program': 
+                return '/';
+            default:
+                return '/';
+        }
+    }, []);
+
+    const validateForm = useCallback(() => {
         const newErrors = {};
         
         if (!formData.email.trim()) {
@@ -46,21 +58,9 @@ export default function LoginPage() {
         
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
-    };
+    }, [formData]);
 
-    const getRedirectPath = (role) => {
-        switch (role) {
-            case 'komunitas':
-                return '/hetero/banyumas';
-            case 'admin':
-            case 'manajer_program': 
-                return '/';
-            default:
-                return '/';
-        }
-    };
-
-    const handleChange = (e) => {
+    const handleChange = useCallback((e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -71,44 +71,49 @@ export default function LoginPage() {
             setErrors(prev => ({ ...prev, [name]: "" }));
         }
         if (authError) setAuthError("");
-    };
+    }, [errors, authError]);
 
-    const handleLogin = async (e) => {
+    const handleLogin = useCallback(async (e) => {
         e.preventDefault();
         
         if (!validateForm()) return;
         
-        setLoading(true);
+        setLocalLoading(true);
         setAuthError("");
 
         try {
             const result = await login(formData.email.trim(), formData.password);
             
-            if (result.success) {
-                const redirectPath = getRedirectPath(result.user.role);
-                
-                setTimeout(() => {
-                    navigate(redirectPath, { replace: true });
-                }, 100);
+            if (result?.success) {
+                // JANGAN setLocalLoading(false) di sini
+                // Biar useEffect redirect handle
+                const redirectPath = getRedirectPath(result.user?.role);
+                navigate(redirectPath, { replace: true });
             } else {
-                throw new Error(result.error || 'Login failed');
+                setLocalLoading(false);
+                const errorMsg = result?.error || 'Login failed';
+                setAuthError(errorMsg.includes('credentials') || errorMsg.includes('Email atau password') 
+                    ? 'Email atau password salah' 
+                    : errorMsg);
             }
             
         } catch (err) {
-            console.error('Login error:', err);
-            setAuthError(err.message.includes('credentials') ? 'Email atau password salah' : 'Login gagal');
-        } finally {
-            setLoading(false);
+            setLocalLoading(false);
+            const errorMessage = err.message || 'Login gagal';
+            setAuthError(errorMessage.includes('credentials') || errorMessage.includes('Email atau password') 
+                ? 'Email atau password salah' 
+                : errorMessage);
         }
-    };
+    }, [formData, validateForm, login, getRedirectPath, navigate]);
 
+    // Reset loading jika ada error dari context
     useEffect(() => {
-        return () => {
-            setFormData({ email: "", password: "" });
-            setErrors({});
-            setAuthError("");
-        };
-    }, []);
+        if (authLoading === false && localLoading === true) {
+            setLocalLoading(false);
+        }
+    }, [authLoading, localLoading]);
+
+    const isLoading = localLoading;
 
     return (
         <div className="login-page">
@@ -140,7 +145,7 @@ export default function LoginPage() {
                                 placeholder="Email" 
                                 value={formData.email}
                                 onChange={handleChange}
-                                disabled={loading}
+                                disabled={isLoading}
                                 required
                                 autoComplete="email"
                                 aria-label="Email"
@@ -159,7 +164,7 @@ export default function LoginPage() {
                                 placeholder="Password" 
                                 value={formData.password}
                                 onChange={handleChange}
-                                disabled={loading}
+                                disabled={isLoading}
                                 required
                                 autoComplete="current-password"
                                 aria-label="Password"
@@ -177,25 +182,23 @@ export default function LoginPage() {
                         )}
 
                         <div className="forgot mt-4">
-                            <a 
-                                href={`${appUrl}/forgot-password`}
-                                className="text-blue-500 hover:text-blue-700 text-sm"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    navigate('/forgot-password');
-                                }}
+                            <button
+                                type="button"
+                                className="text-blue-500 hover:text-blue-700 text-sm bg-transparent border-none p-0 cursor-pointer"
+                                onClick={() => navigate('/forgot-password')}
+                                disabled={isLoading}
                             >
                                 Lupa Password?
-                            </a>
+                            </button>
                         </div>
 
                         <button 
                             type="submit" 
                             className="login-btn mt-6" 
-                            disabled={loading}
-                            aria-busy={loading}
+                            disabled={isLoading}
+                            aria-busy={isLoading}
                         >
-                            {loading ? (
+                            {isLoading ? (
                                 <div className="flex items-center justify-center">
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                                     Loading...
