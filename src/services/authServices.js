@@ -156,6 +156,9 @@ const createAuthApi = () => {
             return response.data;
         },
         async (error) => {
+            if (error.code === 'ERR_CANCELED' || error.message.includes('canceled')) {
+                return Promise.reject(new Error('Request cancelled'))
+            }
             const originalRequest = error.config;
             
             if (originalRequest.url.includes('/auth/login') ||
@@ -273,6 +276,12 @@ export const loginService = async (credentials) => {
                 validateStatus: (status) => status < 500
             }
         );
+
+        console.log('=== LOGIN RESPONSE ==='); // Debug
+        console.log('Full response:', response.data);
+        console.log('User data:', response.data?.data?.user);
+        console.log('User keys:', response.data?.data?.user ? Object.keys(response.data.data.user) : 'No user');
+        console.log('====================');
 
         if (response.status === 200 && response.data?.success) {
             const userData = response.data.data?.user;
@@ -437,7 +446,7 @@ export const validateSessionService = async () => {
         const authTimestamp = parseInt(localStorage.getItem('auth_timestamp') || '0');
         const sessionDuration = Date.now() - authTimestamp;
         
-        if (sessionDuration > 8 * 60 * 60 * 1000) {
+        if (sessionDuration > 4 * 60 * 60 * 1000) {
             throw new Error('Session max duration exceeded');
         }
 

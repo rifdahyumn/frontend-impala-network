@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
                     if (storedUser) {
                         try {
                             const userData = JSON.parse(storedUser);
+                            console.log('Loaded user from localstorage:', userData)
                             setUser(userData);
                         } catch (e) {
                             console.error('Error parsing user:', e);
@@ -51,16 +52,26 @@ export const AuthProvider = ({ children }) => {
             const result = await loginService({ email, password });
             
             if (result?.success && result?.user) {
-                setUser(result.user);
-                setError(null);
-                
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                setLoading(false);
-                return { 
-                    success: true, 
-                    user: result.user 
-                };
+
+                const completeUserData = {
+                    ...result.user,
+                    full_name: result.user.full_name || result.user.fullName || '',
+                    phone: result.user.phone || '',
+                    position: result.user.position || '',
+                    avatar: result.user.avatar || '',
+                    email: result.user.email || email
+                }
+
+                setUser(completeUserData)
+                localStorage.setItem('user', JSON.stringify(completeUserData))
+
+                setError(null)
+                setLoading(false)
+
+                return {
+                    success: true,
+                    user: completeUserData
+                }
             } else {
                 const errorMsg = result?.error || 'Login failed';
                 console.error('Login failed:', errorMsg);
@@ -76,6 +87,32 @@ export const AuthProvider = ({ children }) => {
             return { success: false, error: errorMsg };
         }
     }, []);
+
+    const updateUser = useCallback((updatedData) => {
+        console.log('Updating user with:', updatedData)
+
+        setUser(prevUser => {
+            const newUser = { ...prevUser, ...updatedData }
+            localStorage.setItem('user', JSON.stringify(newUser))
+            return newUser
+        })
+    }, [])
+
+    const refreshUser = useCallback(async () => {
+        try {
+            setLoading(true)
+            const storedUser = localStorage.getItem('user')
+            if (storedUser) {
+                const userData = JSON.parse(storedUser)
+                console.log('Refreshed user data:', userData)
+                setUser(userData)
+            }
+        } catch (error) {
+            console.error('Error refreshing user:', error)
+        } finally {
+            setLoading(false)
+        }
+    }, [])
 
     const logout = useCallback(async () => {
         try {
@@ -102,10 +139,13 @@ export const AuthProvider = ({ children }) => {
         error,
         login,
         logout,
+        updateUser,
+        refreshUser,
         checkAuthStatus,
         clearAuth: () => {
             setUser(null);
             clearTokens();
+            localStorage.removeItem('user');
             window.location.href = '/login';
         }
     };

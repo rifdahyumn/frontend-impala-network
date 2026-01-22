@@ -250,6 +250,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                         { value: '1-50', label: '1-50' },
                         { value: '50-100', label: '50-100' },
                         { value: '100-500', label: '100-500' },
+                        { value: '500+', label: '500+' },
                     ]
                 }
             ]

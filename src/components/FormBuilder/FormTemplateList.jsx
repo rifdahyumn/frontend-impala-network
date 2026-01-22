@@ -201,7 +201,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                     variant='outline'
                                     className='ml-2 bg-blue-50 text-blue-700 border-blue-200 text-xs'
                                 >
-                                    {templates.length} aktif
+                                    Total Form {templates.length}
                                 </Badge>
                             </CardTitle>
                         </div>

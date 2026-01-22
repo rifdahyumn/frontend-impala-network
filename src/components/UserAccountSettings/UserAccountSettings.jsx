@@ -12,26 +12,50 @@ import { toast } from "react-hot-toast";
 
 const UserAccountSettings = () => {
     const navigate = useNavigate();
-    const { user, logout, updateUser } = useAuth(); 
+    const { user, logout, updateUser, loading: authLoading } = useAuth(); 
     const dropdownRef = useRef(null);
     
     const [formData, setFormData] = useState({
-        email: user?.email || 'helloadmin@gmail.com',
+        email: '',
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-        fullName: user?.full_name || 'Alexander Ratouli',
-        phone: user?.phone || '',
-        position: user?.position || 'Ecosystem Manager',
-        avatar: user?.avatar || ''
+        fullName: '',
+        phone:'',
+        position: '',
+        avatar: ''
     });
 
     const [changePassword, setChangePassword] = useState(false);
     const [avatarPreview, setAvatarPreview] = useState(null);
+    // eslint-disable-next-line no-unused-vars
     const [avatarFile, setAvatarFile] = useState(null); 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false); 
     const [errors, setErrors] = useState({}); 
+
+    useEffect(() => {
+        if (user && !authLoading) {
+            console.log('Setting form data with user data:', user)
+            
+            const fullName = user.full_name || user.fullName || ''
+            setFormData({
+                email: user?.email || '',
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: '',
+                fullName: fullName || '',
+                phone: user?.phone || '',
+                position: user?.position || '',
+                avatar: user?.avatar || ''
+            })
+
+            if (user?.avatar) {
+                console.log('Setting avatar preview:', user.avatar);
+                setAvatarPreview(user.avatar)
+            }
+        }
+    }, [user, authLoading])
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -45,6 +69,17 @@ const UserAccountSettings = () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-amber-50 to-yellow-50 flex items-center justify-center">
+                <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+                    <p className="mt-2 text-gray-600">Loading account settings...</p>
+                </div>
+            </div>
+        )
+    }
 
     const getInitials = (name) => {
         if (!name) return 'U';
@@ -88,7 +123,7 @@ const UserAccountSettings = () => {
             await fetch("http://localhost:3000/api/auth/logout", {
                 method: "POST",
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
                 }
             });
         } catch (error) {
@@ -206,6 +241,10 @@ const UserAccountSettings = () => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 setAvatarPreview(e.target.result);
+                setFormData(prev => ({
+                    ...prev,
+                    avatar: e.target.result
+                }));
             };
             reader.readAsDataURL(file);
 
@@ -218,6 +257,10 @@ const UserAccountSettings = () => {
     const removeAvatar = () => {
         setAvatarPreview(null);
         setAvatarFile(null);
+        setFormData(prev => ({
+            ...prev,
+            avatar: ''
+        }));
     };
 
     const validateForm = () => {
@@ -266,45 +309,37 @@ const UserAccountSettings = () => {
         setIsLoading(true);
         
         try {
-            const formDataToSend = new FormData();
-
-            formDataToSend.append('email', formData.email);
-            formDataToSend.append('fullName', formData.fullName);
-            formDataToSend.append('phone', formData.phone || '');
-            formDataToSend.append('position', formData.position);
-
-            if (changePassword) {
-                formDataToSend.append('currentPassword', formData.currentPassword);
-                formDataToSend.append('newPassword', formData.newPassword);
-            }
-
-            if (avatarFile) {
-                formDataToSend.append('avatar', avatarFile);
-            }
+            const updateData = {
+                full_name: formData.fullName,
+                phone: formData.phone || '',
+                position: formData.position,
+                avatar: formData.avatar || ''
+            };
             
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('access_token') || localStorage.getItem('token');
 
-            const response = await fetch('http://localhost:3000/api/user/update', {
+            const response = await fetch('http://localhost:3000/api/auth/profile', {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 },
-                body: formDataToSend
+                body: JSON.stringify(updateData)
             });
             
             const data = await response.json();
             
-            if (response.ok) {
+            if (response.ok && data.success) {
+                const updatedUserData = {
+                    ...user,
+                    full_name: data.data?.user?.full_name || formData.fullName,
+                    phone: data.data?.user?.phone || formData.phone,
+                    position: data.data?.user?.position || formData.position,
+                    avatar: data.data?.user?.avatar || formData.avatar
+                };
+                
                 if (updateUser) {
-                    const updatedUser = {
-                        ...user,
-                        email: formData.email,
-                        full_name: formData.fullName,
-                        phone: formData.phone,
-                        position: formData.position,
-                        avatar: data.avatar || user?.avatar
-                    };
-                    updateUser(updatedUser);
+                    updateUser(updatedUserData);
                 }
                 
                 toast.success('Profile updated successfully!');
@@ -320,11 +355,8 @@ const UserAccountSettings = () => {
                 }
                 
             } else {
-                if (data.message) {
-                    toast.error(data.message);
-                } else {
-                    toast.error('Failed to update profile');
-                }
+                const errorMsg = data.error || data.message || 'Failed to update profile';
+                toast.error(errorMsg);
                 
                 if (data.errors) {
                     setErrors(data.errors);
@@ -537,6 +569,23 @@ const UserAccountSettings = () => {
             </header>
 
             <div className="container mx-auto px-6 py-8">
+                {user && (!user.phone || !user.avatar) && (
+                    <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-sm text-blue-700">
+                                    Please complete your profile by adding phone number and profile photo.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                 
                 <div className="mb-8 text-center">
                     <p className="text-gray-600">Manage your account settings and preferences</p>
                 </div>

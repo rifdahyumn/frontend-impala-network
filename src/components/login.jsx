@@ -201,7 +201,7 @@ export default function LoginPage() {
                                     Loading...
                                 </div>
                             ) : (
-                                'Masuk'
+                                'Log In'
                             )}
                         </button>
                     </form>

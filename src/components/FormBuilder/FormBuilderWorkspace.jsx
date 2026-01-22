@@ -450,7 +450,7 @@ const FormBuilderWorkspace = () => {
                                         : 'border-transparent text-gray-500 hover:text-gray-700'
                                 }`}
                             >
-                                Manage Links ({formTemplates.filter(t => t.is_published).length})
+                                Manage Links
                             </button>
                             <button
                                 onClick={() => setActiveTab('submission')}

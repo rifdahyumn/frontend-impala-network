@@ -28,6 +28,7 @@ const Account = () => {
     const [highlightDetail, setHighlightDetail] = useState(false);
     
     const userDetailRef = useRef(null);
+    const filterRef = useRef(null)
     
     const [searchTerm, setSearchTerm] = useState("");
     
@@ -43,8 +44,9 @@ const Account = () => {
     });
     
     const [filteredUsers, setFilteredUsers] = useState([]);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-    const { users, loading, error, pagination, fetchUser, addUser, updateUser, deleteUser, activateUser } = useUsers();
+    const { users, loading, error, pagination, fetchUsers, refreshUsers, addUser, updateUser, deleteUser, activateUser } = useUsers();
 
     const showConfirm = (config) => {
         setConfirmModal({
@@ -312,6 +314,35 @@ const Account = () => {
     };
 
     const userStats = useMemo(() => {
+        if (loading && isInitialLoad) {
+            return [
+                {
+                    title: "Total Users",
+                    value: "0",
+                    subtitle: "Loading...",
+                    percentage: "0%",
+                    trend: "neutral",
+                    period: "Current",
+                    icon: Users,
+                    color: "blue",
+                    description: "Fetching data...",
+                    loading: true
+                },
+                {
+                    title: "Active Users",
+                    value: "0",
+                    subtitle: "",
+                    percentage: "0%",
+                    trend: "neutral",
+                    period: "Current", 
+                    icon: UserCheck,
+                    color: "green",
+                    description: "Fetching data...",
+                    loading: true
+                }
+            ];
+        }
+
         const totalUsers = filteredUsers.length;
         const activeUsers = filteredUsers.filter(user => 
             user.status?.toLowerCase() === 'active' 
@@ -386,7 +417,12 @@ const Account = () => {
         ];
     }, [filteredUsers, filters.position, filters.role, positionOptions, users.length, getTotalActiveCriteria]);
 
-    const applyAllFilters = () => {
+    const applyAllFilters = useCallback(() => {
+        if (!users || !Array.isArray(users)) {
+            setFilteredUsers([]);
+            return;
+        }
+        
         let result = [...users];
         
         if (searchTerm.trim()) {
@@ -421,7 +457,7 @@ const Account = () => {
         }
         
         setFilteredUsers(result);
-    };
+    }, [users, searchTerm, filters]);
 
     const handleSearch = (term) => {
         setSearchTerm(term);
@@ -482,6 +518,24 @@ const Account = () => {
     };
 
     useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (filterRef.current && !filterRef.current.contains(event.target)) {
+                setIsFilterOpen(false)
+            }
+        }
+
+        if (setIsFilterOpen) {
+            document.addEventListener('mousedown', handleClickOutside)
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [isFilterOpen])
+
+    useEffect(() => {
         setTempFilters({
             position: filters.position || '',
             role: filters.role || 'all'
@@ -489,15 +543,11 @@ const Account = () => {
     }, [filters]);
 
     useEffect(() => {
-        if (users.length > 0) {
-            setFilteredUsers(users);
+        if (users && users.length > 0) {
+            setIsInitialLoad(false);
             applyAllFilters();
         }
-    }, [users]);
-
-    useEffect(() => {
-        applyAllFilters();
-    }, [searchTerm, filters]);
+    }, [users, searchTerm, filters, applyAllFilters]);
 
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
@@ -508,11 +558,12 @@ const Account = () => {
             await addUser(userData);
             setIsAddUserModalOpen(false);
             toast.success('User added successfully');
-            fetchUser(pagination.page);
-            
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch {
-            // 
+            if (refreshUsers) {
+                refreshUsers(); 
+            }
+        } catch (error) {
+            console.error('Error adding user:', error);
+            toast.error(error.message || 'Failed to add user');
         }
     };
 
@@ -536,7 +587,9 @@ const Account = () => {
             setIsEditModalOpen(false);
             setEditingUser(null);
             toast.success('User updated successfully');
-            fetchUser(pagination.page);
+            if (refreshUsers) {
+                        refreshUsers();
+                    }
         } catch (error) {
             console.error('Error updating', error);
             toast.error(error.message || 'Failed to update user');
@@ -557,7 +610,9 @@ const Account = () => {
                     await deleteUser(userId);
                     setSelectedUser(null);
                     toast.success('User deleted successfully');
-                    fetchUser(pagination.page);
+                    if (refreshUsers) {
+                        refreshUsers();
+                    }
                     
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } catch (error) {
@@ -574,9 +629,11 @@ const Account = () => {
     const handleActivate = async (userId) => {
         try {
             await activateUser(userId);
-            fetchUser(pagination.page);
+            if (refreshUsers) {
+                        refreshUsers();
+                    }
         } catch (error) {
-            console.error('❌ Error activating user from parent:', error);
+            console.error('Error activating user from parent:', error);
             throw error;
         }
     };
@@ -592,14 +649,18 @@ const Account = () => {
         }
     }, [users, selectedUser?.id]);
 
-    const handleRefresh = () => {
-        fetchUser(pagination.page);
+    const handleRefresh = useCallback(() => {
+        if (refreshUsers) {
+            refreshUsers();
+        }
         handleClearAllFilters();
-    };
+    }, [refreshUsers]);
 
     const handlePageChange = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        fetchUser(page);
+        if (fetchUsers) {
+            fetchUsers(page); 
+        }
     };
 
     const tableConfig = {
@@ -609,28 +670,34 @@ const Account = () => {
         detailTitle: 'User Details'
     };
 
-    const formattedUsers = filteredUsers.map((user, index) => {
-        const currentPage = pagination.page;
-        const itemsPerPage = pagination.limit;
-        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
+    const formattedUsers = useMemo(() => {
+        if (!filteredUsers || filteredUsers.length === 0) {
+            return [];
+        }
 
-        return {
-            id: user.id,
-            no: itemNumber,
-            employee_id: user.employee_id,
-            full_name: user.full_name,
-            email: user.email,
-            password: user.password,
-            role: user.role,
-            last_login: user.last_login,
-            status: user.status,
-            phone: user.phone,
-            position: user.position,
-            avatar: user.avatar,
-            action: 'Detail',
-            ...user
-        };
-    });
+        return filteredUsers.map((user, index) => {
+            const currentPage = pagination.page || 1;
+            const itemsPerPage = pagination.limit || 10;
+            const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
+
+            return {
+                id: user.id,
+                no: itemNumber,
+                employee_id: user.employee_id || '-',
+                full_name: user.full_name || '-',
+                email: user.email || '-',
+                password: user.password || '',
+                role: user.role || '-',
+                last_login: user.last_login || '-',
+                status: user.status || '-',
+                phone: user.phone || '-',
+                position: user.position || '-',
+                avatar: user.avatar || null,
+                action: 'Detail',
+                ...user
+            };
+        });
+    }, [filteredUsers, pagination.page, pagination.limit]);
 
     const UserStatsCards = ({ statsData }) => {
         return (
@@ -665,6 +732,24 @@ const Account = () => {
         );
     };
 
+    if (loading && isInitialLoad) {
+        return (
+            <div className="flex pt-20 min-h-screen bg-gray-100 items-center justify-center">
+                <div className="text-center">
+                    <div className="relative">
+                        <Loader2 className="h-16 w-16 animate-spin text-blue-600 mx-auto" />
+                        <Users className="h-8 w-8 text-blue-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+                    </div>
+                    <h3 className="mt-4 text-lg font-semibold text-gray-700">Loading User Account</h3>
+                    <p className="mt-2 text-sm text-gray-500">Please wait while we fetch your data...</p>
+                    <div className="mt-6 w-64 bg-gray-200 rounded-full h-2 mx-auto">
+                        <div className="bg-blue-600 h-2 rounded-full animate-pulse w-3/4"></div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
             <div className='flex-1 p-6'>
@@ -688,17 +773,20 @@ const Account = () => {
                                 <div className="flex items-start gap-3">
                                     <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
                                     <div className="flex-1">
-                                        <h3 className="text-sm font-semibold text-red-800">Failed to load users</h3>
+                                        <h3 className="text-sm font-semibold text-red-800">Connection Error</h3>
                                         <p className="text-sm text-red-600 mt-1">{error}</p>
+                                        <div className="mt-3 flex gap-2">
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={handleRefresh}
+                                                className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
+                                            >
+                                                <Loader2 className="h-3 w-3" />
+                                                Retry Connection
+                                            </Button>
+                                        </div>
                                     </div>
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        onClick={handleRefresh}
-                                        className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
-                                    >
-                                        Reload Page
-                                    </Button>
                                 </div>
                             </div>
                         )}
@@ -714,7 +802,7 @@ const Account = () => {
                                     />
                                 </div>
                                 
-                                {/* Custom Filter Dropdown - Versi baru seperti HeteroSurakarta.jsx */}
+                        
                                 <div className="relative">
                                     <Button 
                                         variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
@@ -737,7 +825,10 @@ const Account = () => {
                                     </Button>
 
                                     {isFilterOpen && (
-                                        <div className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]">
+                                        <div 
+                                            ref={filterRef}
+                                            className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]"
+                                        >
                                             <div className="p-3 border-b">
                                                 <div className="flex items-center justify-between">
                                                     <h3 className="font-bold text-gray-900 text-xs">Filter Options</h3>
@@ -748,7 +839,6 @@ const Account = () => {
                                             </div>
 
                                             <div className="p-3">
-                                                {/* Position Filter */}
                                                 <div className="mb-3">
                                                     <div className="flex items-center justify-between mb-1">
                                                         <h4 className="font-semibold text-gray-900 text-xs">POSITION</h4>
@@ -788,7 +878,6 @@ const Account = () => {
                                                         </button>
                                                     </div>
 
-                                                    {/* Positions Grid */}
                                                     <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                                                         {positionOptions.map((position) => {
                                                             const isSelected = tempFilters.position === position.value;
@@ -822,7 +911,6 @@ const Account = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Role Filter */}
                                                 <div>
                                                     <div className="flex items-center justify-between mb-1">
                                                         <h4 className="font-semibold text-gray-900 text-xs">ROLE</h4>
@@ -836,7 +924,6 @@ const Account = () => {
                                                         )}
                                                     </div>
                                                     
-                                                    {/* All Roles */}
                                                     <div className="mb-2">
                                                         <button
                                                             className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
@@ -862,7 +949,6 @@ const Account = () => {
                                                         </button>
                                                     </div>
 
-                                                    {/* Roles Grid */}
                                                     <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                                                         {roleOptions.map((role) => {
                                                             const isSelected = tempFilters.role === role.value;
@@ -938,7 +1024,6 @@ const Account = () => {
                                     {tableConfig.addButton}
                                 </Button>
                                 
-                                {/* Tombol Export - Sama seperti di kode sebelumnya */}
                                 <Button
                                     variant="outline"
                                     className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
@@ -1042,27 +1127,21 @@ const Account = () => {
                             </div>
                         )}
 
-                        {loading && users.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-16 space-y-4">
-                                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                                <span className="text-gray-600">Loading users...</span>
-                                <div className="w-64 bg-gray-200 rounded-full h-2">
-                                    <div className="bg-blue-600 h-2 rounded-full animate-pulse w-3/4"></div>
-                                </div>
-                            </div>
-                        ) : filteredUsers.length === 0 ? (
+                        {!loading && filteredUsers.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
                                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
                                     <Users className="w-10 h-10 text-gray-400" />
                                 </div>
                                 <div className="space-y-2">
                                     <h3 className="text-lg font-semibold text-gray-700">
-                                        No users found
+                                        {error ? "Connection Failed" : "No users found"}
                                     </h3>
                                     <p className="text-sm text-gray-500 max-w-md">
-                                        {getTotalActiveCriteria() > 0 
-                                            ? "No users match your current filters. Try adjusting your criteria."
-                                            : "Get started by adding your first user."
+                                        {error 
+                                            ? "Unable to connect to server. Please check your connection."
+                                            : getTotalActiveCriteria() > 0 
+                                                ? "No users match your current filters. Try adjusting your criteria."
+                                                : "Get started by adding your first user."
                                         }
                                     </p>
                                 </div>
@@ -1085,7 +1164,9 @@ const Account = () => {
                                     </Button>
                                 </div>
                             </div>
-                        ) : (
+                        )}
+
+                        {filteredUsers.length > 0 && (
                             <>
                                 <div className="relative">
                                     {loading && (
@@ -1107,10 +1188,10 @@ const Account = () => {
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
                                     <Pagination 
-                                        currentPage={pagination.page}
-                                        totalPages={pagination.totalPages}
-                                        totalItems={pagination.total}
-                                        itemsPerPage={pagination.limit}
+                                        currentPage={pagination.page || 1}
+                                        totalPages={pagination.totalPages || 1}
+                                        totalItems={pagination.total || 0}
+                                        itemsPerPage={pagination.limit || 10}
                                         onPageChange={handlePageChange}
                                         disabled={loading}
                                     />
@@ -1134,9 +1215,9 @@ const Account = () => {
                         onDelete={handleDeleteUser}
                         onActivateUser={handleActivate}
                         detailTitle={tableConfig.detailTitle}
-                        onUserUpdated={() => fetchUser(pagination.page)}
+                        onUserUpdated={() => refreshUsers?.()}
                         onClientDeleted={() => {
-                            fetchUser(pagination.page);
+                            refreshUsers?.();
                             setSelectedUser(null);
                         }}
                         showConfirm={showConfirm}
