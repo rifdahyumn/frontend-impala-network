@@ -36,7 +36,6 @@ const UserAccountSettings = () => {
 
     useEffect(() => {
         if (user && !authLoading) {
-            console.log('Setting form data with user data:', user)
             
             const fullName = user.full_name || user.fullName || ''
             setFormData({
@@ -51,7 +50,6 @@ const UserAccountSettings = () => {
             })
 
             if (user?.avatar) {
-                console.log('Setting avatar preview:', user.avatar);
                 setAvatarPreview(user.avatar)
             }
         }

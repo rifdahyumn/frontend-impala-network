@@ -272,67 +272,73 @@ export const loginService = async (credentials) => {
                 headers: { 
                     'Content-Type': 'application/json'
                 },
-                timeout: 15000,
+                timeout: 30000,
                 validateStatus: (status) => status < 500
             }
         );
-
-        console.log('=== LOGIN RESPONSE ==='); // Debug
-        console.log('Full response:', response.data);
-        console.log('User data:', response.data?.data?.user);
-        console.log('User keys:', response.data?.data?.user ? Object.keys(response.data.data.user) : 'No user');
-        console.log('====================');
-
+        
         if (response.status === 200 && response.data?.success) {
-            const userData = response.data.data?.user;
-            const tokens = response.data.data?.tokens;
+            const responseData = response.data.data;
 
-            if (!tokens?.access_token) {
-                throw new Error('Invalid server response');
-            }
+            const userData = responseData?.user || responseData;
+            const tokens = responseData?.tokens;
 
-            saveTokens(tokens);
-
-            if (userData) {
-                const encryptedUser = encryptData(userData);
-                if (encryptedUser) {
-                    localStorage.setItem('user_encrypted', encryptedUser);
+            if (userData && typeof userData === 'object' && userData.id) {
+                if (tokens) {
+                    saveTokens(tokens);
+                } else {
+                    console.warn('No tokens in response');
                 }
-                localStorage.setItem('user', JSON.stringify(userData));
-                localStorage.setItem('user_role', userData.role || 'user');
+                
+                try {
+                    const encryptedUser = encryptData(userData);
+                    if (encryptedUser) {
+                        localStorage.setItem('user_encrypted', encryptedUser);
+                    }
+                    localStorage.setItem('user', JSON.stringify(userData));
+                    localStorage.setItem('user_role', userData.role || 'user');
+                } catch (storageError) {
+                    console.error('Storage error:', storageError);
+                }
+                
+                const successResponse = {
+                    success: true,
+                    data: userData,
+                    tokens: tokens,
+                    requiresMFA: responseData?.requires_mfa || false,
+                    message: response.data?.message || 'Login successful'
+                };
+                return successResponse;
+                
+            } else {
+                console.error('Invalid user data:', userData);
+                console.error('User data validation failed:', {
+                    hasUserData: !!userData,
+                    isObject: userData && typeof userData === 'object',
+                    hasId: userData?.id,
+                    fullData: userData
+                });
+                throw new Error('Invalid user data in response: missing required fields');
             }
-
-            return {
-                success: true,
-                user: userData,
-                tokens: tokens,
-                requiresMFA: response.data.data?.requires_mfa || false
-            };
         } else {
             const errorData = response.data;
-            let errorMessage = 'Login failed';
-
-            if (errorData?.error) {
-                errorMessage = errorData.error;
-            } else if (errorData?.message) {
-                errorMessage = errorData.message;
-            } else if (response.status === 401) {
-                errorMessage = 'Email atau password salah';
-            } else if (response.status === 403) {
-                if (errorData?.code === 'ACCOUNT_INACTIVE') {
-                    errorMessage = 'Akun dinonaktifkan';
-                } else {
-                    errorMessage = 'Akses ditolak';
-                }
-            } else if (response.status === 429) {
-                errorMessage = 'Terlalu banyak percobaan login. Silakan coba lagi nanti.';
-            }
-
+            let errorMessage = errorData?.message || errorData?.error || 'Login failed';
+            
+            console.error('Login failed with message:', errorMessage);
             throw new Error(errorMessage);
         }
     } catch (error) {
-        let errorMessage = 'Login failed';
-
+        console.error('=== LOGIN SERVICE CATCH ERROR ===');
+        console.error('Error:', error);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        
+        let errorMessage = error.message || 'Login failed';
+        
+        if (errorMessage !== 'Login failed') {
+            throw error;
+        }
+        
         if (error.response) {
             const status = error.response.status;
             const data = error.response.data;
@@ -340,15 +346,9 @@ export const loginService = async (credentials) => {
             if (status === 401) {
                 errorMessage = data?.message || 'Email atau password salah';
             } else if (status === 403) {
-                if (data?.code === 'ACCOUNT_INACTIVE') {
-                    errorMessage = 'Account is inactive';
-                } else {
-                    errorMessage = data?.error || 'Access denied';
-                }
+                errorMessage = data?.error || 'Access denied';
             } else if (status === 429) {
                 errorMessage = 'Too many attempts. Please wait before trying again.';
-            } else if (status === 400) {
-                errorMessage = data?.error || 'Invalid request';
             } else if (data?.error) {
                 errorMessage = data.error;
             } else if (data?.message) {

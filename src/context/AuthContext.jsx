@@ -25,7 +25,6 @@ export const AuthProvider = ({ children }) => {
                     if (storedUser) {
                         try {
                             const userData = JSON.parse(storedUser);
-                            console.log('Loaded user from localstorage:', userData)
                             setUser(userData);
                         } catch (e) {
                             console.error('Error parsing user:', e);
@@ -50,38 +49,43 @@ export const AuthProvider = ({ children }) => {
         
         try {
             const result = await loginService({ email, password });
-            
-            if (result?.success && result?.user) {
 
+            if (result?.success && (result?.data || result?.user)) {
+                const userData = result.data || result.user;
+                
                 const completeUserData = {
-                    ...result.user,
-                    full_name: result.user.full_name || result.user.fullName || '',
-                    phone: result.user.phone || '',
-                    position: result.user.position || '',
-                    avatar: result.user.avatar || '',
-                    email: result.user.email || email
-                }
-
-                setUser(completeUserData)
-                localStorage.setItem('user', JSON.stringify(completeUserData))
-
-                setError(null)
-                setLoading(false)
+                    id: userData.id || '',
+                    email: userData.email || email,
+                    full_name: userData.full_name || userData.fullName || '',
+                    position: userData.position || '',
+                    role: userData.role || '',
+                    status: userData.status || '',
+                    phone: userData.phone || '',
+                    avatar: userData.avatar || ''
+                };
+                
+                setUser(completeUserData);
+                localStorage.setItem('user', JSON.stringify(completeUserData));
+                
+                setError(null);
+                setLoading(false);
 
                 return {
                     success: true,
                     user: completeUserData
-                }
+                };
             } else {
-                const errorMsg = result?.error || 'Login failed';
-                console.error('Login failed:', errorMsg);
+                const errorMsg = result?.message || result?.error || 'Login failed';
+                console.error('Login failed with message:', errorMsg);
                 setError(errorMsg);
                 setLoading(false);
                 return { success: false, error: errorMsg };
             }
         } catch (error) {
+            console.error('Error details:', error);
+            console.error('Error stack:', error.stack);
             const errorMsg = error.message || 'Login failed';
-            console.error('Login error:', errorMsg);
+            console.error('Setting error:', errorMsg);
             setError(errorMsg);
             setLoading(false);
             return { success: false, error: errorMsg };
@@ -89,8 +93,6 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const updateUser = useCallback((updatedData) => {
-        console.log('Updating user with:', updatedData)
-
         setUser(prevUser => {
             const newUser = { ...prevUser, ...updatedData }
             localStorage.setItem('user', JSON.stringify(newUser))
@@ -104,7 +106,6 @@ export const AuthProvider = ({ children }) => {
             const storedUser = localStorage.getItem('user')
             if (storedUser) {
                 const userData = JSON.parse(storedUser)
-                console.log('Refreshed user data:', userData)
                 setUser(userData)
             }
         } catch (error) {
