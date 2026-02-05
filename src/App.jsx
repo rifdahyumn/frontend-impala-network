@@ -10,13 +10,15 @@ import Program from './pages/Program';
 import FormBuilder from './pages/FormBuilder';
 import Account from './pages/Account';
 import Header from './components/Layout/Header';
-import LoginPage from './components/Login';
+import LoginPage from './pages/auth/LoginPage';
 import HeteroBanyumas from './pages/HeteroBanyumas';
 import HeteroSemarang from './pages/HeteroSemarang';
 import HeteroSurakarta from './pages/HeteroSurakarta';
 import PublicForm from './components/PublicForm';
 import UserAccountSettings from "./components/UserAccountSettings/UserAccountSettings";
 import ImpalaManagement from './pages/ImpalaManagement';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 
 const MainLayout = ({ children }) => {
     return (
@@ -180,6 +182,15 @@ function AppContent() {
                             <p>Halaman register untuk keperluan internal</p>
                         </div>
                     </ProtectedRoute>
+                } 
+            />
+
+             <Route 
+                path="/forgot-password" 
+                element={
+                    <PublicRoute>
+                        <ForgotPasswordPage />
+                    </PublicRoute>
                 } 
             />
             

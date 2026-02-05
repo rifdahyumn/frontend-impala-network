@@ -99,6 +99,7 @@ const AddMemberSemarang = ({
         }
     }, []);
 
+    // Efek untuk menghitung durasi
     useEffect(() => {
         if (formData.start_date && formData.end_date) {
             const duration = calculateDuration(formData.start_date, formData.end_date);
@@ -111,6 +112,7 @@ const AddMemberSemarang = ({
         }
     }, [formData.start_date, formData.end_date, calculateDuration]);
 
+    // Fungsi untuk load lokasi
     const loadProvinces = useCallback(async () => {
         setLoadingLocations(prev => ({ ...prev, provinces: true }));
         try {
@@ -118,26 +120,15 @@ const AddMemberSemarang = ({
             setProvinces(provincesData || []);
         } catch (error) {
             console.error('Error fetching provinces:', error);
-            toast.error('Gagal memuat data provinsi');
+            toast.error('Failed to load provinces data');
         } finally {
             setLoadingLocations(prev => ({ ...prev, provinces: false }));
         }
     }, []);
 
-    const loadRegencies = useCallback(async (provinceId, skipReset = false) => {
+    const loadRegencies = useCallback(async (provinceId) => {
         if (!provinceId) {
-            if (!skipReset) {
-                setRegencies([]);
-                setFormData(prev => ({
-                    ...prev,
-                    regency_id: '',
-                    regency_name: '',
-                    district_id: '',
-                    district_name: '',
-                    village_id: '',
-                    village_name: ''
-                }));
-            }
+            setRegencies([]);
             return;
         }
 
@@ -145,44 +136,18 @@ const AddMemberSemarang = ({
         try {
             const regenciesData = await locationService.getRegencies(provinceId);
             setRegencies(regenciesData || []);
-            
-            if (!skipReset) {
-                setFormData(prev => ({
-                    ...prev,
-                    regency_id: '',
-                    regency_name: '',
-                    district_id: '',
-                    district_name: '',
-                    village_id: '',
-                    village_name: ''
-                }));
-            }
-            
-            if (!skipReset) {
-                setDistricts([]);
-                setVillages([]);
-            }
         } catch (error) {
-            console.error(`Error fetching regencies:`, error);
-            toast.error('Error loading regency');
+            console.error('Error fetching regencies:', error);
+            toast.error('Failed to load regencies');
             setRegencies([]);
         } finally {
             setLoadingLocations(prev => ({ ...prev, regencies: false }));
         }
     }, []);
 
-    const loadDistricts = useCallback(async (regencyId, skipReset = false) => {
+    const loadDistricts = useCallback(async (regencyId) => {
         if (!regencyId) {
-            if (!skipReset) {
-                setDistricts([]);
-                setFormData(prev => ({
-                    ...prev,
-                    district_id: '',
-                    district_name: '',
-                    village_id: '',
-                    village_name: ''
-                }));
-            }
+            setDistricts([]);
             return;
         }
 
@@ -190,39 +155,18 @@ const AddMemberSemarang = ({
         try {
             const districtsData = await locationService.getDistricts(regencyId);
             setDistricts(districtsData || []);
-            
-            if (!skipReset) {
-                setFormData(prev => ({
-                    ...prev,
-                    district_id: '',
-                    district_name: '',
-                    village_id: '',
-                    village_name: ''
-                }));
-            }
-            
-            if (!skipReset) {
-                setVillages([]);
-            }
         } catch (error) {
-            console.error(`Error fetching districts:`, error);
-            toast.error('Gagal memuat data kecamatan');
+            console.error('Error fetching districts:', error);
+            toast.error('Failed to load districts');
             setDistricts([]);
         } finally {
             setLoadingLocations(prev => ({ ...prev, districts: false }));
         }
     }, []);
 
-    const loadVillages = useCallback(async (districtId, skipReset = false) => {
+    const loadVillages = useCallback(async (districtId) => {
         if (!districtId) {
-            if (!skipReset) {
-                setVillages([]);
-                setFormData(prev => ({
-                    ...prev,
-                    village_id: '',
-                    village_name: ''
-                }));
-            }
+            setVillages([]);
             return;
         }
 
@@ -230,29 +174,25 @@ const AddMemberSemarang = ({
         try {
             const villagesData = await locationService.getVillages(districtId);
             setVillages(villagesData || []);
-            
-            if (!skipReset) {
-                setFormData(prev => ({
-                    ...prev,
-                    village_id: '',
-                    village_name: ''
-                }));
-            }
         } catch (error) {
-            console.error(`Error fetching villages:`, error);
-            toast.error('Gagal memuat data desa/kelurahan');
+            console.error('Error fetching villages:', error);
+            toast.error('Failed to load villages');
             setVillages([]);
         } finally {
             setLoadingLocations(prev => ({ ...prev, villages: false }));
         }
     }, []);
 
+    // MODIFIKASI 1: Fungsi untuk menginisialisasi data edit dengan loading lokasi yang benar
     const initializeEditData = useCallback(async () => {
         if (!isEditMode || !editData) return;
 
+        console.log('Initializing edit data:', editData);
+        
         setIsInitializing(true);
         
         try {
+            // Map data dari editData ke formData
             const initialFormData = {
                 full_name: editData.full_name || '',
                 nik: editData.nik || '',
@@ -283,153 +223,189 @@ const AddMemberSemarang = ({
             };
 
             setFormData(initialFormData);
-
+            
+            // Load regencies, districts, dan villages berdasarkan data edit
             if (editData.province_id) {
-                await loadRegencies(editData.province_id, true);
-                
-                if (editData.regency_id) {
-                    await loadDistricts(editData.regency_id, true);
-                    
-                    if (editData.district_id) {
-                        await loadVillages(editData.district_id, true);
-                    }
-                }
+                await loadRegencies(editData.province_id);
             }
+            
+            if (editData.regency_id) {
+                await loadDistricts(editData.regency_id);
+            }
+            
+            if (editData.district_id) {
+                await loadVillages(editData.district_id);
+            }
+            
+            // Reset errors
+            setErrors({});
+            
+            console.log('Edit data initialized successfully');
         } catch (error) {
             console.error('Error initializing edit data:', error);
-            toast.error('Gagal memuat data lokasi untuk edit');
+            toast.error('Failed to load member data for editing');
         } finally {
             setIsInitializing(false);
         }
-    }, [isEditMode, editData, loadRegencies, loadDistricts, loadVillages, calculateDuration]);
+    }, [isEditMode, editData, calculateDuration, loadRegencies, loadDistricts, loadVillages]);
 
-    useEffect(() => {
-        loadProvinces();
-    }, [loadProvinces]);
+    // MODIFIKASI 2: Reset form untuk mode add
+    const resetFormForAddMode = useCallback(() => {
+        console.log('Resetting form for add mode');
+        setFormData({
+            full_name: '',
+            nik: '',
+            email: '',
+            phone: '',
+            gender: '',
+            date_of_birth: '',
+            education: '',
+            address: '',
+            province_id: '',
+            province_name: '',
+            regency_id: '',
+            regency_name: '',
+            district_id: '',
+            district_name: '',
+            village_id: '',
+            village_name: '',
+            postal_code: '',
+            company: '',
+            space: '',
+            start_date: '',
+            end_date: '',
+            duration: '',
+            add_on: [],
+            add_information: '',
+            status: 'Active'
+        });
+        setSelectedAddOn('');
+        setNewAddOn('');
+        setErrors({});
+        setRegencies([]);
+        setDistricts([]);
+        setVillages([]);
+    }, []);
 
+    // MODIFIKASI 3: Handle modal open/close dengan cara seperti AddClient
     useEffect(() => {
         if (isAddMemberModalOpen) {
             if (isEditMode) {
                 initializeEditData();
             } else {
-                setFormData({
-                    full_name: '',
-                    nik: '',
-                    email: '',
-                    phone: '',
-                    gender: '',
-                    date_of_birth: '',
-                    education: '',
-                    address: '',
-                    province_id: '',
-                    province_name: '',
+                resetFormForAddMode();
+            }
+        }
+    }, [isAddMemberModalOpen, isEditMode, initializeEditData, resetFormForAddMode]);
+
+    // Load provinces saat pertama kali modal dibuka
+    useEffect(() => {
+        if (isAddMemberModalOpen) {
+            loadProvinces();
+        }
+    }, [isAddMemberModalOpen, loadProvinces]);
+
+    // MODIFIKASI 4: Handle perubahan province (baik untuk add maupun edit mode)
+    useEffect(() => {
+        if (formData.province_id) {
+            loadRegencies(formData.province_id);
+            
+            // Reset dependent fields jika province berubah
+            if (!isEditMode || (isEditMode && editData?.province_id !== formData.province_id)) {
+                setFormData(prev => ({
+                    ...prev,
                     regency_id: '',
                     regency_name: '',
                     district_id: '',
                     district_name: '',
                     village_id: '',
-                    village_name: '',
-                    postal_code: '',
-                    company: '',
-                    space: '',
-                    start_date: '',
-                    end_date: '',
-                    duration: '',
-                    add_on: [],
-                    add_information: '',
-                    status: 'Active'
-                });
-                setSelectedAddOn('');
-                setNewAddOn('');
-                setRegencies([]);
+                    village_name: ''
+                }));
                 setDistricts([]);
                 setVillages([]);
-                setErrors({});
             }
+        } else {
+            setRegencies([]);
         }
-    }, [isAddMemberModalOpen, isEditMode, initializeEditData]);
+    }, [formData.province_id, isEditMode, editData, loadRegencies]);
 
+    // MODIFIKASI 5: Handle perubahan regency
     useEffect(() => {
-        if (formData.province_id && !isEditMode) {
-            loadRegencies(formData.province_id, false);
+        if (formData.regency_id) {
+            loadDistricts(formData.regency_id);
+            
+            // Reset dependent fields jika regency berubah
+            if (!isEditMode || (isEditMode && editData?.regency_id !== formData.regency_id)) {
+                setFormData(prev => ({
+                    ...prev,
+                    district_id: '',
+                    district_name: '',
+                    village_id: '',
+                    village_name: ''
+                }));
+                setVillages([]);
+            }
+        } else {
+            setDistricts([]);
         }
-    }, [formData.province_id, isEditMode, loadRegencies]);
+    }, [formData.regency_id, isEditMode, editData, loadDistricts]);
 
+    // MODIFIKASI 6: Handle perubahan district
     useEffect(() => {
-        if (formData.regency_id && !isEditMode) {
-            loadDistricts(formData.regency_id, false);
+        if (formData.district_id) {
+            loadVillages(formData.district_id);
+            
+            // Reset dependent fields jika district berubah
+            if (!isEditMode || (isEditMode && editData?.district_id !== formData.district_id)) {
+                setFormData(prev => ({
+                    ...prev,
+                    village_id: '',
+                    village_name: ''
+                }));
+            }
+        } else {
+            setVillages([]);
         }
-    }, [formData.regency_id, isEditMode, loadDistricts]);
-    
-    useEffect(() => {
-        if (formData.district_id && !isEditMode) {
-            loadVillages(formData.district_id, false);
-        }
-    }, [formData.district_id, isEditMode, loadVillages]);
+    }, [formData.district_id, isEditMode, editData, loadVillages]);
 
+    // MODIFIKASI 7: Handle input change dengan penanganan yang benar
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         
-        if (isEditMode && ['province_id', 'regency_id', 'district_id'].includes(name)) {
-            if (name === 'province_id') {
-                setRegencies([]);
-                setDistricts([]);
-                setVillages([]);
-                const selectedProvince = provinces.find(p => p.value === value);
-                setFormData(prev => ({
-                    ...prev,
-                    [name]: value,
-                    province_name: selectedProvince?.label || '',
-                    regency_id: '',
-                    regency_name: '',
-                    district_id: '',
-                    district_name: '',
-                    village_id: '',
-                    village_name: ''
-                }));
-                
-                if (value) {
-                    loadRegencies(value, false);
-                }
-            } else if (name === 'regency_id') {
-                setDistricts([]);
-                setVillages([]);
-                const selectedRegency = regencies.find(r => r.value === value);
-                setFormData(prev => ({
-                    ...prev,
-                    [name]: value,
-                    regency_name: selectedRegency?.label || '',
-                    district_id: '',
-                    district_name: '',
-                    village_id: '',
-                    village_name: ''
-                }));
-                
-                if (value) {
-                    loadDistricts(value, false);
-                }
-            } else if (name === 'district_id') {
-                setVillages([]);
-                const selectedDistrict = districts.find(d => d.value === value);
-                setFormData(prev => ({
-                    ...prev,
-                    [name]: value,
-                    district_name: selectedDistrict?.label || '',
-                    village_id: '',
-                    village_name: ''
-                }));
-                
-                if (value) {
-                    loadVillages(value, false);
-                }
-            }
-        } else {
+        // Update form data
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+
+        // Untuk location fields, update nama juga
+        if (name === 'province_id') {
+            const selectedProvince = provinces.find(p => p.value === value);
             setFormData(prev => ({
                 ...prev,
-                [name]: value
+                province_name: selectedProvince?.label || ''
+            }));
+        } else if (name === 'regency_id') {
+            const selectedRegency = regencies.find(r => r.value === value);
+            setFormData(prev => ({
+                ...prev,
+                regency_name: selectedRegency?.label || ''
+            }));
+        } else if (name === 'district_id') {
+            const selectedDistrict = districts.find(d => d.value === value);
+            setFormData(prev => ({
+                ...prev,
+                district_name: selectedDistrict?.label || ''
+            }));
+        } else if (name === 'village_id') {
+            const selectedVillage = villages.find(v => v.value === value);
+            setFormData(prev => ({
+                ...prev,
+                village_name: selectedVillage?.label || ''
             }));
         }
 
+        // Clear error jika ada
         if (errors[name]) {
             setErrors(prev => ({
                 ...prev,
@@ -480,6 +456,7 @@ const AddMemberSemarang = ({
         }));
     };
 
+    // MODIFIKASI 8: Update formSections untuk menghapus disabled condition
     const formSections = [
         {
             title: "Personal Information",
@@ -572,8 +549,8 @@ const AddMemberSemarang = ({
                     required: true,
                     placeholder: loadingLocations.regencies ? 'Loading regencies...' : 'Select City/Regency',
                     options: regencies,
-                    loading: loadingLocations.regencies,
-                    disabled: !formData.province_id && !isEditMode
+                    loading: loadingLocations.regencies
+                    // Hapus disabled condition
                 },
                 {
                     name: 'district_id',
@@ -582,8 +559,8 @@ const AddMemberSemarang = ({
                     required: true,
                     placeholder: loadingLocations.districts ? 'Loading district...' : 'Select District',
                     options: districts,
-                    loading: loadingLocations.districts,
-                    disabled: !formData.regency_id && !isEditMode
+                    loading: loadingLocations.districts
+                    // Hapus disabled condition
                 },
                 {
                     name: 'village_id',
@@ -592,8 +569,8 @@ const AddMemberSemarang = ({
                     required: true,
                     placeholder: loadingLocations.villages ? 'Loading villages...' : 'Select Village',
                     options: villages,
-                    loading: loadingLocations.villages,
-                    disabled: !formData.district_id && !isEditMode
+                    loading: loadingLocations.villages
+                    // Hapus disabled condition
                 },
                 {
                     name: 'postal_code',
@@ -650,14 +627,6 @@ const AddMemberSemarang = ({
                     required: true,
                     placeholder: 'Select end date'
                 },
-                // {
-                //     name: 'duration',
-                //     label: 'Duration',
-                //     type: 'text',
-                //     required: false,
-                //     placeholder: 'Auto-calculated',
-                //     disabled: true
-                // },
                 {
                     customComponent: true,
                     render: () => (
@@ -767,6 +736,7 @@ const AddMemberSemarang = ({
         return Object.keys(newErrors).length === 0;
     };
 
+    // MODIFIKASI 9: Handle submit dengan logika seperti AddClient
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -806,19 +776,28 @@ const AddMemberSemarang = ({
                 status: formData.status || 'Active'
             };
 
+            // MODIFIKASI: Logika seperti AddClient
             if (isEditMode) {
+                // Jika ada prop onEditMember, gunakan itu
                 if (onEditMember) {
+                    console.log('Calling onEditMember callback with:', editData.id, memberData);
                     await onEditMember(editData.id, memberData);
                     toast.success('Member updated successfully');
                 } else {
+                    // Fallback ke service langsung
+                    console.log('Calling service directly for update:', editData.id, memberData);
                     await heteroSemarangService.updateMemberHeteroSemarang(editData.id, memberData);
                     toast.success('Member updated successfully');
                 }
             } else {
+                // Mode add
                 if (onAddMember) {
+                    console.log('Calling onAddMember callback with:', memberData);
                     await onAddMember(memberData);
                     toast.success('Member added successfully');
                 } else {
+                    // Fallback ke service langsung
+                    console.log('Calling service directly for add:', memberData);
                     await heteroSemarangService.addMemberHeteroSemarang(memberData);
                     toast.success('Member added successfully');
                 }
@@ -836,14 +815,10 @@ const AddMemberSemarang = ({
         }
     };
 
+    // MODIFIKASI 10: Handle close modal dengan cara seperti AddClient
     const handleCloseModal = () => {
         setIsAddMemberModalOpen(false);
-        setErrors({});
-        setSelectedAddOn('');
-        setNewAddOn('');
-        setRegencies([]);
-        setDistricts([]);
-        setVillages([]);
+        // Tidak perlu reset state di sini karena akan dihandle oleh useEffect
     };
 
     const renderField = (field, index) => {
@@ -866,7 +841,7 @@ const AddMemberSemarang = ({
                         value={formData[field.name] || ''}
                         onValueChange={(value) => handleSelectChange(field.name, value)}
                         required={field.required}
-                        disabled={field.disabled || field.loading || isInitializing}
+                        disabled={field.loading || isInitializing}
                     >
                         <SelectTrigger>
                             {field.loading ? (
@@ -880,14 +855,20 @@ const AddMemberSemarang = ({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
-                                {field.options.map((option) => (
-                                    <SelectItem 
-                                        key={`${field.name}-${option.value}`}
-                                        value={option.value}
-                                    >
-                                        {option.label}
+                                {field.options && field.options.length > 0 ? (
+                                    field.options.map((option) => (
+                                        <SelectItem 
+                                            key={`${field.name}-${option.value}`}
+                                            value={option.value}
+                                        >
+                                            {option.label}
+                                        </SelectItem>
+                                    ))
+                                ) : (
+                                    <SelectItem value="" disabled>
+                                        No options available
                                     </SelectItem>
-                                ))}
+                                )}
                             </SelectGroup>
                         </SelectContent>
                     </Select>
@@ -937,8 +918,7 @@ const AddMemberSemarang = ({
                     placeholder={field.placeholder}
                     required={field.required}
                     className="w-full"
-                    disabled={isInitializing || field.disabled}
-                    readOnly={field.disabled}
+                    disabled={isInitializing}
                 />
                 {errors[field.name] && (
                     <p className="text-sm text-red-600">{errors[field.name]}</p>
@@ -952,7 +932,9 @@ const AddMemberSemarang = ({
             <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
                 <DialogContent className="max-h-[90vh] max-w-[900px] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Loading Member Data...</DialogTitle>
+                        <DialogTitle>
+                            {isEditMode ? 'Loading Member Data...' : 'Preparing Form...'}
+                        </DialogTitle>
                     </DialogHeader>
                     <div className="flex justify-center items-center py-8">
                         <Loader2 className="h-8 w-8 animate-spin" />
@@ -966,17 +948,14 @@ const AddMemberSemarang = ({
         <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
             <DialogContent className="max-h-[90vh] max-w-[900px] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        {isEditMode ? (
-                            <>Edit Member: {formData.full_name || ''}</>
-                        ) : (
-                        <>Add New Member</>
-                        )}
+                    {/* MODIFIKASI 11: UI Title seperti AddClient */}
+                    <DialogTitle>
+                        {isEditMode ? 'Edit Member' : 'Add New Member'}
                     </DialogTitle>
                     <DialogDescription>
                         {isEditMode
-                            ? `Update information this member`
-                            : 'Fill in the details below to add a new member'
+                            ? 'Update the member information below'
+                            : 'Fill in the details below to add a new member to the system'
                         }
                     </DialogDescription>
                 </DialogHeader>
@@ -1000,6 +979,7 @@ const AddMemberSemarang = ({
                         </div>
                     ))}
 
+                    {/* MODIFIKASI 12: Button dengan styling seperti AddClient */}
                     <div className="flex justify-end gap-3 pt-4 border-t">
                         <Button
                             type="button"
@@ -1015,10 +995,7 @@ const AddMemberSemarang = ({
                             className={isEditMode ? "bg-amber-500 hover:bg-amber-600" : ""}
                         >
                             {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                            {loading 
-                                ? (isEditMode ? 'Updating Member...' : 'Adding Member...')
-                                : (isEditMode ? 'Update Member' : 'Add Member')
-                            }
+                            {isEditMode ? 'Update Member' : 'Add Member'}
                         </Button>
                     </div>
                 </form>

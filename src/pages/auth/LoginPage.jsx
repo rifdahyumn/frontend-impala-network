@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
-import "../App.css";
+import "../../App.css";  // ← PERBAIKI INI
 import { FaUser, FaLock } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
-import logo from "../assets/impalalogo.png";
-import logo2 from "../assets/heterologo.png";
-import { validateEmail } from "../utils/validation";
+import { useAuth } from "../../hooks/useAuth";  // ← PERBAIKI INI
+import logo from "../../assets/impalalogo.png";  // ← PERBAIKI INI
+import logo2 from "../../assets/heterologo.png";  // ← PERBAIKI INI
+import { validateEmail } from "../../utils/validation";  // ← PERBAIKI INI
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -181,7 +181,9 @@ export default function LoginPage() {
                         <div className="forgot mt-4">
                             <button
                                 type="button"
-                                className="text-blue-500 hover:text-blue-700 text-sm bg-transparent border-none p-0 cursor-pointer"
+                                className={`text-blue-500 hover:text-blue-700 text-sm bg-transparent border-none p-0 cursor-pointer ${
+                                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
                                 onClick={() => navigate('/forgot-password')}
                                 disabled={isLoading}
                             >

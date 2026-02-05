@@ -432,7 +432,7 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                         ? (clientExists ? 'Updating...' : 'Saving...')
                         : (clientExists 
                             ? (isEditMode 
-                                ? (updateAllFields ? 'Update All' : 'Update Program Only')
+                                ? (updateAllFields ? 'Update Client' : 'Update Program Only')
                                 : 'Update Client')
                             : (isEditMode ? 'Update Client' : 'Add Client')
                         )
