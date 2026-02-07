@@ -99,7 +99,6 @@ const AddMemberSemarang = ({
         }
     }, []);
 
-    // Efek untuk menghitung durasi
     useEffect(() => {
         if (formData.start_date && formData.end_date) {
             const duration = calculateDuration(formData.start_date, formData.end_date);
@@ -112,7 +111,6 @@ const AddMemberSemarang = ({
         }
     }, [formData.start_date, formData.end_date, calculateDuration]);
 
-    // Fungsi untuk load lokasi
     const loadProvinces = useCallback(async () => {
         setLoadingLocations(prev => ({ ...prev, provinces: true }));
         try {
@@ -183,16 +181,12 @@ const AddMemberSemarang = ({
         }
     }, []);
 
-    // MODIFIKASI 1: Fungsi untuk menginisialisasi data edit dengan loading lokasi yang benar
     const initializeEditData = useCallback(async () => {
         if (!isEditMode || !editData) return;
-
-        console.log('Initializing edit data:', editData);
         
         setIsInitializing(true);
         
         try {
-            // Map data dari editData ke formData
             const initialFormData = {
                 full_name: editData.full_name || '',
                 nik: editData.nik || '',
@@ -224,7 +218,6 @@ const AddMemberSemarang = ({
 
             setFormData(initialFormData);
             
-            // Load regencies, districts, dan villages berdasarkan data edit
             if (editData.province_id) {
                 await loadRegencies(editData.province_id);
             }
@@ -237,10 +230,8 @@ const AddMemberSemarang = ({
                 await loadVillages(editData.district_id);
             }
             
-            // Reset errors
             setErrors({});
             
-            console.log('Edit data initialized successfully');
         } catch (error) {
             console.error('Error initializing edit data:', error);
             toast.error('Failed to load member data for editing');
@@ -249,9 +240,7 @@ const AddMemberSemarang = ({
         }
     }, [isEditMode, editData, calculateDuration, loadRegencies, loadDistricts, loadVillages]);
 
-    // MODIFIKASI 2: Reset form untuk mode add
     const resetFormForAddMode = useCallback(() => {
-        console.log('Resetting form for add mode');
         setFormData({
             full_name: '',
             nik: '',
@@ -287,7 +276,6 @@ const AddMemberSemarang = ({
         setVillages([]);
     }, []);
 
-    // MODIFIKASI 3: Handle modal open/close dengan cara seperti AddClient
     useEffect(() => {
         if (isAddMemberModalOpen) {
             if (isEditMode) {
@@ -298,19 +286,16 @@ const AddMemberSemarang = ({
         }
     }, [isAddMemberModalOpen, isEditMode, initializeEditData, resetFormForAddMode]);
 
-    // Load provinces saat pertama kali modal dibuka
     useEffect(() => {
         if (isAddMemberModalOpen) {
             loadProvinces();
         }
     }, [isAddMemberModalOpen, loadProvinces]);
 
-    // MODIFIKASI 4: Handle perubahan province (baik untuk add maupun edit mode)
     useEffect(() => {
         if (formData.province_id) {
             loadRegencies(formData.province_id);
             
-            // Reset dependent fields jika province berubah
             if (!isEditMode || (isEditMode && editData?.province_id !== formData.province_id)) {
                 setFormData(prev => ({
                     ...prev,
@@ -329,12 +314,10 @@ const AddMemberSemarang = ({
         }
     }, [formData.province_id, isEditMode, editData, loadRegencies]);
 
-    // MODIFIKASI 5: Handle perubahan regency
     useEffect(() => {
         if (formData.regency_id) {
             loadDistricts(formData.regency_id);
             
-            // Reset dependent fields jika regency berubah
             if (!isEditMode || (isEditMode && editData?.regency_id !== formData.regency_id)) {
                 setFormData(prev => ({
                     ...prev,
@@ -350,12 +333,10 @@ const AddMemberSemarang = ({
         }
     }, [formData.regency_id, isEditMode, editData, loadDistricts]);
 
-    // MODIFIKASI 6: Handle perubahan district
     useEffect(() => {
         if (formData.district_id) {
             loadVillages(formData.district_id);
             
-            // Reset dependent fields jika district berubah
             if (!isEditMode || (isEditMode && editData?.district_id !== formData.district_id)) {
                 setFormData(prev => ({
                     ...prev,
@@ -368,17 +349,14 @@ const AddMemberSemarang = ({
         }
     }, [formData.district_id, isEditMode, editData, loadVillages]);
 
-    // MODIFIKASI 7: Handle input change dengan penanganan yang benar
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         
-        // Update form data
         setFormData(prev => ({
             ...prev,
             [name]: value
         }));
 
-        // Untuk location fields, update nama juga
         if (name === 'province_id') {
             const selectedProvince = provinces.find(p => p.value === value);
             setFormData(prev => ({
@@ -405,7 +383,6 @@ const AddMemberSemarang = ({
             }));
         }
 
-        // Clear error jika ada
         if (errors[name]) {
             setErrors(prev => ({
                 ...prev,
@@ -456,7 +433,6 @@ const AddMemberSemarang = ({
         }));
     };
 
-    // MODIFIKASI 8: Update formSections untuk menghapus disabled condition
     const formSections = [
         {
             title: "Personal Information",
@@ -550,7 +526,6 @@ const AddMemberSemarang = ({
                     placeholder: loadingLocations.regencies ? 'Loading regencies...' : 'Select City/Regency',
                     options: regencies,
                     loading: loadingLocations.regencies
-                    // Hapus disabled condition
                 },
                 {
                     name: 'district_id',
@@ -560,7 +535,6 @@ const AddMemberSemarang = ({
                     placeholder: loadingLocations.districts ? 'Loading district...' : 'Select District',
                     options: districts,
                     loading: loadingLocations.districts
-                    // Hapus disabled condition
                 },
                 {
                     name: 'village_id',
@@ -570,7 +544,6 @@ const AddMemberSemarang = ({
                     placeholder: loadingLocations.villages ? 'Loading villages...' : 'Select Village',
                     options: villages,
                     loading: loadingLocations.villages
-                    // Hapus disabled condition
                 },
                 {
                     name: 'postal_code',
@@ -736,7 +709,6 @@ const AddMemberSemarang = ({
         return Object.keys(newErrors).length === 0;
     };
 
-    // MODIFIKASI 9: Handle submit dengan logika seperti AddClient
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -776,28 +748,19 @@ const AddMemberSemarang = ({
                 status: formData.status || 'Active'
             };
 
-            // MODIFIKASI: Logika seperti AddClient
             if (isEditMode) {
-                // Jika ada prop onEditMember, gunakan itu
                 if (onEditMember) {
-                    console.log('Calling onEditMember callback with:', editData.id, memberData);
                     await onEditMember(editData.id, memberData);
                     toast.success('Member updated successfully');
                 } else {
-                    // Fallback ke service langsung
-                    console.log('Calling service directly for update:', editData.id, memberData);
                     await heteroSemarangService.updateMemberHeteroSemarang(editData.id, memberData);
                     toast.success('Member updated successfully');
                 }
             } else {
-                // Mode add
                 if (onAddMember) {
-                    console.log('Calling onAddMember callback with:', memberData);
                     await onAddMember(memberData);
                     toast.success('Member added successfully');
                 } else {
-                    // Fallback ke service langsung
-                    console.log('Calling service directly for add:', memberData);
                     await heteroSemarangService.addMemberHeteroSemarang(memberData);
                     toast.success('Member added successfully');
                 }
@@ -815,10 +778,8 @@ const AddMemberSemarang = ({
         }
     };
 
-    // MODIFIKASI 10: Handle close modal dengan cara seperti AddClient
     const handleCloseModal = () => {
         setIsAddMemberModalOpen(false);
-        // Tidak perlu reset state di sini karena akan dihandle oleh useEffect
     };
 
     const renderField = (field, index) => {

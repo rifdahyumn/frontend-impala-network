@@ -512,7 +512,6 @@ const HeteroBanyumas = () => {
                                     
                                     if (hasDecimal) {
                                         const [intPart, decPart] = coefficientStr.split('.');
-                                        // const totalDigits = intPart.length + decPart.length;
                                         
                                         if (exponent >= decPart.length) {
                                             const zerosToAdd = exponent - decPart.length;

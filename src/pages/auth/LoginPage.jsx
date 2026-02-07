@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
-import "../../App.css";  // ← PERBAIKI INI
+import "../../App.css";  
 import { FaUser, FaLock } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";  // ← PERBAIKI INI
-import logo from "../../assets/impalalogo.png";  // ← PERBAIKI INI
-import logo2 from "../../assets/heterologo.png";  // ← PERBAIKI INI
-import { validateEmail } from "../../utils/validation";  // ← PERBAIKI INI
+import { useAuth } from "../../hooks/useAuth";
+import logo from "../../assets/impalalogo.png";
+import logo2 from "../../assets/heterologo.png";  
+import { validateEmail } from "../../utils/validation";  
 
 export default function LoginPage() {
     const navigate = useNavigate();

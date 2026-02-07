@@ -1,8 +1,7 @@
-// File: src/pages/auth/ResetPasswordPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaLock, FaCheck, FaArrowLeft } from 'react-icons/fa';
-import { resetPasswordService } from '../../services/authServices'; // Import yang benar
+import { resetPasswordService } from '../../services/authServices';
 import '../../App.css';
 import logo from '../../assets/impalalogo.png';
 import logo2 from '../../assets/heterologo.png';
@@ -39,7 +38,6 @@ export default function ResetPasswordPage() {
     if (error) setError('');
   };
 
-  // PERBAIKAN: Tambahkan ASYNC di sini
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -67,11 +65,9 @@ export default function ResetPasswordPage() {
     setError('');
 
     try {
-      // Gunakan service yang sudah ada
       await resetPasswordService(token, formData.password);
       setSuccess(true);
       
-      // Auto redirect ke login setelah 3 detik
       setTimeout(() => {
         navigate('/login');
       }, 3000);

@@ -35,19 +35,18 @@ export default function ForgotPasswordPage() {
         setError('');
 
         try {
-    // Ganti fetch dengan service yang sudah dibuat
-    const result = await forgotPasswordService(email);
-    
-    if (result.success) {
-      setSuccess(true);
-    }
-  } catch (err) {
-    console.error('Forgot password error:', err);
-    setError(err.message || 'Gagal terhubung ke server');
-  } finally {
-    setLoading(false);
-  }
-};
+            const result = await forgotPasswordService(email);
+            
+            if (result.success) {
+                setSuccess(true);
+            }
+        } catch (err) {
+            console.error('Forgot password error:', err);
+            setError(err.message || 'Gagal terhubung ke server');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="login-page">
