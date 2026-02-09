@@ -1,4 +1,3 @@
-// src/components/Content/ImpalaContent/EditMemberForm.jsx
 import React, { useState, useEffect } from 'react';
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
@@ -23,14 +22,12 @@ const EditMemberForm = ({
         defaultValues: {}
     });
 
-    // Initialize form with memberData when in edit mode
     useEffect(() => {
         if (isEditMode && memberData) {
             reset(memberData);
         }
     }, [isEditMode, memberData, reset]);
 
-    // Options untuk select fields
     const disabilityOptions = [
         'Tidak memiliki disabilitas',
         'Disabilitas Fisik/Motorik',
@@ -58,14 +55,12 @@ const EditMemberForm = ({
 
     const genderOptions = ['Laki-laki', 'Perempuan'];
 
-    // Watch disability_status for conditional field
     const disabilityStatus = watch('disability_status');
 
     const onSubmit = async (formData) => {
         try {
             setIsSubmitting(true);
 
-            // Basic validation
             if (!formData.full_name?.trim()) {
                 toast.error('Nama lengkap harus diisi');
                 setIsSubmitting(false);
@@ -78,7 +73,6 @@ const EditMemberForm = ({
                 return;
             }
 
-            // Email format validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(formData.email.trim())) {
                 toast.error('Format email tidak valid');
@@ -87,7 +81,6 @@ const EditMemberForm = ({
             }
 
             if (isEditMode && onMemberUpdated) {
-                // PASTIKAN ID TERSEDIA - FIX CRITICAL!
                 const memberId = memberData?.id || memberData?._id || memberData?.memberId;
                 
                 if (!memberId) {
@@ -96,15 +89,13 @@ const EditMemberForm = ({
                     return;
                 }
 
-                // Prepare data for update
                 const updatedData = {
                     ...formData,
-                    id: memberId, // ← GUNAKAN ID YANG DITEMUKAN
+                    id: memberId, 
                     updated_at: new Date().toISOString()
                 };
                 
                 await onMemberUpdated(updatedData);
-                // HAPUS toast.success di sini karena parent yang handle
                 setIsModalOpen(false);
             } else {
                 toast.error('Update function not available');
@@ -116,12 +107,10 @@ const EditMemberForm = ({
         }
     };
 
-    // ... (renderFieldInput function tetap sama)
     const renderFieldInput = (fieldKey, fieldConfig) => {
         const fieldType = fieldConfig.type || 'text';
         const error = errors[fieldKey];
         
-        // Determine options for select
         let options = [];
         if (fieldKey === 'disability_status') options = disabilityOptions;
         else if (fieldKey === 'education') options = educationOptions;
@@ -255,7 +244,6 @@ const EditMemberForm = ({
         }
     };
 
-    // Find active category
     const activeCategoryData = detailFields.find(cat => cat.category === activeCategory);
 
     return (

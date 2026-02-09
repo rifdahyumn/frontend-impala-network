@@ -1137,7 +1137,7 @@ const HeteroSemarang = () => {
                 period: "Last Month",
                 icon: Users,
                 color: "blue",
-                description: `${growthPercentage}% Growth`,  // Sekarang hanya ada satu %
+                description: `${growthPercentage}% Growth`,  
                 loading: false
             },
             {

@@ -185,7 +185,27 @@ function AppContent() {
                 } 
             />
 
-             <Route 
+            {/* 🔑 AUTH ROUTES */}
+            <Route 
+                path="/login" 
+                element={
+                    <PublicRoute>
+                        <LoginPage />
+                    </PublicRoute>
+                } 
+            />
+
+            {/* ✅ RESET PASSWORD ROUTE - TAMBAHKAN INI! */}
+            <Route 
+                path="/reset-password" 
+                element={
+                    <PublicRoute>
+                        <ResetPasswordPage />
+                    </PublicRoute>
+                } 
+            />
+
+            <Route 
                 path="/forgot-password" 
                 element={
                     <PublicRoute>
@@ -193,7 +213,7 @@ function AppContent() {
                     </PublicRoute>
                 } 
             />
-            
+
             <Route 
                 path="/account-settings" 
                 element={
@@ -203,15 +223,7 @@ function AppContent() {
                 }
             />
             
-            <Route 
-                path="/login" 
-                element={
-                    <PublicRoute>
-                        <LoginPage />
-                    </PublicRoute>
-                } 
-            />
-            
+            {/* 📊 DASHBOARD ROUTES */}
             <Route 
                 path="/" 
                 element={
@@ -293,6 +305,7 @@ function AppContent() {
                 } 
             />
             
+            {/* 🚫 404 ROUTE */}
             <Route path="*" element={
                 <div className="min-h-screen flex items-center justify-center bg-gray-50">
                     <div className="text-center">

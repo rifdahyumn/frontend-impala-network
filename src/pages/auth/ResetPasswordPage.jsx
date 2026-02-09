@@ -1,8 +1,7 @@
-// File: src/pages/auth/ResetPasswordPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaLock, FaCheck, FaArrowLeft } from 'react-icons/fa';
-import { resetPasswordService } from '../../services/authServices'; // Import yang benar
+import { resetPasswordService } from '../../services/authServices';
 import '../../App.css';
 import logo from '../../assets/impalalogo.png';
 import logo2 from '../../assets/heterologo.png';
@@ -14,7 +13,9 @@ const validatePassword = (password) => {
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  
   const token = searchParams.get('token') || '';
+  const email = searchParams.get('email') || ''; 
   
   const [formData, setFormData] = useState({
     password: '',
@@ -25,10 +26,10 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    if (!token) {
-      setError('Token reset password tidak valid atau sudah kadaluarsa.');
+    if (!token || !email) {
+      setError('Link reset password tidak valid atau sudah kadaluarsa.');
     }
-  }, [token]);
+  }, [token, email]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,12 +40,11 @@ export default function ResetPasswordPage() {
     if (error) setError('');
   };
 
-  // PERBAIKAN: Tambahkan ASYNC di sini
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!token) {
-      setError('Token tidak valid');
+    if (!token || !email) {
+      setError('Link reset password tidak valid.');
       return;
     }
     
@@ -67,13 +67,22 @@ export default function ResetPasswordPage() {
     setError('');
 
     try {
-      // Gunakan service yang sudah ada
-      await resetPasswordService(token, formData.password);
+      await resetPasswordService(
+        token,                    
+        email,                    
+        formData.password,        
+        formData.confirmPassword  
+      );
+      
       setSuccess(true);
       
-      // Auto redirect ke login setelah 3 detik
       setTimeout(() => {
-        navigate('/login');
+        navigate('/login', { 
+          state: { 
+            message: 'Password berhasil direset! Silakan login dengan password baru.',
+            messageType: 'success'
+          }
+        });
       }, 3000);
     } catch (err) {
       setError(err.message || 'Gagal reset password. Token mungkin sudah kadaluarsa.');
@@ -101,7 +110,14 @@ export default function ResetPasswordPage() {
           </button>
 
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Reset Password</h2>
-          <p className="text-gray-600 text-sm mb-6">
+          
+          {email && (
+            <p className="text-gray-600 text-sm mb-2">
+              Untuk email: <span className="font-medium">{email}</span>
+            </p>
+          )}
+          
+          <p className="text-gray-600 text-xs mb-6">
             Masukkan password baru Anda.
           </p>
           
@@ -122,7 +138,7 @@ export default function ResetPasswordPage() {
                 <input
                   type="password"
                   name="password"
-                  placeholder="Password baru"
+                  placeholder="Password baru (minimal 6 karakter)"
                   value={formData.password}
                   onChange={handleChange}
                   disabled={loading}
@@ -154,7 +170,7 @@ export default function ResetPasswordPage() {
               <button 
                 type="submit" 
                 className="login-btn mt-2"
-                disabled={loading || !token}
+                disabled={loading || !token || !email}
               >
                 {loading ? (
                   <div className="flex items-center justify-center">

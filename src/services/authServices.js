@@ -406,13 +406,15 @@ export const forgotPasswordService = async (email) => {
   }
 };
 
-export const resetPasswordService = async (token, password) => {
+export const resetPasswordService = async (token, email, newPassword, confirmPassword) => {
   try {
     const response = await axios.post(
       `${API_BASE_URL}/auth/reset-password`,
       { 
-        token: token.trim(),
-        password: password
+        token: token,              
+        email: email,                
+        newPassword: newPassword,  
+        confirmPassword: confirmPassword 
       },
       {
         headers: { 

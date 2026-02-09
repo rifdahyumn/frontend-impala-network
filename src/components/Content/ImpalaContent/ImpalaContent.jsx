@@ -1,11 +1,10 @@
-// src/components/Content/ImpalaContent/ImpalaContent.jsx
 import { Edit, Trash2, Clipboard } from "lucide-react";
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Button } from "../../ui/button";
 import { useDetailFields } from './ImpalaContentConfig';
 import EditMemberModal from './EditMemberModal';
-import toast from 'react-hot-toast'; // ← TAMBAHKAN INI
+import toast from 'react-hot-toast';
 
 const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated }) => {
     const [activeCategory, setActiveCategory] = useState('Personal Information');
@@ -30,7 +29,6 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
         try {
             if (onMemberUpdated) {
                 await onMemberUpdated(updatedMember);
-                // TIDAK PERLU toast di sini, parent yang handle
             } else {
                 toast.error('Update function not available');
             }
@@ -39,7 +37,6 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
         }
     };
 
-    // ... (ActiveCategoryContent component tetap sama)
     const ActiveCategoryContent = () => {
         const activeCategoryData = getActiveCategoryData();
 

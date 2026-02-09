@@ -89,7 +89,6 @@ export const clearProgramsData = () => {
     localStorage.removeItem('programsData');
 };
 
-// Default programs for fallback
 const defaultPrograms = [
     { id: 1, program_name: "Impala Management" },
 ];

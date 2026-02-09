@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaArrowLeft } from 'react-icons/fa';
-import { forgotPasswordService } from '../../services/authServices';
 import '../../App.css';
 import logo from '../../assets/impalalogo.png';
 import logo2 from '../../assets/heterologo.png';
@@ -35,19 +34,30 @@ export default function ForgotPasswordPage() {
         setError('');
 
         try {
-    // Ganti fetch dengan service yang sudah dibuat
-    const result = await forgotPasswordService(email);
-    
-    if (result.success) {
-      setSuccess(true);
-    }
-  } catch (err) {
-    console.error('Forgot password error:', err);
-    setError(err.message || 'Gagal terhubung ke server');
-  } finally {
-    setLoading(false);
-  }
-};
+            const response = await fetch(`/api/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    email: email.trim(),
+                    reset_url: `${window.location.origin}/reset-password`
+                })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                setSuccess(true);
+            } else {
+                setError(data.message || 'Terjadi kesalahan. Coba lagi.');
+            }
+        } catch (error) {
+            setError('Gagal terhubung ke server');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="login-page">
