@@ -5,6 +5,9 @@ import '../../App.css';
 import logo from '../../assets/impalalogo.png';
 import logo2 from '../../assets/heterologo.png';
 
+// Jika Anda punya service untuk forgot password, import di sini
+// import { forgotPasswordService } from '../../services/authService';
+
 const validateEmail = (email) => {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return re.test(email);
@@ -52,8 +55,21 @@ export default function ForgotPasswordPage() {
             } else {
                 setError(data.message || 'Terjadi kesalahan. Coba lagi.');
             }
-        } catch (error) {
+        } catch (err) {
+            console.error('Forgot password error:', err);
             setError('Gagal terhubung ke server');
+            
+            // Jika Anda ingin fallback ke service, uncomment bagian ini
+            // try {
+            //     const result = await forgotPasswordService(email);
+            //     if (result.success) {
+            //         setSuccess(true);
+            //         return;
+            //     }
+            // } catch (serviceError) {
+            //     console.error('Service error:', serviceError);
+            //     setError('Gagal mengirim permintaan reset password');
+            // }
         } finally {
             setLoading(false);
         }

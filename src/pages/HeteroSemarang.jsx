@@ -512,7 +512,6 @@ const HeteroSemarang = () => {
                                         
                                         if (hasDecimal) {
                                             const [intPart, decPart] = coefficientStr.split('.');
-                                            // const totalDigits = intPart.length + decPart.length;
                                             
                                             if (exponent >= decPart.length) {
                                                 const zerosToAdd = exponent - decPart.length;
@@ -1137,7 +1136,6 @@ const HeteroSemarang = () => {
                 period: "Last Month",
                 icon: Users,
                 color: "blue",
-                description: `${growthPercentage}% Growth`,  
                 loading: false
             },
             {

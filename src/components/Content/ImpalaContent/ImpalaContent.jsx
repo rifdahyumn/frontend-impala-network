@@ -33,7 +33,7 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
                 toast.error('Update function not available');
             }
         } catch (error) {
-            toast.error('Failed to update member');
+            toast.error('Failed to update member', error);
         }
     };
 

@@ -263,7 +263,7 @@ export const authApi = createAuthApi();
 export const loginService = async (credentials) => {
     try {
         const response = await axios.post(
-            `${API_BASE_URL}/auth/login`,
+            `http://localhost:3000/api/auth/login`,
             {
                 email: credentials.email.trim().toLowerCase(),
                 password: credentials.password

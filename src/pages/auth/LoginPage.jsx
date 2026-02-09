@@ -4,7 +4,7 @@ import { FaUser, FaLock } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth"; 
 import logo from "../../assets/impalalogo.png"; 
-import logo2 from "../../assets/heterologo.png"; 
+import logo2 from "../../assets/heterologo.png";
 import { validateEmail } from "../../utils/validation";  
 
 export default function LoginPage() {

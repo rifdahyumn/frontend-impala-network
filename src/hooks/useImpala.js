@@ -543,7 +543,7 @@ export const useImpala = (initialFilters = {}) => {
                                             return date.toLocaleDateString('id-ID');
                                         }
                                     } catch {
-                                        // Return original value if date parsing fails
+                                        //
                                     }
                                     return fieldValue;
                                 }

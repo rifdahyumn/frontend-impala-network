@@ -91,7 +91,7 @@ const EditMemberForm = ({
 
                 const updatedData = {
                     ...formData,
-                    id: memberId, 
+
                     updated_at: new Date().toISOString()
                 };
                 
@@ -248,7 +248,6 @@ const EditMemberForm = ({
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Category Navigation */}
             <div className="flex flex-wrap gap-2 mb-6">
                 {detailFields.map((category, index) => {
                     const CategoryIcon = category.icon;
@@ -269,7 +268,6 @@ const EditMemberForm = ({
                 })}
             </div>
 
-            {/* Active Category Content */}
             {activeCategoryData && (
                 <div className="border border-gray-200 rounded-lg p-5">
                     <div className="flex items-center gap-2 mb-4">

@@ -629,14 +629,6 @@ const AddMemberBanyumas = ({
                     required: true,
                     placeholder: 'Select end date'
                 },
-                // {
-                //     name: 'duration',
-                //     label: 'Duration',
-                //     type: 'text',
-                //     required: false,
-                //     placeholder: 'Auto-calculated',
-                //     disabled: true
-                // },
                 {
                     customComponent: true,
                     render: () => (
