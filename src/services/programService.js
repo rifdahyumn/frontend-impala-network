@@ -45,17 +45,61 @@ class ProgramService {
                         const columnMappings = {
                             'program_name': ['Program Name', 'program name', 'PROGRAM NAME', 'Program_Name', 'programName', 'Program'],
                             'category': ['Category', 'category', 'CATEGORY', 'Kategori'],
-                            'location': ['Location', 'location', 'LOCATION', 'Lokasi'],
-                            'capacity': ['Capacity', 'capacity', 'CAPACITY', 'Kapasitas'],
-                            'price': ['Price', 'price', 'PRICE', 'Harga'],
-                            'client': ['Client', 'client', 'CLIENT', 'Klien', 'Company'],
-                            'link_rab': ['Link RAB'],
+                            'client': ['Client', 'client', 'CLIENT', 'Klien', 'Company', 'Client Company'],
+                            'status': ['Status', 'status', 'STATUS', 'Status Program'],
+                            'description': ['Description', 'description', 'DESCRIPTION', 'Deskripsi'],
                             'start_date': ['Start Date', 'start date', 'START DATE', 'Start_Date', 'startDate', 'Tanggal Mulai'],
                             'end_date': ['End Date', 'end date', 'END DATE', 'End_Date', 'endDate', 'Tanggal Berakhir'],
-                            'description': ['Description', 'description', 'DESCRIPTION', 'Deskripsi'],
+                            'location': ['Location', 'location', 'LOCATION', 'Lokasi'],
+                            'area': ['Area', 'area', 'AREA', 'Wilayah'],
+                            'activity': ['Activity', 'activity', 'ACTIVITY', 'Aktivitas'],
+                            'capacity': ['Capacity', 'capacity', 'CAPACITY', 'Kapasitas'],
+                            'participant': ['Participant', 'participant', 'PARTICIPANT', 'Participants', 'Jumlah Peserta'],
+                            'budget_offering': ['Budget Offering', 'budget offering', 'BUDGET OFFERING', 'Offering Budget'],
+                            'budget_usage_plan': ['Budget Usage Plan', 'budget usage plan', 'BUDGET USAGE PLAN', 'Usage Plan'],
+                            'budget_finance_closure': ['Budget Finance Closure', 'budget finance closure', 'BUDGET FINANCE CLOSURE', 'Finance Closure'],
+                            'budget_finance_closure_realisasi_penyerapan': ['Realisasi Penyerapan', 'realisasi penyerapan', 'REALISASI PENYERAPAN', 'Penyerapan %'],
+                            'margin_estimasi_margin': ['Estimasi Margin', 'estimasi margin', 'ESTIMASI MARGIN', 'Estimated Margin'],
+                            'margin_real_margin': ['Real Margin', 'real margin', 'REAL MARGIN', 'Actual Margin'],
+                            'termin': ['Termin', 'termin', 'TERMIN', 'Payment Terms'],
+                            'link_folder_program': ['Link Folder Program', 'link folder program', 'LINK FOLDER PROGRAM', 'Program Folder'],
+                            'deck_program_link': ['Deck Program Link', 'deck program link', 'DECK PROGRAM LINK', 'Deck Link'],
+                            'link_budgeting_offering': ['Link Budgeting Offering', 'link budgeting offering', 'LINK BUDGETING OFFERING'],
+                            'link_budgeting_usage_plan': ['Link Budgeting Usage Plan', 'link budgeting usage plan', 'LINK BUDGETING USAGE PLAN'],
+                            'link_budgeting_finance_tracker': ['Link Budgeting Finance Tracker', 'link budgeting finance tracker', 'LINK BUDGETING FINANCE TRACKER'],
+                            'quotation': ['Quotation', 'quotation', 'QUOTATION', 'Quote'],
+                            'invoice': ['Invoice', 'invoice', 'INVOICE'],
+                            'receipt': ['Receipt', 'receipt', 'RECEIPT', 'Kwitansi'],
+                            'link_drive_documentation': ['Link Documentation', 'link documentation', 'LINK DOCUMENTATION', 'Documentation'],
+                            'link_drive_media_release_program': ['Link Media Release', 'link media release', 'LINK MEDIA RELEASE'],
+                            'link_drive_program_report': ['Link Program Report', 'link program report', 'LINK PROGRAM REPORT'],
+                            'link_drive_e_catalogue_beneficiary': ['Link E-Catalogue', 'link e-catalogue', 'LINK E-CATALOGUE'],
+                            'link_drive_bast': ['Link BAST', 'link bast', 'LINK BAST'],
+                            'satisfaction_survey_link': ['Survey Link', 'survey link', 'SURVEY LINK', 'Satisfaction Survey'],
+                            'link_kontrak_freelance': ['Link Kontrak Freelance', 'link kontrak freelance', 'LINK KONTRAK FREELANCE'],
+                            'link_surat_tugas': ['Link Surat Tugas', 'link surat tugas', 'LINK SURAT TUGAS'],
+                            'link_document_kontrak_partner': ['Link Kontrak Partner', 'link kontrak partner', 'LINK KONTRAK PARTNER'],
                             'instructors': ['Instructors', 'instructors', 'INSTRUCTORS', 'Instructor', 'Instruktur'],
                             'tags': ['Tags', 'tags', 'TAGS', 'Tag', 'Kategori Tambahan'],
-                            'status': ['Status', 'status', 'STATUS', 'Status Program']
+                            'interest_of_program': ['Interest of Program', 'interest of program', 'INTEREST OF PROGRAM', 'Minat Program'],
+                            'man_power_pic': ['Man Power PIC', 'man power pic', 'MAN POWER PIC', 'PIC'],
+                            'kolaborator': ['Kolaborator', 'kolaborator', 'KOLABORATOR', 'Collaborators'],
+                            'man_power_leads': ['Man Power Leads', 'man power leads', 'MAN POWER LEADS', 'Team Lead'],
+                            'man_power_division': ['Division', 'division', 'DIVISION', 'Divisi'],
+                            'jumlah_team_internal': ['Jumlah Team Internal', 'jumlah team internal', 'JUMLAH TEAM INTERNAL', 'Internal Team'],
+                            'jumlah_team_eksternal': ['Jumlah Team Eksternal', 'jumlah team eksternal', 'JUMLAH TEAM EKSTERNAL', 'External Team'],
+                            'stage_start_leads_realisasi': ['Start Leads %', 'start leads %', 'START LEADS'],
+                            'stage_analysis_realisasi': ['Analysis %', 'analysis %', 'ANALYSIS'],
+                            'stage_project_creative_development_realisasi': ['Creative Development %', 'creative development %', 'CREATIVE DEVELOPMENT'],
+                            'stage_program_description_realisasi': ['Program Description %', 'program description %', 'PROGRAM DESCRIPTION'],
+                            'stage_project_initial_presentation_realisasi': ['Initial Presentation %', 'initial presentation %', 'INITIAL PRESENTATION'],
+                            'stage_project_organizing_development_realisasi': ['Organizing Development %', 'organizing development %', 'ORGANIZING DEVELOPMENT'],
+                            'stage_project_implementation_presentation_realisasi': ['Implementation Presentation %', 'implementation presentation %', 'IMPLEMENTATION PRESENTATION'],
+                            'stage_project_implementation_realisasi': ['Implementation %', 'implementation %', 'IMPLEMENTATION'],
+                            'stage_project_evaluation_monitoring_realisasi': ['Evaluation & Monitoring %', 'evaluation monitoring %', 'EVALUATION'],
+                            'stage_project_satisfaction_survey_realisasi': ['Satisfaction Survey %', 'satisfaction survey %', 'SATISFACTION SURVEY'],
+                            'stage_project_report_realisasi': ['Report %', 'report %', 'REPORT'],
+                            'stage_end_sustainability_realisasi': ['End & Sustainability %', 'end sustainability %', 'END SUSTAINABILITY']
                         }
 
                         Object.keys(columnMappings).forEach(key => {
@@ -95,9 +139,16 @@ class ProgramService {
                             normalizedRow.end_date = this.normalizeDate(normalizedRow.end_date);
                         }
                         
-                        if (normalizedRow.price) {
-                            normalizedRow.price = this.normalizePrice(normalizedRow.price);
-                        }
+                         const currencyFields = [
+                            'budget_offering', 'budget_usage_plan', 'budget_finance_closure',
+                            'margin_estimasi_margin', 'margin_real_margin'
+                        ];
+                        
+                        currencyFields.forEach(field => {
+                            if (normalizedRow[field]) {
+                                normalizedRow[field] = this.normalizePrice(normalizedRow[field]);
+                            }
+                        });
                         
                         if (normalizedRow.capacity) {
                             normalizedRow.capacity = this.normalizeCapacity(normalizedRow.capacity);
@@ -107,17 +158,37 @@ class ProgramService {
                             normalizedRow.status = 'Active';
                         }
 
-                        if (normalizedRow.instructors) {
-                            normalizedRow.instructors = this.prepareInstructorsForBackend(normalizedRow.instructors)
-                        } else {
-                            normalizedRow.instructors = []
-                        }
+                        const arrayFields = [
+                            'instructors', 'tags', 'interest_of_program', 
+                            'man_power_pic', 'kolaborator'
+                        ];
+                        
+                        arrayFields.forEach(field => {
+                            if (normalizedRow[field]) {
+                                normalizedRow[field] = this.prepareArrayForBackend(normalizedRow[field]);
+                            } else {
+                                normalizedRow[field] = [];
+                            }
+                        });
 
-                        if (normalizedRow.tags) {
-                            normalizedRow.tags = this.prepareTagsForBackend(normalizedRow.tags)
-                        } else {
-                            normalizedRow.tags = []
-                        }
+                        const numberFields = [
+                            'participant', 'jumlah_team_internal', 'jumlah_team_eksternal',
+                            'stage_start_leads_realisasi', 'stage_analysis_realisasi',
+                            'stage_project_creative_development_realisasi', 'stage_program_description_realisasi',
+                            'stage_project_initial_presentation_realisasi', 'stage_project_organizing_development_realisasi',
+                            'stage_project_implementation_presentation_realisasi', 'stage_project_implementation_realisasi',
+                            'stage_project_evaluation_monitoring_realisasi', 'stage_project_satisfaction_survey_realisasi',
+                            'stage_project_report_realisasi', 'stage_end_sustainability_realisasi'
+                        ];
+                        
+                        numberFields.forEach(field => {
+                            if (normalizedRow[field]) {
+                                const num = parseInt(normalizedRow[field].replace(/\D/g, ''));
+                                normalizedRow[field] = isNaN(num) ? 0 : num;
+                            } else {
+                                normalizedRow[field] = 0;
+                            }
+                        });
 
                         return normalizedRow
                     }).filter(row => {
@@ -328,65 +399,113 @@ class ProgramService {
         return capacity
     }
 
-    generateExceltemplate() {
+    prepareArrayForBackend(value) {
+        if (!value) return [];
+        
+        if (Array.isArray(value)) {
+            return value.filter(item => item && item.trim());
+        }
+        
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (!trimmed) return [];
+
+            if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    if (Array.isArray(parsed)) {
+                        return parsed.filter(item => item && item.trim());
+                    }
+                } catch {
+                    // 
+                }
+            }
+
+            const separator = trimmed.includes(',') ? ',' : 
+                            trimmed.includes(';') ? ';' : 
+                            trimmed.includes('|') ? '|' : null;
+            
+            if (separator) {
+                return trimmed.split(separator)
+                    .map(item => item.trim())
+                    .filter(item => item);
+            }
+
+            return [trimmed];
+        }
+        
+        return [String(value).trim()].filter(item => item);
+    }
+
+    generateExcelTemplate() {
         const templateData = [
             {
                 'Program Name': 'Leadership Training 2024',
                 'Category': 'Training',
-                'Location': 'Jakarta Convention Center',
-                'Capacity': '30',
-                'Price': '5000000',
-                'Client': 'PT. Example Corporation',
-                'Link RAB': 'https://docs.google.com/spreadsheets/d/1iulr-2du-2GVWKy4gCZoFxraPqbX2yTnx_CzP-auUb8/edit?gid=689740445#gid=689740445',
+                'Client': 'PT Example Corporation',
+                'Status': 'Active',
+                'Description': '5-day intensive leadership training',
                 'Start Date': '2024-03-01',
                 'End Date': '2024-03-05',
-                'Description': '5-day intensive leadership training program',
+                'Location': 'Jakarta',
+                'Area': 'Nasional',
+                'Activity': 'Training',
+                'Capacity': '50-100',
+                'Participant': '75',
+                'Budget Offering': '50000000',
+                'Budget Usage Plan': '45000000',
+                'Budget Finance Closure': '48500000',
+                'Realisasi Penyerapan': '97%',
+                'Estimasi Margin': '5000000',
+                'Real Margin': '3500000',
+                'Termin': 'Termin 1 (50%) - Pelunasan (50%)',
+                'Link Folder Program': 'https://drive.google.com/...',
+                'Deck Program Link': 'https://drive.google.com/...',
+                'Link Budgeting Offering': 'https://drive.google.com/...',
+                'Quotation': 'https://drive.google.com/...',
+                'Invoice': 'https://drive.google.com/...',
+                'Receipt': 'https://drive.google.com/...',
+                'Link Documentation': 'https://drive.google.com/...',
+                'Survey Link': 'https://survey.google.com/...',
                 'Instructors': 'John Doe, Jane Smith',
-                'Tags': 'leadership,management,training',
-            },
-            {
-                'Program Name': 'Digital Marketing Workshop',
-                'Category': 'Workshop',
-                'Location': 'Online',
-                'Capacity': '50',
-                'Price': '2500000',
-                'Client': 'Startup XYZ',
-                'Link RAB': 'https://docs.google.com/spreadsheets/d/1iulr-2du-2GVWKy4gCZoFxraPqbX2yTnx_CzP-auUb8/edit?gid=689740445#gid=689740445',
-                'Start Date': '2024-04-15',
-                'End Date': '2024-04-16',
-                'Description': '2-day digital marketing workshop',
-                'Instructors': 'Michael Chen',
-                'Tags': 'marketing,digital,workshop',
-            },
+                'Tags': 'leadership, management',
+                'Interest of Program': 'Gen Z, Digital Learning',
+                'Man Power PIC': 'Mike Johnson, Sarah Wilson',
+                'Kolaborator': 'Universitas Indonesia, Kampus Merdeka',
+                'Man Power Leads': 'Dian Purnama',
+                'Division': 'Digital Learning Division',
+                'Jumlah Team Internal': '5',
+                'Jumlah Team Eksternal': '3',
+                'Link Kontrak Freelance': 'https://drive.google.com/...',
+                'Start Leads %': '100',
+                'Analysis %': '100',
+                'Creative Development %': '100',
+                'Program Description %': '100',
+                'Initial Presentation %': '100',
+                'Organizing Development %': '100',
+                'Implementation Presentation %': '70',
+                'Implementation %': '50',
+                'Evaluation & Monitoring %': '0',
+                'Satisfaction Survey %': '0',
+                'Report %': '0',
+                'End & Sustainability %': '0'
+            }
         ]
 
         const worksheet = XLSX.utils.json_to_sheet(templateData);
 
-        const columnWidths = [
-            { wch: 25 },
-            { wch: 20 }, 
-            { wch: 20 }, 
-            { wch: 10 },
-            { wch: 15 }, 
-            { wch: 25 }, 
-            { wch: 12 }, 
-            { wch: 12 }, 
-            { wch: 40 }, 
-            { wch: 25 }, 
-            { wch: 25 }, 
-            { wch: 12 }  
-        ]
+        const columnWidths = Array(Object.keys(templateData[0]).length).fill({ wch: 20 });
         worksheet['!cols'] = columnWidths;
 
         const range = XLSX.utils.decode_range(worksheet['!ref']);
-            for (let C = range.s.c; C <= range.e.c; ++C) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
             const cellAddress = { c: C, r: 0 };
             const cellRef = XLSX.utils.encode_cell(cellAddress);
             if (!worksheet[cellRef]) continue;
             
             worksheet[cellRef].s = {
                 font: { bold: true, color: { rgb: "FFFFFF" } },
-                fill: { fgColor: { rgb: "4F46E5" } }, 
+                fill: { fgColor: { rgb: "4F46E5" } },
                 alignment: { horizontal: "center", vertical: "center" }
             };
         }
@@ -406,7 +525,7 @@ class ProgramService {
 
     downloadExcelTemplate() {
         try {
-            return this.generateExceltemplate()
+            return this.generateExcelTemplate()
         } catch (error) {
             console.error('Error generating Excel template:', error);
             return {
@@ -528,13 +647,46 @@ class ProgramService {
     formatProgramData(program) {
         if (!program) return null
 
-        return {
+        const formatted = {
             ...program,
             instructors: this.formatInstructors(program.instructors),
             tags: this.formatTags(program.tags),
+            interest_of_program: this.formatArrayField(program.interest_of_program),
+            man_power_pic: this.formatArrayField(program.man_power_pic),
+            kolaborator: this.formatArrayField(program.kolaborator),
             _raw_instructors: program.instructors,
-            _raw_tags: program.tags
+            _raw_tags: program.tags,
+            _raw_interest_of_program: program.interest_of_program,
+            _raw_man_power_pic: program.man_power_pic,
+            _raw_kolaborator: program.kolaborator
         }
+
+        const currencyFields = [
+            'budget_offering', 'budget_usage_plan', 'budget_finance_closure',
+            'margin_estimasi_margin', 'margin_real_margin'
+        ];
+        
+        currencyFields.forEach(field => {
+            if (formatted[field] && typeof formatted[field] === 'number') {
+                formatted[field] = this.formatCurrency(formatted[field]);
+            }
+        });
+
+        return formatted;
+    }
+
+    formatCurrency(amount) {
+        if (!amount) return 'Rp. 0';
+        const formatted = amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        return `Rp. ${formatted}`;
+    }
+
+    formatArrayField(field) {
+        if (!field) return '';
+        if (Array.isArray(field)) {
+            return field.filter(item => item && item.trim()).join(', ');
+        }
+        return String(field);
     }
 
     formatProgramsData(programs) {
@@ -662,24 +814,30 @@ class ProgramService {
         return `${this.baseURL}/program?${queryParams}`;
     }
 
-    async addProgram(programData) {
+   async addProgram(programData) {
         try {
             if (!programData.program_name) {
                 throw new Error('Program name is required');
             }
 
-            const formattedData = {
-                ...programData,
-                instructors: this.prepareInstructorsForBackend(programData.instructors) || [],
-                tags: this.prepareTagsForBackend(programData.tags) || []
-            }
+            const parsedData = { ...programData };
+            const currencyFields = [
+                'budget_offering', 'budget_usage_plan', 'budget_finance_closure',
+                'margin_estimasi_margin', 'margin_real_margin'
+            ];
+            
+            currencyFields.forEach(field => {
+                if (parsedData[field] && typeof parsedData[field] === 'string') {
+                    parsedData[field] = this.parseCurrencyToNumber(parsedData[field]);
+                }
+            });
 
             const response = await fetch(`${this.baseURL}/program`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formattedData)
+                body: JSON.stringify(parsedData)
             })
 
             return await this.handleResponse(response)
@@ -696,22 +854,24 @@ class ProgramService {
                 throw new Error('Program ID is required');
             }
 
-            const formattedData = {
-                ...programData,
-                instructors: programData._raw_instructors || this.prepareInstructorsForBackend(programData.instructors),
-                tags: programData._raw_tags || this.prepareTagsForBackend(programData.tags)
-            }
-
-            delete formattedData._raw_instructors
-            delete formattedData._raw_tags
+            const parsedData = { ...programData };
+            const currencyFields = [
+                'budget_offering', 'budget_usage_plan', 'budget_finance_closure',
+                'margin_estimasi_margin', 'margin_real_margin'
+            ];
+            
+            currencyFields.forEach(field => {
+                if (parsedData[field] && typeof parsedData[field] === 'string') {
+                    parsedData[field] = this.parseCurrencyToNumber(parsedData[field]);
+                }
+            });
 
             const response = await fetch(`${this.baseURL}/program/${programId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-
                 },
-                body: JSON.stringify(programData)
+                body: JSON.stringify(parsedData)
             })
 
             return await this.handleResponse(response)
@@ -719,6 +879,17 @@ class ProgramService {
             console.error('Error updating program: ', error)
             throw error
         }
+    }
+
+    parseCurrencyToNumber(currencyString) {
+        if (!currencyString) return null;
+        
+        const cleaned = currencyString
+            .replace('Rp. ', '')
+            .replace(/\./g, '')
+            .trim();
+        
+        return cleaned ? parseInt(cleaned) : null;
     }
 
     prepareInstructorsForBackend(instructors) {
@@ -1420,6 +1591,21 @@ class ProgramService {
                 }
             }
 
+            if (program.budget_offering) {
+                const budget = parseFloat(program.budget_offering);
+                if (isNaN(budget) || budget < 0) {
+                    errors.push('Budget offering must be a positive number');
+                }
+            }
+            
+            if (program.budget_finance_closure_realisasi_penyerapan) {
+                const penyerapan = program.budget_finance_closure_realisasi_penyerapan.replace('%', '');
+                const num = parseFloat(penyerapan);
+                if (isNaN(num) || num < 0 || num > 100) {
+                    errors.push('Realisasi penyerapan must be between 0-100%');
+                }
+            }
+
             if (program.status && !['active', 'inactive', 'pending', 'completed'].includes(program.status.toLowerCase())) {
                 errors.push('Status must be one of: Active, Inactive, Pending, Completed');
             }
@@ -1460,6 +1646,22 @@ class ProgramService {
 
     getFormattedTags(tags) {
         return this.formatTags(tags);
+    }
+
+    getProgramFinancialSummary(programs) {
+        if (!programs || programs.length === 0) return null;
+        
+        return {
+            total_budget_offering: programs.reduce((sum, p) => sum + (p.budget_offering || 0), 0),
+            total_budget_finance_closure: programs.reduce((sum, p) => sum + (p.budget_finance_closure || 0), 0),
+            total_margin_real: programs.reduce((sum, p) => sum + (p.margin_real_margin || 0), 0),
+            average_participants: Math.round(programs.reduce((sum, p) => sum + (p.participant || 0), 0) / programs.length),
+            programs_by_area: {
+                lokal: programs.filter(p => p.area === 'Lokal').length,
+                nasional: programs.filter(p => p.area === 'Nasional').length,
+                internasional: programs.filter(p => p.area === 'Internasional').length
+            }
+        };
     }
 }
 

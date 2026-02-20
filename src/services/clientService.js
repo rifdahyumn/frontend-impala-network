@@ -95,6 +95,26 @@ class ClientService {
         }
     }
 
+    async getClientById(clientId) {
+        try {
+            if (!clientId) {
+                throw new Error('Client Id is required')
+            }
+
+            const response = await fetch(`${this.baseURL}/client/${clientId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            return await this.handleResponse(response)
+        } catch (error) {
+            console.error('Error fetching client by ID', error)
+            throw error
+        }
+    }
+
     buildClientQueryUrl(params = {}) {
         const {
             page = 1,
@@ -496,6 +516,58 @@ class ClientService {
                     total: 0
                 }
             };
+        }
+    }
+
+    async getClientByProgramName(programName) {
+        try {
+            if (!programName) {
+                throw new Error('Program name is required')
+            }
+
+            const result = await this.fetchAllClients()
+
+            if (result.success && result.data) {
+                const matchedClient = result.data.find(client => {
+                    if (client.program_name) {
+                        try {
+                            const programs = JSON.parse(client.program_name)
+                            return Array.isArray(programs) && programs.includes(programName)
+                        } catch {
+                            return client.program_name === programName
+                        }
+                    }
+
+                    return false
+                })
+
+                if (matchedClient) {
+                    return {
+                        success: true,
+                        data: matchedClient,
+                        message: 'Client found successfully'
+                    }
+                } else {
+                    return {
+                        success: false,
+                        data: null,
+                        message: 'No client found with this program name'
+                    }
+                }
+            }
+
+            return {
+                success: false,
+                data: null,
+                message: 'Failed to fetch clients'
+            }
+        } catch (error) {
+            console.error('Error in getClientByProgramName:', error)
+            return {
+                success: false,
+                data: null,
+                message: error.message || 'Error finding client by program name'
+            }
         }
     }
 }

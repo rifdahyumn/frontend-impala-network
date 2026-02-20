@@ -348,11 +348,24 @@ export const usePrograms = (initialFilters = {}) => {
             if (result.success) {
                 setProgramStats(result.data)
             } else {
-                throw new Error(result.message || 'Failed to fetch program stats')
+                console.warn('Program stats not available:', result?.message)
+                setProgramStats({
+                    total: 0,
+                    active: 0,
+                    inactive: 0,
+                    completed: 0,
+                    ongoing: 0
+                })
             }
         } catch (error) {
-            console.error('Error fetching program stats:', error)
-            toast.error('Failed to load program stats')
+            console.warn('Error fetching program stats (non-critical):', error)
+            setProgramStats({
+                total: 0,
+                active: 0,
+                inactive: 0,
+                completed: 0,
+                ongoing: 0
+            })
         } finally {
             setStatsLoading(false)
         }
@@ -367,12 +380,21 @@ export const usePrograms = (initialFilters = {}) => {
             if (result.success) {
                 setPriceStats(result.data)
             } else {
-                throw new Error(result.message || 'Failed to fetch price stats')
+                console.warn('Price stats not available:', result?.message)
+                setPriceStats({
+                    title: "Total Price",
+                    value: "0",
+                    subtitle: "from 0 programs",
+                    percentage: "0%",
+                    trend: "up",
+                    period: "Last Month",
+                    icon: "DollarSign",
+                    color: "purple",
+                    description: "0% Last Month"
+                })
             }
         } catch (error) {
-            console.error('Error fetching price stats:', error)
-            toast.error('Failed to load price statistics')
-            
+            console.warn('Error fetching price stats (non-critical):', error)
             setPriceStats({
                 title: "Total Price",
                 value: "0",
@@ -407,8 +429,9 @@ export const usePrograms = (initialFilters = {}) => {
             ])
 
             lastStatsFetchTimeRef.current = Date.now()
+
         } catch (error) {
-            console.error('Error fetching all stats:', error)
+            console.warn('Non-critical error in fetchAllStats:', error)
         } finally {
             setStatsLoading(false)
         }

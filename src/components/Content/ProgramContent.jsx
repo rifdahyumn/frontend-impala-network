@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, Building, User, MapPin, Calendar, DollarSign, Share2Icon, ExternalLink, Loader2, TrendingUp, Users, BarChart, PenTool, FileText, Settings, Play, Target, CheckCircle2, Award, Clock, Circle, Presentation } from "lucide-react";
+import { Edit, Trash2, Building, User, MapPin, Calendar, DollarSign, Share2Icon, ExternalLink, Loader2, TrendingUp, Users, BarChart, PenTool, FileText, Settings, Play, Target, CheckCircle2, Award, Clock, Circle, Presentation, Info } from "lucide-react";
 import toast from 'react-hot-toast';
+import clientService from '../../services/clientService';
+import ClientDetailModal from './ClientDetailModal';
 
 const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModal, onProgramEdited, showConfirm }) => {
     const [activeCategory, setActiveCategory] = useState('Program Information');
     const [deleteLoading, setDeleteLoading] = useState(false);
+
+    const [isClientModalOpen, setIsClientModalOpen] = useState(false)
+    const [selectedClient, setSelectedClient] = useState(null)
+    const [clientLoading, setClientLoading] = useState(false)
 
     const stageData = [
         { key: 'stage_start_leads_realisasi', label: 'Start Leads', icon: Users, description: 'Pengumpulan leads awal', color: 'blue' },
@@ -23,36 +29,50 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
         { key: 'stage_end_sustainability_realisasi', label: 'End & Sustainability', icon: Award, description: 'Keberlanjutan program', color: 'rose' },
     ];
 
+    const handleOpenClientModal = async () => {      
+        if (!selectedProgram) {
+            toast.error('No Program selected');
+            return;
+        }
+
+        setClientLoading(true);
+
+        try {
+            const result = await clientService.getClientByProgramName(selectedProgram.program_name)
+
+            if (result.success && result.data) {
+                setSelectedClient(result.data)
+                setIsClientModalOpen(true)
+            } else {
+                toast.error(result.message || 'Client not found for this program')    
+            }
+
+        } catch (error) {
+            console.error('Error fetching client:', error);
+            toast.error('Failed to load client details');
+        } finally {
+            setClientLoading(false);
+        }
+    };
+
+    const handleCloseClienModal = () => {
+        setIsClientModalOpen(false)
+        setSelectedClient(null)
+    }
+
     const detailFields = [
         {
             category: 'Program Information',
             icon: Building,
             fields: [
                 { key: 'program_name', label: 'Program Name', icon: Building },
-                { key: 'deskripsi_program', label: 'Description', icon: Building },
-                { key: 'client', label: 'Client', icon: Building },
                 { key: 'category', label: 'Category', icon: Building },
                 { key: 'status', label: 'Status', icon: Building },
                 { key: 'duration', label: 'Duration', icon: Calendar },
                 { key: 'start_date', label: 'Start Date', icon: Calendar },
                 { key: 'end_date', label: 'End Date', icon: Calendar },
-            ]
-        },
-        {
-            category: 'Partner Information',
-            icon: User,
-            fields: [
-                { key: 'nama_perusahaan', label: 'Company Name', icon: User },
-                { key: 'nama_brand', label: 'Brand Name', icon: User },
-                { key: 'partner_pic_name', label: 'PIC Name', icon: User },
-                { key: 'job_title_pic', label: 'Job Title', icon: User },
-                { key: 'partner_phone_contact', label: 'Phone', icon: User },
-                { key: 'partner_bussiness_email', label: 'Email', icon: User },
-                { key: 'partner_country_location', label: 'Country', icon: MapPin },
-                { key: 'partner_location', label: 'Location', icon: MapPin },
-                { key: 'partner_address', label: 'Address', icon: MapPin },
-                { key: 'logo_partner', label: 'Logo', icon: User, isLink: true },
-                { key: 'interest_of_program', label: 'Interest', icon: User, isArray: true },
+                { key: 'description', label: 'Description', icon: Building },
+                { key: 'client_info', label: 'Client/Partner Information', icon: Building, isClientButton: true },
             ]
         },
         {
@@ -78,8 +98,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
             fields: [
                 { key: 'link_folder_program', label: 'Program Folder', icon: Share2Icon, isLink: true },
                 { key: 'deck_program_link', label: 'Deck Program', icon: Share2Icon, isLink: true },
-                { key: 'deck_program_status', label: 'Deck Status', icon: FileText },
-                { key: 'link_rab', label: 'RAB Link', icon: Share2Icon, isLink: true },
                 { key: 'termin', label: 'Termin', icon: Calendar },
             ]
         },
@@ -109,7 +127,8 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 { key: 'area', label: 'Area', icon: MapPin },
                 { key: 'activity', label: 'Activity', icon: FileText },
                 { key: 'kolaborator', label: 'Collaborators', icon: Users, isArray: true },
-                { key: 'talent', label: 'Talents', icon: User, isArray: true },
+                { key: 'instructors', label: 'Talents', icon: User, isArray: true },
+                { key: 'tags', label: 'Tags', icon: User, isArray: true },
                 { key: 'link_drive_bast', label: 'BAST', icon: Share2Icon, isLink: true },
                 { key: 'satisfaction_survey_link', label: 'Survey Link', icon: Share2Icon, isLink: true },
             ]
@@ -403,6 +422,64 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
 
                         let displayValue = rawValue === undefined || rawValue === null ? '-' : rawValue
 
+                        if (field.isClientButton) {
+                            return (
+                                <div
+                                    key={index}
+                                    className='flex items-start gap-3 col-span-2'
+                                >
+                                    <FieldIcon className="h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
+
+                                    <div className='flex-1'>
+                                        <label className='text-sm text-gray-500 block mb-2'>
+                                            {field.label}
+                                        </label>
+
+                                        <div className='bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4'>
+                                            <div className='flex items-center justify-between'>
+                                                <div className='flex items-center gap-3'>
+                                                    <div className='p-2 bg-blue-100 rounded-lg'>
+                                                        <Building className='h-5 w-5 text-blue-600' />
+                                                    </div>
+
+                                                    <div>
+                                                        <h4 className='font-semibold text-gray-800'>
+                                                            {selectedProgram.nama_perusahaan || selectedProgram.client || 'Client Name'}
+                                                        </h4>
+                                                        <p className='text-xs text-gray-500 mt-0.5'>
+                                                            {selectedProgram.partner_pic_name || 'No PIC assigned'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className='flex gap-2'>
+                                                    <button
+                                                        onClick={handleOpenClientModal}
+                                                        disabled={clientLoading}
+                                                        className='group relative inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-all duration-200 disabled:bg-blue-300 disabled:cursor-not-allowed shadow-sm hover:shadow-md'
+                                                        title='Click to view complete client details'
+                                                    >
+                                                        {clientLoading ? (
+                                                            <>
+                                                                <Loader2 className='h-4 w-4 animate-spin' />
+                                                                <span>Loading...</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Info className='h-4 w-4 group-hover:scale-110 transition-transform' />
+                                                                <span>View Client/Partner Details</span>
+                                                                <ExternalLink className='w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity' />
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        }
+
                         if (field.isCurrency && displayValue !== '-') {
                             displayValue = formatCurrency(displayValue)
                         }
@@ -558,6 +635,13 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                     </div>
                 )}
             </CardContent>
+
+            <ClientDetailModal
+                isOpen={isClientModalOpen}
+                onClose={handleCloseClienModal}
+                client={selectedClient}
+                loading={clientLoading}
+            />
         </Card>
     );
 };
