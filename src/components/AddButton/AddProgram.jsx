@@ -96,8 +96,12 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
     const formatCurrency = (value) => {
         if (!value || value === 'Rp. ') return 'Rp. ';
         
-        const cleanValue = value.replace('Rp.', '').replace(/\s/g, '');
-        const numericValue = cleanValue.replace(/\D/g, '');
+        let numericValue;
+        if (typeof value === 'string' && value.includes('Rp.')) {
+            numericValue = value.replace('Rp.', '').replace(/\s/g, '').replace(/\./g, '');
+        } else {
+            numericValue = value.toString().replace(/\D/g, '');
+        }
 
         if (numericValue === '') return 'Rp. ';
 
@@ -215,24 +219,77 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         if (isEditMode && editData) {
             const newFormData = { ...formData };
             
-            const formatField = (value) => {
+            const formatField = (value, isLinkField = false) => {
+                if (isLinkField) {
+                    return value || '';
+                }
+                
                 if (!value) return 'Rp. ';
                 if (typeof value === 'number') return formatCurrency(value.toString());
-                if (typeof value === 'string' && !value.startsWith('Rp. ')) {
+                if (typeof value === 'string' && /^\d+$/.test(value.replace(/\D/g, ''))) {
                     return formatCurrency(value);
                 }
                 return value;
             };
 
+            const linkFields = [
+                'link_folder_program',
+                'deck_program_link',
+                'link_budgeting_offering',
+                'link_budgeting_usage_plan', 
+                'link_budgeting_finance_tracker',
+                'quotation',
+                'invoice',
+                'receipt',
+                'link_kontrak_freelance',
+                'link_surat_tugas',
+                'link_document_kontrak_partner',
+                'link_drive_documentation',
+                'link_drive_media_release_program',
+                'link_drive_program_report',
+                'link_drive_e_catalogue_beneficiary',
+                'link_drive_bast',
+                'satisfaction_survey_link'
+            ];
+
+             const currencyFields = [
+                'budget_offering',
+                'budget_usage_plan',
+                'budget_finance_closure',
+                'margin_estimasi_margin',
+                'margin_real_margin'
+            ];
+
             Object.keys(editData).forEach(key => {
                 if (key in newFormData) {
-                    if (key.includes('budget') || key.includes('margin') || key.includes('price')) {
-                        newFormData[key] = formatField(editData[key]);
-                    } else if (Array.isArray(editData[key])) {
-                        newFormData[key] = editData[key] || [];
+                    const value = editData[key];
+
+                    if (linkFields.includes(key)) {
+                        newFormData[key] = value || '';
+                    } else if (currencyFields.includes(key)) {
+                        newFormData[key] = formatField(value);
+                    } else if (['instructors', 'tags', 'interest_of_program', 'man_power_pic', 'kolaborator'].includes(key)) {
+                        if (Array.isArray(value)) {
+                            newFormData[key] = value;
+                        } else if (value && typeof value === 'string') {
+                            if (value.includes(',')) {
+                                newFormData[key] = value.split(',').map(item => item.trim());
+                            } else {
+                                newFormData[key] = [value];
+                            }
+                        } else {
+                            newFormData[key] = [];
+                        }
                     } else {
-                        newFormData[key] = editData[key] || '';
+                        newFormData[key] = value || '';
                     }
+                }
+            });
+            
+            const arrayFields = ['instructors', 'tags', 'interest_of_program', 'man_power_pic', 'kolaborator'];
+            arrayFields.forEach(field => {
+                if (!newFormData[field] || !Array.isArray(newFormData[field])) {
+                    newFormData[field] = [];
                 }
             });
 
@@ -342,11 +399,23 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+
+         const linkBudgetFields = [
+            'link_budgeting_offering',
+            'link_budgeting_usage_plan', 
+            'link_budgeting_finance_tracker'
+        ];
         
-        const isCurrencyField = (name.includes('budget') || name.includes('margin')) && 
-                            !name.includes('link_') && 
-                            !name.includes('Link');
+        const currencyFields = [
+            'budget_offering',
+            'budget_usage_plan',
+            'budget_finance_closure',
+            'margin_estimasi_margin',
+            'margin_real_margin'
+        ];
         
+        const isCurrencyField = currencyFields.includes(name);
+    
         if (isCurrencyField) {
             handleCurrencyInput(name)(e);
         } else {
@@ -389,21 +458,26 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!validateForm()) {
+         if (!validateForm()) {
             toast.error('Please fix the errors in the form');
-            if (errors.program_name || errors.client || errors.category || errors.description) {
-                setActiveTab('basic');
-            } else if (errors.start_date || errors.end_date || errors.location) {
-                setActiveTab('schedule');
-            } else if (errors.budget_offering) {
-                setActiveTab('financial');
-            }
             return;
         }
 
         setLoading(true);
 
         try {
+            const ensureArray = (value) => {
+                if (Array.isArray(value)) return value.filter(Boolean);
+                if (!value) return [];
+                if (typeof value === 'string') {
+                    if (value.includes(',')) {
+                        return value.split(',').map(item => item.trim()).filter(Boolean);
+                    }
+                    return [value];
+                }
+                return [];
+            };
+
             const programData = {
                 ...formData,
                 budget_offering: parseCurrency(formData.budget_offering),
@@ -414,11 +488,11 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 participant: formData.participant || null,
                 jumlah_team_internal: formData.jumlah_team_internal || null,
                 jumlah_team_eksternal: formData.jumlah_team_eksternal || null,
-                instructors: formData.instructors.filter(Boolean),
-                tags: formData.tags.filter(Boolean),
-                interest_of_program: formData.interest_of_program.filter(Boolean),
-                man_power_pic: formData.man_power_pic.filter(Boolean),
-                kolaborator: formData.kolaborator.filter(Boolean),
+                instructors: ensureArray(formData.instructors),
+                tags: ensureArray(formData.tags),
+                interest_of_program: ensureArray(formData.interest_of_program),
+                man_power_pic: ensureArray(formData.man_power_pic),
+                kolaborator: ensureArray(formData.kolaborator),
                 stage_start_leads_realisasi: Number(formData.stage_start_leads_realisasi) || 0,
                 stage_analysis_realisasi: Number(formData.stage_analysis_realisasi) || 0,
                 stage_project_creative_development_realisasi: Number(formData.stage_project_creative_development_realisasi) || 0,
@@ -984,163 +1058,168 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         </div>
     );
 
-    const renderTeamTab = () => (
-        <div className="space-y-6">
-            <div className="space-y-3">
-                <Label>Instructors</Label>
-                <div className="flex gap-2">
-                    <Input
-                        value={newInstructor}
-                        onChange={(e) => setNewInstructor(e.target.value)}
-                        placeholder="Enter instructor name"
-                        className="flex-1"
-                        onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleAddArrayItem('instructors', newInstructor, setNewInstructor);
-                            }
-                        }}
-                    />
-                    <Button 
-                        type="button" 
-                        onClick={() => handleAddArrayItem('instructors', newInstructor, setNewInstructor)}
-                    >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add
-                    </Button>
-                </div>
-                {formData.instructors.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                        {formData.instructors.map((item, index) => (
-                            <div key={index} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                                {item}
-                                <button type="button" onClick={() => handleRemoveArrayItem('instructors', index)}>
-                                    <X className="h-3 w-3" />
-                                </button>
-                            </div>
-                        ))}
+    const renderTeamTab = () => {
+        const instructors = Array.isArray(formData.instructors) ? formData.instructors : []
+        const manPowerPic = Array.isArray(formData.man_power_pic) ? formData.man_power_pic : []
+
+        return (
+            <div className="space-y-6">
+                <div className="space-y-3">
+                    <Label>Instructors</Label>
+                    <div className="flex gap-2">
+                        <Input
+                            value={newInstructor}
+                            onChange={(e) => setNewInstructor(e.target.value)}
+                            placeholder="Enter instructor name"
+                            className="flex-1"
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddArrayItem('instructors', newInstructor, setNewInstructor);
+                                }
+                            }}
+                        />
+                        <Button 
+                            type="button" 
+                            onClick={() => handleAddArrayItem('instructors', newInstructor, setNewInstructor)}
+                        >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add
+                        </Button>
                     </div>
-                )}
-            </div>
-
-            <div className="space-y-3">
-                <Label>Man Power PIC</Label>
-                <div className="flex gap-2">
-                    <Input
-                        value={newManPowerPic}
-                        onChange={(e) => setNewManPowerPic(e.target.value)}
-                        placeholder="Enter PIC name"
-                        className="flex-1"
-                        onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleAddArrayItem('man_power_pic', newManPowerPic, setNewManPowerPic);
-                            }
-                        }}
-                    />
-                    <Button 
-                        type="button" 
-                        onClick={() => handleAddArrayItem('man_power_pic', newManPowerPic, setNewManPowerPic)}
-                    >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add
-                    </Button>
+                    {instructors.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {instructors.map((item, index) => (
+                                <div key={index} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                                    {item}
+                                    <button type="button" onClick={() => handleRemoveArrayItem('instructors', index)}>
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
-                {formData.man_power_pic.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                        {formData.man_power_pic.map((item, index) => (
-                            <div key={index} className="flex items-center gap-1 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
-                                {item}
-                                <button type="button" onClick={() => handleRemoveArrayItem('man_power_pic', index)}>
-                                    <X className="h-3 w-3" />
-                                </button>
-                            </div>
-                        ))}
+
+                <div className="space-y-3">
+                    <Label>Man Power PIC</Label>
+                    <div className="flex gap-2">
+                        <Input
+                            value={newManPowerPic}
+                            onChange={(e) => setNewManPowerPic(e.target.value)}
+                            placeholder="Enter PIC name"
+                            className="flex-1"
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddArrayItem('man_power_pic', newManPowerPic, setNewManPowerPic);
+                                }
+                            }}
+                        />
+                        <Button 
+                            type="button" 
+                            onClick={() => handleAddArrayItem('man_power_pic', newManPowerPic, setNewManPowerPic)}
+                        >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add
+                        </Button>
                     </div>
-                )}
+                    {manPowerPic.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {manPowerPic.map((item, index) => (
+                                <div key={index} className="flex items-center gap-1 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+                                    {item}
+                                    <button type="button" onClick={() => handleRemoveArrayItem('man_power_pic', index)}>
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="man_power_leads">Man Power Leads</Label>
+                        <Input
+                            id="man_power_leads"
+                            name="man_power_leads"
+                            value={formData.man_power_leads}
+                            onChange={handleInputChange}
+                            placeholder="Team lead name"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="man_power_division">Division</Label>
+                        <Input
+                            id="man_power_division"
+                            name="man_power_division"
+                            value={formData.man_power_division}
+                            onChange={handleInputChange}
+                            placeholder="e.g., Digital Learning Division"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="jumlah_team_internal">Jumlah Team Internal</Label>
+                        <Input
+                            id="jumlah_team_internal"
+                            name="jumlah_team_internal"
+                            type="number"
+                            value={formData.jumlah_team_internal}
+                            onChange={handleNumberInput('jumlah_team_internal')}
+                            placeholder="0"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="jumlah_team_eksternal">Jumlah Team Eksternal</Label>
+                        <Input
+                            id="jumlah_team_eksternal"
+                            name="jumlah_team_eksternal"
+                            type="number"
+                            value={formData.jumlah_team_eksternal}
+                            onChange={handleNumberInput('jumlah_team_eksternal')}
+                            placeholder="0"
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="link_kontrak_freelance">Link Kontrak Freelance</Label>
+                        <Input
+                            id="link_kontrak_freelance"
+                            name="link_kontrak_freelance"
+                            value={formData.link_kontrak_freelance}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="link_surat_tugas">Link Surat Tugas</Label>
+                        <Input
+                            id="link_surat_tugas"
+                            name="link_surat_tugas"
+                            value={formData.link_surat_tugas}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+
+                    <div className="space-y-2 col-span-2">
+                        <Label htmlFor="link_document_kontrak_partner">Link Kontrak Partner</Label>
+                        <Input
+                            id="link_document_kontrak_partner"
+                            name="link_document_kontrak_partner"
+                            value={formData.link_document_kontrak_partner}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+                </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="man_power_leads">Man Power Leads</Label>
-                    <Input
-                        id="man_power_leads"
-                        name="man_power_leads"
-                        value={formData.man_power_leads}
-                        onChange={handleInputChange}
-                        placeholder="Team lead name"
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="man_power_division">Division</Label>
-                    <Input
-                        id="man_power_division"
-                        name="man_power_division"
-                        value={formData.man_power_division}
-                        onChange={handleInputChange}
-                        placeholder="e.g., Digital Learning Division"
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="jumlah_team_internal">Jumlah Team Internal</Label>
-                    <Input
-                        id="jumlah_team_internal"
-                        name="jumlah_team_internal"
-                        type="number"
-                        value={formData.jumlah_team_internal}
-                        onChange={handleNumberInput('jumlah_team_internal')}
-                        placeholder="0"
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="jumlah_team_eksternal">Jumlah Team Eksternal</Label>
-                    <Input
-                        id="jumlah_team_eksternal"
-                        name="jumlah_team_eksternal"
-                        type="number"
-                        value={formData.jumlah_team_eksternal}
-                        onChange={handleNumberInput('jumlah_team_eksternal')}
-                        placeholder="0"
-                    />
-                </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="link_kontrak_freelance">Link Kontrak Freelance</Label>
-                    <Input
-                        id="link_kontrak_freelance"
-                        name="link_kontrak_freelance"
-                        value={formData.link_kontrak_freelance}
-                        onChange={handleInputChange}
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="link_surat_tugas">Link Surat Tugas</Label>
-                    <Input
-                        id="link_surat_tugas"
-                        name="link_surat_tugas"
-                        value={formData.link_surat_tugas}
-                        onChange={handleInputChange}
-                    />
-                </div>
-
-                <div className="space-y-2 col-span-2">
-                    <Label htmlFor="link_document_kontrak_partner">Link Kontrak Partner</Label>
-                    <Input
-                        id="link_document_kontrak_partner"
-                        name="link_document_kontrak_partner"
-                        value={formData.link_document_kontrak_partner}
-                        onChange={handleInputChange}
-                    />
-                </div>
-            </div>
-        </div>
-    );
+        )
+    };
 
     const renderStagesTab = () => {
         const stages = [
@@ -1181,120 +1260,126 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         );
     };
 
-    const renderAdditionalTab = () => (
-        <div className="space-y-6">
-            <div className="space-y-3">
-                <Label>Interest of Program</Label>
-                <div className="flex gap-2">
-                    <Input
-                        value={newInterest}
-                        onChange={(e) => setNewInterest(e.target.value)}
-                        placeholder="Enter interest (e.g., Gen Z, Digital Learning)"
-                        className="flex-1"
-                        onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleAddArrayItem('interest_of_program', newInterest, setNewInterest);
-                            }
-                        }}
-                    />
-                    <Button 
-                        type="button" 
-                        onClick={() => handleAddArrayItem('interest_of_program', newInterest, setNewInterest)}
-                    >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add
-                    </Button>
-                </div>
-                {formData.interest_of_program.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                        {formData.interest_of_program.map((item, index) => (
-                            <div key={index} className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">
-                                {item}
-                                <button type="button" onClick={() => handleRemoveArrayItem('interest_of_program', index)}>
-                                    <X className="h-3 w-3" />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+    const renderAdditionalTab = () => {
+        const interestOfProgram = Array.isArray(formData.interest_of_program) ? formData.interest_of_program : [];
+        const tags = Array.isArray(formData.tags) ? formData.tags : [];
+        const kolaborator = Array.isArray(formData.kolaborator) ? formData.kolaborator : [];
 
-            <div className="space-y-3">
-                <Label>Tags</Label>
-                <div className="flex gap-2">
-                    <Input
-                        value={newTag}
-                        onChange={(e) => setNewTag(e.target.value)}
-                        placeholder="Enter tag"
-                        className="flex-1"
-                        onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleAddArrayItem('tags', newTag, setNewTag);
-                            }
-                        }}
-                    />
-                    <Button 
-                        type="button" 
-                        onClick={() => handleAddArrayItem('tags', newTag, setNewTag)}
-                    >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add
-                    </Button>
-                </div>
-                {formData.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                        {formData.tags.map((item, index) => (
-                            <div key={index} className="flex items-center gap-1 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-                                {item}
-                                <button type="button" onClick={() => handleRemoveArrayItem('tags', index)}>
-                                    <X className="h-3 w-3" />
-                                </button>
-                            </div>
-                        ))}
+        return (        
+            <div className="space-y-6">
+                <div className="space-y-3">
+                    <Label>Interest of Program</Label>
+                    <div className="flex gap-2">
+                        <Input
+                            value={newInterest}
+                            onChange={(e) => setNewInterest(e.target.value)}
+                            placeholder="Enter interest (e.g., Gen Z, Digital Learning)"
+                            className="flex-1"
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddArrayItem('interest_of_program', newInterest, setNewInterest);
+                                }
+                            }}
+                        />
+                        <Button 
+                            type="button" 
+                            onClick={() => handleAddArrayItem('interest_of_program', newInterest, setNewInterest)}
+                        >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add
+                        </Button>
                     </div>
-                )}
-            </div>
+                    {formData.interest_of_program.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {formData.interest_of_program.map((item, index) => (
+                                <div key={index} className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">
+                                    {item}
+                                    <button type="button" onClick={() => handleRemoveArrayItem('interest_of_program', index)}>
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
-            <div className="space-y-3">
-                <Label>Kolaborator</Label>
-                <div className="flex gap-2">
-                    <Input
-                        value={newKolaborator}
-                        onChange={(e) => setNewKolaborator(e.target.value)}
-                        placeholder="Enter collaborator name"
-                        className="flex-1"
-                        onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleAddArrayItem('kolaborator', newKolaborator, setNewKolaborator);
-                            }
-                        }}
-                    />
-                    <Button 
-                        type="button" 
-                        onClick={() => handleAddArrayItem('kolaborator', newKolaborator, setNewKolaborator)}
-                    >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add
-                    </Button>
-                </div>
-                {formData.kolaborator.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                        {formData.kolaborator.map((item, index) => (
-                            <div key={index} className="flex items-center gap-1 bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">
-                                {item}
-                                <button type="button" onClick={() => handleRemoveArrayItem('kolaborator', index)}>
-                                    <X className="h-3 w-3" />
-                                </button>
-                            </div>
-                        ))}
+                <div className="space-y-3">
+                    <Label>Tags</Label>
+                    <div className="flex gap-2">
+                        <Input
+                            value={newTag}
+                            onChange={(e) => setNewTag(e.target.value)}
+                            placeholder="Enter tag"
+                            className="flex-1"
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddArrayItem('tags', newTag, setNewTag);
+                                }
+                            }}
+                        />
+                        <Button 
+                            type="button" 
+                            onClick={() => handleAddArrayItem('tags', newTag, setNewTag)}
+                        >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add
+                        </Button>
                     </div>
-                )}
+                    {formData.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {formData.tags.map((item, index) => (
+                                <div key={index} className="flex items-center gap-1 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                                    {item}
+                                    <button type="button" onClick={() => handleRemoveArrayItem('tags', index)}>
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="space-y-3">
+                    <Label>Kolaborator</Label>
+                    <div className="flex gap-2">
+                        <Input
+                            value={newKolaborator}
+                            onChange={(e) => setNewKolaborator(e.target.value)}
+                            placeholder="Enter collaborator name"
+                            className="flex-1"
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddArrayItem('kolaborator', newKolaborator, setNewKolaborator);
+                                }
+                            }}
+                        />
+                        <Button 
+                            type="button" 
+                            onClick={() => handleAddArrayItem('kolaborator', newKolaborator, setNewKolaborator)}
+                        >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add
+                        </Button>
+                    </div>
+                    {formData.kolaborator.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {formData.kolaborator.map((item, index) => (
+                                <div key={index} className="flex items-center gap-1 bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">
+                                    {item}
+                                    <button type="button" onClick={() => handleRemoveArrayItem('kolaborator', index)}>
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    );
+        )
+    };
 
     return (
         <Dialog open={isAddProgramModalOpen} onOpenChange={setIsAddProgramModalOpen}>
