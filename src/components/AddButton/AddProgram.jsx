@@ -699,7 +699,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                     </Select>
                 </div>
 
-                {/* <div className="space-y-2">
+                <div className="space-y-2">
                     <Label htmlFor="participant">Actual Participants</Label>
                     <Input
                         id="participant"
@@ -709,7 +709,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                         onChange={handleNumberInput('participant')}
                         placeholder="Number of participants"
                     />
-                </div> */}
+                </div>
             </div>
         </div>
     );
@@ -1116,7 +1116,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                         name="link_kontrak_freelance"
                         value={formData.link_kontrak_freelance}
                         onChange={handleInputChange}
-                        placeholder="https://drive.google.com/..."
                     />
                 </div>
 
@@ -1127,7 +1126,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                         name="link_surat_tugas"
                         value={formData.link_surat_tugas}
                         onChange={handleInputChange}
-                        placeholder="https://drive.google.com/..."
                     />
                 </div>
 
@@ -1138,7 +1136,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                         name="link_document_kontrak_partner"
                         value={formData.link_document_kontrak_partner}
                         onChange={handleInputChange}
-                        placeholder="https://drive.google.com/..."
                     />
                 </div>
             </div>
