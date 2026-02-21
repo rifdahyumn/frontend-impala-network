@@ -1663,6 +1663,278 @@ class ProgramService {
             }
         };
     }
+
+    async updateStage(programId, stageKey, value) {
+        try {
+            if (!programId) {
+                throw new Error('Program ID is required')
+            }
+
+            if (!stageKey) {
+                throw new Error('Stage key is required')
+            }
+
+            const stageValue = parseInt(value)
+            if (isNaN(stageValue) || stageValue < 0 || stageValue > 100) {
+                throw new Error('Stage value must be between 0 and 100')
+            }
+
+            const response = await fetch(`${this.baseURL}/program/${programId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    [stageKey]: stageValue,
+                    total_progress: await this.calculateTotalProgress(programId, { [stageKey]: stageValue })
+                })
+            })
+
+            return await this.handleResponse(response)
+
+        } catch (error) {
+            console.error('Error updating stage:', error)
+            throw error
+        }
+    }
+
+    async updateMultipleStages(programId, stages) {
+        try {
+            if (!programId) {
+                throw new Error('Program ID is required')
+            }
+
+            if (!stages || typeof stages !== 'object') {
+                throw new Error('Stage data is required')
+            }
+
+            Object.entries(stages).forEach(([key, value]) => {
+                const stageValue = parseInt(value)
+                if (isNaN(stageValue) || stageValue < 0 || stageValue > 100) {
+                    throw new Error(`Stage ${key} value must be between 0 and 100`)
+                }
+            })
+
+            const totalProgress = await this.calculateTotalProgress(programId, stages)
+
+            const response = await fetch(`${this.baseURL}/program/${programId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ...stages,
+                    total_progress: totalProgress
+                })
+            })
+
+            return await this.handleResponse(response)
+
+        } catch (error) {
+            console.error('Error updating multiple stage:', error)
+            throw error
+        }
+    }
+
+    async calculateTotalProgress(programId, updatedStages = {}) {
+        try {
+            const response = await fetch(`${this.baseURL}/program/${programId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            const result = await this.handleResponse(response)
+
+            if (result.success && result.data) {
+                const program = result.data
+
+                const stageKeys = [
+                     'stage_start_leads_realisasi',
+                    'stage_analysis_realisasi',
+                    'stage_project_creative_development_realisasi',
+                    'stage_program_description_realisasi',
+                    'stage_project_initial_presentation_realisasi',
+                    'stage_project_organizing_development_realisasi',
+                    'stage_project_implementation_presentation_realisasi',
+                    'stage_project_implementation_realisasi',
+                    'stage_project_evaluation_monitoring_realisasi',
+                    'stage_project_satisfaction_survey_realisasi',
+                    'stage_project_report_realisasi',
+                    'stage_end_sustainability_realisasi'
+                ]
+
+                let total = 0
+                let count = 0
+
+                stageKeys.forEach(key => {
+                    const value = updatedStages[key] !== undefined
+                        ? parseInt(updatedStages[key])
+                        : parseInt(program[key]) || 0
+
+                    total += value
+                    count ++
+                })
+
+                return count > 0 ? Math.round(total / count) : 0
+            }
+
+            return 0
+
+        } catch (error) {
+            console.error('Error calculating total progress:', error)
+            return 0
+        }
+    }
+
+    async getStageProgress(programId) {
+        try {
+            if (!programId) {
+                throw new Error('Program ID is required')
+            }
+
+            const response = await fetch(`${this.baseURL}/program/${programId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            const result = await this.handleResponse(response)
+
+            if (result.success && result.data) {
+                const program = result.data
+
+                const stages = {}
+                const stageKeys = [
+                     'stage_start_leads_realisasi',
+                    'stage_analysis_realisasi',
+                    'stage_project_creative_development_realisasi',
+                    'stage_program_description_realisasi',
+                    'stage_project_initial_presentation_realisasi',
+                    'stage_project_organizing_development_realisasi',
+                    'stage_project_implementation_presentation_realisasi',
+                    'stage_project_implementation_realisasi',
+                    'stage_project_evaluation_monitoring_realisasi',
+                    'stage_project_satisfaction_survey_realisasi',
+                    'stage_project_report_realisasi',
+                    'stage_end_sustainability_realisasi'
+                ]
+
+                stageKeys.forEach(key => {
+                    stages[key] = parseInt(program[key]) || 0
+                })
+
+                const total = Object.values(stages).reduce((acc, val) => acc + val, 0)
+                const totalProgress = stageKeys.length > 0 ? Math.round(total / stageKeys.length) : 0
+
+                return {
+                    success: true,
+                    data: {
+                        stages,
+                        totalProgress,
+                        completedStages: Object.values(stages).filter(v => v >= 100).length,
+                        inProgressStages: Object.values(stages).filter(v => v > 0 && v < 100).length,
+                        notStartedStages: Object.values(stages).filter(v => v === 0).length
+                    }
+                };
+            }
+
+            return {
+                success: false,
+                message: 'Failed to get stage progress'
+            };
+
+        } catch (error) {
+            console.error('Error getting stage progress', error)
+            throw error
+        }
+    }
+
+    async resetAllStages(programId) {
+        try {
+            if (!programId) {
+                throw new Error('Program ID is required');
+            }
+
+            const stageKeys = [
+                'stage_start_leads_realisasi',
+                'stage_analysis_realisasi',
+                'stage_project_creative_development_realisasi',
+                'stage_program_description_realisasi',
+                'stage_project_initial_presentation_realisasi',
+                'stage_project_organizing_development_realisasi',
+                'stage_project_implementation_presentation_realisasi',
+                'stage_project_implementation_realisasi',
+                'stage_project_evaluation_monitoring_realisasi',
+                'stage_project_satisfaction_survey_realisasi',
+                'stage_project_report_realisasi',
+                'stage_end_sustainability_realisasi'
+            ];
+
+            const resetData = {};
+            stageKeys.forEach(key => {
+                resetData[key] = 0;
+            });
+            resetData.total_progress = 0;
+
+            const response = await fetch(`${this.baseURL}/program/${programId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(resetData)
+            });
+
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error('Error resetting all stages:', error);
+            throw error;
+        }
+    }
+
+    async completeAllStages(programId) {
+        try {
+            if (!programId) {
+                throw new Error('Program ID is required');
+            }
+
+            const stageKeys = [
+                'stage_start_leads_realisasi',
+                'stage_analysis_realisasi',
+                'stage_project_creative_development_realisasi',
+                'stage_program_description_realisasi',
+                'stage_project_initial_presentation_realisasi',
+                'stage_project_organizing_development_realisasi',
+                'stage_project_implementation_presentation_realisasi',
+                'stage_project_implementation_realisasi',
+                'stage_project_evaluation_monitoring_realisasi',
+                'stage_project_satisfaction_survey_realisasi',
+                'stage_project_report_realisasi',
+                'stage_end_sustainability_realisasi'
+            ];
+
+            const completeData = {};
+            stageKeys.forEach(key => {
+                completeData[key] = 100;
+            });
+            completeData.total_progress = 100;
+
+            const response = await fetch(`${this.baseURL}/program/${programId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(completeData)
+            });
+
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error('Error completing all stages:', error);
+            throw error;
+        }
+    }
 }
 
 export default new ProgramService()

@@ -400,11 +400,11 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
     const handleInputChange = (e) => {
         const { name, value } = e.target;
 
-         const linkBudgetFields = [
-            'link_budgeting_offering',
-            'link_budgeting_usage_plan', 
-            'link_budgeting_finance_tracker'
-        ];
+        //  const linkBudgetFields = [
+        //     'link_budgeting_offering',
+        //     'link_budgeting_usage_plan', 
+        //     'link_budgeting_finance_tracker'
+        // ];
         
         const currencyFields = [
             'budget_offering',
@@ -1261,9 +1261,9 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
     };
 
     const renderAdditionalTab = () => {
-        const interestOfProgram = Array.isArray(formData.interest_of_program) ? formData.interest_of_program : [];
-        const tags = Array.isArray(formData.tags) ? formData.tags : [];
-        const kolaborator = Array.isArray(formData.kolaborator) ? formData.kolaborator : [];
+        // const interestOfProgram = Array.isArray(formData.interest_of_program) ? formData.interest_of_program : [];
+        // const tags = Array.isArray(formData.tags) ? formData.tags : [];
+        // const kolaborator = Array.isArray(formData.kolaborator) ? formData.kolaborator : [];
 
         return (        
             <div className="space-y-6">

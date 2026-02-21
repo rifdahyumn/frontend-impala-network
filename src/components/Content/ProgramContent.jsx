@@ -1,32 +1,34 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, Building, User, MapPin, Calendar, DollarSign, Share2Icon, ExternalLink, Loader2, TrendingUp, Users, BarChart, PenTool, FileText, Settings, Play, Target, CheckCircle2, Award, Clock, Circle, Presentation, Info } from "lucide-react";
+import { Edit, Trash2, Building, User, MapPin, Calendar, DollarSign, Share2Icon, ExternalLink, Loader2, TrendingUp, Users, BarChart, PenTool, FileText, Settings, Play, Target, CheckCircle2, Award, Clock, Circle, Presentation, Info, CheckCircle, RefreshCw } from "lucide-react";
 import toast from 'react-hot-toast';
 import clientService from '../../services/clientService';
 import ClientDetailModal from './ClientDetailModal';
+import programService from '../../services/programService';
 
-const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModal, onProgramEdited, showConfirm }) => {
+const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModal, onProgramEdited, showConfirm, onProgramUpdate }) => {
     const [activeCategory, setActiveCategory] = useState('Program Information');
     const [deleteLoading, setDeleteLoading] = useState(false);
+    const [updatingStage, setUpdatingStage] = useState(null)
 
     const [isClientModalOpen, setIsClientModalOpen] = useState(false)
     const [selectedClient, setSelectedClient] = useState(null)
     const [clientLoading, setClientLoading] = useState(false)
 
     const stageData = [
-        { key: 'stage_start_leads_realisasi', label: 'Start Leads', icon: Users, description: 'Pengumpulan leads awal', color: 'blue' },
-        { key: 'stage_analysis_realisasi', label: 'Analysis', icon: BarChart, description: 'Analisis kebutuhan program', color: 'indigo' },
-        { key: 'stage_project_creative_development_realisasi', label: 'Creative Development', icon: PenTool, description: 'Pengembangan konsep kreatif', color: 'purple' },
-        { key: 'stage_program_description_realisasi', label: 'Program Description', icon: FileText, description: 'Deskripsi program', color: 'pink' },
-        { key: 'stage_project_initial_presentation_realisasi', label: 'Initial Presentation', icon: Presentation, description: 'Presentasi awal ke client', color: 'orange' },
-        { key: 'stage_project_organizing_development_realisasi', label: 'Organizing Development', icon: Settings, description: 'Pengembangan organisasi program', color: 'teal' },
-        { key: 'stage_project_implementation_presentation_realisasi', label: 'Implementation Presentation', icon: Presentation, description: 'Presentasi implementasi', color: 'cyan' },
-        { key: 'stage_project_implementation_realisasi', label: 'Implementation', icon: Play, description: 'Pelaksanaan program', color: 'green' },
-        { key: 'stage_project_evaluation_monitoring_realisasi', label: 'Evaluation & Monitoring', icon: Target, description: 'Evaluasi dan monitoring', color: 'yellow' },
-        { key: 'stage_project_satisfaction_survey_realisasi', label: 'Satisfaction Survey', icon: CheckCircle2, description: 'Survey kepuasan', color: 'emerald' },
-        { key: 'stage_project_report_realisasi', label: 'Report', icon: FileText, description: 'Pembuatan laporan', color: 'amber' },
-        { key: 'stage_end_sustainability_realisasi', label: 'End & Sustainability', icon: Award, description: 'Keberlanjutan program', color: 'rose' },
+        { key: 'stage_start_leads_realisasi', label: 'Start Leads', icon: Users, description: 'Pengumpulan leads awal', color: 'blue', order: 1 },
+        { key: 'stage_analysis_realisasi', label: 'Analysis', icon: BarChart, description: 'Analisis kebutuhan program', color: 'indigo', order: 2 },
+        { key: 'stage_project_creative_development_realisasi', label: 'Creative Development', icon: PenTool, description: 'Pengembangan konsep kreatif', color: 'purple', order: 3 },
+        { key: 'stage_program_description_realisasi', label: 'Program Description', icon: FileText, description: 'Deskripsi program', color: 'pink', order: 4 },
+        { key: 'stage_project_initial_presentation_realisasi', label: 'Initial Presentation', icon: Presentation, description: 'Presentasi awal ke client', color: 'orange', order: 5 },
+        { key: 'stage_project_organizing_development_realisasi', label: 'Organizing Development', icon: Settings, description: 'Pengembangan organisasi program', color: 'teal', order: 6 },
+        { key: 'stage_project_implementation_presentation_realisasi', label: 'Implementation Presentation', icon: Presentation, description: 'Presentasi implementasi', color: 'cyan', order: 7 },
+        { key: 'stage_project_implementation_realisasi', label: 'Implementation', icon: Play, description: 'Pelaksanaan program', color: 'green', order: 8 },
+        { key: 'stage_project_evaluation_monitoring_realisasi', label: 'Evaluation & Monitoring', icon: Target, description: 'Evaluasi dan monitoring', color: 'yellow', order: 9 },
+        { key: 'stage_project_satisfaction_survey_realisasi', label: 'Satisfaction Survey', icon: CheckCircle2, description: 'Survey kepuasan', color: 'emerald', order: 10 },
+        { key: 'stage_project_report_realisasi', label: 'Report', icon: FileText, description: 'Pembuatan laporan', color: 'amber', order: 11 },
+        { key: 'stage_end_sustainability_realisasi', label: 'End & Sustainability', icon: Award, description: 'Keberlanjutan program', color: 'rose', order: 12 },
     ];
 
     const handleOpenClientModal = async () => {      
@@ -58,6 +60,96 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
     const handleCloseClienModal = () => {
         setIsClientModalOpen(false)
         setSelectedClient(null)
+    }
+
+    const handleStageClick = async (stageKey, currentValue) => {
+        if (!selectedProgram?.id) return
+
+        const newValue = currentValue >= 100 ? 0 : 100
+
+        setUpdatingStage(stageKey)
+
+        try {
+            const result = await programService.updateStage(selectedProgram.id, stageKey, newValue)
+
+            if (result.success) {
+                if (onProgramUpdate) {
+                    onProgramUpdate({
+                        ...selectedProgram,
+                        [stageKey]: newValue
+                    })
+                }
+
+                toast.success(`Stage Updated to ${newValue}%`)
+            } else {
+                toast.error('Failed to update stage')
+            }
+        } catch (error) {
+            console.error('Error updating stage: ', error)
+            toast.error('Error updating stage')
+        } finally {
+            setUpdatingStage(null)
+        }
+    }
+
+    const handleMarkAllCompleted = async () => {
+        if (!selectedProgram?.id) return
+
+        const updates = {}
+        stageData.forEach(stage => {
+            updates[stage.key] = 100
+        })
+
+        setUpdatingStage('all')
+
+        try {
+            const result = await programService.updateMultipleStages(selectedProgram.id, updates)
+
+            if (result.success) {
+                if (onProgramUpdate) {
+                    onProgramUpdate({
+                        ...selectedProgram,
+                        ...updates
+                    })
+                }
+                toast.success('All stages marked as completed')
+            }
+        } catch (error) {
+            console.error('Error updating stages', error)
+            toast.error('Failed to update stages')
+        } finally {
+            setUpdatingStage(null)
+        }
+    }
+
+    const handleResetAll = async () => {
+        if (!selectedProgram?.id) return
+
+        const updates = {};
+        stageData.forEach(stage => {
+            updates[stage.key] = 0;
+        });
+
+        setUpdatingStage('all');
+
+        try {
+             const result = await programService.updateMultipleStages(selectedProgram.id, updates);
+
+            if (result.success) {
+                if (onProgramUpdate) {
+                    onProgramUpdate({
+                        ...selectedProgram,
+                        ...updates
+                    });
+                }
+                toast.success('All stages reset');
+            }
+        } catch (error) {
+            console.error('Error updating stages:', error);
+            toast.error('Failed to reset stages');
+        } finally {
+            setUpdatingStage(null);
+        }
     }
 
     const detailFields = [
@@ -142,7 +234,8 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 icon: stage.icon,
                 description: stage.description,
                 color: stage.color,
-                isStage: true
+                isStage: true,
+                order: stage.order
             }))
         },
     ];
@@ -293,105 +386,135 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
         const stageValues = stageData.map(stage => parseInt(selectedProgram[stage.key]) || 0)
         const totalProgress = stageValues.reduce((acc, val) => acc + val, 0) / stageData.length
 
+        const completedStages = stageValues.filter(v => v >= 100).length;
+        const inProgressStages = stageValues.filter(v => v > 0 && v < 100).length;
+
+        const sortedStages = [...stageData].sort((a, b) => a.order - b.order);
+
         return (
             <div className='space-y-6'>
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-100">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h4 className='text-lg font-semibold text-gray-800'>
+                                Program Stages Progress
+                            </h4>
+                            <p>
+                                {completedStages} of {stageData.length} stages completed • {inProgressStages} in progress
+                            </p>
                         </div>
-
-                        <span className="text-2xl font-bold text-blue-600">
+                        <span className='text-3xl font-bold text-blue-600'>
                             {totalProgress.toFixed(1)}%
                         </span>
                     </div>
 
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div 
-                            className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
-                            style={{ width: `${totalProgress}%` }} 
+                    <div className='w-full bg-gray-200 rounded-full h-3 mb-2'>
+                        <div
+                            style={{ width: `${totalProgress}%` }}
+                            className='bg-blue-600 h-3 rounded-full transition-all duration-500'
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-8">
-                        {stageData.map((stage, index) => {
-                            const value = parseInt(selectedProgram[stage.key]) || 0
-                            const StageIcon = stage.icon
+                    <div className='flex justify-end gap-2 mt-4'>
+                        <Button
+                            variant='outline'
+                            size='sm'
+                            onClick={handleMarkAllCompleted}
+                            disabled={updatingStage === 'all'}
+                            className='text-green-600 border-green-200 hover:bg-green-50'
+                        >
+                            {updatingStage === 'all' ? (
+                                <Loader2 className='h-4 w-4 animate-spin mr-2' />
+                            ) : (
+                                <CheckCircle className='h-4 w-4 mr-2' />
+                            )}
+                            Mark All Completed
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size='sm'
+                            onClick={handleResetAll}
+                            disabled={updatingStage === 'all'}
+                            className='text-gray-600 border-gray-200 hover:bg-gray-50'
+                        >
+                            <RefreshCw />
+                            Reset All
+                        </Button>
+                    </div>
+                </div>
 
-                            let statusColor = 'gray'
-                            let statusBg = 'bg-gray-50'
-                            let statusText = 'text-gray-600'
-                            let progressColor = 'bg-gray-400'
+                <div className='grid grid-cols-3 gap-4'>
+                    {sortedStages.map((stage) => {
+                        const value = parseInt(selectedProgram[stage.key]) || 0
+                        const StageIcon = stage.icon
+                        const isCompleted = value >= 100
+                        const isInProgress = value > 0 && value < 100
+                        const isUpdating = updatingStage === stage.key
 
-                            if (value >= 100) {
-                                statusColor = 'green'
-                                statusBg = 'bg-green-50'
-                                statusText = 'text-green-700'
-                                progressColor = 'bg-green-500'
-                            } else if (value < 0) {
-                                statusColor = 'yellow';
-                                statusBg = 'bg-yellow-50';
-                                statusText = 'text-yellow-700';
-                                progressColor = 'bg-yellow-500';
-                            }
+                        let statusColor = 'gray'
+                        let statusBg = 'bg-gray-50'
+                        let borderColor = 'border-gray-200'
+                        let textColor = 'text-gray-600'
+                        let iconBg = 'bg-gray-100'
+                        let iconColor = 'text-gray-500'
 
-                            return (
-                                <div
-                                    key={index}
-                                    className={`border rounded-lg p-4 ${statusBg} border-${statusColor}-200 hover:shadow-md transition-shadow`}
-                                >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <div className={`p-2 rounded-lg bg-${statusColor}-100`}>
-                                                <StageIcon className={`w-4 h-4 text-${statusColor}-600`} />
-                                            </div>
+                        if (isCompleted) {
+                            statusColor = 'green'
+                            statusBg = 'bg-green-50'
+                            borderColor = 'border-green-200'
+                            textColor = 'text-green-700'
+                            iconBg = 'bg-green-100'
+                            iconColor = 'text-green-600'
+                        } else if (isInProgress) {
+                            statusColor = 'yellow'
+                            statusBg = 'bg-yellow-50'
+                            borderColor = 'border-yellow-200'
+                            textColor = 'text-yellow-700'
+                            iconBg = 'bg-yellow-100'
+                            iconColor = 'text-yellow-600'
+                        }
 
-                                            <div>
-                                                <h5 className="font-medium text-gray-800">
-                                                    {stage.label}
-                                                </h5>
-                                            </div>
+                        return (
+                            <div
+                                key={stage.key}
+                                className={`border rounded-lg p-4 ${statusBg} ${borderColor} hover:shadow-md transition-all cursor-pointer group`}
+                                onClick={() => handleStageClick(stage.key, value)}
+                            >
+                                <div className='flex items-center justify-between mb-3'>
+                                    <div className='flex items-center gap-3'>
+                                        <div className={`p-2 rounded-lg ${iconBg} transition-colors group-hover:scale-110`}>
+                                            <StageIcon className={`w-5 h-5 ${iconColor}`} />
                                         </div>
+                                        <div>
+                                            <h5 className='font-semibold text-gray-800'>
+                                                {stage.label}
+                                            </h5>
+                                        </div>
+                                    </div>
 
-                                        <span className={`text-sm font-semibold ${statusText}`}>
+                                    {isUpdating ? (
+                                        <Loader2 className='h-5 w-5 animate-spin text-blue-600' />
+                                    ) : (
+                                        <span className={`text-sm font-bold ${textColor}`}>
                                             {value}%
                                         </span>
-                                    </div>
-
-                                    <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
-                                        <div 
-                                            className={`${progressColor} h-1.5 rounded-full transition-all duration-500`}
-                                            style={{ width: `${value}%` }}
-                                        />
-                                    </div>
-
-                                    <div className="flex items-center gap-1 mt-2">
-                                        {value >= 100 ? (
-                                            <>
-                                                <CheckCircle2 className="w-3 h-3 text-green-500" />
-                                                <span className="text-xs text-green-600">
-                                                    Completed
-                                                </span>
-                                            </>
-                                        ) : value > 0 ? (
-                                            <>
-                                                <Clock className="w-3 h-3 text-yellow-500" />
-                                                <span className="text-xs text-yellow-600">
-                                                    In Progress
-                                                </span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Circle className="w-3 h-3 text-gray-400" />
-                                                <span className="text-xs text-gray-500">
-                                                    Not Started
-                                                </span>
-                                            </>
-                                        )}
-                                    </div>
+                                    )}
                                 </div>
-                            )
-                        })}
-                    </div>
+
+                                <div className='w-full bg-gray-200 rounded-full h-2 mb-3'>
+                                    <div
+                                        className={`h-2 rounded-full transition-all duration-500 ${
+                                            isCompleted ? 'bg-green-500' :
+                                            isInProgress ? 'bg-yellow-500' : 'bg-gray-400'
+                                        }`}
+                                        style={{ width: `${value}%` }}
+                                    />
+                                </div>
+
+                                
+                            </div>
+                        )
+                    })}
                 </div>
             </div>
         )
