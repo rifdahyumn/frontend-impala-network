@@ -6,10 +6,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useEffect, useState, useCallback } from "react";
 import { Plus, X, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
-import heteroSoloService from "../../services/heteroSoloService";
+import heteroSemarangService from "../../services/heteroSemarangService";
 import locationService from "../../services/locationService";
 
-const AddMemberSolo = ({ 
+const AddMemberSemarang = ({ 
     isAddMemberModalOpen, 
     setIsAddMemberModalOpen, 
     onAddMember, 
@@ -786,7 +786,7 @@ const AddMemberSolo = ({
                     await onEditMember(editData.id, memberData);
                     toast.success('Member updated successfully');
                 } else {
-                    await heteroSoloService.updateMemberHeteroSolo(editData.id, memberData);
+                    await heteroSemarangService.updateMemberHeteroSemarang(editData.id, memberData);
                     toast.success('Member updated successfully');
                 }
             } else {
@@ -794,7 +794,7 @@ const AddMemberSolo = ({
                     await onAddMember(memberData);
                     toast.success('Member added successfully');
                 } else {
-                    await heteroSoloService.addMemberHeteroSolo(memberData);
+                    await heteroSemarangService.addMemberHeteroSemarang(memberData);
                     toast.success('Member added successfully');
                 }
             }
@@ -1001,4 +1001,4 @@ const AddMemberSolo = ({
     );
 };
 
-export default AddMemberSolo;
+export default AddMemberSemarang;

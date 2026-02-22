@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, Building, User, MapPin, Calendar, DollarSign, Share2Icon, ExternalLink, Loader2 } from "lucide-react";
+import { Edit, Trash2, Package, Briefcase, Tag, FileText, ClipboardList, User, MapPin, Calendar, DollarSign, Share2Icon, ExternalLink, Loader2 } from "lucide-react";
 import toast from 'react-hot-toast';
 
 const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModal, onProgramEdited, showConfirm }) => {
@@ -11,12 +11,12 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
     const detailFields = [
         {
             category: 'Program Information',
-            icon: Building,
+            icon: ClipboardList,
             fields: [
-                { key: 'program_name', label: 'Program Name', icon: Building },
-                { key: 'client', label: 'Client', icon: Building },
-                { key: 'category', label: 'Category', icon: Building },
-                { key: 'description', label: 'Description', icon: Building }
+                { key: 'program_name', label: 'Program Name', icon: Package },
+                { key: 'client', label: 'Client', icon: Briefcase },
+                { key: 'category', label: 'Category', icon: Tag },
+                { key: 'description', label: 'Description', icon: FileText }
             ]
         },
         {
@@ -333,7 +333,7 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 ) : (
                     <div className='text-center py-8 text-gray-500'>
                         <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                            <Building className="w-8 h-8 text-gray-400" />
+                            <ClipboardList className="w-8 h-8 text-gray-400" />
                         </div>
                         <h3 className="text-lg font-medium text-gray-700 mb-2">No Program Selected</h3>
                         <p className="text-sm text-gray-500 max-w-md mx-auto">

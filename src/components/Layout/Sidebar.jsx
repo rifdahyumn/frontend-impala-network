@@ -1,4 +1,4 @@
-import { Phone, ClipboardList, BarChart3, Building2, FileSpreadsheet, User, Home, ChevronDown, ChevronRight } from 'lucide-react';
+import { Phone, ClipboardList, BarChart3, Building2, FileSpreadsheet, User, UserCog, Home, ChevronDown, ChevronRight } from 'lucide-react';
 import React, { useEffect, useState } from 'react'
 import { Button } from '../ui/button';
 import { RiDashboardFill } from "react-icons/ri";
@@ -72,7 +72,7 @@ const Sidebar = () => {
                 { icon: FileSpreadsheet, label: 'Form Builder', path: '/form-builder' },
 
                 ...(user?.role === 'admin'
-                    ? [{ icon: User, label: 'Account', path: '/user' }]
+                    ? [{ icon: UserCog, label: 'Account', path: '/user' }]
                     : []
                 )
             ];

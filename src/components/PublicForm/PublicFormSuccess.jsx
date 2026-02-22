@@ -43,36 +43,48 @@ const PublicFormSuccess = ({ template, submittedData, getAfterSubmitMessage }) =
                                     Ringkasan Pendaftaran
                                 </h3>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Nama Lengkap:</span>
-                                            <span className="font-semibold">{submittedData.full_name}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Email:</span>
-                                            <span className="font-semibold">{submittedData.email}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Kategori:</span>
-                                            <span className="font-semibold">{submittedData.category}</span>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Tanggal Pendaftaran:</span>
-                                            <span className="font-semibold">{submittedData.submittedAt}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Program:</span>
-                                            <span className="font-semibold">{submittedData.programName}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Status:</span>
-                                            <span className="font-semibold text-green-600">Terkonfirmasi</span>
-                                        </div>
-                                    </div>
-                                </div>
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-3">
+        <div className="flex justify-between items-start">
+            <span className="text-gray-600">Nama Lengkap:</span>
+            <span className="font-semibold text-right max-w-[60%] break-words">
+                {submittedData.full_name}
+            </span>
+        </div>
+        <div className="flex justify-between items-start">
+            <span className="text-gray-600">Email:</span>
+            <span className="font-semibold text-right max-w-[60%] break-words">
+                {submittedData.email}
+            </span>
+        </div>
+        <div className="flex justify-between items-start">
+            <span className="text-gray-600">Kategori:</span>
+            <span className="font-semibold text-right max-w-[60%] break-words">
+                {submittedData.category}
+            </span>
+        </div>
+    </div>
+    <div className="space-y-3">
+        <div className="flex justify-between items-start">
+            <span className="text-gray-600">Tanggal Pendaftaran:</span>
+            <span className="font-semibold text-right">
+                {submittedData.submittedAt}
+            </span>
+        </div>
+        <div className="flex justify-between items-start">
+            <span className="text-gray-600">Program:</span>
+            <span className="font-semibold text-right max-w-[60%] break-words">
+                {submittedData.programName}
+            </span>
+        </div>
+        <div className="flex justify-between items-start">
+            <span className="text-gray-600">Status:</span>
+            <span className="font-semibold text-green-600 text-right">
+                Terkonfirmasi
+            </span>
+        </div>
+    </div>
+</div>
                             </div>
                         )}
 
