@@ -20,15 +20,15 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
     const stageData = [
         { key: 'stage_start_leads_realisasi', label: 'Start Leads', icon: Users, description: 'Pengumpulan leads awal', color: 'blue', order: 1 },
         { key: 'stage_analysis_realisasi', label: 'Analysis', icon: BarChart, description: 'Analisis kebutuhan program', color: 'indigo', order: 2 },
-        { key: 'stage_project_creative_development_realisasi', label: 'Creative Development', icon: PenTool, description: 'Pengembangan konsep kreatif', color: 'purple', order: 3 },
+        { key: 'stage_project_creative_development_realisasi', label: 'Project Creative Development', icon: PenTool, description: 'Pengembangan konsep kreatif', color: 'purple', order: 3 },
         { key: 'stage_program_description_realisasi', label: 'Program Description', icon: FileText, description: 'Deskripsi program', color: 'pink', order: 4 },
-        { key: 'stage_project_initial_presentation_realisasi', label: 'Initial Presentation', icon: Presentation, description: 'Presentasi awal ke client', color: 'orange', order: 5 },
-        { key: 'stage_project_organizing_development_realisasi', label: 'Organizing Development', icon: Settings, description: 'Pengembangan organisasi program', color: 'teal', order: 6 },
-        { key: 'stage_project_implementation_presentation_realisasi', label: 'Implementation Presentation', icon: Presentation, description: 'Presentasi implementasi', color: 'cyan', order: 7 },
-        { key: 'stage_project_implementation_realisasi', label: 'Implementation', icon: Play, description: 'Pelaksanaan program', color: 'green', order: 8 },
-        { key: 'stage_project_evaluation_monitoring_realisasi', label: 'Evaluation & Monitoring', icon: Target, description: 'Evaluasi dan monitoring', color: 'yellow', order: 9 },
-        { key: 'stage_project_satisfaction_survey_realisasi', label: 'Satisfaction Survey', icon: CheckCircle2, description: 'Survey kepuasan', color: 'emerald', order: 10 },
-        { key: 'stage_project_report_realisasi', label: 'Report', icon: FileText, description: 'Pembuatan laporan', color: 'amber', order: 11 },
+        { key: 'stage_project_initial_presentation_realisasi', label: 'Project Initial Presentation', icon: Presentation, description: 'Presentasi awal ke client', color: 'orange', order: 5 },
+        { key: 'stage_project_organizing_development_realisasi', label: 'Project Organizing Development', icon: Settings, description: 'Pengembangan organisasi program', color: 'teal', order: 6 },
+        { key: 'stage_project_implementation_presentation_realisasi', label: 'Project Implementation Presentation', icon: Presentation, description: 'Presentasi implementasi', color: 'cyan', order: 7 },
+        { key: 'stage_project_implementation_realisasi', label: 'Project Implementation', icon: Play, description: 'Pelaksanaan program', color: 'green', order: 8 },
+        { key: 'stage_project_evaluation_monitoring_realisasi', label: 'Project Evaluation & Monitoring', icon: Target, description: 'Evaluasi dan monitoring', color: 'yellow', order: 9 },
+        { key: 'stage_project_satisfaction_survey_realisasi', label: 'Project Satisfaction Survey', icon: CheckCircle2, description: 'Survey kepuasan', color: 'emerald', order: 10 },
+        { key: 'stage_project_report_realisasi', label: 'Project Report', icon: FileText, description: 'Pembuatan laporan', color: 'amber', order: 11 },
         { key: 'stage_end_sustainability_realisasi', label: 'End & Sustainability', icon: Award, description: 'Keberlanjutan program', color: 'rose', order: 12 },
     ];
 
@@ -72,7 +72,16 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
             return;
         }
 
-        const newValue = currentValue >= 100 ? 0 : 100;
+        let newValue
+        if (currentValue === 0) {
+            newValue = 50
+        } else if (currentValue === 50) {
+            newValue = 100
+        } else if (currentValue === 100) {
+            newValue = 0
+        } else {
+            newValue = currentValue > 0 ? 100 : 50
+        }
 
         setUpdatingStage(stageKey);
 
@@ -401,11 +410,11 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-100">
                     <div className="flex items-center justify-between mb-4">
                         <div>
-                            <h4 className='text-lg font-semibold text-gray-800'>
+                            <h4 className='text-base font-semibold text-gray-800'>
                                 Program Stages Progress
                             </h4>
                         </div>
-                        <span className='text-3xl font-bold text-blue-600'>
+                        <span className='text-xl font-bold text-blue-600'>
                             {totalProgress.toFixed(1)}%
                         </span>
                     </div>
@@ -413,7 +422,7 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                     <div className='w-full bg-gray-200 rounded-full h-3 mb-2'>
                         <div
                             style={{ width: `${totalProgress}%` }}
-                            className='bg-blue-600 h-3 rounded-full transition-all duration-500'
+                            className='bg-blue-600 h-1.5 rounded-full transition-all duration-500'
                         />
                     </div>
 
@@ -453,7 +462,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                         const isInProgress = value > 0 && value < 100
                         const isUpdating = updatingStage === stage.key
 
-                        // let statusColor = 'gray'
                         let statusBg = 'bg-gray-50'
                         let borderColor = 'border-gray-200'
                         let textColor = 'text-gray-600'
@@ -461,14 +469,12 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                         let iconColor = 'text-gray-500'
 
                         if (isCompleted) {
-                            // statusColor = 'green'
                             statusBg = 'bg-green-50'
                             borderColor = 'border-green-200'
                             textColor = 'text-green-700'
                             iconBg = 'bg-green-100'
                             iconColor = 'text-green-600'
                         } else if (isInProgress) {
-                            // statusColor = 'yellow'
                             statusBg = 'bg-yellow-50'
                             borderColor = 'border-yellow-200'
                             textColor = 'text-yellow-700'
