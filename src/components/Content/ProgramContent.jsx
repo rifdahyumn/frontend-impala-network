@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, Building, User, MapPin, Calendar, DollarSign, Share2Icon, ExternalLink, Loader2, TrendingUp, Users, BarChart, PenTool, FileText, Settings, Play, Target, CheckCircle2, Award, Clock, Circle, Presentation, Info, CheckCircle, RefreshCw } from "lucide-react";
+import { Edit, Trash2, Building, User, MapPin, Calendar, DollarSign, Share2Icon, ExternalLink, Loader2, TrendingUp, Users, BarChart, PenTool, FileText, Settings, Play, Target, CheckCircle2, Award, Clock, Circle, Presentation, Info, CheckCircle, RefreshCw, ChevronLeft } from "lucide-react";
 import toast from 'react-hot-toast';
 import clientService from '../../services/clientService';
 import ClientDetailModal from './ClientDetailModal';
@@ -11,6 +11,7 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
     const [activeCategory, setActiveCategory] = useState('Program Information');
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [updatingStage, setUpdatingStage] = useState(null)
+    const [localProgram, setLocalProgram] = useState(selectedProgram)
 
     const [isClientModalOpen, setIsClientModalOpen] = useState(false)
     const [selectedClient, setSelectedClient] = useState(null)
@@ -62,35 +63,42 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
         setSelectedClient(null)
     }
 
+    useEffect(() => {
+        setLocalProgram(selectedProgram)
+    }, [selectedProgram])
+
     const handleStageClick = async (stageKey, currentValue) => {
-        if (!selectedProgram?.id) return
+        if (!localProgram?.id) {
+            return;
+        }
 
-        const newValue = currentValue >= 100 ? 0 : 100
+        const newValue = currentValue >= 100 ? 0 : 100;
 
-        setUpdatingStage(stageKey)
+        setUpdatingStage(stageKey);
 
         try {
-            const result = await programService.updateStage(selectedProgram.id, stageKey, newValue)
+            const result = await programService.updateStage(localProgram.id, stageKey, newValue);
 
-            if (result.success) {
-                if (onProgramUpdate) {
-                    onProgramUpdate({
-                        ...selectedProgram,
-                        [stageKey]: newValue
-                    })
-                }
+            if (result && result.success) {
+                setLocalProgram(prev => {
+                    const updated = {
+                        ...prev,
+                        [stageKey]: newValue,
+                        total_progress: result.data?.total_progress || prev.total_progress
+                    };
+                    return updated;
+                });
 
-                toast.success(`Stage Updated to ${newValue}%`)
+                toast.success(`Stage Updated to ${newValue}%`);
             } else {
-                toast.error('Failed to update stage')
+                toast.error('Failed to update stage: ' + (result?.message || 'Unknown error'));
             }
         } catch (error) {
-            console.error('Error updating stage: ', error)
-            toast.error('Error updating stage')
+            toast.error('Error updating stage: ' + error.message);
         } finally {
-            setUpdatingStage(null)
+            setUpdatingStage(null);
         }
-    }
+    };
 
     const handleMarkAllCompleted = async () => {
         if (!selectedProgram?.id) return
@@ -381,13 +389,10 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
     };
 
     const StagesProgress = () => {
-        if (!selectedProgram) return null
+        if (!localProgram) return null
 
-        const stageValues = stageData.map(stage => parseInt(selectedProgram[stage.key]) || 0)
+        const stageValues = stageData.map(stage => parseInt(localProgram[stage.key]) || 0)
         const totalProgress = stageValues.reduce((acc, val) => acc + val, 0) / stageData.length
-
-        const completedStages = stageValues.filter(v => v >= 100).length;
-        const inProgressStages = stageValues.filter(v => v > 0 && v < 100).length;
 
         const sortedStages = [...stageData].sort((a, b) => a.order - b.order);
 
@@ -399,9 +404,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                             <h4 className='text-lg font-semibold text-gray-800'>
                                 Program Stages Progress
                             </h4>
-                            <p>
-                                {completedStages} of {stageData.length} stages completed • {inProgressStages} in progress
-                            </p>
                         </div>
                         <span className='text-3xl font-bold text-blue-600'>
                             {totalProgress.toFixed(1)}%
@@ -445,13 +447,13 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
 
                 <div className='grid grid-cols-3 gap-4'>
                     {sortedStages.map((stage) => {
-                        const value = parseInt(selectedProgram[stage.key]) || 0
+                        const value = parseInt(localProgram[stage.key]) || 0
                         const StageIcon = stage.icon
                         const isCompleted = value >= 100
                         const isInProgress = value > 0 && value < 100
                         const isUpdating = updatingStage === stage.key
 
-                        let statusColor = 'gray'
+                        // let statusColor = 'gray'
                         let statusBg = 'bg-gray-50'
                         let borderColor = 'border-gray-200'
                         let textColor = 'text-gray-600'
@@ -459,14 +461,14 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                         let iconColor = 'text-gray-500'
 
                         if (isCompleted) {
-                            statusColor = 'green'
+                            // statusColor = 'green'
                             statusBg = 'bg-green-50'
                             borderColor = 'border-green-200'
                             textColor = 'text-green-700'
                             iconBg = 'bg-green-100'
                             iconColor = 'text-green-600'
                         } else if (isInProgress) {
-                            statusColor = 'yellow'
+                            // statusColor = 'yellow'
                             statusBg = 'bg-yellow-50'
                             borderColor = 'border-yellow-200'
                             textColor = 'text-yellow-700'
@@ -511,7 +513,37 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                                     />
                                 </div>
 
-                                
+                                <div className='flex items-center justify-between mt-2'>
+                                    <div className='flex items-center gap-1'>
+                                        {isCompleted ? (
+                                            <>
+                                                <CheckCircle2 className='w-4 h-4 text-green-500' />
+                                                <span className='text-xs font-medium text-green-600'>
+                                                    Completed
+                                                </span>
+                                            </>
+                                        ) : isInProgress ? (
+                                            <>
+                                                <Clock className='w-4 h-4 text-amber-500' />
+                                                <span className='text-xs font-medium text-amber-600'>
+                                                    In Progress
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Circle className='w-4 h-4 text-gray-500' />
+                                                <span className='text-xs font-medium text-gray-600'>
+                                                    Not Started
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    <span className='text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1'>
+                                        Click to Toggle
+                                        <ChevronLeft className='w-3 h-3' />
+                                    </span>
+                                </div>
                             </div>
                         )
                     })}
@@ -523,7 +555,7 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
     const ActiveCategoryContent = () => {
         const activeCategoryData = getActiveCategoryData();
 
-        if (!activeCategoryData || !selectedProgram) return null;
+        if (!activeCategoryData || !localProgram) return null;
 
         if (activeCategory === "Stages") {
             return <StagesProgress />
@@ -541,7 +573,7 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 <div className='grid grid-cols-2 gap-4'>
                     {activeCategoryData.fields.map((field, index) => {
                         const FieldIcon = field.icon;
-                        const rawValue = selectedProgram[field.key] || '-';
+                        const rawValue = localProgram[field.key] || '-';
 
                         let displayValue = rawValue === undefined || rawValue === null ? '-' : rawValue
 
@@ -567,10 +599,10 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
 
                                                     <div>
                                                         <h4 className='font-semibold text-gray-800'>
-                                                            {selectedProgram.nama_perusahaan || selectedProgram.client || 'Client Name'}
+                                                            {localProgram.nama_perusahaan || localProgram.client || 'Client Name'}
                                                         </h4>
                                                         <p className='text-xs text-gray-500 mt-0.5'>
-                                                            {selectedProgram.partner_pic_name || 'No PIC assigned'}
+                                                            {localProgram.partner_pic_name || 'No PIC assigned'}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -616,8 +648,8 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                             rawValue.join(', ') : 
                             displayValue;
 
-                        const secondaryValue = field.hasSecondaryValue && selectedProgram[field.secondaryKey]
-                            ? selectedProgram[field.secondaryKey]
+                        const secondaryValue = field.hasSecondaryValue && localProgram[field.secondaryKey]
+                            ? localProgram[field.secondaryKey]
                             : null
 
                         return (
