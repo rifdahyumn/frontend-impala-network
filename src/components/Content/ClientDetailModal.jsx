@@ -1,38 +1,12 @@
-import { Briefcase, Building, Calendar, FileText, Loader2, Mail, MapPin, Phone, User, Users, X, ExternalLink, Award, Globe, CheckCircle, Clock, TrendingUp, Star, Shield, CreditCard, Linkedin, Instagram, Twitter } from "lucide-react"
+import { Briefcase, Building, Calendar, FileText, Loader2, Mail, MapPin, Phone, User, Users, X, ExternalLink, Award, Globe, CheckCircle, Clock, TrendingUp, Star, Shield, CreditCard, Linkedin, Instagram, Twitter, Info } from "lucide-react"
 import { Button } from "../ui/button"
 import { Dialog, DialogContent} from "../ui/dialog"
 import { useState } from "react"
 
-const ClientDetailModal = ({ isOpen, onClose, client, loading }) => {
+const ClientDetailModal = ({ isOpen, onClose, client, loading, error, onRetry }) => {
     const [activeTab, setActiveTab] = useState('personal')
     
     if (!isOpen) return null
-
-    // eslint-disable-next-line no-unused-vars
-    const StatCard = ({ icon: Icon, label, value, color = "blue" }) => {
-        if (!value) return null
-        
-        const colors = {
-            blue: "bg-blue-50 text-blue-700 border-blue-200",
-            green: "bg-green-50 text-green-700 border-green-200",
-            purple: "bg-purple-50 text-purple-700 border-purple-200",
-            orange: "bg-orange-50 text-orange-700 border-orange-200",
-            pink: "bg-pink-50 text-pink-700 border-pink-200",
-            indigo: "bg-indigo-50 text-indigo-700 border-indigo-200"
-        }
-
-        return (
-            <div className={`flex items-center gap-3 p-3 rounded-lg border ${colors[color] || colors.blue}`}>
-                <div className="p-2 rounded-lg bg-white/50">
-                    <Icon className={`h-4 w-4 text-${color}-600`} />
-                </div>
-                <div>
-                    <p className="text-xs font-medium opacity-75">{label}</p>
-                    <p className="text-sm font-bold">{value}</p>
-                </div>
-            </div>
-        )
-    }
 
     // eslint-disable-next-line no-unused-vars
     const InfoRow = ({ icon: Icon, label, value, isLink, badge }) => {
@@ -166,6 +140,47 @@ const ClientDetailModal = ({ isOpen, onClose, client, loading }) => {
             default:
                 return null
         }
+    }
+
+    if (error) {
+        return (
+            <Dialog open={isOpen} onOpenChange={onClose}>
+                <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden">
+                    <div className="p-6 text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                            <Info className="h-8 w-8 text-red-500" />
+                        </div>
+
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                            Error
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-6">
+                            {error}
+                        </p>
+
+                        <div className="flex  justify-center gap-3">
+                            {onRetry && (
+                                <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={onRetry}
+                                >
+                                    Try Again
+                                </Button>
+                            )}
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={onClose}
+                            >
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        )
     }
 
     return (

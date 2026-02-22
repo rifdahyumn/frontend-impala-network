@@ -551,7 +551,7 @@ class ClientService {
                     return {
                         success: false,
                         data: null,
-                        message: 'No client found with this program name'
+                        message: 'No client/partner found with this program name'
                     }
                 }
             }

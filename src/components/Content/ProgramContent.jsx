@@ -12,6 +12,7 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [updatingStage, setUpdatingStage] = useState(null)
     const [localProgram, setLocalProgram] = useState(selectedProgram)
+    const [clientError, setClientError] = useState(null)
 
     const [isClientModalOpen, setIsClientModalOpen] = useState(false)
     const [selectedClient, setSelectedClient] = useState(null)
@@ -39,6 +40,7 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
         }
 
         setClientLoading(true);
+        setClientError(null)
 
         try {
             const result = await clientService.getClientByProgramName(selectedProgram.program_name)
@@ -47,16 +49,24 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 setSelectedClient(result.data)
                 setIsClientModalOpen(true)
             } else {
-                toast.error(result.message || 'Client not found for this program')    
+                setClientError(result.message || 'Cient data not found for this program')
+                setIsClientModalOpen(true)
             }
 
         } catch (error) {
             console.error('Error fetching client:', error);
-            toast.error('Failed to load client details');
+            setClientError('Failed to load client details. Please try again')
+            setIsClientModalOpen(true)
         } finally {
             setClientLoading(false);
         }
     };
+
+    const handleRetryClient = () => {
+        setClientError(null)
+        setSelectedClient(null)
+        handleOpenClientModal()
+    }
 
     const handleCloseClienModal = () => {
         setIsClientModalOpen(false)
@@ -596,11 +606,11 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                                             {field.label}
                                         </label>
 
-                                        <div className='bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4'>
+                                        <div className='bg-gradient-to-r from-rose-50 to-amber-50 rounded-lg border border-amber-200 p-4'>
                                             <div className='flex items-center justify-between'>
                                                 <div className='flex items-center gap-3'>
                                                     <div className='p-2 bg-blue-100 rounded-lg'>
-                                                        <Building className='h-5 w-5 text-blue-600' />
+                                                        <Building className='h-5 w-5 text-amber-600' />
                                                     </div>
 
                                                     <div>
@@ -617,7 +627,7 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                                                     <button
                                                         onClick={handleOpenClientModal}
                                                         disabled={clientLoading}
-                                                        className='group relative inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-all duration-200 disabled:bg-blue-300 disabled:cursor-not-allowed shadow-sm hover:shadow-md'
+                                                        className='group relative inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white text-sm rounded-lg hover:bg-amber-600 transition-all duration-200 disabled:bg-amber-300 disabled:cursor-not-allowed shadow-sm hover:shadow-md'
                                                         title='Click to view complete client details'
                                                     >
                                                         {clientLoading ? (
@@ -723,64 +733,67 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
     return (
         <Card className="mb-6">
             <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-semibold">{detailTitle}</CardTitle>
-                    {preparedProgram && (
-                        <div className="flex gap-2">
-                            <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="flex items-center gap-2"
-                                onClick={handleEdit}
-                            >
-                                <Edit className="h-4 w-4" />
-                                Edit
-                            </Button>
-                            <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                                onClick={handleDelete}
-                                disabled={deleteLoading}
-                            >
-                                {deleteLoading ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Deleting...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Trash2 className="h-4 w-4" />
-                                        Delete
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    )}
+                <CardTitle className="text-base font-semibold">{detailTitle}</CardTitle>
+                <div className="flex items-center justify-between py-4">
+                    <div className='flex gap-2'>
+                        
+                        {detailFields.map((category, index) => {
+                            const CategoryIcon = category.icon;
+
+                            return (
+                                <Button
+                                    key={index}
+                                    variant={activeCategory === category.category ? 'default' : 'outline'}
+                                    size="sm"
+                                    className="flex items-center gap-2"
+                                    onClick={() => setActiveCategory(category.category)}
+                                >
+                                    <CategoryIcon className='h-4 w-4' />
+                                    {category.category}
+                                </Button>
+                            );
+                        })}
+                    </div>
+                    <div>
+                        {preparedProgram && (
+                            <div className="flex gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="flex items-center gap-2"
+                                    onClick={handleEdit}
+                                >
+                                    <Edit className="h-4 w-4" />
+                                    Edit
+                                </Button>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                    onClick={handleDelete}
+                                    disabled={deleteLoading}
+                                >
+                                    {deleteLoading ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Deleting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Trash2 className="h-4 w-4" />
+                                            Delete
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </CardHeader>
 
             <CardContent>
                 {preparedProgram ? (
                     <div className='space-y-6'>
-                        <div className='flex flex-wrap gap-2 mb-4'>
-                            {detailFields.map((category, index) => {
-                                const CategoryIcon = category.icon;
-
-                                return (
-                                    <Button
-                                        key={index}
-                                        variant={activeCategory === category.category ? 'default' : 'outline'}
-                                        size="sm"
-                                        className="flex items-center gap-2"
-                                        onClick={() => setActiveCategory(category.category)}
-                                    >
-                                        <CategoryIcon className='h-4 w-4' />
-                                        {category.category}
-                                    </Button>
-                                );
-                            })}
-                        </div>
 
                         <ActiveCategoryContent />
                     </div>
@@ -802,6 +815,8 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 onClose={handleCloseClienModal}
                 client={selectedClient}
                 loading={clientLoading}
+                error={clientError}
+                onRetry={handleRetryClient}
             />
         </Card>
     );
