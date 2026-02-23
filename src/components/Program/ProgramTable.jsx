@@ -115,7 +115,7 @@ const ProgramTable = ({
                 <MemberTable
                     members={formattedPrograms}
                     onSelectMember={handleSelectProgram}
-                    headers={['No', 'Program Name', 'Client', 'Category', 'Status', 'Duration', 'Price', 'Action']}
+                    headers={['No', 'Program Name', 'Client', 'Category', 'Status', 'Duration', 'Budget', 'Action']}
                     isLoading={loading || isImporting}
                     formatFields={{
                         price: (value) => {

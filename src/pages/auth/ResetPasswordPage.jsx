@@ -74,8 +74,6 @@ export default function ResetPasswordPage() {
         formData.confirmPassword  
       );
       
-      await resetPasswordService(token, formData.password);
-
       setSuccess(true);
       
       setTimeout(() => {

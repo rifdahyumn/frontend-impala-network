@@ -76,8 +76,9 @@ export const calculateMonthlyData = (data, year, metric) => {
         totalPrograms: 0,
         newParticipants: 0,
         totalParticipants: 0,
-        revenue: 0,
-        cumulativeRevenue: 0,
+        revenue: 0,              
+        newRevenue: 0,              
+        cumulativeRevenue: 0,        
         programsCount: 0,
         growth: 0,
         growthPercentage: '0%'
@@ -129,9 +130,10 @@ export const calculateMonthlyData = (data, year, metric) => {
                 months[monthIndex].newParticipants++;
                 break;
             case 'revenue':
-                if (item.price !== undefined) {
-                    const price = parsePrice(item.price);
-                    months[monthIndex].revenue += price;
+                if (item.budget_offering !== undefined) {
+                    const revenue = parsePrice(item.budget_offering);
+                    months[monthIndex].revenue += revenue;
+                    months[monthIndex].newRevenue += revenue;
                     months[monthIndex].programsCount++;
                 }
                 break;

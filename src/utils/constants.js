@@ -53,7 +53,7 @@ export const METRICS_CONFIG = {
         color: '#8b5cf6',
         datasetLabel: 'Monthly Revenue',
         cumulativeLabel: 'Cumulative Revenue',
-        dataKey: 'revenue',
+        dataKey: 'newRevenue',
         cumulativeKey: 'cumulativeRevenue',
         chartTypes: ['line', 'bar', 'area'],
         quarterColors: {

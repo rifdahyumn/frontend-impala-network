@@ -137,6 +137,10 @@ const Program = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const handleProgramUpdate = (updatedProgram) => {
+        setSelectedProgram(updatedProgram)
+    }
+
     const handleClearAllFilters = useCallback(() => {
         setSearchTerm("");
         clearFilters();
@@ -305,6 +309,7 @@ const Program = () => {
                             hookFetchPrograms(pagination.page);
                             setSelectedProgram(null);
                         }}
+                        onProgramUpdate={handleProgramUpdate}
                     />
                 </div>
 

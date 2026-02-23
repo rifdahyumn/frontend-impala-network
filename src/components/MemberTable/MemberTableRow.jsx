@@ -100,7 +100,8 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
             'Private Office':'privateOffice',
             'Additional Information':'add_information',
             'Space': 'space',
-            'Area Interest': 'areas_interest'
+            'Area Interest': 'areas_interest',
+            'Budget' : 'budget_finance_closure'
         }
 
         const field = fieldMap[header];
