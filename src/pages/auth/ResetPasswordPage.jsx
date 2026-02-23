@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaLock, FaCheck, FaArrowLeft } from 'react-icons/fa';
 import { resetPasswordService } from '../../services/authServices';
+import { useAuth } from '../../hooks/useAuth';
 import '../../App.css';
 import logo from '../../assets/impalalogo.png';
 import logo2 from '../../assets/heterologo.png';
@@ -12,6 +13,7 @@ const validatePassword = (password) => {
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [searchParams] = useSearchParams();
   
   const token = searchParams.get('token') || '';
@@ -30,6 +32,23 @@ export default function ResetPasswordPage() {
       setError('Link reset password tidak valid atau sudah kadaluarsa.');
     }
   }, [token, email]);
+
+  const handleBackToLogin = async () => {
+    try {
+      if (logout) {
+        await logout();
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      navigate('/login', { 
+        state: { 
+          message: 'Silakan login dengan password baru Anda.',
+          messageType: 'info'
+        }
+      });
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -76,6 +95,14 @@ export default function ResetPasswordPage() {
       
       setSuccess(true);
       
+      try {
+        if (logout) {
+          await logout();
+        }
+      } catch (logoutError) {
+        console.error('Logout after reset error:', logoutError);
+      }
+      
       setTimeout(() => {
         navigate('/login', { 
           state: { 
@@ -101,8 +128,9 @@ export default function ResetPasswordPage() {
             <img src={logo2} alt="Logo Hetero" className="login-logo" />
           </div>
 
+          {/* Tombol kembali ke login dengan fungsi baru */}
           <button 
-            onClick={() => navigate('/login')}
+            onClick={handleBackToLogin}
             className="flex items-center text-blue-500 hover:text-blue-700 mb-6 text-sm"
             disabled={loading}
           >

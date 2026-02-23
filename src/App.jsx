@@ -196,23 +196,23 @@ function AppContent() {
             />
 
             {/* ✅ RESET PASSWORD ROUTE - TAMBAHKAN INI! */}
-            <Route 
-                path="/reset-password" 
-                element={
-                    <PublicRoute>
-                        <ResetPasswordPage />
-                    </PublicRoute>
-                } 
-            />
+<Route 
+    path="/reset-password" 
+    element={
+        <MinimalLayout>  {/* Atau langsung <ResetPasswordPage /> tanpa layout */}
+            <ResetPasswordPage />
+        </MinimalLayout>
+    } 
+/>
 
-            <Route 
-                path="/forgot-password" 
-                element={
-                    <PublicRoute>
-                        <ForgotPasswordPage />
-                    </PublicRoute>
-                } 
-            />
+<Route 
+    path="/forgot-password" 
+    element={
+        <PublicRoute>
+            <ForgotPasswordPage />
+        </PublicRoute>
+    } 
+/>
 
             <Route 
                 path="/account-settings" 

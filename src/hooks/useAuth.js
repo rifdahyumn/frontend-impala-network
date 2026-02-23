@@ -8,7 +8,7 @@ export const useAuth = () => {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     
-    const { user, loading, error, initialized, ...authFunctions } = context;
+    const { user, loading, error, initialized, isAuthenticated: authStatus, ...authFunctions } = context;
     const [isAuthChecked, setIsAuthChecked] = useState(false);
 
     useEffect(() => {
@@ -22,10 +22,9 @@ export const useAuth = () => {
         loading,
         error,
         initialized: isAuthChecked,
-        isAuthenticated: () => {
-            if (!isAuthChecked) return false;
-            return authFunctions.isAuthenticated();
-        },
-        ...authFunctions
+        isAuthenticated: authStatus, 
+        logout: authFunctions.logout,
+        login: authFunctions.login,
+        checkAuthStatus: authFunctions.checkAuthStatus
     };
 };
