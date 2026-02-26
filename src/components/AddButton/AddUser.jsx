@@ -359,9 +359,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                         userResult = await userService.updateUser(editData.id, updatedData);
                     }
                 }
-                
                 userId = editData.id;
-                
             } else {
                 const newUserData = {
                     employee_id: getStringValue(formData.employee_id).trim(),
@@ -380,10 +378,10 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                     userResult = await onAddUser(newUserData);
                 } else {
                     userResult = await userService.addUser(newUserData);
-                }
-                
+                } 
                 userId = userResult?.data?.id || userResult?.id;
             }
+            
             if (avatar && userId) {
                 console.log('Uploading avatar for user:', userId);
                 setUploadingAvatar(true);
