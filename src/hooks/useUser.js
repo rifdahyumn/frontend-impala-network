@@ -119,54 +119,85 @@ export const useUsers = () => {
 
     const addUser = async (userData) => {
         try {
-            const formData = new FormData()
-            Object.keys(userData).forEach(key => {
-                if (userData[key] !== null && userData[key] !== undefined) {
-                    formData.append(key, userData[key])
-                }
-            })
+            // CEK: apakah userData sudah berupa FormData?
+            let formDataToSend;
             
-            const result = await userService.addUser(formData)
-            toast.success(result.message || 'User added successfully')
+            if (userData instanceof FormData) {
+                // Jika sudah FormData, gunakan langsung
+                console.log('userData sudah FormData, gunakan langsung');
+                formDataToSend = userData;
+            } else {
+                // Jika belum, buat FormData baru
+                console.log('userData adalah object, konversi ke FormData');
+                formDataToSend = new FormData();
+                Object.keys(userData).forEach(key => {
+                    if (userData[key] !== null && userData[key] !== undefined) {
+                        formDataToSend.append(key, userData[key]);
+                    }
+                });
+            }
+            
+            // Log untuk debugging
+            console.log('FormData yang akan dikirim:');
+            for (let pair of formDataToSend.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
+            
+            const result = await userService.addUser(formDataToSend);
+            toast.success(result.message || 'User added successfully');
             
             setTimeout(() => {
                 if (isMounted.current) {
-                    refreshUsers()
+                    refreshUsers();
                 }
-            }, 500)
-            return result
+            }, 500);
+            return result;
         } catch (error) {
-            toast.error(error.message || 'Failed to add user')
-            throw error
+            console.error('Add user error:', error);
+            toast.error(error.message || 'Failed to add user');
+            throw error;
         }
-    }
+    };
+
 
     const updateUser = async (userId, userData) => {
         try {
-            const formData = new FormData()
-            Object.keys(userData).forEach(key => {
-                if (userData[key] !== null && userData[key] !== undefined) {
-                    formData.append(key, userData[key])
-                }
-            })
+            // CEK: apakah userData sudah berupa FormData?
+            let formDataToSend;
             
-            const result = await userService.updateUser(userId, formData)
-            toast.success(result.message || 'User updated successfully')
+            if (userData instanceof FormData) {
+                // Jika sudah FormData, gunakan langsung
+                console.log('userData sudah FormData, gunakan langsung');
+                formDataToSend = userData;
+            } else {
+                // Jika belum, buat FormData baru
+                console.log('userData adalah object, konversi ke FormData');
+                formDataToSend = new FormData();
+                Object.keys(userData).forEach(key => {
+                    if (userData[key] !== null && userData[key] !== undefined) {
+                        formDataToSend.append(key, userData[key]);
+                    }
+                });
+            }
+            
+            const result = await userService.updateUser(userId, formDataToSend);
+            toast.success(result.message || 'User updated successfully');
             
             if (isMounted.current) {
                 setUsers(prevUsers => 
                     prevUsers.map(user => 
                         user.id === userId ? { ...user, ...userData } : user
                     )
-                )
+                );
             }
             
-            return result
+            return result;
         } catch (error) {
-            toast.error(error.message || 'Failed to update user')
-            throw error
+            console.error('Update user error:', error);
+            toast.error(error.message || 'Failed to update user');
+            throw error;
         }
-    }
+    };
 
     const deleteUser = async (userId) => {
         try {

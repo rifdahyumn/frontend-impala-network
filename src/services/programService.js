@@ -441,8 +441,8 @@ class ProgramService {
         const templateData = [
             {
                 'Program Name': 'Leadership Training 2024',
-                'Category': 'Training',
                 'Client': 'PT Example Corporation',
+                'Category': 'Training',
                 'Description': '5-day intensive leadership training',
                 'Start Date': '2024-03-01',
                 'End Date': '2024-03-05',

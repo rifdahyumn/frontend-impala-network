@@ -291,7 +291,7 @@ const AccountContent = ({
                                 </div>
 
                                 <div className="flex gap-2">
-                                    <Button 
+                                    {/* <Button 
                                         variant="outline" 
                                         size="sm"
                                         className="flex items-center gap-2"
@@ -299,7 +299,7 @@ const AccountContent = ({
                                     >
                                         <Edit className="h-4 w-4" />
                                         Edit
-                                    </Button>
+                                    </Button> */}
 
                                     {/* Button Activate (muncul hanya untuk user Inactive) */}
                                     {selectedUser.status === 'Inactive' && (

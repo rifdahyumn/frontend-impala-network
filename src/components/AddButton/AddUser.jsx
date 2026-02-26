@@ -291,13 +291,28 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        console.log('=== HANDLE SUBMIT START ===');
+        console.log('isEditMode:', isEditMode);
+        console.log('formData state:', JSON.stringify(formData, null, 2));
+        
+        // Cek nilai setiap field
+        console.log('email value:', formData.email);
+        console.log('email type:', typeof formData.email);
+        console.log('email length:', formData.email?.length);
+        
+        console.log('full_name value:', formData.full_name);
+        console.log('employee_id value:', formData.employee_id);
+        console.log('role value:', formData.role);
+        console.log('phone value:', formData.phone);
+
         if (!validateForm()) {
-            toast.error('Please fix the errors in the form')
+            console.log('Validasi gagal!');
+            toast.error('Please fix the errors in the form');
             return;
         }
 
         if (isEditMode && !hasChanges()) {
-            toast.error('No changes detected')
+            toast.error('No changes detected');
             return;
         }
 
@@ -306,23 +321,28 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
         try {
             const formDataToSend = new FormData();
 
+            // Log untuk mode edit
             if (isEditMode) {
+                console.log('=== EDIT MODE ===');
                 let hasChangesToSend = false;
                 
                 Object.keys(formData).forEach(key => {
                     if (key === 'password') {
                         if (formData[key] && formData[key].trim() !== '') {
+                            console.log(`Edit mode - adding password (changed)`);
                             formDataToSend.append(key, formData[key]);
                             hasChangesToSend = true;
                         }
                     } else if (formData[key] !== originalData[key]) {
-                        // const value = formData[key] || '';
+                        console.log(`Edit mode - adding ${key}:`, formData[key]);
+                        console.log(`Original ${key}:`, originalData[key]);
                         formDataToSend.append(key, formData[key]);
                         hasChangesToSend = true;
                     }
                 });
 
                 if (avatar) {
+                    console.log('Edit mode - adding avatar file:', avatar.name);
                     formDataToSend.append('avatar_file', avatar);
                     hasChangesToSend = true;
                 }
@@ -332,55 +352,79 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                     setLoading(false);
                     return;
                 }
-             } else {
-      const requiredFields = ['email', 'full_name', 'employee_id', 'role', 'phone'];
-      
-      for (const field of requiredFields) {
-        if (!formData[field] || formData[field].trim() === '') {
-          toast.error(`${field} is required`);
-          setLoading(false);
-          return;
-        }
-        formDataToSend.append(field, formData[field].trim());
-      }
-
-      if (formData.position) {
-        formDataToSend.append('position', formData.position);
-      }
-
-      if (formData.password) {
-        formDataToSend.append('password', formData.password);
-      }
-
-      if (avatar) {
-        formDataToSend.append('avatar_file', avatar);
-      }
-    }
-
-    if (isEditMode) {
-      if (onEditUser) {
-        await onEditUser(editData.id, formDataToSend);
-      } else {
-        await userService.updateUser(editData.id, formDataToSend);
-      }
-      toast.success('User updated successfully');
-    } else {
-      if (onAddUser) {
-        await onAddUser(formDataToSend);
-      } else {
-        await userService.addUser(formDataToSend);
-      }
-      toast.success('User added successfully');
-    }
+            }
+            
+            // Required fields untuk mode tambah
+            console.log('=== REQUIRED FIELDS CHECK ===');
+            const requiredFields = ['email', 'full_name', 'employee_id', 'role', 'phone'];
     
-    handleCloseModal();
-  } catch (error) {
-    console.error('Submit error:', error);
-    toast.error(error.response?.data?.message || error.message || `Failed to ${isEditMode ? 'update' : 'add'} user`);
-  } finally {
-    setLoading(false);
-  }
-};
+            for (const field of requiredFields) {
+                console.log(`Checking field ${field}:`, formData[field]);
+                console.log(`Trimmed:`, formData[field]?.trim());
+                
+                if (!formData[field] || formData[field].trim() === '') {
+                    console.error(`Field ${field} KOSONG!`);
+                    toast.error(`${field} is required`);
+                    setLoading(false);
+                    return;
+                }
+
+                console.log(`Appending ${field}:`, formData[field].trim());
+                formDataToSend.append(field, formData[field].trim());
+            }
+
+            // Optional fields
+            if (formData.position) {
+                console.log('Appending position:', formData.position);
+                formDataToSend.append('position', formData.position);
+            }
+
+            if (formData.password) {
+                console.log('Appending password');
+                formDataToSend.append('password', formData.password);
+            }
+
+            if (avatar) {
+                console.log('Appending avatar_file:', avatar.name);
+                formDataToSend.append('avatar_file', avatar);
+            }
+
+            // Log final FormData
+            console.log('=== FINAL FORMDATA ENTRIES ===');
+            for (let pair of formDataToSend.entries()) {
+                if (pair[0] === 'avatar_file') {
+                    console.log(pair[0] + ': [FILE] ' + (pair[1]?.name || 'unknown'));
+                } else {
+                    console.log(pair[0] + ': ' + pair[1]);
+                }
+            }
+
+            // Lanjutkan dengan pengiriman...
+            if (isEditMode) {
+                if (onEditUser) {
+                    await onEditUser(editData.id, formDataToSend);
+                } else {
+                    await userService.updateUser(editData.id, formDataToSend);
+                }
+                toast.success('User updated successfully');
+            } else {
+                if (onAddUser) {
+                    await onAddUser(formDataToSend);
+                } else {
+                    await userService.addUser(formDataToSend);
+                }
+                toast.success('User added successfully');
+            }
+            
+            handleCloseModal();
+        } catch (error) {
+            console.error('Submit error:', error);
+            console.error('Error response:', error.response?.data);
+            toast.error(error.response?.data?.message || error.message || `Failed to ${isEditMode ? 'update' : 'add'} user`);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleCloseModal = () => {
         setIsAddUserModalOpen(false)
@@ -516,7 +560,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {formSections.map((section, sectionIndex) => (
+                    {formSections.map((section) => (
                         <div key={section.title} className="space-y-4">
                             <div className="border-b pb-2">
                                 <h3 className="text-lg font-semibold text-gray-900">
