@@ -4,7 +4,7 @@ import { Badge } from "../ui/badge";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react"; // Tambahkan useMemo
 import { Card, CardContent } from "../ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Upload, X, Loader2 } from "lucide-react";
@@ -27,8 +27,10 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
     const [avatarPreview, setAvatarPreview] = useState(null);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({})
+    const [originalData, setOriginalData] = useState({})
 
-    const formSections = [
+    // Gunakan useMemo untuk formSections agar bisa bergantung pada isEditMode
+    const formSections = useMemo(() => [
         {
             title: "Account Information",
             fields: [
@@ -43,8 +45,8 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                     name: 'password',
                     label: 'Password',
                     type: 'password',
-                    required: true,
-                    placeholder: 'Enter password'
+                    required: !isEditMode, // Akan berubah sesuai mode
+                    placeholder: isEditMode ? 'Leave blank to keep current password' : 'Enter password'
                 },
                 {
                     name: 'email',
@@ -121,21 +123,27 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                 }
             ]
         },
-    ];
+    ], [isEditMode]); // Rekomputasi ketika isEditMode berubah
 
     useEffect(() => {
         if (isEditMode && editData) {
-            setFormData({
+            const newFormData = {
                 employee_id: editData.employee_id || '',
                 email: editData.email || '',
-                password: editData.password || '',
+                password: '',
                 role: editData.role || '',
                 full_name: editData.full_name || '',
                 position: editData.position || '',
                 phone: editData.phone || '',
                 avatar: editData.avatar || '',
                 status: editData.status || 'Active'
-            })
+            }
+            setFormData(newFormData)
+            setOriginalData(newFormData)
+            
+            if (editData.avatar) {
+                setAvatarPreview(editData.avatar)
+            }
         } else {
             setFormData({
                 employee_id: '',
@@ -148,7 +156,10 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                 avatar: '',
                 status: 'Active',
             })
+            setOriginalData({})
         }
+        setAvatar(null)
+        setAvatarPreview(null)
         setErrors({})
     }, [isEditMode, editData, isAddUserModalOpen])
 
@@ -157,6 +168,10 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
 
         formSections.forEach(section => {
             section.fields.forEach(field => {
+                if (isEditMode && field.name === 'password') {
+                    return
+                }
+                
                 if (field.required && !field.disabled) {
                     const value = formData[field.name]
                     if (!value || value.toString().trim() === '') {
@@ -174,13 +189,29 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
             const phoneString = formData.phone.toString();
             const digitsOnly = phoneString.replace(/\D/g, '');
             
-            if (digitsOnly.length < 10) {
-                newErrors.phone = 'Phone number is too short'
+            if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+                newErrors.phone = 'Phone number must be between 10-15 digits'
             }
         }
 
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
+    }
+
+    const hasChanges = () => {
+        if (!isEditMode) return true;
+        
+        for (const key in formData) {
+            if (key === 'password') {
+                if (formData[key]) return true;
+            } else if (formData[key] !== originalData[key]) {
+                return true;
+            }
+        }
+        
+        if (avatar) return true;
+        
+        return false;
     }
 
     const handleInputChange = (e) => {
@@ -233,12 +264,12 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
         const file = e.target.files[0]
         if (file) {
             if (!file.type.startsWith('image/')) {
-                alert("Please select an image file")
+                toast.error("Please select an image file")
                 return
             }
 
             if (file.size > 5 * 1024 * 1024) {
-                alert('Image size should be less than 5MB')
+                toast.error('Image size should be less than 5MB')
                 return
             }
 
@@ -264,48 +295,106 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
             toast.error('Please fix the errors in the form')
             return;
         }
+
+        if (isEditMode && !hasChanges()) {
+            toast.error('No changes detected')
+            return;
+        }
+
         setLoading(true)
 
         try {
-            const formDataToSend = new FormData()
-
-            Object.keys(formData).forEach(key => {
-                if (formData[key] !== null && formData[key] !== undefined) {
-                    formDataToSend.append(key, formData[key])
-                }
-            })
-
-            if (avatar) {
-                formDataToSend.append('avatar_file', avatar)
-            }
+            const formDataToSend = new FormData();
 
             if (isEditMode) {
-                if (onEditUser) {
-                    await onEditUser(editData.id, formDataToSend)
-                } else {
-                    await userService.updateUser(editData.id, formDataToSend)
-                    toast.success('Updated successfully')
+                let hasChangesToSend = false;
+                
+                Object.keys(formData).forEach(key => {
+                    if (key === 'password') {
+                        if (formData[key] && formData[key].trim() !== '') {
+                            formDataToSend.append(key, formData[key]);
+                            hasChangesToSend = true;
+                        }
+                    } else if (formData[key] !== originalData[key]) {
+                        const value = formData[key] || '';
+                        formDataToSend.append(key, formData[key]);
+                        hasChangesToSend = true;
+                    }
+                });
+
+                if (avatar) {
+                    formDataToSend.append('avatar_file', avatar);
+                    hasChangesToSend = true;
                 }
-            } else {
-                if (onAddUser) {
-                    await onAddUser(formDataToSend)
-                } else {
-                    await userService.addUser(formDataToSend)
-                    toast.success('Added successfully')
+
+                if (!hasChangesToSend) {
+                    toast.error('No fields to update');
+                    setLoading(false);
+                    return;
                 }
-            }
-            handleCloseModal()
-        } catch (error) {
-            console.error(`Error ${isEditMode ? 'updating' : 'adding'} user: `, error)
-            toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'add'} user`)
-        } finally {
-            setLoading(false)
+             } else {
+      // Untuk add mode - PASTIKAN SEMUA FIELD REQUIRED TERKIRIM
+      const requiredFields = ['email', 'full_name', 'employee_id', 'role', 'phone'];
+      
+      // Validasi tambahan sebelum kirim
+      for (const field of requiredFields) {
+        if (!formData[field] || formData[field].trim() === '') {
+          toast.error(`${field} is required`);
+          setLoading(false);
+          return;
         }
-    };
+        formDataToSend.append(field, formData[field].trim());
+      }
+
+      // Kirim field opsional
+      if (formData.position) {
+        formDataToSend.append('position', formData.position);
+      }
+
+      if (formData.password) {
+        formDataToSend.append('password', formData.password);
+      }
+
+      if (avatar) {
+        formDataToSend.append('avatar_file', avatar);
+      }
+    }
+
+    // Debug: lihat isi FormData
+    for (let pair of formDataToSend.entries()) {
+      console.log(pair[0] + ': ' + pair[1]);
+    }
+
+    if (isEditMode) {
+      if (onEditUser) {
+        await onEditUser(editData.id, formDataToSend);
+      } else {
+        await userService.updateUser(editData.id, formDataToSend);
+      }
+      toast.success('User updated successfully');
+    } else {
+      if (onAddUser) {
+        await onAddUser(formDataToSend);
+      } else {
+        await userService.addUser(formDataToSend);
+      }
+      toast.success('User added successfully');
+    }
+    
+    handleCloseModal();
+  } catch (error) {
+    console.error('Submit error:', error);
+    toast.error(error.response?.data?.message || error.message || `Failed to ${isEditMode ? 'update' : 'add'} user`);
+  } finally {
+    setLoading(false);
+  }
+};
 
     const handleCloseModal = () => {
         setIsAddUserModalOpen(false)
         setErrors({})
+        setAvatar(null)
+        setAvatarPreview(null)
     };
 
     const renderField = (field) => {
@@ -378,19 +467,21 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                     <Select
                         value={formData[field.name]}
                         onValueChange={(value) => handleSelectChange(field.name, value)}
-                        required={field.required}
                     >
-                        <SelectTrigger>
+                        <SelectTrigger className={errors[field.name] ? 'border-red-500' : ''}>
                             <SelectValue placeholder={field.placeholder} />
                         </SelectTrigger>
                         <SelectContent>
                             {field.options.map((option) => (
                                 <SelectItem key={option.value} value={option.value}>
-                                {option.label}
+                                    {option.label}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
+                    {errors[field.name] && (
+                        <p className="text-sm text-red-500">{errors[field.name]}</p>
+                    )}
                 </div>
             );
         }
@@ -408,9 +499,11 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                     value={formData[field.name]}
                     onChange={handleInputChange}
                     placeholder={field.placeholder}
-                    required={field.required}
-                    className="w-full"
+                    className={`w-full ${errors[field.name] ? 'border-red-500' : ''}`}
                 />
+                {errors[field.name] && (
+                    <p className="text-sm text-red-500">{errors[field.name]}</p>
+                )}
             </div>
         );
     };
@@ -433,19 +526,17 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {formSections.map((section, sectionIndex) => (
                         <div key={section.title} className="space-y-4">
-                        
                             <div className="border-b pb-2">
                                 <h3 className="text-lg font-semibold text-gray-900">
                                     {section.title}
                                 </h3>
+                                {section.description && (
+                                    <p className="text-sm text-gray-500 mt-1">{section.description}</p>
+                                )}
                             </div>
                             <div className="grid md:grid-cols-2 gap-4">
                                 {section.fields.map(renderField)}
                             </div>
-
-                            {sectionIndex < formSections.length - 1 && (
-                                <div className="pt-2" />
-                            )}
                         </div>
                     ))}
 
@@ -454,13 +545,14 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                             type="button"
                             variant="outline"
                             onClick={handleCloseModal}
+                            disabled={loading}
                         >
                             Cancel
                         </Button>
-                        <Button type="submit">
-                            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                        <Button type="submit" disabled={loading}>
+                            {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                             {loading 
-                                ? (isEditMode ? 'Updating User...' : 'Adding User...')
+                                ? (isEditMode ? 'Updating...' : 'Adding...')
                                 : (isEditMode ? 'Update User' : 'Add User')
                             }
                         </Button>
