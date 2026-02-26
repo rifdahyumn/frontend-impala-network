@@ -1,7 +1,7 @@
 import axios from 'axios';
 import CryptoJS from 'crypto-js';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 const APP_SECRET = import.meta.env.VITE_APP_SECRET || 'dashboard-secret-2024';
 
 let refreshPromise = null;
@@ -61,7 +61,7 @@ export const saveTokens = (tokens) => {
         
         lastRefreshTime = authTimestamp;
     } catch {
-        //
+        // 
     }
 };
 
@@ -105,7 +105,7 @@ export const clearTokens = () => {
             localStorage.removeItem(item);
             sessionStorage.removeItem(item);
         } catch {
-            //
+            // Silent fail for storage errors
         }
     });
 };
@@ -138,7 +138,9 @@ const createAuthApi = () => {
             
             if (tokens.access_token && 
                 !config.url.includes('/auth/login') &&
-                !config.url.includes('/auth/register')) {
+                !config.url.includes('/auth/register') &&
+                !config.url.includes('/auth/forgot-password') &&
+                !config.url.includes('/auth/reset-password')) {
                 config.headers.Authorization = `Bearer ${tokens.access_token}`;
             }
             
@@ -153,21 +155,27 @@ const createAuthApi = () => {
                 saveTokens(response.data.tokens);
                 delete response.data.tokens;
             }
+            
             return response.data;
         },
         async (error) => {
             if (error.code === 'ERR_CANCELED' || error.message.includes('canceled')) {
-                return Promise.reject(new Error('Request cancelled'))
+                return Promise.reject(new Error('Request cancelled'));
             }
+            
             const originalRequest = error.config;
             
-            if (originalRequest.url.includes('/auth/login') ||
-                originalRequest.url.includes('/auth/register')) {
+            if (originalRequest?.url?.includes('/auth/login') ||
+                originalRequest?.url?.includes('/auth/register') ||
+                originalRequest?.url?.includes('/auth/forgot-password') ||
+                originalRequest?.url?.includes('/auth/reset-password')) {
                 return Promise.reject(error);
             }
 
-            if (error.response?.status === 401 && !originalRequest._retry) {
-                originalRequest._retry = true;
+            if (error.response?.status === 401 && !originalRequest?._retry) {
+                if (originalRequest) {
+                    originalRequest._retry = true;
+                }
                 
                 const now = Date.now();
                 if (now - lastRefreshTime < MIN_REFRESH_INTERVAL) {
@@ -184,19 +192,19 @@ const createAuthApi = () => {
                     await refreshPromise;
                     const tokens = getTokens();
                     
-                    if (tokens.access_token) {
+                    if (tokens.access_token && originalRequest) {
                         originalRequest.headers.Authorization = `Bearer ${tokens.access_token}`;
                         return instance(originalRequest);
                     }
-                } catch {
+                } catch (refreshError) {
                     clearTokens();
                     if (typeof window !== 'undefined') {
                         window.dispatchEvent(new CustomEvent('auth:session-expired'));
-                        setTimeout(() => {
-                            if (window.location.pathname !== '/login') {
+                        if (window.location.pathname !== '/login') {
+                            setTimeout(() => {
                                 window.location.href = '/login?session=expired';
-                            }
-                        }, 100);
+                            }, 100);
+                        }
                     }
                     return Promise.reject(new Error('Session expired'));
                 }
@@ -210,32 +218,49 @@ const createAuthApi = () => {
                 return Promise.reject(new Error('Access denied'));
             }
 
-            if (!error.response && originalRequest._retryCount < 2) {
+            if (!error.response && originalRequest && originalRequest._retryCount < 2) {
                 originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
                 const delay = Math.pow(2, originalRequest._retryCount) * 1000;
-                return new Promise(resolve => {
-                    setTimeout(() => resolve(instance(originalRequest)), delay);
-                });
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return instance(originalRequest);
             }
 
             let errorMessage = 'Terjadi kesalahan pada server';
+            let statusCode = error.response?.status;
 
             if (error.response) {
-                const status = error.response.status;
                 const data = error.response.data;
 
-                switch (status) {
+                switch (statusCode) {
                     case 400:
-                        errorMessage = data?.message || 'Permintaan tidak valid';
+                        errorMessage = data?.message || data?.error || 'Permintaan tidak valid';
+                        if (data?.errors) {
+                            console.warn('Validation errors:', data.errors);
+                        }
+                        break;
+                    case 401:
+                        errorMessage = data?.message || 'Sesi telah berakhir';
+                        break;
+                    case 403:
+                        errorMessage = data?.message || 'Akses ditolak';
                         break;
                     case 404:
                         errorMessage = data?.message || 'Resource tidak ditemukan';
+                        break;
+                    case 409:
+                        errorMessage = data?.message || 'Data sudah ada';
+                        break;
+                    case 422:
+                        errorMessage = data?.message || 'Data tidak valid';
+                        if (data?.errors) {
+                            console.warn('Validation errors:', data.errors);
+                        }
                         break;
                     case 429:
                         errorMessage = 'Terlalu banyak permintaan. Silakan coba lagi nanti.';
                         break;
                     case 500:
-                        errorMessage = 'Kesalahan server internal';
+                        errorMessage = data?.message || 'Kesalahan server internal';
                         break;
                     case 502:
                     case 503:
@@ -243,7 +268,7 @@ const createAuthApi = () => {
                         errorMessage = 'Server sedang dalam pemeliharaan';
                         break;
                     default:
-                        errorMessage = data?.message || `Error ${status}`;
+                        errorMessage = data?.message || data?.error || `Error ${statusCode}`;
                 }
             } else if (error.request) {
                 errorMessage = 'Tidak ada respon dari server. Periksa koneksi internet Anda.';
@@ -251,7 +276,11 @@ const createAuthApi = () => {
                 errorMessage = 'Koneksi timeout. Silakan coba lagi.';
             }
 
-            return Promise.reject(new Error(errorMessage));
+            const enhancedError = new Error(errorMessage);
+            enhancedError.status = statusCode;
+            enhancedError.originalError = error;
+            
+            return Promise.reject(enhancedError);
         }
     );
 
@@ -263,7 +292,7 @@ export const authApi = createAuthApi();
 export const loginService = async (credentials) => {
     try {
         const response = await axios.post(
-            `http://localhost:3000/api/auth/login`,
+            `${API_BASE_URL}/auth/login`,
             {
                 email: credentials.email.trim().toLowerCase(),
                 password: credentials.password
@@ -311,33 +340,20 @@ export const loginService = async (credentials) => {
                 return successResponse;
                 
             } else {
-                console.error('Invalid user data:', userData);
-                console.error('User data validation failed:', {
-                    hasUserData: !!userData,
-                    isObject: userData && typeof userData === 'object',
-                    hasId: userData?.id,
-                    fullData: userData
-                });
+                console.error('Invalid user data in response');
                 throw new Error('Invalid user data in response: missing required fields');
             }
         } else {
             const errorData = response.data;
             let errorMessage = errorData?.message || errorData?.error || 'Login failed';
             
-            console.error('Login failed with message:', errorMessage);
+            console.error('Login failed:', errorMessage);
             throw new Error(errorMessage);
         }
     } catch (error) {
-        console.error('=== LOGIN SERVICE CATCH ERROR ===');
-        console.error('Error:', error);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
+        console.error('Login service error:', error);
         
         let errorMessage = error.message || 'Login failed';
-        
-        if (errorMessage !== 'Login failed') {
-            throw error;
-        }
         
         if (error.response) {
             const status = error.response.status;
@@ -365,112 +381,114 @@ export const loginService = async (credentials) => {
 };
 
 export const forgotPasswordService = async (email) => {
-  try {
-    const response = await axios.post(
-      `${API_BASE_URL}/auth/forgot-password`,
-      { 
-        email: email.trim(),
-        reset_url: `${window.location.origin}/reset-password`
-      },
-      {
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        timeout: 30000
-      }
-    );
-    
-    if (response.data?.success) {
-      return {
-        success: true,
-        message: response.data.message || 'Reset password link sent successfully'
-      };
+    try {
+        const response = await axios.post(
+            `${API_BASE_URL}/auth/forgot-password`,
+            { 
+                email: email.trim(),
+                reset_url: `${window.location.origin}/reset-password`
+            },
+            {
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                timeout: 30000
+            }
+        );
+        
+        if (response.data?.success) {
+            return {
+                success: true,
+                message: response.data.message || 'Reset password link sent successfully'
+            };
+        }
+        
+        throw new Error(response.data?.message || 'Failed to send reset link');
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        
+        let errorMessage = 'Failed to send reset link';
+        
+        if (error.response) {
+            const data = error.response.data;
+            errorMessage = data?.message || data?.error || `Error ${error.response.status}`;
+        } else if (error.message.includes('timeout')) {
+            errorMessage = 'Connection timeout. Please try again.';
+        } else if (error.message.includes('Network')) {
+            errorMessage = 'Cannot connect to server. Check your internet connection.';
+        }
+        
+        throw new Error(errorMessage);
     }
-    
-    throw new Error(response.data?.message || 'Failed to send reset link');
-  } catch (error) {
-    console.error('Forgot password error:', error);
-    
-    let errorMessage = 'Failed to send reset link';
-    
-    if (error.response) {
-      const data = error.response.data;
-      errorMessage = data?.message || data?.error || `Error ${error.response.status}`;
-    } else if (error.message.includes('timeout')) {
-      errorMessage = 'Connection timeout. Please try again.';
-    } else if (error.message.includes('Network')) {
-      errorMessage = 'Cannot connect to server. Check your internet connection.';
-    }
-    
-    throw new Error(errorMessage);
-  }
 };
 
 export const resetPasswordService = async (token, email, newPassword, confirmPassword) => {
-  try {
-    const response = await axios.post(
-      `${API_BASE_URL}/auth/reset-password`,
-      { 
-        token: token,              
-        email: email,                
-        newPassword: newPassword,  
-        confirmPassword: confirmPassword 
-      },
-      {
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        timeout: 30000
-      }
-    );
-    
-    if (response.data?.success) {
-      return {
-        success: true,
-        message: response.data.message || 'Password reset successfully'
-      };
+    try {
+        const response = await axios.post(
+            `${API_BASE_URL}/auth/reset-password`,
+            { 
+                token: token,              
+                email: email,                
+                newPassword: newPassword,  
+                confirmPassword: confirmPassword 
+            },
+            {
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                timeout: 30000
+            }
+        );
+        
+        if (response.data?.success) {
+            return {
+                success: true,
+                message: response.data.message || 'Password reset successfully'
+            };
+        }
+        
+        throw new Error(response.data?.message || 'Failed to reset password');
+    } catch (error) {
+        console.error('Reset password error:', error);
+        
+        let errorMessage = 'Failed to reset password';
+        
+        if (error.response) {
+            const status = error.response.status;
+            const data = error.response.data;
+            
+            if (status === 400) {
+                errorMessage = data?.message || 'Invalid or expired token';
+            } else if (status === 401) {
+                errorMessage = 'Token has expired. Please request a new reset link.';
+            } else {
+                errorMessage = data?.message || data?.error || `Error ${status}`;
+            }
+        } else if (error.message.includes('timeout')) {
+            errorMessage = 'Connection timeout. Please try again.';
+        }
+        
+        throw new Error(errorMessage);
     }
-    
-    throw new Error(response.data?.message || 'Failed to reset password');
-  } catch (error) {
-    console.error('Reset password error:', error);
-    
-    let errorMessage = 'Failed to reset password';
-    
-    if (error.response) {
-      const status = error.response.status;
-      const data = error.response.data;
-      
-      if (status === 400) {
-        errorMessage = data?.message || 'Invalid or expired token';
-      } else if (status === 401) {
-        errorMessage = 'Token has expired. Please request a new reset link.';
-      } else {
-        errorMessage = data?.message || data?.error || `Error ${status}`;
-      }
-    } else if (error.message.includes('timeout')) {
-      errorMessage = 'Connection timeout. Please try again.';
-    }
-    
-    throw new Error(errorMessage);
-  }
 };
 
 export const logoutService = async (options = {}) => {
     try {
         const tokens = getTokens();
         
-        await Promise.race([
-            authApi.post('/auth/logout', {
-                refresh_token: tokens.refresh_token,
-                session_id: tokens.session_id,
-                logout_reason: options.reason || 'user_initiated',
-                logout_all: options.logout_all || false
-            }),
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Logout timeout')), 5000)
-            )
-        ]);
+        const logoutPromise = authApi.post('/auth/logout', {
+            refresh_token: tokens.refresh_token,
+            session_id: tokens.session_id,
+            logout_reason: options.reason || 'user_initiated',
+            logout_all: options.logout_all || false
+        });
+        
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Logout timeout')), 5000)
+        );
+        
+        await Promise.race([logoutPromise, timeoutPromise]).catch(() => {
+        });
         
         return { success: true, message: 'Logout berhasil' };
     } catch {
@@ -509,6 +527,7 @@ export const refreshTokenService = async () => {
 
         if (response.data?.data?.access_token) {
             saveTokens(response.data.data);
+            lastRefreshTime = Date.now();
             return {
                 success: true,
                 tokens: response.data.data
@@ -517,6 +536,8 @@ export const refreshTokenService = async () => {
 
         throw new Error('Invalid refresh response');
     } catch (error) {
+        console.error('Refresh token error:', error);
+        
         if (error.response?.status === 400 || error.response?.status === 401) {
             throw new Error('Refresh token expired or invalid');
         } else if (error.response?.status === 429) {
@@ -545,12 +566,8 @@ export const validateSessionService = async () => {
         if (isTokenExpiringSoon() && tokens.refresh_token) {
             try {
                 await refreshTokenService();
-                const newTokens = getTokens();
-                if (!newTokens.access_token) {
-                    throw new Error('Failed to refresh token');
-                }
             } catch {
-                //
+                // 
             }
         }
 
@@ -708,12 +725,8 @@ const authServices = {
     isAuthenticated: () => {
         try {
             const tokens = getTokens();
-            
-            const isAuth = !!tokens.access_token && !!tokens.refresh_token;
-            
-            return isAuth;
-        } catch (error) {
-            console.error('isAuthenticated error:', error);
+            return !!tokens.access_token && !!tokens.refresh_token;
+        } catch {
             return false;
         }
     },

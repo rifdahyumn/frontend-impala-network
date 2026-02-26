@@ -1,7 +1,7 @@
 import AccountContent from "../components/Content/AccountContent";
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, UserCheck, AlertCircle, X, Filter, Briefcase, Check, Building2, Download } from "lucide-react";
+import { Plus, Loader2, Users, UserCheck, AlertCircle, X, Filter, Briefcase, Check, Download } from "lucide-react";
 import { Button } from "../components/ui/button";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'; 
 import SearchBar from '../components/SearchFilter/SearchBar';
@@ -46,7 +46,18 @@ const Account = () => {
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-    const { users, loading, error, pagination, fetchUsers, refreshUsers, addUser, updateUser, deleteUser, activateUser } = useUsers();
+    const { 
+        users, 
+        loading, 
+        error, 
+        pagination, 
+        fetchUsers, 
+        refreshUsers, 
+        addUser, 
+        updateUser, 
+        deleteUser, 
+        activateUser,
+    } = useUsers();
 
     const showConfirm = (config) => {
         setConfirmModal({
@@ -82,24 +93,24 @@ const Account = () => {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const positionOptions = [
-        { value: 'managing director', label: 'Managing Director', original: 'Managing Director' },
-        { value: 'director', label: 'Director', original: 'Director' },
-        { value: 'head manager', label: 'Head Manager', original: 'Head Manager' },
-        { value: 'finance', label: 'Finance', original: 'Finance' },
-        { value: 'legal', label: 'Legal', original: 'Legal' },
-        { value: 'talent manager', label: 'Talent Manager', original: 'Talent Manager' },
-        { value: 'ecosystem manager', label: 'Ecosystem Manager', original: 'Ecosystem Manager' },
-        { value: 'strategic partnership executive', label: 'Strategic Partnership Executive', original: 'Strategic Partnership Executive' },
-        { value: 'program manager', label: 'Program Manager', original: 'Program Manager' },
-        { value: 'space manager', label: 'Space Manager', original: 'Space Manager' },
-        { value: 'creative', label: 'Creative', original: 'Creative' }
+        { value: 'Managing Director', label: 'Managing Director', original: 'Managing Director' },
+        { value: 'Director', label: 'Director', original: 'Director' },
+        { value: 'General Secretary', label: 'Head Manager', original: 'Head Manager' },
+        { value: 'Finance', label: 'Finance', original: 'Finance' },
+        { value: 'Legal', label: 'Legal', original: 'Legal' },
+        { value: 'Talent Manager', label: 'Talent Manager', original: 'Talent Manager' },
+        { value: 'Ecosystem Manager', label: 'Ecosystem Manager', original: 'Ecosystem Manager' },
+        { value: 'Strategic Partnership_Executive', label: 'Strategic Partnership Executive', original: 'Strategic Partnership Executive' },
+        { value: 'Program Manager', label: 'Program Manager', original: 'Program Manager' },
+        { value: 'Space Manager', label: 'Space Manager', original: 'Space Manager' },
+        { value: 'Creative', label: 'Creative', original: 'Creative' }
     ];
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const roleOptions = [
         { value: 'admin', label: 'Admin', original: 'Admin' },
-        { value: 'user', label: 'User', original: 'User' },
-        { value: 'superadmin', label: 'Super Admin', original: 'Super Admin' }
+        { value: 'manajer_program', label: 'Manajer Program', original: 'Manajer Program' },
+        { value: 'komunitas', label: 'Community Team', original: 'Community Team' }
     ];
 
     const handleExport = useCallback(async () => {
@@ -208,7 +219,8 @@ const Account = () => {
                 ['Total Active Users', activeUsers],  
                 ['Total Inactive Users', inactiveUsers],  
                 ['Total Admin Users', filteredUsers.filter(u => u.role === 'admin').length],
-                ['Total Super Admin Users', filteredUsers.filter(u => u.role === 'superadmin').length],
+                ['Total Manajer Program Users', filteredUsers.filter(u => u.role === 'manajer_program').length],
+                ['Total Community Team Users', filteredUsers.filter(u => u.role === 'komunitas').length],
                 ['', ''],
                 ['EXPORT INFORMATION'],
                 ['Generated On', new Date().toLocaleDateString('en-US', {
@@ -441,9 +453,9 @@ const Account = () => {
                 const userPosition = user.position?.toLowerCase();
                 if (!userPosition) return false;
                 
-                return userPosition === filters.position ||
-                       userPosition.includes(filters.position) ||
-                       filters.position.includes(userPosition);
+                return userPosition === filters.position.toLowerCase() ||
+                       userPosition.includes(filters.position.toLowerCase()) ||
+                       filters.position.toLowerCase().includes(userPosition);
             });
         }
         
@@ -452,7 +464,7 @@ const Account = () => {
                 const userRole = user.role?.toLowerCase();
                 if (!userRole) return false;
                 
-                return userRole === filters.role;
+                return userRole === filters.role.toLowerCase();
             });
         }
         
@@ -555,15 +567,19 @@ const Account = () => {
 
     const handleAddUserSuccess = async (userData) => {
         try {
-            await addUser(userData);
+            const result = await addUser(userData);
             setIsAddUserModalOpen(false);
             toast.success('User added successfully');
+            
             if (refreshUsers) {
-                refreshUsers(); 
+                await refreshUsers();
             }
+            
+            return result;
         } catch (error) {
             console.error('Error adding user:', error);
             toast.error(error.message || 'Failed to add user');
+            throw error;
         }
     };
 
@@ -574,25 +590,49 @@ const Account = () => {
 
     const handleEditUser = async (userId, userData) => {
         try {
-            const updatedUser = await updateUser(userId, userData);
+            const isFormData = userData instanceof FormData;
+            
+            let result;
+            
+            if (isFormData) {
+                result = await updateUser(userId, userData);
+            } else {
+                result = await updateUser(userId, userData);
+            }
 
             if (selectedUser && selectedUser.id === userId) {
-                setSelectedUser(prev => ({
-                    ...prev,
-                    ...userData,
-                    ...updatedUser
-                }));
+                if (isFormData) {
+                    if (refreshUsers) {
+                        await refreshUsers();
+                        const updatedUser = users.find(u => u.id === userId);
+                        if (updatedUser) {
+                            setSelectedUser(updatedUser);
+                        }
+                    }
+                } else {
+                    setSelectedUser(prev => ({
+                        ...prev,
+                        ...userData,
+                        ...result
+                    }));
+                }
             }
 
             setIsEditModalOpen(false);
             setEditingUser(null);
-            toast.success('User updated successfully');
+            
+            toast.success(isFormData && userData.has('avatar_file') 
+                ? 'User and avatar updated successfully' 
+                : 'User updated successfully'
+            );
+            
             if (refreshUsers) {
-                        refreshUsers();
-                    }
+                await refreshUsers();
+            }
         } catch (error) {
-            console.error('Error updating', error);
+            console.error('Error updating user:', error);
             toast.error(error.message || 'Failed to update user');
+            throw error;
         }
     };
 
@@ -610,8 +650,9 @@ const Account = () => {
                     await deleteUser(userId);
                     setSelectedUser(null);
                     toast.success('User deleted successfully');
+                    
                     if (refreshUsers) {
-                        refreshUsers();
+                        await refreshUsers();
                     }
                     
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -629,9 +670,10 @@ const Account = () => {
     const handleActivate = async (userId) => {
         try {
             await activateUser(userId);
+            
             if (refreshUsers) {
-                        refreshUsers();
-                    }
+                await refreshUsers();
+            }
         } catch (error) {
             console.error('Error activating user from parent:', error);
             throw error;

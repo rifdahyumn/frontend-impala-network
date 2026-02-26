@@ -3,7 +3,14 @@ import { TableCell, TableRow } from "../ui/table";
 import { Badge } from "../ui/badge";
 import { format, isToday, isYesterday } from "date-fns";
 
-const MemberTableRow = ({ member, headers, onSelect }) => {
+const MemberTableRow = ({ member, headers, onSelect, index }) => {
+    
+    const handleRowClick = () => {
+        if (onSelect && member) {
+            onSelect(member);
+        }
+    };
+
     const formatCurrency = (value) => {
         if (!value) return '-';
         
@@ -20,7 +27,6 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
     };
 
     const renderCellContent = (header, member) => {
-
         const fieldMap = {
             'No': 'no',
             'Full Name': 'full_name',
@@ -107,162 +113,163 @@ const MemberTableRow = ({ member, headers, onSelect }) => {
         const field = fieldMap[header];
         const value = member[field];
 
-        switch (header) {
-            case 'Entity': {
-                const category = member?.category;
-                
-                if (category?.includes('UMKM') || category?.includes('Usaha') || category?.includes('Wirausaha') || category?.includes('StartUp')) {
-                    return member.business_name || '-';
-                }
-
-                if (category?.includes('Mahasiswa') || category?.includes('Pelajar') || category?.includes('Pemuda')) {
-                    return member.institution || '-';
-                }
-
-                if (category?.includes('Profesional') || category?.includes('Karyawan') || category?.includes('ASN') || category?.includes('BUMN')) {
-                    return member.workplace || '-'
-                }
-
-                if (category?.includes('Komunitas') || category?.includes('Asosiasi') || category?.includes('Organisasi')) {
-                    return member.community_name || '-'
-                }
-
-                return '-'
-            }
-               
-
-            case 'Duration':
-                return member.duration || '-'
-
-            case 'Action':
-                return (
-                    <Badge
-                        variant="default"
-                        className="text-xs bg-amber-500 hover:bg-amber-400 text-white cursor-pointer"
-                    >
-                        Details
-                    </Badge>
-                );
-            
-            case 'Status':
-                return (
-                    <Badge
-                        variant={value === 'Active' ? 'default' : 'secondary'}
-                        className={
-                            value === 'Active' ? 
-                            'bg-green-100 text-green-800 hover:bg-green-200' : 
-                            'bg-red-100 text-red-800 hover:bg-red-200'
-                        }
-                    >
-                        {value}
-                    </Badge>
-                );
-
-            case 'Price':
-                return formatCurrency(value);
-
-            case 'Last Login': {
-                if (!value) return 'Never logged in';
-
-                const loginDate = new Date(value)
-
-                if (isToday(loginDate)) {
-                    return 'Today ' + format(loginDate, 'hh:mm a')
-                } else if (isYesterday(loginDate)) {
-                    return 'Yesterday ' + format(loginDate, 'hh:mm a')
-                } else {
-                    const daysDiff = Math.floor((new Date() - loginDate) / (1000 * 60 * 60 * 24))
-                    if (daysDiff < 7) {
-                        return `${daysDiff} days ago`
-                    } else {
-                        return format(loginDate, 'MM dd, yyyy')
-                    }
-                }
-            }
-
-            case 'Salary':
-                if (typeof value === 'number') {
-                    return new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR'
-                    }).format(value);
-                }
-                return value;
-
-            case 'Join Date':
-                if (value) {
-                    return new Date(value).toLocaleDateString('id-ID');
-                }
-                return value;
-
-            case 'Program Name':
-                if (!value) return '-'
-                if (typeof value === 'string') {
-                    let cleaned = value.replace(/\\/g, '')
-
-                    cleaned = cleaned.replace(/^["']+|["']+$/g, '')
-                    
-                    if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
-                        cleaned = cleaned.slice(1, -1)
-                    }
-
-                    const items = cleaned.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
-                        .map(item => item.trim())
-                        .map(item => {
-                            item = item.replace(/^["']+|["']+$/g, '')
-                            if (item.startsWith('[') && item.endsWith(']')) {
-                                item = item.slice(1, -1)
-                            }
-
-                            item = item.replace(/^["']+|["']+$/g, '')
-                            return item
-                        })
-                        .filter(item => item.length > 0)
-                    return items.join(', ')
-                }
-
-                if (Array.isArray(value)) {
-                    return value.join(', ')
-                }
-
-                return value
-
-            case 'Gender': {
-                if (!value) return '-'
-
-                const genderMap = {
-                    'laki-laki': 'Male',
-                    'Laki-laki': 'Male',
-                    'LAKI-LAKI': 'Male',
-                    'laki': 'Male',
-                    'Laki': 'Male',
-                    'pria': 'Male',
-                    'Pria': 'Male',
-                    'perempuan': 'Female',
-                    'Perempuan': 'Female',
-                    'PEREMPUAN': 'Female',
-                    'wanita': 'Female',
-                    'Wanita': 'Female',
-                    'male': 'Male',
-                    'Male': 'Male',
-                    'MALE': 'Male',
-                    'female': 'Female',
-                    'Female': 'Female',
-                    'FEMALE': 'Female'
-                }
-
-                const normalizedValue = value.toString().trim()
-                return genderMap[normalizedValue] || value
-            }
-
-            default:
-                return value || '-';
+        if (header === 'Action') {
+            return (
+                <Badge
+                    variant="default"
+                    className="text-xs bg-amber-500 hover:bg-amber-400 text-white cursor-pointer"
+                >
+                    Details
+                </Badge>
+            );
         }
+
+        if (header === 'Status') {
+            return (
+                <Badge
+                    variant={value === 'Active' ? 'default' : 'secondary'}
+                    className={
+                        value === 'Active' ? 
+                        'bg-green-100 text-green-800 hover:bg-green-200' : 
+                        'bg-red-100 text-red-800 hover:bg-red-200'
+                    }
+                >
+                    {value}
+                </Badge>
+            );
+        }
+
+        if (header === 'Last Login') {
+            if (!value) return 'Never logged in';
+
+            const loginDate = new Date(value)
+
+            if (isToday(loginDate)) {
+                return 'Today ' + format(loginDate, 'hh:mm a')
+            } else if (isYesterday(loginDate)) {
+                return 'Yesterday ' + format(loginDate, 'hh:mm a')
+            } else {
+                const daysDiff = Math.floor((new Date() - loginDate) / (1000 * 60 * 60 * 24))
+                if (daysDiff < 7) {
+                    return `${daysDiff} days ago`
+                } else {
+                    return format(loginDate, 'MM dd, yyyy')
+                }
+            }
+        }
+
+        if (header === 'Entity') {
+            const category = member?.category;
+            
+            if (category?.includes('UMKM') || category?.includes('Usaha') || category?.includes('Wirausaha') || category?.includes('StartUp')) {
+                return member.business_name || '-';
+            }
+
+            if (category?.includes('Mahasiswa') || category?.includes('Pelajar') || category?.includes('Pemuda')) {
+                return member.institution || '-';
+            }
+
+            if (category?.includes('Profesional') || category?.includes('Karyawan') || category?.includes('ASN') || category?.includes('BUMN')) {
+                return member.workplace || '-'
+            }
+
+            if (category?.includes('Komunitas') || category?.includes('Asosiasi') || category?.includes('Organisasi')) {
+                return member.community_name || '-'
+            }
+
+            return '-'
+        }
+
+        if (header === 'Duration') {
+            return member.duration || '-'
+        }
+
+        if (header === 'Price') {
+            return formatCurrency(value);
+        }
+
+        if (header === 'Salary') {
+            if (typeof value === 'number') {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR'
+                }).format(value);
+            }
+            return value;
+        }
+
+        if (header === 'Join Date') {
+            if (value) {
+                return new Date(value).toLocaleDateString('id-ID');
+            }
+            return value;
+        }
+
+        if (header === 'Program Name') {
+            if (!value) return '-'
+            if (typeof value === 'string') {
+                let cleaned = value.replace(/\\/g, '')
+                cleaned = cleaned.replace(/^["']+|["']+$/g, '')
+                
+                if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
+                    cleaned = cleaned.slice(1, -1)
+                }
+
+                const items = cleaned.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
+                    .map(item => item.trim())
+                    .map(item => {
+                        item = item.replace(/^["']+|["']+$/g, '')
+                        if (item.startsWith('[') && item.endsWith(']')) {
+                            item = item.slice(1, -1)
+                        }
+                        item = item.replace(/^["']+|["']+$/g, '')
+                        return item
+                    })
+                    .filter(item => item.length > 0)
+                return items.join(', ')
+            }
+
+            if (Array.isArray(value)) {
+                return value.join(', ')
+            }
+
+            return value
+        }
+
+        if (header === 'Gender') {
+            if (!value) return '-'
+
+            const genderMap = {
+                'laki-laki': 'Male',
+                'Laki-laki': 'Male',
+                'LAKI-LAKI': 'Male',
+                'laki': 'Male',
+                'Laki': 'Male',
+                'pria': 'Male',
+                'Pria': 'Male',
+                'perempuan': 'Female',
+                'Perempuan': 'Female',
+                'PEREMPUAN': 'Female',
+                'wanita': 'Female',
+                'Wanita': 'Female',
+                'male': 'Male',
+                'Male': 'Male',
+                'MALE': 'Male',
+                'female': 'Female',
+                'Female': 'Female',
+                'FEMALE': 'Female'
+            }
+
+            const normalizedValue = value.toString().trim()
+            return genderMap[normalizedValue] || value
+        }
+
+        return value || '-';
     };
 
     return (
         <TableRow
-            onClick={() => onSelect(member)}
+            onClick={handleRowClick}
             className='cursor-pointer hover:bg-gray-50/50 transition-colors'
         >
             {headers.map((header, index) => (

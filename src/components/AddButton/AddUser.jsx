@@ -4,7 +4,7 @@ import { Badge } from "../ui/badge";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
-import { useEffect, useState, useMemo } from "react"; // Tambahkan useMemo
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Upload, X, Loader2 } from "lucide-react";
@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 import userService from "../../services/userService";
 
 const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editData = null, onEditUser = null }) => {
-    const isEditMode = !!editData
+    const isEditMode = !!editData;
     const [formData, setFormData] = useState({
         employee_id: '',
         email: '',
@@ -26,10 +26,52 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
     const [avatar, setAvatar] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState({})
-    const [originalData, setOriginalData] = useState({})
+    const [errors, setErrors] = useState({});
+    const [originalData, setOriginalData] = useState({});
 
-    // Gunakan useMemo untuk formSections agar bisa bergantung pada isEditMode
+    const getStringValue = (value) => {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'string') return value;
+        if (typeof value === 'number') return value.toString();
+        if (typeof value === 'boolean') return value.toString();
+        return '';
+    };
+
+    const getChangedFields = () => {
+        const changed = {};
+        
+        Object.keys(formData).forEach(key => {
+            if (key === 'avatar') return;
+            
+            const currentValue = formData[key];
+            const originalValue = originalData[key];
+            
+            if (key === 'password') {
+                if (isEditMode) {
+                    const passwordStr = getStringValue(currentValue);
+                    if (passwordStr && passwordStr.trim() !== '') {
+                        changed[key] = passwordStr.trim();
+                    }
+                } else {
+                    const passwordStr = getStringValue(currentValue);
+                    changed[key] = passwordStr;
+                }
+                return;
+            }
+            
+            const currentStr = getStringValue(currentValue);
+            const originalStr = getStringValue(originalValue);
+            
+            if (currentStr !== originalStr) {
+                if (currentStr.trim() !== '' || key === 'position') {
+                    changed[key] = currentStr;
+                }
+            }
+        });
+        
+        return changed;
+    };
+
     const formSections = useMemo(() => [
         {
             title: "Account Information",
@@ -45,7 +87,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                     name: 'password',
                     label: 'Password',
                     type: 'password',
-                    required: !isEditMode, // Akan berubah sesuai mode
+                    required: !isEditMode,
                     placeholder: isEditMode ? 'Leave blank to keep current password' : 'Enter password'
                 },
                 {
@@ -123,7 +165,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                 }
             ]
         },
-    ], [isEditMode]); // Rekomputasi ketika isEditMode berubah
+    ], [isEditMode]);
 
     useEffect(() => {
         if (isEditMode && editData) {
@@ -137,12 +179,12 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                 phone: editData.phone || '',
                 avatar: editData.avatar || '',
                 status: editData.status || 'Active'
-            }
-            setFormData(newFormData)
-            setOriginalData(newFormData)
+            };
+            setFormData(newFormData);
+            setOriginalData(newFormData);
             
             if (editData.avatar) {
-                setAvatarPreview(editData.avatar)
+                setAvatarPreview(editData.avatar);
             }
         } else {
             setFormData({
@@ -155,74 +197,59 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                 phone: '',
                 avatar: '',
                 status: 'Active',
-            })
-            setOriginalData({})
+            });
+            setOriginalData({});
         }
-        setAvatar(null)
-        setAvatarPreview(null)
-        setErrors({})
-    }, [isEditMode, editData, isAddUserModalOpen])
+        setAvatar(null);
+        setAvatarPreview(null);
+        setErrors({});
+    }, [isEditMode, editData, isAddUserModalOpen]);
 
     const validateForm = () => {
-        const newErrors = {}
+        const newErrors = {};
 
         formSections.forEach(section => {
             section.fields.forEach(field => {
                 if (isEditMode && field.name === 'password') {
-                    return
+                    return;
                 }
                 
                 if (field.required && !field.disabled) {
-                    const value = formData[field.name]
-                    if (!value || value.toString().trim() === '') {
-                        newErrors[field.name] = `${field.label} is required`
+                    const value = formData[field.name];
+                    const strValue = getStringValue(value);
+                    if (!strValue || strValue.trim() === '') {
+                        newErrors[field.name] = `${field.label} is required`;
                     }
                 }
-            })
-        })
+            });
+        });
 
-        if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+        if (formData.email && !/\S+@\S+\.\S+/.test(getStringValue(formData.email))) {
             newErrors.email = 'Email is invalid';
         }
 
         if (formData.phone) {
-            const phoneString = formData.phone.toString();
-            const digitsOnly = phoneString.replace(/\D/g, '');
+            const phoneStr = getStringValue(formData.phone);
+            const digitsOnly = phoneStr.replace(/\D/g, '');
             
             if (digitsOnly.length < 10 || digitsOnly.length > 15) {
-                newErrors.phone = 'Phone number must be between 10-15 digits'
+                newErrors.phone = 'Phone number must be between 10-15 digits';
             }
         }
 
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
-
-    const hasChanges = () => {
-        if (!isEditMode) return true;
-        
-        for (const key in formData) {
-            if (key === 'password') {
-                if (formData[key]) return true;
-            } else if (formData[key] !== originalData[key]) {
-                return true;
-            }
-        }
-        
-        if (avatar) return true;
-        
-        return false;
-    }
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         
         const fieldConfig = formSections
             .flatMap(section => section.fields)
-            .find(field => field.name === name)
+            .find(field => field.name === name);
 
         if (fieldConfig?.disabled) {
-            return
+            return;
         }
 
         setFormData(prev => ({
@@ -230,11 +257,11 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
             [name]: value
         }));
 
-        if(errors[name]) {
+        if (errors[name]) {
             setErrors(prev => ({
                 ...prev,
                 [name]: ''
-            }))
+            }));
         }
     };
 
@@ -256,170 +283,117 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
             setErrors(prev => ({
                 ...prev,
                 [name]: ''
-            }))
+            }));
         }
     };
 
     const handleAvatarChange = (e) => {
-        const file = e.target.files[0]
+        const file = e.target.files[0];
         if (file) {
             if (!file.type.startsWith('image/')) {
-                toast.error("Please select an image file")
-                return
+                toast.error("Please select an image file");
+                return;
             }
 
             if (file.size > 5 * 1024 * 1024) {
-                toast.error('Image size should be less than 5MB')
-                return
+                toast.error('Image size should be less than 5MB');
+                return;
             }
 
-            setAvatar(file)
+            setAvatar(file);
 
-            const reader = new FileReader()
+            const reader = new FileReader();
             reader.onload = (e) => {
-                setAvatarPreview(e.target.result)
-            }
-            reader.readAsDataURL(file)
+                setAvatarPreview(e.target.result);
+            };
+            reader.readAsDataURL(file);
         }
-    }
+    };
 
     const removeAvatar = () => {
-        setAvatar(null)
-        setAvatarPreview(null)
-    }
-
+        setAvatar(null);
+        setAvatarPreview(null);
+    };
+    
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        console.log('=== HANDLE SUBMIT START ===');
-        console.log('isEditMode:', isEditMode);
-        console.log('formData state:', JSON.stringify(formData, null, 2));
-        
-        // Cek nilai setiap field
-        console.log('email value:', formData.email);
-        console.log('email type:', typeof formData.email);
-        console.log('email length:', formData.email?.length);
-        
-        console.log('full_name value:', formData.full_name);
-        console.log('employee_id value:', formData.employee_id);
-        console.log('role value:', formData.role);
-        console.log('phone value:', formData.phone);
-
         if (!validateForm()) {
-            console.log('Validasi gagal!');
             toast.error('Please fix the errors in the form');
             return;
         }
 
-        if (isEditMode && !hasChanges()) {
-            toast.error('No changes detected');
-            return;
+        if (isEditMode) {
+            const changedFields = getChangedFields();
+            
+            if (Object.keys(changedFields).length === 0 && !avatar) {
+                toast.error('No changes detected');
+                return;
+            }
         }
 
-        setLoading(true)
+        setLoading(true);
 
         try {
+            let userId = null;
+            let userResult = null;
+
             const formDataToSend = new FormData();
 
-            // Log untuk mode edit
             if (isEditMode) {
-                console.log('=== EDIT MODE ===');
-                let hasChangesToSend = false;
+                const updatedData = getChangedFields();
                 
-                Object.keys(formData).forEach(key => {
-                    if (key === 'password') {
-                        if (formData[key] && formData[key].trim() !== '') {
-                            console.log(`Edit mode - adding password (changed)`);
-                            formDataToSend.append(key, formData[key]);
-                            hasChangesToSend = true;
-                        }
-                    } else if (formData[key] !== originalData[key]) {
-                        console.log(`Edit mode - adding ${key}:`, formData[key]);
-                        console.log(`Original ${key}:`, originalData[key]);
-                        formDataToSend.append(key, formData[key]);
-                        hasChangesToSend = true;
-                    }
+                Object.keys(updatedData).forEach(key => {
+                    formDataToSend.append(key, updatedData[key]);
                 });
-
-                if (avatar) {
-                    console.log('Edit mode - adding avatar file:', avatar.name);
-                    formDataToSend.append('avatar_file', avatar);
-                    hasChangesToSend = true;
-                }
-
-                if (!hasChangesToSend) {
-                    toast.error('No fields to update');
-                    setLoading(false);
-                    return;
-                }
-            }
-            
-            // Required fields untuk mode tambah
-            console.log('=== REQUIRED FIELDS CHECK ===');
-            const requiredFields = ['email', 'full_name', 'employee_id', 'role', 'phone'];
-    
-            for (const field of requiredFields) {
-                console.log(`Checking field ${field}:`, formData[field]);
-                console.log(`Trimmed:`, formData[field]?.trim());
                 
-                if (!formData[field] || formData[field].trim() === '') {
-                    console.error(`Field ${field} KOSONG!`);
-                    toast.error(`${field} is required`);
-                    setLoading(false);
-                    return;
+                userId = editData.id;
+            } else {
+                formDataToSend.append('employee_id', getStringValue(formData.employee_id).trim());
+                formDataToSend.append('email', getStringValue(formData.email).trim());
+                formDataToSend.append('full_name', getStringValue(formData.full_name).trim());
+                formDataToSend.append('role', formData.role);
+                formDataToSend.append('phone', getStringValue(formData.phone).trim());
+                
+                if (formData.position) {
+                    formDataToSend.append('position', formData.position);
                 }
-
-                console.log(`Appending ${field}:`, formData[field].trim());
-                formDataToSend.append(field, formData[field].trim());
-            }
-
-            // Optional fields
-            if (formData.position) {
-                console.log('Appending position:', formData.position);
-                formDataToSend.append('position', formData.position);
-            }
-
-            if (formData.password) {
-                console.log('Appending password');
-                formDataToSend.append('password', formData.password);
+                
+                if (formData.password) {
+                    formDataToSend.append('password', formData.password);
+                }
             }
 
             if (avatar) {
-                console.log('Appending avatar_file:', avatar.name);
                 formDataToSend.append('avatar_file', avatar);
             }
 
-            // Log final FormData
-            console.log('=== FINAL FORMDATA ENTRIES ===');
-            for (let pair of formDataToSend.entries()) {
-                if (pair[0] === 'avatar_file') {
-                    console.log(pair[0] + ': [FILE] ' + (pair[1]?.name || 'unknown'));
-                } else {
-                    console.log(pair[0] + ': ' + pair[1]);
-                }
-            }
-
-            // Lanjutkan dengan pengiriman...
             if (isEditMode) {
                 if (onEditUser) {
-                    await onEditUser(editData.id, formDataToSend);
+                    userResult = await onEditUser(editData.id, formDataToSend);
                 } else {
-                    await userService.updateUser(editData.id, formDataToSend);
+                    userResult = await userService.updateUser(editData.id, formDataToSend);
                 }
-                toast.success('User updated successfully');
             } else {
                 if (onAddUser) {
-                    await onAddUser(formDataToSend);
+                    userResult = await onAddUser(formDataToSend);
                 } else {
-                    await userService.addUser(formDataToSend);
+                    userResult = await userService.addUser(formDataToSend);
                 }
-                toast.success('User added successfully');
+                // eslint-disable-next-line no-unused-vars
+                userId = userResult?.data?.id || userResult?.id;
+            }
+
+            if (avatar) {
+                toast.success(isEditMode ? 'User and avatar updated successfully' : 'User and avatar added successfully');
+            } else {
+                toast.success(isEditMode ? 'User updated successfully' : 'User added successfully');
             }
             
             handleCloseModal();
+            
         } catch (error) {
             console.error('Submit error:', error);
-            console.error('Error response:', error.response?.data);
             toast.error(error.response?.data?.message || error.message || `Failed to ${isEditMode ? 'update' : 'add'} user`);
         } finally {
             setLoading(false);
@@ -427,10 +401,10 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
     };
 
     const handleCloseModal = () => {
-        setIsAddUserModalOpen(false)
-        setErrors({})
-        setAvatar(null)
-        setAvatarPreview(null)
+        setIsAddUserModalOpen(false);
+        setErrors({});
+        setAvatar(null);
+        setAvatarPreview(null);
     };
 
     const renderField = (field) => {
@@ -455,6 +429,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                                             size="icon"
                                             className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
                                             onClick={removeAvatar}
+                                            disabled={loading}
                                         >
                                             <X className="w-3 h-3" />
                                         </Button>
@@ -481,6 +456,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                                         accept={field.accept}
                                         onChange={handleAvatarChange}
                                         className="w-full cursor-pointer"
+                                        disabled={loading}
                                     />
                                 </div>
                                 <Badge variant="secondary" className="text-xs">
@@ -490,7 +466,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                         </div>
                     </CardContent>
                 </Card>
-            )
+            );
         }
 
         if (field.type === 'select') {
@@ -503,13 +479,17 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                     <Select
                         value={formData[field.name]}
                         onValueChange={(value) => handleSelectChange(field.name, value)}
+                        disabled={loading}
                     >
                         <SelectTrigger className={errors[field.name] ? 'border-red-500' : ''}>
                             <SelectValue placeholder={field.placeholder} />
                         </SelectTrigger>
                         <SelectContent>
-                            {field.options.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
+                            {field.options.map((option, index) => (
+                                <SelectItem 
+                                    key={`${field.name}-${option.value}-${index}`}
+                                    value={option.value}
+                                >
                                     {option.label}
                                 </SelectItem>
                             ))}
@@ -532,10 +512,11 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                     id={field.name}
                     name={field.name}
                     type={field.type}
-                    value={formData[field.name]}
+                    value={formData[field.name] || ''}
                     onChange={handleInputChange}
                     placeholder={field.placeholder}
                     className={`w-full ${errors[field.name] ? 'border-red-500' : ''}`}
+                    disabled={loading}
                 />
                 {errors[field.name] && (
                     <p className="text-sm text-red-500">{errors[field.name]}</p>
