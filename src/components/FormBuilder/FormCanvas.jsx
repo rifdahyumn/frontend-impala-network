@@ -84,14 +84,6 @@ const FormCanvas = ({
         return String(program);
     };
 
-    // const getProgramId = (program) => {
-    //     if (!program) return "";
-    //     if (typeof program === 'string') return program;
-    //     if (program.id) return program.id;
-    //     if (program.program_id) return program.program_id;
-    //     return program;
-    // };
-
     const handlePublicClick = () => {
         if (onDirectPublish) {
             onDirectPublish()

@@ -187,7 +187,8 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 { key: 'program_name', label: 'Program Name', icon: Package },
                 { key: 'client', label: 'Client', icon: Briefcase },
                 { key: 'category', label: 'Category', icon: Tag },
-                { key: 'description', label: 'Description', icon: FileText }
+                { key: 'description', label: 'Description', icon: FileText },
+                { key: 'client_info', label: 'Client/Partner Information', icon: Building, isClientButton: true },
             ]
         },
         {
@@ -202,7 +203,6 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 { key: 'start_date', label: 'Start Date', icon: Calendar },
                 { key: 'end_date', label: 'End Date', icon: Calendar },
                 { key: 'description', label: 'Description', icon: Building },
-                { key: 'client_info', label: 'Client/Partner Information', icon: Building, isClientButton: true },
             ]
         },
         {

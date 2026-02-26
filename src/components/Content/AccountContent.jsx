@@ -211,18 +211,15 @@ const AccountContent = ({
     const getAvatarUrl = (avatarPath) => {
         if (!avatarPath) return null;
         
-        // Jika sudah URL lengkap
         if (avatarPath.startsWith('http')) {
             return avatarPath;
         }
         
-        // Jika path sudah dimulai dengan /uploads/
         if (avatarPath.startsWith('/uploads/')) {
             const baseUrl = API_BASE_URL?.replace(/\/$/, '');
             return `${baseUrl}${avatarPath}`;
         }
         
-        // Format umum
         const baseUrl = API_BASE_URL?.replace(/\/$/, '');
         const path = avatarPath.startsWith('/') ? avatarPath : `/${avatarPath}`;
         return `${baseUrl}${path}`;
@@ -454,7 +451,7 @@ const AccountContent = ({
                                             onClick={() => {
                                                 setActiveCategory(category.category);
                                                 setShowPassword(false);
-                                                setAvatarLoadError(false); // Reset avatar error when switching categories
+                                                setAvatarLoadError(false); 
                                             }}
                                         >
                                             <CategoryIcon className='h-4 w-4' />

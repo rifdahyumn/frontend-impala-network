@@ -8,7 +8,46 @@ import { X, Plus, Loader2, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import programService from "../../services/programService";
 
-const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProgram, editData = null, onEditProgram }) => {
+const parseCurrency = (formattedValue) => {
+    if (!formattedValue || formattedValue === 'Rp. ') return 0;
+    const numericValue = formattedValue
+        .replace('Rp.', '')
+        .replace(/\s/g, '')
+        .replace(/\./g, '');
+    return numericValue ? parseInt(numericValue) : 0;
+};
+
+const formatCurrency = (value) => {
+    if (!value || value === 0) return 'Rp. ';
+    const numberValue = parseInt(value);
+    if (isNaN(numberValue)) return 'Rp. ';
+    const formatted = numberValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return `Rp. ${formatted}`;
+};
+
+const calculateEstimasiMargin = (offering, usagePlan) => {
+    const offeringValue = parseCurrency(offering);
+    const usagePlanValue = parseCurrency(usagePlan);
+    if (!offeringValue || !usagePlanValue) return 'Rp. ';
+    return formatCurrency(offeringValue - usagePlanValue);
+};
+
+const calculateRealisasiPenyerapan = (financeClosure, offering) => {
+    const financeValue = parseCurrency(financeClosure);
+    const offeringValue = parseCurrency(offering);
+    if (!financeValue || !offeringValue || offeringValue === 0) return '';
+    const realisasi = (financeValue / offeringValue) * 100;
+    return `${Math.round(realisasi * 100) / 100}%`;
+};
+
+const calculateMarginRealisasi = (offering, financeClosure) => {
+    const offeringValue = parseCurrency(offering);
+    const financeValue = parseCurrency(financeClosure);
+    if (!offeringValue || !financeValue) return 'Rp. ';
+    return formatCurrency(offeringValue - financeValue);
+};
+
+const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, editData = null, onSuccess, onAddProgram, onEditProgram }) => {
     const isEditMode = !!editData;
 
     const [newInstructor, setNewInstructor] = useState('');
@@ -93,60 +132,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         { id: 'additional', label: 'Additional'}
     ];
 
-    const formatCurrency = (value) => {
-        if (!value || value === 'Rp. ') return 'Rp. ';
-        
-        let numericValue;
-        if (typeof value === 'string' && value.includes('Rp.')) {
-            numericValue = value.replace('Rp.', '').replace(/\s/g, '').replace(/\./g, '');
-        } else {
-            numericValue = value.toString().replace(/\D/g, '');
-        }
-
-        if (numericValue === '') return 'Rp. ';
-
-        const numberValue = parseInt(numericValue);
-        if (isNaN(numberValue)) return 'Rp. ';
-        
-        const formatted = numberValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        return `Rp. ${formatted}`;
-    };
-
-    const parseCurrency = (formattedValue) => {
-        if (!formattedValue || formattedValue === 'Rp. ') return '';
-        
-        return formattedValue
-            .replace('Rp.', '')
-            .replace(/\s/g, '')
-            .replace(/\./g, '');
-    };
-
-    const handleCurrencyInput = (fieldName) => (e) => {
-        const { value } = e.target;
-
-        if (value === 'Rp. ' || value === 'Rp.' || value === '') {
-            setFormData(prev => ({
-                ...prev,
-                [fieldName]: 'Rp. '
-            }));
-            return;
-        }
-        
-        const formattedValue = formatCurrency(value);
-        
-        setFormData(prev => ({
-            ...prev,
-            [fieldName]: formattedValue
-        }));
-
-        if (errors[fieldName]) {
-            setErrors(prev => ({
-                ...prev,
-                [fieldName]: ''
-            }));
-        }
-    };
-
     const handleCurrencyKeyDown = (fieldName) => (e) => {
         if (e.key === 'Backspace') {
             const currentValue = formData[fieldName].replace(/\s/g, '');
@@ -171,6 +156,97 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
             ...prev,
             [fieldName]: formattedValue
         }));
+    };
+
+    const ensureArray = (value) => {
+        if (Array.isArray(value)) return value.filter(Boolean);
+        if (!value) return [];
+        if (typeof value === 'string') {
+            if (value.includes(',')) {
+                return value.split(',').map(item => item.trim()).filter(Boolean);
+            }
+            return [value];
+        }
+        return [];
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        
+        const currencyFields = [
+            'budget_offering',
+            'budget_usage_plan',
+            'budget_finance_closure'
+        ];
+        
+        const isCurrencyField = currencyFields.includes(name);
+
+        let newFormData;
+        
+        if (isCurrencyField) {
+            if (value === 'Rp. ' || value === 'Rp.' || value === '') {
+                newFormData = {
+                    ...formData,
+                    [name]: 'Rp. '
+                };
+            } else {
+                const numbersOnly = value.replace(/\D/g, '');
+                const formattedValue = formatCurrency(numbersOnly);
+                newFormData = {
+                    ...formData,
+                    [name]: formattedValue
+                };
+            }
+        } else {
+            newFormData = {
+                ...formData,
+                [name]: value
+            };
+        }
+
+        const currentOffering = name === 'budget_offering' 
+            ? newFormData.budget_offering 
+            : formData.budget_offering;
+            
+        const currentUsagePlan = name === 'budget_usage_plan' 
+            ? newFormData.budget_usage_plan 
+            : formData.budget_usage_plan;
+        
+        newFormData.margin_estimasi_margin = calculateEstimasiMargin(
+            currentOffering, 
+            currentUsagePlan
+        );
+        
+        const currentFinanceClosure = name === 'budget_finance_closure' 
+            ? newFormData.budget_finance_closure 
+            : formData.budget_finance_closure;
+            
+        const currentOfferingForRealisasi = name === 'budget_offering' 
+            ? newFormData.budget_offering 
+            : formData.budget_offering;
+        
+        if (currentFinanceClosure !== 'Rp. ' && currentOfferingForRealisasi !== 'Rp. ') {
+            newFormData.budget_finance_closure_realisasi_penyerapan = calculateRealisasiPenyerapan(
+                currentFinanceClosure,
+                currentOfferingForRealisasi
+            );
+            
+            if (newFormData.budget_finance_closure_realisasi_penyerapan) {
+                newFormData.margin_real_margin = calculateMarginRealisasi(
+                    currentOffering,
+                    currentFinanceClosure
+                );
+            }
+        }
+
+        setFormData(newFormData);
+
+        if (errors[name]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }));
+        }
     };
 
     useEffect(() => {
@@ -218,78 +294,19 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
     useEffect(() => {
         if (isEditMode && editData) {
             const newFormData = { ...formData };
-            
-            const formatField = (value, isLinkField = false) => {
-                if (isLinkField) {
-                    return value || '';
-                }
-                
-                if (!value) return 'Rp. ';
-                if (typeof value === 'number') return formatCurrency(value.toString());
-                if (typeof value === 'string' && /^\d+$/.test(value.replace(/\D/g, ''))) {
-                    return formatCurrency(value);
-                }
-                return value;
-            };
-
-            const linkFields = [
-                'link_folder_program',
-                'deck_program_link',
-                'link_budgeting_offering',
-                'link_budgeting_usage_plan', 
-                'link_budgeting_finance_tracker',
-                'quotation',
-                'invoice',
-                'receipt',
-                'link_kontrak_freelance',
-                'link_surat_tugas',
-                'link_document_kontrak_partner',
-                'link_drive_documentation',
-                'link_drive_media_release_program',
-                'link_drive_program_report',
-                'link_drive_e_catalogue_beneficiary',
-                'link_drive_bast',
-                'satisfaction_survey_link'
-            ];
-
-             const currencyFields = [
-                'budget_offering',
-                'budget_usage_plan',
-                'budget_finance_closure',
-                'margin_estimasi_margin',
-                'margin_real_margin'
-            ];
 
             Object.keys(editData).forEach(key => {
                 if (key in newFormData) {
                     const value = editData[key];
-
-                    if (linkFields.includes(key)) {
-                        newFormData[key] = value || '';
-                    } else if (currencyFields.includes(key)) {
-                        newFormData[key] = formatField(value);
+                    
+                    if (['budget_offering', 'budget_usage_plan', 'budget_finance_closure', 
+                        'margin_estimasi_margin', 'margin_real_margin'].includes(key)) {
+                        newFormData[key] = value ? formatCurrency(value.toString()) : 'Rp. ';
                     } else if (['instructors', 'tags', 'interest_of_program', 'man_power_pic', 'kolaborator'].includes(key)) {
-                        if (Array.isArray(value)) {
-                            newFormData[key] = value;
-                        } else if (value && typeof value === 'string') {
-                            if (value.includes(',')) {
-                                newFormData[key] = value.split(',').map(item => item.trim());
-                            } else {
-                                newFormData[key] = [value];
-                            }
-                        } else {
-                            newFormData[key] = [];
-                        }
+                        newFormData[key] = Array.isArray(value) ? value : [];
                     } else {
                         newFormData[key] = value || '';
                     }
-                }
-            });
-            
-            const arrayFields = ['instructors', 'tags', 'interest_of_program', 'man_power_pic', 'kolaborator'];
-            arrayFields.forEach(field => {
-                if (!newFormData[field] || !Array.isArray(newFormData[field])) {
-                    newFormData[field] = [];
                 }
             });
 
@@ -355,13 +372,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                 stage_end_sustainability_realisasi: 0
             });
         }
-        setErrors({});
-        setNewInstructor('');
-        setNewTag('');
-        setNewInterest('');
-        setNewManPowerPic('');
-        setNewKolaborator('');
-        setActiveTab('basic');
     }, [isEditMode, editData, isAddProgramModalOpen]);
 
     const validateForm = () => {
@@ -397,42 +407,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-
-        //  const linkBudgetFields = [
-        //     'link_budgeting_offering',
-        //     'link_budgeting_usage_plan', 
-        //     'link_budgeting_finance_tracker'
-        // ];
-        
-        const currencyFields = [
-            'budget_offering',
-            'budget_usage_plan',
-            'budget_finance_closure',
-            'margin_estimasi_margin',
-            'margin_real_margin'
-        ];
-        
-        const isCurrencyField = currencyFields.includes(name);
-    
-        if (isCurrencyField) {
-            handleCurrencyInput(name)(e);
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                [name]: value
-            }));
-        }
-
-        if (errors[name]) {
-            setErrors(prev => ({
-                ...prev,
-                [name]: ''
-            }));
-        }
-    };
-
     const handleSelectChange = (name, value) => {
         setFormData(prev => ({
             ...prev,
@@ -466,18 +440,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
         setLoading(true);
 
         try {
-            const ensureArray = (value) => {
-                if (Array.isArray(value)) return value.filter(Boolean);
-                if (!value) return [];
-                if (typeof value === 'string') {
-                    if (value.includes(',')) {
-                        return value.split(',').map(item => item.trim()).filter(Boolean);
-                    }
-                    return [value];
-                }
-                return [];
-            };
-
             const programData = {
                 ...formData,
                 budget_offering: parseCurrency(formData.budget_offering),
@@ -512,18 +474,22 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                     await onEditProgram(editData.id, programData);
                 } else {
                     await programService.updateProgram(editData.id, programData);
-                    toast.success('Program updated successfully');
                 }
+                toast.success('Program updated successfully');
             } else {
                 if (onAddProgram) {
                     await onAddProgram(programData);
                 } else {
                     await programService.addProgram(programData);
-                    toast.success('Program added successfully');
                 }
+                toast.success('Program added successfully');
             }
 
             handleCloseModal();
+
+            if (onSuccess) {
+                onSuccess();
+            }
         } catch (error) {
             console.error(`Error ${isEditMode ? 'updating' : 'adding'} program:`, error);
             toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'add'} program`);
@@ -795,87 +761,79 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                     <Label htmlFor="budget_offering">
                         Budget Offering <span className="text-red-500">*</span>
                     </Label>
-                    <div className="relative">
-                        <Input
-                            id="budget_offering"
-                            name="budget_offering"
-                            value={formData.budget_offering}
-                            onChange={handleInputChange}
-                            onKeyDown={handleCurrencyKeyDown('budget_offering')}
-                            onPaste={handleCurrencyPaste('budget_offering')}
-                            className={`${errors.budget_offering ? 'border-red-500' : ''}`}
-                        />
-                       
-                    </div>
+                    <Input
+                        id="budget_offering"
+                        name="budget_offering"
+                        value={formData.budget_offering}
+                        onChange={handleInputChange} 
+                        onKeyDown={handleCurrencyKeyDown('budget_offering')}
+                        onPaste={handleCurrencyPaste('budget_offering')}
+                        className={errors.budget_offering ? 'border-red-500' : ''}
+                    />
                     {errors.budget_offering && <p className="text-red-500 text-sm">{errors.budget_offering}</p>}
                 </div>
 
                 <div className="space-y-2">
                     <Label htmlFor="budget_usage_plan">Budget Usage Plan</Label>
-                    <div className="relative">
-                        <Input
-                            id="budget_usage_plan"
-                            name="budget_usage_plan"
-                            value={formData.budget_usage_plan}
-                            onChange={handleInputChange}
-                            onKeyDown={handleCurrencyKeyDown('budget_usage_plan')}
-                            onPaste={handleCurrencyPaste('budget_usage_plan')}
-                        />
-                    
-                    </div>
+                    <Input
+                        id="budget_usage_plan"
+                        name="budget_usage_plan"
+                        value={formData.budget_usage_plan}
+                        onChange={handleInputChange} 
+                        onKeyDown={handleCurrencyKeyDown('budget_usage_plan')}
+                        onPaste={handleCurrencyPaste('budget_usage_plan')}
+                    />
                 </div>
 
                 <div className="space-y-2">
                     <Label htmlFor="budget_finance_closure">Budget Finance Closure</Label>
-                    <div className="relative">
-                        <Input
-                            id="budget_finance_closure"
-                            name="budget_finance_closure"
-                            value={formData.budget_finance_closure}
-                            onChange={handleInputChange}
-                            onKeyDown={handleCurrencyKeyDown('budget_finance_closure')}
-                            onPaste={handleCurrencyPaste('budget_finance_closure')}
-                        />
-                    </div>
+                    <Input
+                        id="budget_finance_closure"
+                        name="budget_finance_closure"
+                        value={formData.budget_finance_closure}
+                        onChange={handleInputChange}
+                        onKeyDown={handleCurrencyKeyDown('budget_finance_closure')}
+                        onPaste={handleCurrencyPaste('budget_finance_closure')}
+                    />
                 </div>
 
-                {/* <div className="space-y-2">
-                    <Label htmlFor="budget_finance_closure_realisasi_penyerapan">Realisasi Penyerapan (%)</Label>
+                <div className="space-y-2">
+                    <Label htmlFor="margin_estimasi_margin" className="text-gray-600">
+                        Estimasi Margin (Otomatis)
+                    </Label>
+                    <Input
+                        id="margin_estimasi_margin"
+                        name="margin_estimasi_margin"
+                        value={formData.margin_estimasi_margin}
+                        readOnly
+                        className="bg-gray-100 cursor-not-allowed"
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="budget_finance_closure_realisasi_penyerapan" className="text-gray-600">
+                        Realisasi Penyerapan (Otomatis)
+                    </Label>
                     <Input
                         id="budget_finance_closure_realisasi_penyerapan"
                         name="budget_finance_closure_realisasi_penyerapan"
                         value={formData.budget_finance_closure_realisasi_penyerapan}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 97%"
+                        readOnly
+                        className="bg-gray-100 cursor-not-allowed"
                     />
-                </div> */}
-
-                <div className="space-y-2">
-                    <Label htmlFor="margin_estimasi_margin">Estimasi Margin</Label>
-                    <div className="relative">
-                        <Input
-                            id="margin_estimasi_margin"
-                            name="margin_estimasi_margin"
-                            value={formData.margin_estimasi_margin}
-                            onChange={handleInputChange}
-                            onKeyDown={handleCurrencyKeyDown('margin_estimasi_margin')}
-                            onPaste={handleCurrencyPaste('margin_estimasi_margin')}
-                        />
-                    </div>
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="margin_real_margin">Real Margin</Label>
-                    <div className="relative">
-                        <Input
-                            id="margin_real_margin"
-                            name="margin_real_margin"
-                            value={formData.margin_real_margin}
-                            onChange={handleInputChange}
-                            onKeyDown={handleCurrencyKeyDown('margin_real_margin')}
-                            onPaste={handleCurrencyPaste('margin_real_margin')}
-                        />
-                    </div>
+                    <Label htmlFor="margin_real_margin" className="text-gray-600">
+                        Real Margin (Otomatis)
+                    </Label>
+                    <Input
+                        id="margin_real_margin"
+                        name="margin_real_margin"
+                        value={formData.margin_real_margin}
+                        readOnly
+                        className="bg-gray-100 cursor-not-allowed"
+                    />
                 </div>
 
                 <div className="space-y-2 col-span-2">
@@ -885,9 +843,17 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                         name="termin"
                         value={formData.termin}
                         onChange={handleInputChange}
-                        placeholder="e.g., Termin 1 (50%) - Pelunasan (50%)"
                     />
                 </div>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mt-2">
+                <h4 className="text-sm font-medium text-blue-800 mb-1">💡 Informasi Perhitungan Otomatis</h4>
+                <ul className="text-xs text-blue-700 space-y-1">
+                    <li>• <strong>Estimasi Margin</strong> = Budget Offering - Budget Usage Plan</li>
+                    <li>• <strong>Realisasi Penyerapan</strong> = (Budget Finance Closure / Budget Offering) × 100%</li>
+                    <li>• <strong>Real Margin</strong> = Budget Finance Closure - Biaya Aktual</li>
+                </ul>
             </div>
         </div>
     );
@@ -971,26 +937,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
                         id="receipt"
                         name="receipt"
                         value={formData.receipt}
-                        onChange={handleInputChange}
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="link_kontrak_freelance">Link Kontrak Freelance</Label>
-                    <Input
-                        id="link_kontrak_freelance"
-                        name="link_kontrak_freelance"
-                        value={formData.link_kontrak_freelance}
-                        onChange={handleInputChange}
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="link_surat_tugas">Link Surat Tugas</Label>
-                    <Input
-                        id="link_surat_tugas"
-                        name="link_surat_tugas"
-                        value={formData.link_surat_tugas}
                         onChange={handleInputChange}
                     />
                 </div>
@@ -1261,10 +1207,6 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, onAddProg
     };
 
     const renderAdditionalTab = () => {
-        // const interestOfProgram = Array.isArray(formData.interest_of_program) ? formData.interest_of_program : [];
-        // const tags = Array.isArray(formData.tags) ? formData.tags : [];
-        // const kolaborator = Array.isArray(formData.kolaborator) ? formData.kolaborator : [];
-
         return (        
             <div className="space-y-6">
                 <div className="space-y-3">

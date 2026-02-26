@@ -67,16 +67,6 @@ const Analytics = () => {
                 }
             }
             
-            // if (dataSource && dataSource.length > 0) {
-            //     const dates = dataSource.slice(0, 5).map(item => ({
-            //         raw: item.created_at,
-            //         parsed: new Date(item.created_at),
-            //         year: new Date(item.created_at).getFullYear()
-            //     }));
-            // } else {
-            //     console.warn('⚠️ No data source found!');
-            // }
-            
             const monthlyData = calculateMonthlyData(dataSource, selectedYear, selectedMetric);
             
             const summary = calculateSummary(monthlyData, selectedMetric, totalCount);

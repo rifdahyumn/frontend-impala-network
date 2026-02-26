@@ -105,7 +105,7 @@ export const clearTokens = () => {
             localStorage.removeItem(item);
             sessionStorage.removeItem(item);
         } catch {
-            // Silent fail for storage errors
+            // 
         }
     });
 };
@@ -196,7 +196,7 @@ const createAuthApi = () => {
                         originalRequest.headers.Authorization = `Bearer ${tokens.access_token}`;
                         return instance(originalRequest);
                     }
-                } catch (refreshError) {
+                } catch {
                     clearTokens();
                     if (typeof window !== 'undefined') {
                         window.dispatchEvent(new CustomEvent('auth:session-expired'));

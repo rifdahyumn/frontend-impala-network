@@ -58,9 +58,6 @@ class ProgramService {
                             'budget_offering': ['Budget Offering', 'budget offering', 'BUDGET OFFERING', 'Offering Budget'],
                             'budget_usage_plan': ['Budget Usage Plan', 'budget usage plan', 'BUDGET USAGE PLAN', 'Usage Plan'],
                             'budget_finance_closure': ['Budget Finance Closure', 'budget finance closure', 'BUDGET FINANCE CLOSURE', 'Finance Closure'],
-                            'budget_finance_closure_realisasi_penyerapan': ['Realisasi Penyerapan', 'realisasi penyerapan', 'REALISASI PENYERAPAN', 'Penyerapan %'],
-                            'margin_estimasi_margin': ['Estimasi Margin', 'estimasi margin', 'ESTIMASI MARGIN', 'Estimated Margin'],
-                            'margin_real_margin': ['Real Margin', 'real margin', 'REAL MARGIN', 'Actual Margin'],
                             'termin': ['Termin', 'termin', 'TERMIN', 'Payment Terms'],
                             'link_folder_program': ['Link Folder Program', 'link folder program', 'LINK FOLDER PROGRAM', 'Program Folder'],
                             'deck_program_link': ['Deck Program Link', 'deck program link', 'DECK PROGRAM LINK', 'Deck Link'],
@@ -158,6 +155,27 @@ class ProgramService {
                             normalizedRow.status = 'Active';
                         }
 
+                        if (normalizedRow.budget_offering && normalizedRow.budget_usage_plan) {
+                            normalizedRow.margin_estimasi_margin = this.calculateEstimasiMargin(
+                                normalizedRow.budget_offering,
+                                normalizedRow.budget_usage_plan
+                            );
+                        }
+
+                        if (normalizedRow.budget_offering && normalizedRow.budget_finance_closure) {
+                            normalizedRow.margin_real_margin = this.calculateMarginRealisasi(
+                                normalizedRow.budget_offering,
+                                normalizedRow.budget_finance_closure
+                            );
+                        }
+
+                        if (normalizedRow.budget_finance_closure && normalizedRow.budget_finance_closure_realisasi_penyerapan) {
+                            normalizedRow.margin_real_margin = this.calculateMarginRealisasi(
+                                normalizedRow.budget_finance_closure,
+                                normalizedRow.budget_finance_closure_realisasi_penyerapan
+                            );
+                        }
+
                         const arrayFields = [
                             'instructors', 'tags', 'interest_of_program', 
                             'man_power_pic', 'kolaborator'
@@ -189,6 +207,8 @@ class ProgramService {
                                 normalizedRow[field] = 0;
                             }
                         });
+
+                        
 
                         return normalizedRow
                     }).filter(row => {
@@ -399,6 +419,29 @@ class ProgramService {
         return capacity
     }
 
+    calculateEstimasiMargin(offering, usagePlan) {
+        if (!offering || !usagePlan) return null;
+        const offeringNum = parseFloat(offering) || 0;
+        const usagePlanNum = parseFloat(usagePlan) || 0;
+        return offeringNum - usagePlanNum;
+    }   
+
+    calculateRealisasiPenyerapan(financeClosure, offering) {
+        if (!financeClosure || !offering || offering === 0) return null;
+        const financeNum = parseFloat(financeClosure) || 0;
+        const offeringNum = parseFloat(offering) || 0;
+        if (offeringNum === 0) return null;
+        const realisasi = (financeNum / offeringNum) * 100;
+        return `${Math.round(realisasi * 100) / 100}%`;
+    }
+
+    calculateMarginRealisasi(offering, financeClosure) {
+        if (!offering || !financeClosure) return null;
+        const offeringNum = parseFloat(offering) || 0;
+        const financeNum = parseFloat(financeClosure) || 0;
+        return offeringNum - financeNum;
+    }
+
     prepareArrayForBackend(value) {
         if (!value) return [];
         
@@ -440,51 +483,62 @@ class ProgramService {
     generateExcelTemplate() {
         const templateData = [
             {
-                'Program Name': 'Leadership Training 2024',
-                'Client': 'PT Example Corporation',
+                'Program Name': 'Executive Leadership Program 2024',
+                'Client': 'PT Astra International Tbk',
                 'Category': 'Training',
-                'Description': '5-day intensive leadership training',
-                'Start Date': '2024-03-01',
-                'End Date': '2024-03-05',
+                'Status': 'Active',
+                'Description': '5-day executive leadership program',
+                
+                'Start Date': '2026-07-15',
+                'End Date': '2026-07-19',
                 'Location': 'Jakarta',
                 'Area': 'Nasional',
                 'Activity': 'Training',
                 'Capacity': '50-100',
-                'Participant': '75',
-                'Budget Offering': '50000000',
-                'Budget Usage Plan': '45000000',
-                'Budget Finance Closure': '48500000',
-                'Estimasi Margin': '5000000',
-                'Real Margin': '3500000',
-                'Termin': 'Termin 1 (50%) - Pelunasan (50%)',
+                'Participant': '76',
+                
+                'Budget Offering': '750000000',
+                'Budget Usage Plan': '700000000',
+                'Budget Finance Closure': '720000000',
+                'Termin': 'Down Payment (50%) - Final Payment (50%)',
+                
                 'Link Folder Program': 'https://drive.google.com/...',
                 'Deck Program Link': 'https://drive.google.com/...',
                 'Link Budgeting Offering': 'https://drive.google.com/...',
+                'Link Budgeting Usage Plan': '',
+                'Link Budgeting Finance Tracker': '',
                 'Quotation': 'https://drive.google.com/...',
                 'Invoice': 'https://drive.google.com/...',
                 'Receipt': 'https://drive.google.com/...',
                 'Link Documentation': 'https://drive.google.com/...',
+                'Link Media Release': '',
+                'Link Program Report': '',
+                'Link E-Catalogue': '',
+                'Link BAST': '',
                 'Survey Link': 'https://survey.google.com/...',
-                'Instructors': 'John Doe, Jane Smith',
-                'Tags': 'leadership, management',
-                'Interest of Program': 'Gen Z, Digital Learning',
-                'Man Power PIC': 'Mike Johnson, Sarah Wilson',
-                'Kolaborator': 'Universitas Indonesia, Kampus Merdeka',
-                'Man Power Leads': 'Dian Purnama',
-                'Division': 'Digital Learning Division',
-                'Jumlah Team Internal': '5',
-                'Jumlah Team Eksternal': '3',
                 'Link Kontrak Freelance': 'https://drive.google.com/...',
-                'Link Surat Tugas': 'https://drive.google.com/...',
-                'Link Kontrak Partner': 'https://drive.google.com/...',
-                'Start Leads %': '100',
+                'Link Surat Tugas': '',
+                'Link Kontrak Partner': '',
+                
+                'Instructors': 'Dr. Andi Wijaya, Rina Hartono',
+                'Man Power PIC': 'Ahmad Pratama, Siti Rahma',
+                'Kolaborator': 'Universitas Indonesia, BUMN Institute',
+                'Man Power Leads': 'Dian Purnama',
+                'Division': 'Corporate Learning Division',
+                'Jumlah Team Internal': '6',
+                'Jumlah Team Eksternal': '4',
+                
+                'Tags': 'leadership, executive, digital transformation',
+                'Interest of Program': 'Digital Leadership, Gen Z Workforce',
+                
+                'Start Leads %': '50',
                 'Analysis %': '100',
-                'Creative Development %': '100',
-                'Program Description %': '100',
-                'Initial Presentation %': '100',
-                'Organizing Development %': '100',
-                'Implementation Presentation %': '70',
-                'Implementation %': '50',
+                'Creative Development %': '0',
+                'Program Description %': '0',
+                'Initial Presentation %': '0',
+                'Organizing Development %': '0',
+                'Implementation Presentation %': '0',
+                'Implementation %': '0',
                 'Evaluation & Monitoring %': '0',
                 'Satisfaction Survey %': '0',
                 'Report %': '0',
@@ -494,7 +548,10 @@ class ProgramService {
 
         const worksheet = XLSX.utils.json_to_sheet(templateData);
 
-        const columnWidths = Array(Object.keys(templateData[0]).length).fill({ wch: 20 });
+        const columns = Object.keys(templateData[0]);
+        const columnWidths = columns.map(col => ({ 
+            wch: col.length > 30 ? 35 : 22 
+        }));
         worksheet['!cols'] = columnWidths;
 
         const range = XLSX.utils.decode_range(worksheet['!ref']);
@@ -505,8 +562,8 @@ class ProgramService {
             
             worksheet[cellRef].s = {
                 font: { bold: true, color: { rgb: "FFFFFF" } },
-                fill: { fgColor: { rgb: "4F46E5" } },
-                alignment: { horizontal: "center", vertical: "center" }
+                fill: { fgColor: { rgb: "2563EB" } },
+                alignment: { horizontal: "center", vertical: "center", wrapText: true }
             };
         }
 
@@ -1407,11 +1464,24 @@ class ProgramService {
                 throw new Error('Programs data is required and must be a non-empty array');
             }
 
-            const useChunking = chunkSize > 0 && programsData.length > chunkSize;
-            const totalChunks = useChunking ? Math.ceil(programsData.length / chunkSize) : 1;
+            const cleanedProgramsData = programsData.map(program => {
+                // Buat object baru tanpa field otomatis
+                const { 
+                    ...cleanProgram 
+                } = program;
+                
+                return {
+                    ...cleanProgram,
+                    instructors: Array.isArray(program.instructors) ? program.instructors : [],
+                    tags: Array.isArray(program.tags) ? program.tags : []
+                };
+            });
+
+            const useChunking = chunkSize > 0 && cleanedProgramsData.length > chunkSize;
+            const totalChunks = useChunking ? Math.ceil(cleanedProgramsData.length / chunkSize) : 1;
 
             const allResults = {
-                total: programsData.length,
+                total: cleanedProgramsData.length,
                 successful: 0,
                 failed: 0,
                 skipped: 0,
@@ -1420,10 +1490,9 @@ class ProgramService {
             };
 
             if (useChunking) {
-
-                for (let i = 0; i < programsData.length; i += chunkSize) {
+                for (let i = 0; i < cleanedProgramsData.length; i += chunkSize) {
                     const chunkIndex = Math.floor(i / chunkSize) + 1;
-                    const chunk = programsData.slice(i, i + chunkSize);
+                    const chunk = cleanedProgramsData.slice(i, i + chunkSize);
 
                     if (onProgress) {
                         onProgress({
@@ -1577,12 +1646,30 @@ class ProgramService {
                 }
             }
 
-            if (program.price) {
-                const price = parseFloat(program.price);
-                if (isNaN(price) || price < 0) {
-                    errors.push('Price must be a positive number');
+            // Validasi 3 budget fields
+            if (program.budget_offering) {
+                const budget = parseFloat(program.budget_offering);
+                if (isNaN(budget) || budget < 0) {
+                    errors.push('Budget offering must be a positive number');
                 }
             }
+            
+            if (program.budget_usage_plan) {
+                const budget = parseFloat(program.budget_usage_plan);
+                if (isNaN(budget) || budget < 0) {
+                    errors.push('Budget usage plan must be a positive number');
+                }
+            }
+            
+            if (program.budget_finance_closure) {
+                const budget = parseFloat(program.budget_finance_closure);
+                if (isNaN(budget) || budget < 0) {
+                    errors.push('Budget finance closure must be a positive number');
+                }
+            }
+            
+            // HAPUS validasi untuk field otomatis
+            // if (program.budget_finance_closure_realisasi_penyerapan) { ... }
 
             if (program.capacity) {
                 const capacity = parseInt(program.capacity);
@@ -1591,22 +1678,7 @@ class ProgramService {
                 }
             }
 
-            if (program.budget_offering) {
-                const budget = parseFloat(program.budget_offering);
-                if (isNaN(budget) || budget < 0) {
-                    errors.push('Budget offering must be a positive number');
-                }
-            }
-            
-            if (program.budget_finance_closure_realisasi_penyerapan) {
-                const penyerapan = program.budget_finance_closure_realisasi_penyerapan.replace('%', '');
-                const num = parseFloat(penyerapan);
-                if (isNaN(num) || num < 0 || num > 100) {
-                    errors.push('Realisasi penyerapan must be between 0-100%');
-                }
-            }
-
-            if (program.status && !['active', 'inactive', 'pending', 'completed'].includes(program.status.toLowerCase())) {
+            if (program.status && !['Active', 'Inactive', 'Pending', 'Completed'].includes(program.status)) {
                 errors.push('Status must be one of: Active, Inactive, Pending, Completed');
             }
 
