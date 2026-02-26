@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import SearchBar from "../components/SearchFilter/SearchBar";
 import MemberTable from "../components/MemberTable/MemberTable";
 import Pagination from "../components/Pagination/Pagination";
-import { Loader2, Plus, Users, UserCheck, AlertCircle, X, Building2, Filter, Download, Upload, FileText, FileSpreadsheet, AlertTriangle, Check } from "lucide-react"
+import { Loader2, Plus, Users, UserCheck, AlertCircle, Tag, X, Building2, Filter, User, Download, Upload, FileText, FileSpreadsheet, AlertTriangle, Check } from "lucide-react"
 import { Button } from "../components/ui/button"
 import AddMemberSemarang from "../components/AddButton/AddMemberSemarang";
 import HeteroSemarangContent from "../components/Content/HeteroSemarangContent";
@@ -22,32 +22,32 @@ const HeteroSemarang = () => {
     const [editingMember, setEditingMember] = useState(null)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
-    
+
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importFile, setImportFile] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [validationErrors, setValidationErrors] = useState([]);
     const [isDragging, setIsDragging] = useState(false);
-    
+
     const fileInputRef = useRef(null);
     const filterRef = useRef(null)
     const dropZoneRef = useRef(null);
-    
+
     const [highlightDetail, setHighlightDetail] = useState(false);
     
     const memberDetailRef = useRef(null);
-    
+
     const [searchTerm, setSearchTerm] = useState("");
     const [tempFilters, setTempFilters] = useState({
-        gender: '',
+        gender: '', 
         space: 'all',
         status: ''
     });
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filteredMembers, setFilteredMembers] = useState([]);
-    
+
     const getGenderLabel = (genderValue) => {
         if (!genderValue) return "";
         if (genderValue === 'male') return 'Male';
@@ -55,7 +55,7 @@ const HeteroSemarang = () => {
         return genderValue;
     };
 
-    const getStatusLabel = (statusValue) => {
+     const getStatusLabel = (statusValue) => {
         if (!statusValue) return "";
         if (statusValue === 'active') return 'Active';
         if (statusValue === 'inactive') return 'Inactive';
@@ -67,7 +67,7 @@ const HeteroSemarang = () => {
         isOpen: isConfirmOpen, config: confirmConfig, stats, statsLoading, spaceOptions, loadingSpaceOptions,
         genderOptions, getSpaceLabel, extractSpacesFromMembers, spaceOptionsError, fetchSpaceOptions,
         filters, setFilters, handlePageChange, fetchAllMembers } = useHeteroSemarang()
-
+    
     useEffect(() => {
         let result = [...members];
         
@@ -299,10 +299,10 @@ const HeteroSemarang = () => {
             headers.forEach((_, i) => {
                 ws['!cols'][i] = { wch: 25 };
             });
-            
+
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Template");
-            
+
             XLSX.writeFile(wb, `hetero_semarang_import_template_${new Date().getTime()}.xlsx`);
             
             toast.success('Template Excel berhasil didownload');
@@ -366,7 +366,7 @@ const HeteroSemarang = () => {
                 errors.push(`Baris ${rowIndex}: Nomor telepon harus minimal 10 digit`);
             }
         }
-        
+
         if (!row.space || row.space.toString().trim() === '') {
             errors.push(`Baris ${rowIndex}: Kolom "space" wajib diisi`);
         }
@@ -385,277 +385,276 @@ const HeteroSemarang = () => {
     };
 
     const parseExcel = (data) => {
-            try {
-                const workbook = XLSX.read(data, { 
-                    type: 'array', 
-                    cellDates: true,
-                    cellNF: false,
-                    cellText: true
-                });
+        try {
+            const workbook = XLSX.read(data, { 
+                type: 'array', 
+                cellDates: true,
+                cellNF: false,
+                cellText: true
+            });
+            
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            const rawData = XLSX.utils.sheet_to_json(worksheet, { 
+                header: 1, 
+                defval: '',
+                raw: true,
+                dateNF: 'yyyy-mm-dd'
+            });
+            
+            if (rawData.length < 2) {
+                throw new Error('File Excel tidak berisi data');
+            }
+            
+            const headers = rawData[0].map(header => 
+                header.toString()
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\s+/g, '_')
+                    .replace(/[^a-zA-Z0-9_]/g, '')
+            );
+            
+            const dataRows = [];
+            const errors = [];
+            
+            for (let i = 1; i < rawData.length; i++) {
+                const rawRow = rawData[i];
                 
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                
-                const rawData = XLSX.utils.sheet_to_json(worksheet, { 
-                    header: 1, 
-                    defval: '',
-                    raw: true,
-                    dateNF: 'yyyy-mm-dd'
-                });
-                
-                if (rawData.length < 2) {
-                    throw new Error('File Excel tidak berisi data');
-                }
-                
-                const headers = rawData[0].map(header => 
-                    header.toString()
-                        .trim()
-                        .toLowerCase()
-                        .replace(/\s+/g, '_')
-                        .replace(/[^a-zA-Z0-9_]/g, '')
-                );
-                
-                const dataRows = [];
-                const errors = [];
-                
-                for (let i = 1; i < rawData.length; i++) {
-                    const rawRow = rawData[i];
+                try {
+                    if (!rawRow || rawRow.every(cell => 
+                        cell === '' || 
+                        cell === null || 
+                        cell === undefined ||
+                        cell.toString().trim() === ''
+                    )) {
+                        continue;
+                    }
                     
-                    try {
-                        if (!rawRow || rawRow.every(cell => 
-                            cell === '' || 
-                            cell === null || 
-                            cell === undefined ||
-                            cell.toString().trim() === ''
-                        )) {
-                            continue;
+                    const rowObj = {};
+                    headers.forEach((header, index) => {
+                        let value = rawRow[index];
+
+                        if (value === undefined || value === null) {
+                            value = '';
+                        } else if (typeof value === 'object' && value instanceof Date) {
+                            const year = value.getFullYear();
+                            const month = String(value.getMonth() + 1).padStart(2, '0');
+                            const day = String(value.getDate()).padStart(2, '0');
+                            value = `${year}-${month}-${day}`;
+                        } else {
+                            value = value.toString().trim();
                         }
                         
-                        const rowObj = {};
-                        headers.forEach((header, index) => {
-                            let value = rawRow[index];
-    
-                            if (value === undefined || value === null) {
-                                value = '';
-                            } else if (typeof value === 'object' && value instanceof Date) {
-                                const year = value.getFullYear();
-                                const month = String(value.getMonth() + 1).padStart(2, '0');
-                                const day = String(value.getDate()).padStart(2, '0');
-                                value = `${year}-${month}-${day}`;
-                            } else {
-                                value = value.toString().trim();
-                            }
-                            
-                            rowObj[header] = value;
-                        });
-    
-                        const cleanRow = {
-                            full_name: rowObj.full_name || rowObj.fullname || rowObj.name || rowObj.nama || '',
-                            nik: rowObj.nik || rowObj.nik_number || rowObj.nomor_induk || '',
-                            email: rowObj.email || rowObj.email_address || '',
-                            phone: rowObj.phone || rowObj.phone_number || rowObj.telepon || rowObj.mobile || '',
-                            gender: rowObj.gender || rowObj.sex || rowObj.jenis_kelamin || '',
-                            date_of_birth: rowObj.date_of_birth || rowObj.dob || rowObj.tanggal_lahir || rowObj.birth_date || '',
-                            education: rowObj.education || rowObj.pendidikan || rowObj.last_education || '',
-                            address: rowObj.address || rowObj.alamat || '',
-                            province_name: rowObj.province_name || rowObj.province || rowObj.provinsi || '',
-                            regency_name: rowObj.regency_name || rowObj.city || rowObj.kota || rowObj.kabupaten || '',
-                            district_name: rowObj.district_name || rowObj.district || rowObj.kecamatan || '',
-                            village_name: rowObj.village_name || rowObj.village || rowObj.kelurahan || rowObj.desa || '',
-                            postal_code: rowObj.postal_code || rowObj.postalcode || rowObj.kode_pos || '',
-                            company: rowObj.company || rowObj.company_name || rowObj.perusahaan || '',
-                            space: rowObj.space || rowObj.space_type || rowObj.package || '',
-                            start_date: rowObj.start_date || rowObj.startdate || rowObj.tanggal_mulai || '',
-                            end_date: rowObj.end_date || rowObj.enddate || rowObj.tanggal_selesai || '',
-                            status: rowObj.status || rowObj.member_status || 'Active',
-                            add_on: rowObj.add_on || rowObj.addon || rowObj.additional_services || '',
-                            add_information: rowObj.add_information || rowObj.additional_info || rowObj.information || ''
-                        };
+                        rowObj[header] = value;
+                    });
+
+                    const cleanRow = {
+                        full_name: rowObj.full_name || rowObj.fullname || rowObj.name || rowObj.nama || '',
+                        nik: rowObj.nik || rowObj.nik_number || rowObj.nomor_induk || '',
+                        email: rowObj.email || rowObj.email_address || '',
+                        phone: rowObj.phone || rowObj.phone_number || rowObj.telepon || rowObj.mobile || '',
+                        gender: rowObj.gender || rowObj.sex || rowObj.jenis_kelamin || '',
+                        date_of_birth: rowObj.date_of_birth || rowObj.dob || rowObj.tanggal_lahir || rowObj.birth_date || '',
+                        education: rowObj.education || rowObj.pendidikan || rowObj.last_education || '',
+                        address: rowObj.address || rowObj.alamat || '',
+                        province_name: rowObj.province_name || rowObj.province || rowObj.provinsi || '',
+                        regency_name: rowObj.regency_name || rowObj.city || rowObj.kota || rowObj.kabupaten || '',
+                        district_name: rowObj.district_name || rowObj.district || rowObj.kecamatan || '',
+                        village_name: rowObj.village_name || rowObj.village || rowObj.kelurahan || rowObj.desa || '',
+                        postal_code: rowObj.postal_code || rowObj.postalcode || rowObj.kode_pos || '',
+                        company: rowObj.company || rowObj.company_name || rowObj.perusahaan || '',
+                        space: rowObj.space || rowObj.space_type || rowObj.package || '',
+                        start_date: rowObj.start_date || rowObj.startdate || rowObj.tanggal_mulai || '',
+                        end_date: rowObj.end_date || rowObj.enddate || rowObj.tanggal_selesai || '',
+                        status: rowObj.status || rowObj.member_status || 'Active',
+                        add_on: rowObj.add_on || rowObj.addon || rowObj.additional_services || '',
+                        add_information: rowObj.add_information || rowObj.additional_info || rowObj.information || ''
+                    };
+                    
+                    if (Object.values(cleanRow).some(value => 
+                        value.toString().toLowerCase().includes('contoh') ||
+                        value.toString().toLowerCase().includes('example') ||
+                        value.toString().startsWith('Contoh:') ||
+                        value.toString().startsWith('Example:')
+                    )) {
+                        continue;
+                    }
+                    
+                    if (Object.values(cleanRow).every(value => value === '')) {
+                        continue;
+                    }
+                    
+                    if (cleanRow.nik) {
+                        const nikColIndex = headers.findIndex(h => 
+                            h.includes('nik') || h.includes('nik_number') || h.includes('nomor_induk')
+                        );
                         
-                        if (Object.values(cleanRow).some(value => 
-                            value.toString().toLowerCase().includes('contoh') ||
-                            value.toString().toLowerCase().includes('example') ||
-                            value.toString().startsWith('Contoh:') ||
-                            value.toString().startsWith('Example:')
-                        )) {
-                            continue;
-                        }
+                        let nikValue = cleanRow.nik;
                         
-                        if (Object.values(cleanRow).every(value => value === '')) {
-                            continue;
-                        }
-                        
-                        if (cleanRow.nik) {
-                            const nikColIndex = headers.findIndex(h => 
-                                h.includes('nik') || h.includes('nik_number') || h.includes('nomor_induk')
-                            );
+                        if (nikColIndex >= 0) {
+                            const cellAddress = XLSX.utils.encode_cell({ r: i, c: nikColIndex });
+                            const cell = worksheet[cellAddress];
                             
-                            let nikValue = cleanRow.nik;
-                            
-                            if (nikColIndex >= 0) {
-                                const cellAddress = XLSX.utils.encode_cell({ r: i, c: nikColIndex });
-                                const cell = worksheet[cellAddress];
+                            if (cell && cell.w) {
+                                nikValue = cell.w.toString();
+                            } else if (cell && cell.t === 'n') {
+                                const numValue = cell.v;
+                                const strValue = numValue.toString();
                                 
-                                if (cell && cell.w) {
-                                    nikValue = cell.w.toString();
-                                } else if (cell && cell.t === 'n') {
-                                    const numValue = cell.v;
-                                    const strValue = numValue.toString();
+                                if (strValue.includes('e+') || strValue.includes('E+')) {
+                                    const parts = strValue.toLowerCase().split('e+');
+                                    const coefficient = parseFloat(parts[0]);
+                                    const exponent = parseInt(parts[1]);
                                     
-                                    if (strValue.includes('e+') || strValue.includes('E+')) {
-                                        const parts = strValue.toLowerCase().split('e+');
-                                        const coefficient = parseFloat(parts[0]);
-                                        const exponent = parseInt(parts[1]);
+                                    const coefficientStr = coefficient.toString();
+                                    const hasDecimal = coefficientStr.includes('.');
+                                    
+                                    if (hasDecimal) {
+                                        const [intPart, decPart] = coefficientStr.split('.');
                                         
-                                        const coefficientStr = coefficient.toString();
-                                        const hasDecimal = coefficientStr.includes('.');
-                                        
-                                        if (hasDecimal) {
-                                            const [intPart, decPart] = coefficientStr.split('.');
-                                            
-                                            if (exponent >= decPart.length) {
-                                                const zerosToAdd = exponent - decPart.length;
-                                                nikValue = intPart + decPart + '0'.repeat(zerosToAdd);
-                                            } else {
-                                                const position = intPart.length + exponent;
-                                                const allDigits = intPart + decPart;
-                                                nikValue = allDigits.substring(0, position) + '.' + allDigits.substring(position);
-                                                nikValue = nikValue.replace('.', '');
-                                            }
+                                        if (exponent >= decPart.length) {
+                                            const zerosToAdd = exponent - decPart.length;
+                                            nikValue = intPart + decPart + '0'.repeat(zerosToAdd);
                                         } else {
-                                            nikValue = coefficientStr + '0'.repeat(exponent);
+                                            const position = intPart.length + exponent;
+                                            const allDigits = intPart + decPart;
+                                            nikValue = allDigits.substring(0, position) + '.' + allDigits.substring(position);
+                                            nikValue = nikValue.replace('.', '');
                                         }
                                     } else {
-                                        nikValue = Number(numValue).toFixed(0);
+                                        nikValue = coefficientStr + '0'.repeat(exponent);
                                     }
+                                } else {
+                                    nikValue = Number(numValue).toFixed(0);
                                 }
                             }
-                            
-                            nikValue = nikValue.toString().replace(/\./g, '').replace(/\D/g, '');
-                            
-                            if (nikValue.length < 10 && nikValue.length > 0) {
-                                const originalValue = rawRow[nikColIndex];
-                                if (originalValue !== undefined && originalValue !== null) {
-                                    const originalStr = originalValue.toString();
-                                    
-                                    if (originalStr.includes('e+') || originalStr.includes('E+')) {
+                        }
+                        
+                        nikValue = nikValue.toString().replace(/\./g, '').replace(/\D/g, '');
+                        
+                        if (nikValue.length < 10 && nikValue.length > 0) {
+                            const originalValue = rawRow[nikColIndex];
+                            if (originalValue !== undefined && originalValue !== null) {
+                                const originalStr = originalValue.toString();
+                                
+                                if (originalStr.includes('e+') || originalStr.includes('E+')) {
+                                    try {
+                                        const num = parseFloat(originalStr);
+                                        if (!isNaN(num)) {
+                                            const bigNum = BigInt(Math.floor(num));
+                                            nikValue = bigNum.toString();
+                                        }
+                                    } catch {
                                         try {
                                             const num = parseFloat(originalStr);
-                                            if (!isNaN(num)) {
-                                                const bigNum = BigInt(Math.floor(num));
-                                                nikValue = bigNum.toString();
-                                            }
+                                            const fixedStr = num.toFixed(0);
+                                            nikValue = fixedStr;
                                         } catch {
-                                            try {
-                                                const num = parseFloat(originalStr);
-                                                const fixedStr = num.toFixed(0);
-                                                nikValue = fixedStr;
-                                            } catch {
-                                                //
-                                            }
+                                            //
                                         }
                                     }
                                 }
                             }
-                            
-                            cleanRow.nik = nikValue;
                         }
                         
-                        if (cleanRow.phone) {
-                            cleanRow.phone = cleanRow.phone.replace(/[^\d+]/g, '');
-                        }
-                        
-                        const formatDate = (dateStr) => {
-                            if (!dateStr || dateStr.toString().trim() === '') {
-                                return '';
-                            }
-                            
-                            const str = dateStr.toString().trim();
-                            
-                            const patterns = [
-                                /^(\d{4})-(\d{1,2})-(\d{1,2})$/,
-                                /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
-                                /^(\d{1,2})-(\d{1,2})-(\d{4})$/,
-                                /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/
-                            ];
-                            
-                            for (const pattern of patterns) {
-                                const match = str.match(pattern);
-                                if (match) {
-                                    let year, month, day;
-                                    
-                                    if (pattern.source.startsWith('^\\d{4}')) {
-                                        year = match[1];
-                                        month = match[2].padStart(2, '0');
-                                        day = match[3].padStart(2, '0');
-                                    } else {
-                                        const part1 = parseInt(match[1]);
-                                        const part2 = parseInt(match[2]);
-                                        year = match[3];
-                                        
-                                        if (part1 > 12 && part1 <= 31) {
-                                            day = part1.toString().padStart(2, '0');
-                                            month = part2.toString().padStart(2, '0');
-                                        } else if (part2 > 12 && part2 <= 31) {
-                                            month = part1.toString().padStart(2, '0');
-                                            day = part2.toString().padStart(2, '0');
-                                        } else {
-                                            month = part1.toString().padStart(2, '0');
-                                            day = part2.toString().padStart(2, '0');
-                                        }
-                                    }
-                                    
-                                    const date = new Date(`${year}-${month}-${day}`);
-                                    if (!isNaN(date.getTime()) && date.getFullYear() == year) {
-                                        return `${year}-${month}-${day}`;
-                                    }
-                                }
-                            }
-                            
-                            const date = new Date(str);
-                            if (!isNaN(date.getTime())) {
-                                const year = date.getFullYear();
-                                const month = String(date.getMonth() + 1).padStart(2, '0');
-                                const day = String(date.getDate()).padStart(2, '0');
-                                return `${year}-${month}-${day}`;
-                            }
-                            
-                            return str;
-                        };
-                        
-                        cleanRow.date_of_birth = formatDate(cleanRow.date_of_birth);
-                        cleanRow.start_date = formatDate(cleanRow.start_date);
-                        cleanRow.end_date = formatDate(cleanRow.end_date);
-                        
-                        if (cleanRow.add_on && typeof cleanRow.add_on === 'string') {
-                            cleanRow.add_on = cleanRow.add_on
-                                .split(/[,;\n]/)
-                                .map(item => item.trim())
-                                .filter(item => item.length > 0);
-                        } else if (!cleanRow.add_on) {
-                            cleanRow.add_on = [];
-                        }
-                        
-                        const rowErrors = validateRowData(cleanRow, i + 1);
-                        if (rowErrors.length > 0) {
-                            errors.push(...rowErrors);
-                            continue;
-                        }
-                        
-                        dataRows.push(cleanRow);
-                        
-                    } catch (error) {
-                        errors.push(`Baris ${i + 1}: ${error.message}`);
+                        cleanRow.nik = nikValue;
                     }
+                    
+                    if (cleanRow.phone) {
+                        cleanRow.phone = cleanRow.phone.replace(/[^\d+]/g, '');
+                    }
+                    
+                    const formatDate = (dateStr) => {
+                        if (!dateStr || dateStr.toString().trim() === '') {
+                            return '';
+                        }
+                        
+                        const str = dateStr.toString().trim();
+                        
+                        const patterns = [
+                            /^(\d{4})-(\d{1,2})-(\d{1,2})$/,
+                            /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
+                            /^(\d{1,2})-(\d{1,2})-(\d{4})$/,
+                            /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/
+                        ];
+                        
+                        for (const pattern of patterns) {
+                            const match = str.match(pattern);
+                            if (match) {
+                                let year, month, day;
+                                
+                                if (pattern.source.startsWith('^\\d{4}')) {
+                                    year = match[1];
+                                    month = match[2].padStart(2, '0');
+                                    day = match[3].padStart(2, '0');
+                                } else {
+                                    const part1 = parseInt(match[1]);
+                                    const part2 = parseInt(match[2]);
+                                    year = match[3];
+                                    
+                                    if (part1 > 12 && part1 <= 31) {
+                                        day = part1.toString().padStart(2, '0');
+                                        month = part2.toString().padStart(2, '0');
+                                    } else if (part2 > 12 && part2 <= 31) {
+                                        month = part1.toString().padStart(2, '0');
+                                        day = part2.toString().padStart(2, '0');
+                                    } else {
+                                        month = part1.toString().padStart(2, '0');
+                                        day = part2.toString().padStart(2, '0');
+                                    }
+                                }
+                                
+                                const date = new Date(`${year}-${month}-${day}`);
+                                if (!isNaN(date.getTime()) && date.getFullYear() == year) {
+                                    return `${year}-${month}-${day}`;
+                                }
+                            }
+                        }
+                        
+                        const date = new Date(str);
+                        if (!isNaN(date.getTime())) {
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            return `${year}-${month}-${day}`;
+                        }
+                        
+                        return str;
+                    };
+                    
+                    cleanRow.date_of_birth = formatDate(cleanRow.date_of_birth);
+                    cleanRow.start_date = formatDate(cleanRow.start_date);
+                    cleanRow.end_date = formatDate(cleanRow.end_date);
+                    
+                    if (cleanRow.add_on && typeof cleanRow.add_on === 'string') {
+                        cleanRow.add_on = cleanRow.add_on
+                            .split(/[,;\n]/)
+                            .map(item => item.trim())
+                            .filter(item => item.length > 0);
+                    } else if (!cleanRow.add_on) {
+                        cleanRow.add_on = [];
+                    }
+                    
+                    const rowErrors = validateRowData(cleanRow, i + 1);
+                    if (rowErrors.length > 0) {
+                        errors.push(...rowErrors);
+                        continue;
+                    }
+                    
+                    dataRows.push(cleanRow);
+                    
+                } catch (error) {
+                    errors.push(`Baris ${i + 1}: ${error.message}`);
                 }
-                
-                return { data: dataRows, errors };
-                
-            } catch (error) {
-                throw new Error(`Gagal membaca file Excel: ${error.message}`);
             }
-        };
-
+            
+            return { data: dataRows, errors };
+            
+        } catch (error) {
+            throw new Error(`Gagal membaca file Excel: ${error.message}`);
+        }
+    };
 
     const handleImportExcel = useCallback(async () => {
         if (!importFile) {
@@ -682,17 +681,17 @@ const HeteroSemarang = () => {
                         setIsImporting(false);
                         return;
                     }
-                    
+
                     if (parsedData.length === 0) {
                         toast.error('Tidak ada data yang bisa diimport');
                         setIsImporting(false);
                         return;
                     }
-                    
+
                     let successCount = 0;
                     let errorCount = 0;
                     const importErrors = [];
-                    
+
                     for (const memberData of parsedData) {
                         try {
                             const importData = {
@@ -740,9 +739,9 @@ const HeteroSemarang = () => {
                     if (fileInputRef.current) {
                         fileInputRef.current.value = '';
                     }
-                    
+
                     setIsImportModalOpen(false);
-                    
+                                        
                     await fetchMembers(pagination.page);
                     
                     if (successCount > 0) {
@@ -824,15 +823,15 @@ const HeteroSemarang = () => {
                 'End Date': member.end_date || '-',
                 'Status': member.status || '-',
                 'Add On': Array.isArray(member.add_on) 
-                ? member.add_on.join(', ') 
-                : member.add_on || '-',
+                    ? member.add_on.join(', ') 
+                    : member.add_on || '-',
                 'Additional Information': member.add_information || '-',
                 'Created Date': member.created_at 
-                ? new Date(member.created_at).toLocaleDateString('id-ID') 
-                : '-',
+                    ? new Date(member.created_at).toLocaleDateString('id-ID') 
+                    : '-',
                 'Last Updated': member.updated_at 
-                ? new Date(member.updated_at).toLocaleDateString('id-ID') 
-                : '-'
+                    ? new Date(member.updated_at).toLocaleDateString('id-ID') 
+                    : '-'
             }));
 
             const ws = XLSX.utils.json_to_sheet(exportData);
@@ -860,7 +859,7 @@ const HeteroSemarang = () => {
                 { wch: 30 },  
                 { wch: 30 },  
                 { wch: 15 }, 
-                { wch: 15 },
+                { wch: 15 }, 
             ];
             ws['!cols'] = wscols;
             
@@ -870,38 +869,14 @@ const HeteroSemarang = () => {
                 const cell_ref = XLSX.utils.encode_cell(cell_address);
                 if (!ws[cell_ref]) continue;
                 ws[cell_ref].s = {
-                font: { bold: true, color: { rgb: "FFFFFF" } },
-                fill: { fgColor: { rgb: "4F46E5" } },
-                alignment: { horizontal: "center" }
+                    font: { bold: true, color: { rgb: "FFFFFF" } },
+                    fill: { fgColor: { rgb: "4F46E5" } },
+                    alignment: { horizontal: "center" }
                 };
             }
-
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Hetero Surakarta Members");
-
-            const filterInfo = [
-                ['HETERO SURAKARTA MEMBERS EXPORT'],
-                ['', ''],
-                ['Export Date', new Date().toLocaleString()],
-                ['Total Records Exported', members.length],
-                ['', ''],
-                ['APPLIED FILTERS'],
-                ['Search Term', searchTerm || 'None'],
-                ['Gender Filter', filters.gender ? (filters.gender === 'male' ? 'Male' : 'Female') : 'All'],
-                ['Space Filter', filters.space && filters.space !== 'all' ? getSpaceLabel(filters.space) : 'All'],
-                ['', ''],
-                ['Total Active Members', members.filter(m => m.status === 'active').length],
-                ['Total Inactive Members', members.filter(m => m.status !== 'active').length],
-                ['', ''],
-                ['GENERATED ON', new Date().toLocaleDateString()],
-                ['SYSTEM', 'Hetero Surakarta Management System']
-            ];
             
-            const wsInfo = XLSX.utils.aoa_to_sheet(filterInfo);
-            wsInfo['A1'].s = {
-                font: { bold: true, sz: 16, color: { rgb: "1E40AF" } }
-            };
-            XLSX.utils.book_append_sheet(wb, wsInfo, "Export Info");
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Hetero Semarang Members");
             
             const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
             const fileName = `hetero_semarang_members_export_${dateStr}.xlsx`;
@@ -1081,7 +1056,7 @@ const HeteroSemarang = () => {
         { value: 'inactive', label: 'Inactive' }
     ];
 
-    useEffect(() => {
+     useEffect(() => {
         setTempFilters({
             gender: filters.gender || '',
             space: filters.space || 'all',
@@ -1136,6 +1111,7 @@ const HeteroSemarang = () => {
                 period: "Last Month",
                 icon: Users,
                 color: "blue",
+                description: `${growthPercentage}% Growth`, 
                 loading: false
             },
             {
@@ -1157,15 +1133,15 @@ const HeteroSemarang = () => {
     };
 
     const handleOpenEditModal = (member) => {
-        setEditingMember(member);
-        setIsEditModalOpen(true);
-    };
+        setEditingMember(member)
+        setIsEditModalOpen(true)
+    }
 
     const handleEditMember = async (memberId, memberData) => {
         try {
             const updatedMember = await updateMemberHeteroSemarang(memberId, memberData);
 
-            if (selectedMember && selectedMember.id === memberId){
+            if (selectedMember && selectedMember.id === memberId) {
                 setSelectedMember(prev => ({
                     ...prev,
                     ...memberData,
@@ -1185,63 +1161,63 @@ const HeteroSemarang = () => {
 
     const handleAddNewMember = async (memberData) => {
         try {
-            await addMemberHeteroSemarang(memberData);
-            setIsAddMemberModalOpen(false);
-            toast.success('Member added successfully');
+            await addMemberHeteroSemarang(memberData)
+            setIsAddMemberModalOpen(false)
+            toast.success('Member added successfully')
             fetchMembers(pagination.page);
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
-            // 
+            //
         }
-    };
+    }
 
     const handleDeleteMember = async (memberId) => {
-        if (!selectedMember) return;
+        if (!selectedMember) return
 
         if (showConfirm && typeof showConfirm === 'function') {
             showConfirm({
                 title: 'Delete Program',
-                message: `Are you sure you want to delete "${selectedMember.full_name}"? This action cannot be undone`,
+                message: `Are you sure yiu want to delete "${selectedMember.full_name}"? This action cannot be undone`,
                 type: 'danger',
                 confirmText: 'Delete',
                 cancelText: 'Cancel',
                 onConfirm: async () => {
                     try {
-                        await deleteMemberHeteroSemarang(memberId);
-                        setSelectedMember(null);
-                        toast.success('Member deleted successfully');
+                        await deleteMemberHeteroSemarang(memberId)
+                        setSelectedMember(null)
+                        toast.success('Member deleted successfully')
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     } catch (error) {
-                        console.error('Error delete member:', error);
+                         console.error('Error delete member:', error);
                         toast.error(error.message || 'Failed to delete member');
                     }
                 },
                 onCancel: () => {
                     toast('Deletion cancelled', { icon: AlertTriangle });
                 }
-            });
+            })
         }
     };
 
     useEffect(() => {
         if (selectedMember && members.length > 0) {
-            const currentSelected = members.find(member => member.id === selectedMember.id);
+            const currentSelected = members.find(member => member.id === selectedMember.id)
             if (currentSelected) {
-                setSelectedMember(currentSelected);
+                setSelectedMember(currentSelected)
             } else {
                 setSelectedMember(null);
             }
         }
-    }, [members, selectedMember?.id]);
+    }, [members, selectedMember?.id])
 
     const handleRefresh = () => {
         setFilters(filters, false); 
         setSelectedMember(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
+    }
 
-    const handlePageChangeLocal = (page) => {
+     const handlePageChangeLocal = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         handlePageChange(page);
     };
@@ -1251,12 +1227,12 @@ const HeteroSemarang = () => {
         title: 'Hetero Semarang Management',
         addButton: "Add Member",
         detailTitle: "Member Details"
-    };
+    }
 
     const formattedMembers = filteredMembers.map((member, index) => {
-        const currentPage = pagination.page;
-        const itemsPerPage = pagination.limit;
-        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
+        const currentPage = pagination.page
+        const itemsPerPage = pagination.limit
+        const itemNumber = (currentPage - 1) * itemsPerPage + index + 1
 
         return {
             id: member.id,
@@ -1271,8 +1247,8 @@ const HeteroSemarang = () => {
             status: member.status,
             action: 'Detail',
             ...member
-        };
-    });
+        }
+    })
 
     return (
         <div className='flex pt-20 min-h-screen bg-gray-100'>
@@ -1406,7 +1382,7 @@ const HeteroSemarang = () => {
                                                         })}
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="mb-3">
                                                     <div className="flex items-center justify-between mb-1">
                                                         <h4 className="font-semibold text-gray-900 text-xs">GENDER</h4>
@@ -1638,7 +1614,7 @@ const HeteroSemarang = () => {
                                 
                                 {searchTerm && (
                                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        <span>"{searchTerm}"</span>
+                                        <span>🔍 "{searchTerm}"</span>
                                         <button 
                                             onClick={() => clearFilter('search')}
                                             className="text-blue-600 hover:text-blue-800 ml-1"
@@ -1653,18 +1629,6 @@ const HeteroSemarang = () => {
                                         {getGenderLabel(filters.gender)}
                                         <button 
                                             onClick={() => clearFilter('gender')}
-                                            className="text-pink-600 hover:text-pink-800 ml-1"
-                                        >
-                                            ×
-                                        </button>
-                                    </span>
-                                )}
-
-                                {filters.status && (
-                                    <span className="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                                        {getStatusLabel(filters.status)}
-                                        <button 
-                                            onClick={() => clearFilter('status')}
                                             className="text-pink-600 hover:text-pink-800 ml-1"
                                         >
                                             ×
@@ -1709,7 +1673,7 @@ const HeteroSemarang = () => {
                             </div>
                         )}
 
-                        {loading && filteredMembers.length === 0 ? (
+                        {loading && members.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4">
                                 <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                                 <span className="text-gray-600">Loading members...</span>
@@ -1763,7 +1727,7 @@ const HeteroSemarang = () => {
                                             </div>
                                         </div>
                                     )}
-                                    
+
                                     <MemberTable
                                         members={formattedMembers}
                                         onSelectMember={handleSelectMember}
@@ -1819,9 +1783,9 @@ const HeteroSemarang = () => {
                     isAddMemberModalOpen={isAddMemberModalOpen || isEditModalOpen} 
                     setIsAddMemberModalOpen={(open) => {
                         if (!open) {
-                            setIsAddMemberModalOpen(false);
-                            setIsEditModalOpen(false);
-                            setEditingMember(null);
+                            setIsAddMemberModalOpen(false)
+                            setIsEditModalOpen(false)
+                            setEditingMember(null)
                         }
                     }}
                     onAddMember={handleAddNewMember}
@@ -1983,7 +1947,7 @@ const HeteroSemarang = () => {
                 </Dialog>
             </div>
         </div>
-    );
-};
+    )
+}
 
 export default HeteroSemarang;

@@ -361,19 +361,17 @@ const userStats = useMemo(() => {
     ).length;
     
     const activePercentage = totalUsers > 0 
-        ? ((activeUsers / totalUsers) * 100).toFixed(1) 
+        ? Math.round((activeUsers / totalUsers) * 100).toString()
         : "0";
 
-    // Hitung persentase filter (jika ada)
     const totalUnfiltered = users.length;
     const filterPercentage = totalUnfiltered > 0 && getTotalActiveCriteria() > 0
-        ? ((totalUsers / totalUnfiltered) * 100).toFixed(1)
+        ? Math.round((totalUsers / totalUnfiltered) * 100).toString()
         : null;
 
-    // Tentukan deskripsi untuk total users
     let totalDescription = "Current view total";
     if (getTotalActiveCriteria() > 0 && filterPercentage) {
-        totalDescription = `${filterPercentage}% of all users (filtered)`;
+        totalDescription = `Showing ${filterPercentage}% of all users`;
     } else if (getTotalActiveCriteria() > 0) {
         totalDescription = "Filtered view";
     }
@@ -382,13 +380,14 @@ const userStats = useMemo(() => {
         {
             title: "Total Users",
             value: totalUsers.toString(),
-            subtitle: filters.position ? `${getOriginalLabel(filters.position, positionOptions)}` : "",
-            percentage: "100%", // Selalu 100% karena ini total dari view saat ini
+            percentage: "100%",
             trend: "neutral",
             period: "Current",
             icon: Users,
             color: "blue",
+            subtitle: filters.position ? getOriginalLabel(filters.position, positionOptions) : "",
             description: totalDescription,
+            isFiltered: getTotalActiveCriteria() > 0,
             loading: false
         },
         {
@@ -396,7 +395,7 @@ const userStats = useMemo(() => {
             value: activeUsers.toString(),
             subtitle: "",
             percentage: `${activePercentage}%`,
-            trend: parseFloat(activePercentage) > 70 ? "up" : "down",
+            trend: parseInt(activePercentage) > 70 ? "up" : "down",
             period: "Current", 
             icon: UserCheck,
             color: "green",
