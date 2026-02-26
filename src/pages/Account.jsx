@@ -325,109 +325,86 @@ const Account = () => {
         return count;
     };
 
-    const userStats = useMemo(() => {
-        if (loading && isInitialLoad) {
-            return [
-                {
-                    title: "Total Users",
-                    value: "0",
-                    subtitle: "Loading...",
-                    percentage: "0%",
-                    trend: "neutral",
-                    period: "Current",
-                    icon: Users,
-                    color: "blue",
-                    description: "Fetching data...",
-                    loading: true
-                },
-                {
-                    title: "Active Users",
-                    value: "0",
-                    subtitle: "",
-                    percentage: "0%",
-                    trend: "neutral",
-                    period: "Current", 
-                    icon: UserCheck,
-                    color: "green",
-                    description: "Fetching data...",
-                    loading: true
-                }
-            ];
-        }
-
-        const totalUsers = filteredUsers.length;
-        const activeUsers = filteredUsers.filter(user => 
-            user.status?.toLowerCase() === 'active' 
-        ).length;
-        
-        const activePercentage = totalUsers > 0 
-            ? ((activeUsers / totalUsers) * 100).toFixed(1) 
-            : "0";
-
-        const totalUnfiltered = users.length;
-        const totalFiltered = filteredUsers.length;
-        
-        let growthPercentage = "0";
-        let growthDescription = "No growth data";
-        let trend = "neutral";
-        
-        if (getTotalActiveCriteria() > 0) {
-            if (totalUnfiltered > 0) {
-                growthPercentage = ((totalFiltered / totalUnfiltered) * 100).toFixed(1);
-                growthDescription = `${growthPercentage}% of total users`;
-                
-                const percentageValue = parseFloat(growthPercentage);
-                if (percentageValue > 50) {
-                    trend = "up";
-                } else if (percentageValue < 10) {
-                    trend = "down";
-                } else {
-                    trend = "neutral";
-                }
-            }
-        } else {
-            if (totalFiltered > 10) {
-                growthPercentage = "12.5";
-                growthDescription = "12.5% Growth (estimated)";
-                trend = "up";
-            } else if (totalFiltered > 0) {
-                growthPercentage = "5.0";
-                growthDescription = "5.0% Growth (estimated)";
-                trend = "up";
-            } else {
-                growthPercentage = "0";
-                growthDescription = "No growth data";
-                trend = "neutral";
-            }
-        }
-
+const userStats = useMemo(() => {
+    if (loading && isInitialLoad) {
         return [
             {
                 title: "Total Users",
-                value: totalUsers.toString(),
-                subtitle: filters.position ? `${getOriginalLabel(filters.position, positionOptions)}` : "",
-                percentage: `${growthPercentage}%`,
-                trend: trend,
+                value: "0",
+                subtitle: "Loading...",
+                percentage: "0%",
+                trend: "neutral",
                 period: "Current",
                 icon: Users,
                 color: "blue",
-                description: growthDescription,
-                loading: false
+                description: "Fetching data...",
+                loading: true
             },
             {
                 title: "Active Users",
-                value: activeUsers.toString(),
+                value: "0",
                 subtitle: "",
-                percentage: `${activePercentage}%`,
-                trend: parseFloat(activePercentage) > 70 ? "up" : "down",
+                percentage: "0%",
+                trend: "neutral",
                 period: "Current", 
                 icon: UserCheck,
                 color: "green",
-                description: `${activePercentage}% of total`,
-                loading: false
+                description: "Fetching data...",
+                loading: true
             }
         ];
-    }, [filteredUsers, filters.position, filters.role, positionOptions, users.length, getTotalActiveCriteria]);
+    }
+
+    const totalUsers = filteredUsers.length;
+    const activeUsers = filteredUsers.filter(user => 
+        user.status?.toLowerCase() === 'active' 
+    ).length;
+    
+    const activePercentage = totalUsers > 0 
+        ? ((activeUsers / totalUsers) * 100).toFixed(1) 
+        : "0";
+
+    // Hitung persentase filter (jika ada)
+    const totalUnfiltered = users.length;
+    const filterPercentage = totalUnfiltered > 0 && getTotalActiveCriteria() > 0
+        ? ((totalUsers / totalUnfiltered) * 100).toFixed(1)
+        : null;
+
+    // Tentukan deskripsi untuk total users
+    let totalDescription = "Current view total";
+    if (getTotalActiveCriteria() > 0 && filterPercentage) {
+        totalDescription = `${filterPercentage}% of all users (filtered)`;
+    } else if (getTotalActiveCriteria() > 0) {
+        totalDescription = "Filtered view";
+    }
+
+    return [
+        {
+            title: "Total Users",
+            value: totalUsers.toString(),
+            subtitle: filters.position ? `${getOriginalLabel(filters.position, positionOptions)}` : "",
+            percentage: "100%", // Selalu 100% karena ini total dari view saat ini
+            trend: "neutral",
+            period: "Current",
+            icon: Users,
+            color: "blue",
+            description: totalDescription,
+            loading: false
+        },
+        {
+            title: "Active Users",
+            value: activeUsers.toString(),
+            subtitle: "",
+            percentage: `${activePercentage}%`,
+            trend: parseFloat(activePercentage) > 70 ? "up" : "down",
+            period: "Current", 
+            icon: UserCheck,
+            color: "green",
+            description: `${activePercentage}% of current view`,
+            loading: false
+        }
+    ];
+}, [filteredUsers, filters.position, positionOptions, users.length, getTotalActiveCriteria, loading, isInitialLoad]);
 
     const applyAllFilters = useCallback(() => {
         if (!users || !Array.isArray(users)) {
