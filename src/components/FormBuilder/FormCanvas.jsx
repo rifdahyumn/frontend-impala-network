@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, AlertCircle, Users, MessageSquare, Link, Rocket, Building, CheckCircle, ExternalLink, Shield, FileText, Globe, Target } from 'lucide-react';
+import { Loader2, AlertCircle, Users, MessageSquare, Link, Rocket, Building, CheckCircle, ExternalLink, Shield, FileText, Globe, Target, Hash } from 'lucide-react';
 import { Button } from '../ui/button';
 
 const FormCanvas = ({ 
@@ -14,6 +14,7 @@ const FormCanvas = ({
 }) => {
     const [whatsappLink, setWhatsappLink] = useState("");
     const [afterSubmitMessage, setAfterSubmitMessage] = useState("");
+    const [slug, setSlug] = useState("")
 
     const safeFormConfig = formConfig || {};
 
@@ -22,9 +23,11 @@ const FormCanvas = ({
             setWhatsappLink(safeFormConfig.settings.whatsappGroupLink || "");
             setAfterSubmitMessage(safeFormConfig.settings.afterSubmitMessage || 
                 "Terima kasih telah mendaftar program kami. Tim kami akan menghubungi Anda dalam waktu 1x24 jam untuk proses selanjutnya.");
+                setSlug(safeFormConfig.settings.slug || "")
         } else {
             setWhatsappLink("");
             setAfterSubmitMessage("Terima kasih telah mendaftar program kami.");
+            setSlug("")
         }
     }, [safeFormConfig.settings]);
 
@@ -41,7 +44,8 @@ const FormCanvas = ({
         if (onSettingsUpdate) {
             onSettingsUpdate({
                 whatsappGroupLink: value,
-                afterSubmitMessage: afterSubmitMessage
+                afterSubmitMessage: afterSubmitMessage,
+                slug: slug
             })
         }
     };
@@ -53,10 +57,24 @@ const FormCanvas = ({
         if (onSettingsUpdate) {
             onSettingsUpdate({
                 whatsappGroupLink: whatsappLink,
-                afterSubmitMessage: value
+                afterSubmitMessage: value,
+                slug: slug
             })
         }
     };
+
+    const handleSlugChange = (e) => {
+        const value = e.target.value
+        setSlug(value)
+
+        if (onSettingsUpdate) {
+            onSettingsUpdate({
+                whatsappGroupLink: whatsappLink,
+                afterSubmitMessage: afterSubmitMessage,
+                slug: value
+            })
+        }
+    }
 
     const getProgramName = (program) => {
         if (!program) return "";
@@ -130,11 +148,21 @@ const FormCanvas = ({
                                     <option value="">{loadingPrograms ? 'Memuat program...' : '-- Pilih Program Perusahaan --'}</option>
                                     {availablePrograms.map((program, index) => {
                                         const programName = getProgramName(program);
-                                        const programId = getProgramId(program);
+                                        
+                                        let uniqueKey = index
+                                        if (program && typeof program === 'object') {
+                                            if (program.id) uniqueKey = `id-${program.id}`;
+                                            else if (program.program_id) uniqueKey = `pid-${program.program_id}`;
+                                            else if (program.name) uniqueKey = `name-${program.name}`;
+                                            else if (program.program_name) uniqueKey = `pname-${program.program_name}`;
+                                            else uniqueKey = `index-${index}`;
+                                        } else if (typeof program === 'string') {
+                                            uniqueKey = `str-${program}-${index}`
+                                        }
                                         
                                         return (
                                             <option 
-                                                key={programId || index} 
+                                                key={uniqueKey} 
                                                 value={programName}
                                                 className="py-2"
                                             >
@@ -214,12 +242,50 @@ const FormCanvas = ({
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Konfigurasi Komunikasi</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">Konfigurasi Form</h3>
                         <p className="text-sm text-gray-500">Atur saluran komunikasi dan pesan untuk peserta</p>
                     </div>
                 </div>
                 
                 <div className="space-y-6">
+                    <div>
+                        <div className='flex items-center gap-2 mb-3'>
+                            <Hash className='w-5 h-5 text-blue-600' />
+                            <label className='block text-sm font-medium text-gray-700'>
+                                Custom SLug / URL
+                                <span className="text-gray-500 font-normal ml-2">(Opsional)</span>
+                            </label>
+                            
+                        </div>
+
+                        <div className='relative'>
+                            <div className='flex items-center'>
+                                <span className='absolute left-3 text-gray-400 text-sm'>/register/</span>
+                                <input 
+                                    type="text"
+                                    placeholder='Enter url here...'
+                                    value={slug}
+                                    onChange={handleSlugChange}
+                                    className='w-full pl-20 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white font-mono text-sm'
+                                />
+                            </div>
+
+                            {slug && (
+                                <div className='mt-2 flex items-center gap-2 text-gray-600 text-sm'>
+                                    <CheckCircle className='w-4 h-4' />
+                                    <span>
+                                        Preview: https://domain.com/register/{slug}
+                                    </span>
+                                </div>
+                            )}
+
+                            <p className='text-xs text-gray-500 mt-2'>
+                                URL akan digunakan sebagai url unik form pendaftaran
+                            </p>
+                        </div>
+                        <div className='h-px bg-gray-200 my-6'></div>
+                    </div>
+
                     <div>
                         <div className="flex items-center gap-2 mb-3">
                             <Users className="w-5 h-5 text-green-600" />

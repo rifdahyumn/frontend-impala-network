@@ -1,7 +1,7 @@
 import { METRICS_CONFIG, getQuarterLabel, getMonthsInQuarter } from "./constants";
 
 export const getChartOptions = (metric, dataType) => {
-    const config = METRICS_CONFIG[metric]
+    // const config = METRICS_CONFIG[metric]
     const isQuarterView = dataType && ['q1', 'q2', 'q3', 'q4'].includes(dataType)
 
     return {

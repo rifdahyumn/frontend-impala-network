@@ -10,7 +10,23 @@ class FormTemplateService {
                 }
             })
 
-            return await response.json()
+            const result = await response.json()
+
+            if (result.data && Array.isArray(result.data)) {
+                result.data = result.data.map(template => ({
+                    ...template,
+                    form_Config: {
+                        ...template.form_config,
+                        settings: {
+                            ...template.form_config?.settings,
+                            slug: template.unique_slug
+                        }
+                    }
+                }))
+            }
+
+            return result
+
         } catch (error) {
             console.error('Error fetching form templates:', error)
             throw error
@@ -38,12 +54,14 @@ class FormTemplateService {
             const whatsapp_group_link = templateData.form_config?.settings?.whatsappGroupLink || "";
             const after_submit_message = templateData.form_config?.settings?.afterSubmitMessage || 
                 "Terima kasih telah mendaftar!";
+            const custom_slug = templateData.form_config?.settings?.slug || null
 
             const payload = {
                 program_name: templateData.program_name,
                 form_config: templateData.form_config,
                 whatsapp_group_link: whatsapp_group_link,
-                after_submit_message: after_submit_message
+                after_submit_message: after_submit_message,
+                custom_slug: custom_slug
             }
 
             const response = await fetch(`${API_BASE_URL}/form-templates`, {
@@ -154,7 +172,8 @@ class FormTemplateService {
                                                  template.form_config?.settings?.whatsappGroupLink || "",
                                 afterSubmitMessage: template.after_submit_message || 
                                                   template.form_config?.settings?.afterSubmitMessage || 
-                                                  "Terima kasih telah mendaftar!"
+                                                  "Terima kasih telah mendaftar!",
+                                slug: template.unique_slug
                             }
                         }
                     }))
@@ -176,7 +195,8 @@ class FormTemplateService {
                                          template.form_config?.settings?.whatsappGroupLink || "",
                         afterSubmitMessage: template.after_submit_message || 
                                           template.form_config?.settings?.afterSubmitMessage || 
-                                          "Terima kasih telah mendaftar!"
+                                          "Terima kasih telah mendaftar!",
+                        slug: template.unique_slug
                     }
                 }
             }))
@@ -202,12 +222,14 @@ class FormTemplateService {
         try {
             const whatsapp_group_link = templateData.form_config?.settings?.whatsappGroupLink || ""
             const after_submit_message = templateData.form_config?.settings?.afterSubmitMessage || "Terima kasih telah mendaftar program ini!"
+            const custom_slug = templateData.form_config?.settings?.slug || null
 
             const payload = {
                 program_name: templateData.program_name,
                 form_config: templateData.form_config,
                 whatsapp_group_link: whatsapp_group_link,
-                after_submit_message: after_submit_message
+                after_submit_message: after_submit_message,
+                custom_slug: custom_slug
             }
 
             const response = await fetch(`${API_BASE_URL}/form-templates/${templateId}`, {

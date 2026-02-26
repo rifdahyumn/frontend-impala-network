@@ -207,7 +207,8 @@ const FormBuilderWorkspace = () => {
                     settings: {
                         whatsappGroupLink: whatsappLink || "",
                         afterSubmitMessage: formConfig.settings?.afterSubmitMessage || 
-                            "Terima kasih sudah mendaftar program ini"
+                            "Terima kasih sudah mendaftar program ini",
+                        slug: formConfig.settings?.slug || null
                     }
                 }
             };

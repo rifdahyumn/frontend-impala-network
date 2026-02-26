@@ -316,7 +316,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                             hasChangesToSend = true;
                         }
                     } else if (formData[key] !== originalData[key]) {
-                        const value = formData[key] || '';
+                        // const value = formData[key] || '';
                         formDataToSend.append(key, formData[key]);
                         hasChangesToSend = true;
                     }
@@ -333,10 +333,8 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                     return;
                 }
              } else {
-      // Untuk add mode - PASTIKAN SEMUA FIELD REQUIRED TERKIRIM
       const requiredFields = ['email', 'full_name', 'employee_id', 'role', 'phone'];
       
-      // Validasi tambahan sebelum kirim
       for (const field of requiredFields) {
         if (!formData[field] || formData[field].trim() === '') {
           toast.error(`${field} is required`);
@@ -346,7 +344,6 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
         formDataToSend.append(field, formData[field].trim());
       }
 
-      // Kirim field opsional
       if (formData.position) {
         formDataToSend.append('position', formData.position);
       }
@@ -358,11 +355,6 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
       if (avatar) {
         formDataToSend.append('avatar_file', avatar);
       }
-    }
-
-    // Debug: lihat isi FormData
-    for (let pair of formDataToSend.entries()) {
-      console.log(pair[0] + ': ' + pair[1]);
     }
 
     if (isEditMode) {
