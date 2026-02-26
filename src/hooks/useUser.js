@@ -29,22 +29,16 @@ export const useUsers = () => {
             return
         }
 
-        if (hasFetched.current) {
-            return
-        }
-
         try {
             setLoading(true)
             setError(null)
             hasFetched.current = true
 
-            
             const result = await userService.fetchUsers({
                 page: page,
                 limit: 10,
                 ...options
             })
-
 
             if (!isMounted.current) {
                 return
@@ -119,104 +113,239 @@ export const useUsers = () => {
 
     const addUser = async (userData) => {
         try {
-            const formData = new FormData()
-            Object.keys(userData).forEach(key => {
-                if (userData[key] !== null && userData[key] !== undefined) {
-                    formData.append(key, userData[key])
-                }
-            })
+            const isFormData = userData instanceof FormData;
             
-            const result = await userService.addUser(formData)
-            toast.success(result.message || 'User added successfully')
+            let dataToSend = userData;
+            
+            if (!isFormData) {
+                console.log('Adding user with data:', userData);
+                dataToSend = userData;
+            } else {
+                console.log('Adding user with FormData');
+            }
+            
+            const result = await userService.addUser(dataToSend);
+            toast.success(result.message || 'User added successfully');
             
             setTimeout(() => {
                 if (isMounted.current) {
-                    refreshUsers()
+                    refreshUsers();
                 }
-            }, 500)
-            return result
+            }, 500);
+            
+            return result;
         } catch (error) {
-            toast.error(error.message || 'Failed to add user')
-            throw error
+            console.error('Error in addUser hook:', error);
+            toast.error(error.message || 'Failed to add user');
+            throw error;
         }
-    }
+    };
 
     const updateUser = async (userId, userData) => {
         try {
-            const formData = new FormData()
-            Object.keys(userData).forEach(key => {
-                if (userData[key] !== null && userData[key] !== undefined) {
-                    formData.append(key, userData[key])
-                }
-            })
+            const isFormData = userData instanceof FormData;
             
-            const result = await userService.updateUser(userId, formData)
-            toast.success(result.message || 'User updated successfully')
+            let dataToSend = userData;
             
-            if (isMounted.current) {
+            if (!isFormData) {
+                console.log('Updating user with data:', userData);
+                dataToSend = userData;
+            } else {
+                console.log('Updating user with FormData');
+            }
+            
+            const result = await userService.updateUser(userId, dataToSend);
+            
+            toast.success(result.message || 'User updated successfully');
+            
+            // Update local state optimistically
+            if (isMounted.current && !isFormData) {
                 setUsers(prevUsers => 
                     prevUsers.map(user => 
                         user.id === userId ? { ...user, ...userData } : user
                     )
-                )
+                );
             }
             
-            return result
+            // Refresh to get latest data
+            setTimeout(() => {
+                if (isMounted.current) {
+                    refreshUsers();
+                }
+            }, 500);
+            
+            return result;
         } catch (error) {
-            toast.error(error.message || 'Failed to update user')
-            throw error
+            console.error('Error in updateUser hook:', error);
+            toast.error(error.message || 'Failed to update user');
+            throw error;
         }
-    }
+    };
+
+    /**
+     * Upload avatar untuk user tertentu
+     * @param {string|number} userId - ID user
+     * @param {File} file - File gambar yang akan diupload
+     * @returns {Promise} - Response dari server
+     */
+    const uploadAvatar = async (userId, file) => {
+        try {
+            if (!userId) {
+                throw new Error('User ID is required');
+            }
+            
+            if (!file) {
+                throw new Error('File is required');
+            }
+            
+            // Validasi tipe file
+            if (!file.type.startsWith('image/')) {
+                throw new Error('File must be an image');
+            }
+            
+            // Validasi ukuran file (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                throw new Error('File size must be less than 5MB');
+            }
+            
+            console.log('Uploading avatar for user:', userId, 'file:', file.name);
+            
+            // Buat FormData
+            const formData = new FormData();
+            formData.append('avatar', file); // Pastikan nama field 'avatar' sesuai dengan backend
+            
+            // Panggil service uploadAvatar
+            const result = await userService.uploadAvatar(userId, formData);
+            
+            toast.success(result.message || 'Avatar uploaded successfully');
+            
+            // Refresh users to get updated avatar
+            setTimeout(() => {
+                if (isMounted.current) {
+                    refreshUsers();
+                }
+            }, 500);
+            
+            return result;
+            
+        } catch (error) {
+            console.error('Error in uploadAvatar hook:', error);
+            toast.error(error.message || 'Failed to upload avatar');
+            throw error;
+        }
+    };
+
+    /**
+     * Hapus avatar user
+     * @param {string|number} userId - ID user
+     * @returns {Promise} - Response dari server
+     */
+    const deleteAvatar = async (userId) => {
+        try {
+            if (!userId) {
+                throw new Error('User ID is required');
+            }
+            
+            console.log('Deleting avatar for user:', userId);
+            
+            const result = await userService.deleteAvatar(userId);
+            
+            toast.success(result.message || 'Avatar deleted successfully');
+            
+            // Refresh users to get updated avatar
+            setTimeout(() => {
+                if (isMounted.current) {
+                    refreshUsers();
+                }
+            }, 500);
+            
+            return result;
+            
+        } catch (error) {
+            console.error('Error in deleteAvatar hook:', error);
+            toast.error(error.message || 'Failed to delete avatar');
+            throw error;
+        }
+    };
 
     const deleteUser = async (userId) => {
         try {
-            await userService.deleteUser(userId)
-            toast.success('User deleted successfully')
+            await userService.deleteUser(userId);
+            toast.success('User deleted successfully');
             
             if (isMounted.current) {
-                setUsers(prevUsers => prevUsers.filter(user => user.id !== userId))
+                setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
             }
+            
+            setTimeout(() => {
+                if (isMounted.current) {
+                    refreshUsers();
+                }
+            }, 500);
         } catch (error) {
-            toast.error(error.message || 'Failed to delete user')
-            throw error
+            console.error('Error in deleteUser hook:', error);
+            toast.error(error.message || 'Failed to delete user');
+            throw error;
         }
-    }
+    };
 
     const activateUser = async (userId) => {
         try {
-            await userService.activateUser(userId)
-            toast.success('User activated successfully')
+            const result = await userService.activateUser(userId);
+            toast.success(result.message || 'User activated successfully');
             
             if (isMounted.current) {
                 setUsers(prevUsers => 
                     prevUsers.map(user => 
                         user.id === userId ? { ...user, status: 'active' } : user
                     )
-                )
+                );
             }
+            
+            setTimeout(() => {
+                if (isMounted.current) {
+                    refreshUsers();
+                }
+            }, 500);
+            
+            return result;
         } catch (error) {
-            toast.error(error.message || 'Failed to activate user')
-            throw error
+            console.error('Error in activateUser hook:', error);
+            toast.error(error.message || 'Failed to activate user');
+            throw error;
         }
-    }
+    };
 
     const deactivateUser = async (userId) => {
         try {
-            await userService.deactivateUser(userId)
-            toast.success('User deactivated successfully')
+            const result = await userService.deactivateUser(userId);
+            toast.success(result.message || 'User deactivated successfully');
             
             if (isMounted.current) {
                 setUsers(prevUsers => 
                     prevUsers.map(user => 
                         user.id === userId ? { ...user, status: 'inactive' } : user
                     )
-                )
+                );
             }
+            
+            setTimeout(() => {
+                if (isMounted.current) {
+                    refreshUsers();
+                }
+            }, 500);
+            
+            return result;
         } catch (error) {
-            toast.error(error.message || 'Failed to deactivate user')
-            throw error
+            console.error('Error in deactivateUser hook:', error);
+            toast.error(error.message || 'Failed to deactivate user');
+            throw error;
         }
-    }
+    };
+
+    const getUserById = useCallback((userId) => {
+        return users.find(user => user.id === userId) || null;
+    }, [users]);
 
     return {
         users, 
@@ -229,6 +358,9 @@ export const useUsers = () => {
         updateUser,
         deleteUser,
         activateUser,
-        deactivateUser
+        deactivateUser,
+        getUserById,
+        uploadAvatar,  // Fungsi baru untuk upload avatar
+        deleteAvatar   // Fungsi baru untuk delete avatar (opsional)
     }
 }

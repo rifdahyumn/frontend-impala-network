@@ -87,6 +87,10 @@ class UserService {
                 
                 const result = this.handleResponse(response)
                 
+                if (method.toLowerCase() !== 'get') {
+                    this.clearListCache()
+                }
+                
                 this.responseCache.set(cacheKey, {
                     data: result,
                     timestamp: Date.now()
@@ -96,6 +100,18 @@ class UserService {
                 
             } catch (error) {
                 console.error(`${method.toUpperCase()} request failed:`, error.message)
+                
+                if (error.response) {
+                    const status = error.response.status
+                    if (status === 400) {
+                        error.message = error.response.data?.message || 'Bad request: Invalid data sent'
+                    } else if (status === 404) {
+                        error.message = 'Resource not found'
+                    } else if (status === 500) {
+                        error.message = 'Server error, please try again later'
+                    }
+                }
+                
                 throw error
             } finally {
                 this.pendingRequests.delete(requestKey)
@@ -104,6 +120,40 @@ class UserService {
 
         this.pendingRequests.set(requestKey, requestPromise)
         return requestPromise
+    }
+
+    clearListCache() {
+        for (const key of this.responseCache.keys()) {
+            if (key.includes('/user?') || key.includes('/user/')) {
+                this.responseCache.delete(key)
+            }
+        }
+    }
+
+    validateUserData(userData, isUpdate = false) {
+        const errors = []
+        
+        if (!isUpdate) {
+            const requiredFields = ['employee_id', 'email', 'full_name', 'role', 'phone']
+            for (const field of requiredFields) {
+                if (!userData[field] || userData[field].trim() === '') {
+                    errors.push(`${field} is required`)
+                }
+            }
+        }
+        
+        if (userData.email && !/\S+@\S+\.\S+/.test(userData.email)) {
+            errors.push('Invalid email format')
+        }
+        
+        if (userData.phone) {
+            const digitsOnly = userData.phone.replace(/\D/g, '')
+            if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+                errors.push('Phone number must be between 10-15 digits')
+            }
+        }
+        
+        return errors
     }
 
     async fetchUsers(params = {}) {
@@ -133,7 +183,8 @@ class UserService {
         } catch (error) {
             console.error('UserService.fetchUsers error:', error.message)
             
-            if (!navigator.onLine || error.message.includes('Tidak ada respon')) {
+            if (!navigator.onLine || error.message.includes('No response')) {
+                console.warn('Using mock data due to network error')
                 return this.getMockUsers(params)
             }
             
@@ -314,38 +365,175 @@ class UserService {
         }
     }
 
-    async addUser(formData) {
+    async addUser(userData) {
         try {
-            return await this.makeRequest('post', '/user', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            })
-        } catch (error) {
-            console.error('UserService.addUser failed:', error)
-            throw error
-        }
-    }
+            const errors = this.validateUserData(userData, false)
+            if (errors.length > 0) {
+                throw new Error(`Validation failed: ${errors.join(', ')}`)
+            }
 
-    async updateUser(userId, formData) {
-        try {
-            const isFormData = formData instanceof FormData
+            const isFormData = userData instanceof FormData
             
-            return await this.makeRequest('put', `/user/${userId}`, formData, {
+            let dataToSend = userData
+            if (!isFormData && typeof userData === 'object') {
+                dataToSend = Object.fromEntries(
+                    Object.entries(userData).filter(([_, value]) => 
+                        value !== null && value !== undefined && value !== ''
+                    )
+                )
+            }
+            
+            const result = await this.makeRequest('post', '/user', dataToSend, {
                 headers: isFormData ? {
                     'Content-Type': 'multipart/form-data'
                 } : {
                     'Content-Type': 'application/json'
                 }
             })
+            
+            return result
+        } catch (error) {
+            console.error('UserService.addUser failed:', error)
+            throw error
+        }
+    }
+
+    async updateUser(userId, userData) {
+        try {
+            if (!userId) {
+                throw new Error('User ID is required')
+            }
+
+            const isFormData = userData instanceof FormData
+            
+            let dataToSend = userData
+            if (!isFormData && typeof userData === 'object') {
+                dataToSend = Object.fromEntries(
+                    Object.entries(userData).filter(([_, value]) => 
+                        value !== null && value !== undefined && value !== ''
+                    )
+                )
+                
+                if (Object.keys(dataToSend).length === 0) {
+                    throw new Error('No fields to update')
+                }
+            }
+            
+            if (isFormData) {
+                let hasEntries = false
+                for (let pair of userData.entries()) {
+                    hasEntries = true
+                    break
+                }
+                if (!hasEntries) {
+                    throw new Error('No fields to update')
+                }
+            }
+
+            console.log('Updating user:', userId, dataToSend)
+
+            const result = await this.makeRequest('put', `/user/${userId}`, dataToSend, {
+                headers: isFormData ? {
+                    'Content-Type': 'multipart/form-data'
+                } : {
+                    'Content-Type': 'application/json'
+                }
+            })
+            
+            return result
         } catch (error) {
             console.error('UserService.updateUser failed:', error)
             throw error
         }
     }
 
+    /**
+     * Upload avatar untuk user tertentu
+     * @param {string|number} userId - ID user
+     * @param {FormData} formData - FormData yang berisi file avatar
+     * @returns {Promise} - Response dari server
+     */
+    async uploadAvatar(userId, formData) {
+        try {
+            if (!userId) {
+                throw new Error('User ID is required');
+            }
+            
+            if (!(formData instanceof FormData)) {
+                throw new Error('Avatar must be sent as FormData');
+            }
+            
+            let hasFile = false;
+            for (let pair of formData.entries()) {
+                if (pair[1] instanceof File) {
+                    hasFile = true;
+                    console.log('File to upload:', pair[1].name, 'size:', pair[1].size);
+                    break;
+                }
+            }
+            
+            if (!hasFile) {
+                throw new Error('No file found in FormData');
+            }
+            
+            console.log('Uploading avatar for user:', userId);
+            
+            const result = await this.makeRequest('post', `/user/${userId}/avatar`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+                timeout: 30000
+            });
+            
+            console.log('Avatar upload successful:', result);
+            return result;
+            
+        } catch (error) {
+            console.error('UserService.uploadAvatar failed:', error);
+            
+            if (error.message.includes('Network')) {
+                throw new Error('Network error while uploading avatar. Please check your connection.');
+            } else if (error.message.includes('timeout')) {
+                throw new Error('Upload timeout. File may be too large.');
+            } else if (error.response?.status === 413) {
+                throw new Error('File too large. Maximum size is 5MB.');
+            } else if (error.response?.status === 415) {
+                throw new Error('Unsupported file type. Please upload an image.');
+            }
+            
+            throw error;
+        }
+    }
+
+    /**
+     * Hapus avatar user
+     * @param {string|number} userId - ID user
+     * @returns {Promise} - Response dari server
+     */
+    async deleteAvatar(userId) {
+        try {
+            if (!userId) {
+                throw new Error('User ID is required');
+            }
+            
+            console.log('Deleting avatar for user:', userId);
+            
+            const result = await this.makeRequest('delete', `/user/${userId}/avatar`);
+            
+            console.log('Avatar delete successful:', result);
+            return result;
+            
+        } catch (error) {
+            console.error('UserService.deleteAvatar failed:', error);
+            throw error;
+        }
+    }
+
     async deleteUser(userId) {
         try {
+            if (!userId) {
+                throw new Error('User ID is required')
+            }
             return await this.makeRequest('delete', `/user/${userId}`)
         } catch (error) {
             console.error('UserService.deleteUser failed:', error)
@@ -355,6 +543,9 @@ class UserService {
 
     async activateUser(userId) {
         try {
+            if (!userId) {
+                throw new Error('User ID is required')
+            }
             return await this.makeRequest('patch', `/user/${userId}/activate`)
         } catch (error) {
             console.error('UserService.activateUser failed:', error)
@@ -364,6 +555,9 @@ class UserService {
 
     async deactivateUser(userId) {
         try {
+            if (!userId) {
+                throw new Error('User ID is required')
+            }
             return await this.makeRequest('patch', `/user/${userId}/deactivate`)
         } catch (error) {
             console.error('UserService.deactivateUser failed:', error)
@@ -373,6 +567,9 @@ class UserService {
 
     async getUserById(userId) {
         try {
+            if (!userId) {
+                throw new Error('User ID is required')
+            }
             return await this.makeRequest('get', `/user/${userId}`)
         } catch (error) {
             console.error('UserService.getUserById failed:', error)

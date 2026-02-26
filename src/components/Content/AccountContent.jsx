@@ -6,21 +6,28 @@ import toast from 'react-hot-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import ConfirmModal from "./ConfirmModal";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '';
 
 const AccountContent = ({ 
     selectedUser, 
     onOpenEditModal, 
     detailTitle, 
     onDelete, 
-    onUserEdited, 
-    onActivateUser
+    onActivateUser,
+    onUserUpdated,
+    onClientDeleted,
+    showConfirm,
+    handleConfirm,
+    handleCancel,
+    isOpen,
+    config
 }) => {
     const [activeCategory, setActiveCategory] = useState('Account Information');
     const [showPassword, setShowPassword] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [activateLoading, setActivateLoading] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [avatarLoadError, setAvatarLoadError] = useState(false);
 
     const detailFields = [
         {
@@ -48,9 +55,9 @@ const AccountContent = ({
             icon: Lock,
             fields: [
                 { key: 'last_login', label: 'Last Login', icon: History },
-                { key: 'emailVerified', label: 'Email Verified', icon: CheckCircle },
-                { key: 'twoFactorEnabled', label: 'Two Factor Enabled', icon: Shield },
-                { key: 'login_attempts', label: 'Login Attempts', icon: Lock }
+                { key: 'status', label: 'Status', icon: CheckCircle },
+                { key: 'created_at', label: 'Created At', icon: History },
+                { key: 'updated_at', label: 'Last Updated', icon: History }
             ]
         },
     ];
@@ -62,18 +69,49 @@ const AccountContent = ({
     const handleEdit = () => {
         if (!selectedUser) return;
         if (onOpenEditModal) {
-            onOpenEditModal(selectedUser, (updatedUser) => {
-                if (onUserEdited) {
-                    onUserEdited(updatedUser);
-                }
-                toast.success('User updated successfully');
-            });
+            onOpenEditModal(selectedUser);
         }
     };
 
     const handleDelete = () => {
         if (!selectedUser) return;
-        setDeleteModalOpen(true);
+        
+        if (showConfirm) {
+            showConfirm({
+                title: 'Deactivate User',
+                message: `Are you sure you want to deactivate "${selectedUser.full_name}"? User will not be able to access the system.`,
+                type: 'danger',
+                confirmText: 'Deactivate',
+                cancelText: 'Cancel',
+                onConfirm: async () => {
+                    setDeleteLoading(true);
+                    try {
+                        if (onDelete) {
+                            await onDelete(selectedUser.id);
+                            toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
+                            
+                            if (onUserUpdated) {
+                                onUserUpdated();
+                            }
+                            
+                            if (onClientDeleted) {
+                                onClientDeleted();
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error deactivating user:', error);
+                        toast.error(error.message || 'Failed to deactivate user');
+                    } finally {
+                        setDeleteLoading(false);
+                    }
+                },
+                onCancel: () => {
+                    toast('Deactivation cancelled', { icon: '⚠️' });
+                }
+            });
+        } else {
+            setDeleteModalOpen(true);
+        }
     };
 
     const handleConfirmDelete = async () => {
@@ -85,8 +123,12 @@ const AccountContent = ({
                 await onDelete(selectedUser.id);
                 toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
                 
-                if (onUserEdited) {
-                    onUserEdited({ ...selectedUser, status: 'Inactive' });
+                if (onUserUpdated) {
+                    onUserUpdated();
+                }
+                
+                if (onClientDeleted) {
+                    onClientDeleted();
                 }
             }
         } catch (error) {
@@ -98,28 +140,66 @@ const AccountContent = ({
         }
     };
 
-    const handleActivate = async () => {
+    const handleActivate = () => {
         if (!selectedUser) return;
 
-        if (!window.confirm(`Are you sure want to activate user ${selectedUser.full_name}?`)) {
-            return;
-        }
-
-        setActivateLoading(true);
-        try {
-            if (onActivateUser) {
-                await onActivateUser(selectedUser.id);
-                toast.success(`User "${selectedUser.full_name}" activated successfully`);
-                
-                if (onUserEdited) {
-                    onUserEdited({ ...selectedUser, status: 'Active' });
+        if (showConfirm) {
+            showConfirm({
+                title: 'Activate User',
+                message: `Are you sure you want to activate "${selectedUser.full_name}"?`,
+                type: 'info',
+                confirmText: 'Activate',
+                cancelText: 'Cancel',
+                onConfirm: async () => {
+                    setActivateLoading(true);
+                    try {
+                        if (onActivateUser) {
+                            await onActivateUser(selectedUser.id);
+                            toast.success(`User "${selectedUser.full_name}" activated successfully`);
+                            
+                            if (onUserUpdated) {
+                                onUserUpdated();
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error activating user:', error);
+                        toast.error(error.message || 'Failed to activate user');
+                    } finally {
+                        setActivateLoading(false);
+                    }
+                },
+                onCancel: () => {
+                    toast('Activation cancelled', { icon: '⚠️' });
                 }
+            });
+        } else {
+            if (!window.confirm(`Are you sure you want to activate user ${selectedUser.full_name}?`)) {
+                return;
             }
-        } catch (error) {
-            console.error('Error activating user:', error);
-            toast.error(error.message || 'Failed to activate user');
-        } finally {
-            setActivateLoading(false);
+            
+            setActivateLoading(true);
+            try {
+                if (onActivateUser) {
+                    onActivateUser(selectedUser.id)
+                        .then(() => {
+                            toast.success(`User "${selectedUser.full_name}" activated successfully`);
+                            if (onUserUpdated) {
+                                onUserUpdated();
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Error activating user:', error);
+                            toast.error(error.message || 'Failed to activate user');
+                        })
+                        .finally(() => {
+                            setActivateLoading(false);
+                        });
+                }
+            } catch (error) {
+                console.error('Error activating user:', error);
+                toast.error(error.message || 'Failed to activate user');
+                setActivateLoading(false);
+            }
         }
     };
 
@@ -131,13 +211,25 @@ const AccountContent = ({
     const getAvatarUrl = (avatarPath) => {
         if (!avatarPath) return null;
         
+        // Jika sudah URL lengkap
         if (avatarPath.startsWith('http')) {
             return avatarPath;
         }
         
-        const baseUrl = API_BASE_URL
-        const fullUrl = `${baseUrl}${avatarPath}`;
-        return fullUrl;
+        // Jika path sudah dimulai dengan /uploads/
+        if (avatarPath.startsWith('/uploads/')) {
+            const baseUrl = API_BASE_URL?.replace(/\/$/, '');
+            return `${baseUrl}${avatarPath}`;
+        }
+        
+        // Format umum
+        const baseUrl = API_BASE_URL?.replace(/\/$/, '');
+        const path = avatarPath.startsWith('/') ? avatarPath : `/${avatarPath}`;
+        return `${baseUrl}${path}`;
+    };
+
+    const handleAvatarError = () => {
+        setAvatarLoadError(true);
     };
 
     const getInitials = (name) => {
@@ -148,6 +240,53 @@ const AccountContent = ({
             .join('')
             .toUpperCase()
             .slice(0, 2);
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch {
+            return dateString;
+        }
+    };
+
+    const formatValue = (value, key) => {
+        if (value === null || value === undefined) return '-';
+        
+        if (key === 'last_login' || key === 'created_at' || key === 'updated_at') {
+            return formatDate(value);
+        }
+        
+        if (key === 'status') {
+            const status = value?.toLowerCase();
+            if (status === 'active') {
+                return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Active</span>;
+            } else if (status === 'inactive') {
+                return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">Inactive</span>;
+            }
+            return value;
+        }
+        
+        if (key === 'role') {
+            const roleMap = {
+                'admin': 'Admin',
+                'manajer_program': 'Manajer Program',
+                'komunitas': 'Community Team'
+            };
+            return roleMap[value] || value;
+        }
+        
+        return value;
     };
 
     const ActiveCategoryContent = () => {
@@ -169,13 +308,9 @@ const AccountContent = ({
                         const FieldIcon = field.icon;
                         let displayValue = selectedUser[field.key];
 
-                        if (field.key === 'emailVerified' || field.key === 'twoFactorEnabled') {
-                            displayValue = selectedUser[field.key] ? 'Yes' : 'No';
-                        }
-
                         if (field.isPassword) {
                             return (
-                                <div key={index} className='flex items-start gap-3'>
+                                <div key={index} className='flex items-start gap-3 col-span-2'>
                                     <FieldIcon className='h-4 w-4 text-gray-400 mt-1 flex-shrink-0' />
 
                                     <div className='flex-1'>
@@ -183,7 +318,7 @@ const AccountContent = ({
                                             {field.label}
                                         </label>
                                         <div className='flex items-center gap-2'>
-                                            <p className='text-gray-900 text-sm font-medium'>
+                                            <p className='text-gray-900 text-sm font-medium font-mono'>
                                                 {showPassword ? (displayValue || '-') : maskPassword(displayValue)}
                                             </p>
                                             <Button
@@ -208,7 +343,7 @@ const AccountContent = ({
                         if (field.isImage) {
                             const avatarUrl = getAvatarUrl(displayValue);
                             return (
-                                <div key={index} className='flex items-start gap-3'>
+                                <div key={index} className='flex items-start gap-3 col-span-2'>
                                     <FieldIcon className='h-4 w-4 text-gray-400 mt-1 flex-shrink-0' />
 
                                     <div className='flex-1'>
@@ -221,6 +356,7 @@ const AccountContent = ({
                                                     src={avatarUrl}
                                                     alt={`${selectedUser.full_name}'s avatar`}
                                                     className='object-cover'
+                                                    onError={handleAvatarError}
                                                 />
                                                 <AvatarFallback className='bg-gradient-to-br from-blue-500 to-purple-600 text-white text-lg font-semibold'>
                                                     {getInitials(selectedUser.full_name)}
@@ -228,9 +364,14 @@ const AccountContent = ({
                                             </Avatar>
 
                                             <div className='flex-1'>
-                                                <p className={`text-sm font-medium ${displayValue ? 'text-green-600' : 'text-gray-500'}`}>
-                                                    {displayValue ? '✓ Profile picture uploaded' : 'No profile picture'}
+                                                <p className={`text-sm font-medium ${displayValue && !avatarLoadError ? 'text-green-600' : 'text-gray-500'}`}>
+                                                    {displayValue && !avatarLoadError ? '✓ Profile picture uploaded' : 'No profile picture'}
                                                 </p>
+                                                {avatarLoadError && displayValue && (
+                                                    <p className="text-xs text-amber-600 mt-1">
+                                                        Image failed to load
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -245,9 +386,9 @@ const AccountContent = ({
                                     <label className='text-sm text-gray-500 block mb-1'>
                                         {field.label}
                                     </label>
-                                    <p className='text-gray-900 text-sm font-medium'>
-                                        {displayValue || '-'}
-                                    </p>
+                                    <div className='text-gray-900 text-sm font-medium'>
+                                        {formatValue(displayValue, field.key)}
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -257,118 +398,161 @@ const AccountContent = ({
         );
     };
 
+    if (!selectedUser) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>{detailTitle || 'User Details'}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className='text-center py-8 text-gray-500'>
+                        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                            <UserCog className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-700 mb-2">No User Selected</h3>
+                        <p className="text-sm text-gray-500 max-w-md mx-auto">
+                            Select a user from the list to view their details, edit information, or manage their account.
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
     return (
         <>
             <Card>
-                <CardHeader>
-                    <CardTitle>{detailTitle}</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>{detailTitle || 'User Details'}</CardTitle>
+                    <div className="flex items-center gap-2">
+                        {selectedUser.status === 'Inactive' && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
+                                Inactive
+                            </span>
+                        )}
+                        {selectedUser.status === 'Active' && (
+                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                                Active
+                            </span>
+                        )}
+                    </div>
                 </CardHeader>
 
                 <CardContent>
-                    {selectedUser ? (
-                        <div className='space-y-6'>
-                            <div className='flex flex-wrap items-center justify-between gap-4 mb-4'>
-                                <div className='flex flex-wrap gap-2 mb-4'>
-                                    {detailFields.map((category, index) => {
-                                        const CategoryIcon = category.icon;
+                    <div className='space-y-6'>
+                        <div className='flex flex-wrap items-center justify-between gap-4 mb-4'>
+                            <div className='flex flex-wrap gap-2 mb-4'>
+                                {detailFields.map((category, index) => {
+                                    const CategoryIcon = category.icon;
 
-                                        return (
-                                            <Button
-                                                key={index}
-                                                variant={activeCategory === category.category ? 'default' : 'outline'}
-                                                size="sm"
-                                                className="flex items-center gap-2"
-                                                onClick={() => {
-                                                    setActiveCategory(category.category);
-                                                    setShowPassword(false);
-                                                }}
-                                            >
-                                                <CategoryIcon className='h-4 w-4' />
-                                                {category.category}
-                                            </Button>
-                                        );
-                                    })}
-                                </div>
-
-                                <div className="flex gap-2">
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        className="flex items-center gap-2"
-                                        onClick={handleEdit}
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                        Edit
-                                    </Button>
-
-                                    {/* Button Activate (muncul hanya untuk user Inactive) */}
-                                    {selectedUser.status === 'Inactive' && (
+                                    return (
                                         <Button
-                                            onClick={handleActivate}
-                                            disabled={activateLoading}
-                                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-                                        >
-                                            {activateLoading ? (
-                                                <Loader2 className='h-4 w-4 animate-spin' />
-                                            ) : (
-                                                <UserCheck className='h-4 w-4' />
-                                            )}
-                                            {activateLoading ? 'Activating...' : 'Activate'}
-                                        </Button>
-                                    )}
-
-                                    {/* Button Deactivate (muncul hanya untuk user Active) */}
-                                    {selectedUser.status === 'Active' && (
-                                        <Button
-                                            variant="outline"
+                                            key={index}
+                                            variant={activeCategory === category.category ? 'default' : 'outline'}
                                             size="sm"
-                                            className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                                            onClick={handleDelete}
-                                            disabled={deleteLoading || deleteModalOpen}
+                                            className="flex items-center gap-2"
+                                            onClick={() => {
+                                                setActiveCategory(category.category);
+                                                setShowPassword(false);
+                                                setAvatarLoadError(false); // Reset avatar error when switching categories
+                                            }}
                                         >
-                                            {deleteLoading ? (
-                                                <Loader2 className='h-4 w-4 animate-spin' />
-                                            ) : (
-                                                <Trash2 className='h-4 w-4' />
-                                            )}
-                                            {deleteLoading ? 'Deactivating...' : 'Deactivate'}
+                                            <CategoryIcon className='h-4 w-4' />
+                                            {category.category}
                                         </Button>
-                                    )}
-                                </div>
+                                    );
+                                })}
                             </div>
 
-                            <ActiveCategoryContent />
+                            <div className="flex gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="flex items-center gap-2"
+                                    onClick={handleEdit}
+                                >
+                                    <Edit className="h-4 w-4" />
+                                    Edit
+                                </Button>
+
+                                {/* Button Activate (muncul hanya untuk user Inactive) */}
+                                {selectedUser.status === 'Inactive' && (
+                                    <Button
+                                        onClick={handleActivate}
+                                        disabled={activateLoading}
+                                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+                                    >
+                                        {activateLoading ? (
+                                            <Loader2 className='h-4 w-4 animate-spin' />
+                                        ) : (
+                                            <UserCheck className='h-4 w-4' />
+                                        )}
+                                        {activateLoading ? 'Activating...' : 'Activate'}
+                                    </Button>
+                                )}
+
+                                {/* Button Deactivate (muncul hanya untuk user Active) */}
+                                {selectedUser.status === 'Active' && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                        onClick={handleDelete}
+                                        disabled={deleteLoading}
+                                    >
+                                        {deleteLoading ? (
+                                            <Loader2 className='h-4 w-4 animate-spin' />
+                                        ) : (
+                                            <Trash2 className='h-4 w-4' />
+                                        )}
+                                        {deleteLoading ? 'Deactivating...' : 'Deactivate'}
+                                    </Button>
+                                )}
+                            </div>
                         </div>
-                    ) : (
-                        <div className='text-center py-8 text-gray-500'>
-                                            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                                                <UserCog className="w-8 h-8 text-gray-400" />
-                                            </div>
-                                            <h3 className="text-lg font-medium text-gray-700 mb-2">No User Selected</h3>
-                                            <p className="text-sm text-gray-500 max-w-md mx-auto">
-                                                Select a user from the list to view its details, edit information, or delete it.
-                                            </p>
-                                        </div>
-                                    )}
+
+                        <ActiveCategoryContent />
+                    </div>
                 </CardContent>
             </Card>
 
-            {/* Modal Konfirmasi Deactivate */}
-            <ConfirmModal 
-                isOpen={deleteModalOpen}
-                config={{
-                    title: 'Deactivate User',
-                    message: selectedUser ? `Are you sure you want to deactivate "${selectedUser.full_name}"? User will not be able to access the system.` : '',
-                    type: 'danger',
-                    confirmText: 'Deactivate',
-                    cancelText: 'Cancel',
-                }}
-                onConfirm={handleConfirmDelete}
-                onCancel={() => {
-                    setDeleteModalOpen(false);
-                    toast('Deactivation cancelled', { icon: AlertTriangle });
-                }}
-            />
+            {/* Modal Konfirmasi dari props showConfirm */}
+            {showConfirm && (
+                <ConfirmModal 
+                    isOpen={isOpen || deleteModalOpen}
+                    config={config || {
+                        title: 'Deactivate User',
+                        message: selectedUser ? `Are you sure you want to deactivate "${selectedUser.full_name}"? User will not be able to access the system.` : '',
+                        type: 'danger',
+                        confirmText: 'Deactivate',
+                        cancelText: 'Cancel',
+                    }}
+                    onConfirm={handleConfirm || handleConfirmDelete}
+                    onCancel={handleCancel || (() => {
+                        setDeleteModalOpen(false);
+                        toast('Deactivation cancelled', { icon: '⚠️' });
+                    })}
+                />
+            )}
+
+            {/* Fallback Modal jika showConfirm tidak tersedia */}
+            {!showConfirm && (
+                <ConfirmModal 
+                    isOpen={deleteModalOpen}
+                    config={{
+                        title: 'Deactivate User',
+                        message: selectedUser ? `Are you sure you want to deactivate "${selectedUser.full_name}"? User will not be able to access the system.` : '',
+                        type: 'danger',
+                        confirmText: 'Deactivate',
+                        cancelText: 'Cancel',
+                    }}
+                    onConfirm={handleConfirmDelete}
+                    onCancel={() => {
+                        setDeleteModalOpen(false);
+                        toast('Deactivation cancelled', { icon: '⚠️' });
+                    }}
+                />
+            )}
         </>
     );
 };
