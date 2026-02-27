@@ -1,7 +1,15 @@
 import { XCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react'
 
 const ConfirmModal = ({ isOpen, config, onConfirm, onCancel }) => {
+    console.log('ConfirmModal - isOpen:', isOpen);
+    console.log('ConfirmModal - config:', config);
+    
     if (!isOpen) return null
+
+    if (!config) {
+        console.warn('ConfirmModal - config is null or undefined');
+        return null;
+    }
 
     const getIcon = () => {
         switch (config.type) {
@@ -29,6 +37,30 @@ const ConfirmModal = ({ isOpen, config, onConfirm, onCancel }) => {
         }
     }
 
+    const handleConfirmClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🔴 ConfirmModal - Tombol Confirm DIKLIK!');
+        console.log('🔴 onConfirm exists:', !!onConfirm);
+        
+        if (onConfirm) {
+            console.log('🔴 Memanggil onConfirm...');
+            onConfirm();
+        } else {
+            console.error('🔴 onConfirm tidak ditemukan!');
+        }
+    };
+
+    const handleCancelClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('⚫ ConfirmModal - Tombol Cancel DIKLIK!');
+        
+        if (onCancel) {
+            onCancel();
+        }
+    };
+
     return (
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
             <div className='bg-white rounded-lg shadow-xl max-w-md w-full mx-4'>
@@ -40,10 +72,10 @@ const ConfirmModal = ({ isOpen, config, onConfirm, onCancel }) => {
 
                         <div>
                             <h3 className='text-lg font-semibold text-gray-900'>
-                                {config.title}
+                                {config.title || 'Confirmation'}
                             </h3>
                             <p className='mt-2 text-sm text-gray-600'>
-                                {config.message}
+                                {config.message || 'Are you sure?'}
                             </p>
                         </div>
                     </div>
@@ -51,17 +83,17 @@ const ConfirmModal = ({ isOpen, config, onConfirm, onCancel }) => {
                     <div className='mt-6 flex justify-end space-x-3'>
                         <button
                             type='button'
-                            onClick={onCancel}
+                            onClick={handleCancelClick}
                             className='px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500'
                         >
                             {config.cancelText || 'Cancel'}
                         </button>
                         <button
                             type='button'
-                            onClick={onConfirm}
+                            onClick={handleConfirmClick}
                             className={`px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${getButtonClass()}`}
                         >
-                            {config.confirmText  || 'Confirm'}
+                            {config.confirmText || 'Confirm'}
                         </button>
                     </div>
                 </div>

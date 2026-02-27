@@ -525,40 +525,62 @@ class UserService {
     }
 
     async deleteUser(userId) {
+        console.log('12. UserService.deleteUser dipanggil dengan ID:', userId);
         try {
             if (!userId) {
                 throw new Error('User ID is required')
             }
+            console.log('13. Memanggil makeRequest dengan method DELETE');
+            const result = await this.makeRequest('delete', `/user/${userId}`)
+        console.log('14. Response dari makeRequest:', result); 
             return await this.makeRequest('delete', `/user/${userId}`)
         } catch (error) {
-            console.error('UserService.deleteUser failed:', error)
+             console.error('15. Error di UserService.deleteUser:', error)
             throw error
         }
     }
 
-    async activateUser(userId) {
-        try {
-            if (!userId) {
-                throw new Error('User ID is required')
-            }
-            return await this.makeRequest('patch', `/user/${userId}/activate`)
-        } catch (error) {
-            console.error('UserService.activateUser failed:', error)
-            throw error
+async activateUser(userId) {
+    console.log('🔍 [UserService] activateUser dipanggil dengan ID:', userId);
+    
+    try {
+        if (!userId) {
+            throw new Error('User ID is required');
         }
+        
+        console.log('✅ Memanggil makeRequest dengan method POST (coba ini)');
+        // Beberapa API menggunakan POST untuk activate
+        const result = await this.makeRequest('post', `/user/${userId}/activate`);
+        
+        console.log('✅ Response dari makeRequest:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('❌ UserService.activateUser failed:', error);
+        throw error;
     }
+}
 
-    async deactivateUser(userId) {
-        try {
-            if (!userId) {
-                throw new Error('User ID is required')
-            }
-            return await this.makeRequest('patch', `/user/${userId}/deactivate`)
-        } catch (error) {
-            console.error('UserService.deactivateUser failed:', error)
-            throw error
+async deactivateUser(userId) {
+    console.log('🔍 [UserService] deactivateUser dipanggil dengan ID:', userId);
+    
+    try {
+        if (!userId) {
+            throw new Error('User ID is required');
         }
+        
+        console.log('✅ Memanggil makeRequest dengan method PUT');
+        // GANTI JUGA UNTUK DEACTIVATE
+        const result = await this.makeRequest('put', `/user/${userId}/deactivate`);
+        
+        console.log('✅ Response dari makeRequest:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('❌ UserService.deactivateUser failed:', error);
+        throw error;
     }
+}
 
     async getUserById(userId) {
         try {

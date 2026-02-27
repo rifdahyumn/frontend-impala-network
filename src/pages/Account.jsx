@@ -612,49 +612,66 @@ const userStats = useMemo(() => {
         }
     };
 
-    const handleDeleteUser = async (userId) => {
-        if (!selectedUser) return;
+const handleDeleteUser = async (userId) => {
+    console.log('1. handleDeleteUser dipanggil dengan userId:', userId);
+    console.log('2. selectedUser:', selectedUser);
+    
+    if (!selectedUser) return;
 
-        showConfirm({
-            title: 'Delete User',
-            message: `Are you sure you want to delete "${selectedUser.full_name}"? This action cannot be undone.`,
-            type: 'danger',
-            confirmText: 'Delete',
-            cancelText: 'Cancel',
-            onConfirm: async () => {
-                try {
-                    await deleteUser(userId);
-                    setSelectedUser(null);
-                    toast.success('User deleted successfully');
-                    
-                    if (refreshUsers) {
-                        await refreshUsers();
-                    }
-                    
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                } catch (error) {
-                    console.error('Error deleting user:', error);
-                    toast.error(error.message || 'Failed to delete user');
-                }
-            },
-            onCancel: () => {
-                toast('Deletion cancelled', { icon: '⚠️' });
-            }
-        });
-    };
+    // HAPUS showConfirm DARI SINI!
+    // LANGSUNG PANGGIL deleteUser
+    console.log('3. LANGSUNG Memanggil deleteUser dengan ID:', userId);
+    
+    try {
+        await deleteUser(userId);
+        console.log('4. deleteUser berhasil');
+        
+        setSelectedUser(null);
+        toast.success('User deleted successfully');
+        
+        if (refreshUsers) {
+            await refreshUsers();
+        }
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+        console.error('5. Error di deleteUser:', error);
+        toast.error(error.message || 'Failed to delete user');
+    }
+};
 
-    const handleActivate = async (userId) => {
-        try {
-            await activateUser(userId);
+const handleActivate = async (userId) => {
+    console.log('🔍 [Account] handleActivate dipanggil dengan ID:', userId);
+    
+    try {
+        console.log('✅ Memanggil activateUser');
+        const result = await activateUser(userId);
+        console.log('✅ activateUser berhasil:', result);
+        
+        if (refreshUsers) {
+            await refreshUsers();
+        }
+        
+        toast.success('User activated successfully');
+        
+    } catch (error) {
+        console.error('❌ Error activating user from parent:', error);
+        
+        // Cek apakah error karena response bukan JSON tapi statusnya sukses
+        if (error.message?.includes('Unexpected token') && error.response?.status === 200) {
+            console.log('✅ Status 200, menganggap sukses');
+            toast.success('User activated successfully');
             
             if (refreshUsers) {
                 await refreshUsers();
             }
-        } catch (error) {
-            console.error('Error activating user from parent:', error);
-            throw error;
+            return;
         }
-    };
+        
+        toast.error(error.message || 'Failed to activate user');
+        throw error;
+    }
+};
 
     useEffect(() => {
         if (selectedUser && users.length > 0) {
