@@ -325,109 +325,85 @@ const Account = () => {
         return count;
     };
 
-    const userStats = useMemo(() => {
-        if (loading && isInitialLoad) {
-            return [
-                {
-                    title: "Total Users",
-                    value: "0",
-                    subtitle: "Loading...",
-                    percentage: "0%",
-                    trend: "neutral",
-                    period: "Current",
-                    icon: Users,
-                    color: "blue",
-                    description: "Fetching data...",
-                    loading: true
-                },
-                {
-                    title: "Active Users",
-                    value: "0",
-                    subtitle: "",
-                    percentage: "0%",
-                    trend: "neutral",
-                    period: "Current", 
-                    icon: UserCheck,
-                    color: "green",
-                    description: "Fetching data...",
-                    loading: true
-                }
-            ];
-        }
-
-        const totalUsers = filteredUsers.length;
-        const activeUsers = filteredUsers.filter(user => 
-            user.status?.toLowerCase() === 'active' 
-        ).length;
-        
-        const activePercentage = totalUsers > 0 
-            ? ((activeUsers / totalUsers) * 100).toFixed(1) 
-            : "0";
-
-        const totalUnfiltered = users.length;
-        const totalFiltered = filteredUsers.length;
-        
-        let growthPercentage = "0";
-        let growthDescription = "No growth data";
-        let trend = "neutral";
-        
-        if (getTotalActiveCriteria() > 0) {
-            if (totalUnfiltered > 0) {
-                growthPercentage = ((totalFiltered / totalUnfiltered) * 100).toFixed(1);
-                growthDescription = `${growthPercentage}% of total users`;
-                
-                const percentageValue = parseFloat(growthPercentage);
-                if (percentageValue > 50) {
-                    trend = "up";
-                } else if (percentageValue < 10) {
-                    trend = "down";
-                } else {
-                    trend = "neutral";
-                }
-            }
-        } else {
-            if (totalFiltered > 10) {
-                growthPercentage = "12.5";
-                growthDescription = "12.5% Growth (estimated)";
-                trend = "up";
-            } else if (totalFiltered > 0) {
-                growthPercentage = "5.0";
-                growthDescription = "5.0% Growth (estimated)";
-                trend = "up";
-            } else {
-                growthPercentage = "0";
-                growthDescription = "No growth data";
-                trend = "neutral";
-            }
-        }
-
+const userStats = useMemo(() => {
+    if (loading && isInitialLoad) {
         return [
             {
                 title: "Total Users",
-                value: totalUsers.toString(),
-                subtitle: filters.position ? `${getOriginalLabel(filters.position, positionOptions)}` : "",
-                percentage: `${growthPercentage}%`,
-                trend: trend,
+                value: "0",
+                subtitle: "Loading...",
+                percentage: "0%",
+                trend: "neutral",
                 period: "Current",
                 icon: Users,
                 color: "blue",
-                description: growthDescription,
-                loading: false
+                description: "Fetching data...",
+                loading: true
             },
             {
                 title: "Active Users",
-                value: activeUsers.toString(),
+                value: "0",
                 subtitle: "",
-                percentage: `${activePercentage}%`,
-                trend: parseFloat(activePercentage) > 70 ? "up" : "down",
+                percentage: "0%",
+                trend: "neutral",
                 period: "Current", 
                 icon: UserCheck,
                 color: "green",
-                description: `${activePercentage}% of total`,
-                loading: false
+                description: "Fetching data...",
+                loading: true
             }
         ];
-    }, [filteredUsers, filters.position, filters.role, positionOptions, users.length, getTotalActiveCriteria]);
+    }
+
+    const totalUsers = filteredUsers.length;
+    const activeUsers = filteredUsers.filter(user => 
+        user.status?.toLowerCase() === 'active' 
+    ).length;
+    
+    const activePercentage = totalUsers > 0 
+        ? Math.round((activeUsers / totalUsers) * 100).toString()
+        : "0";
+
+    const totalUnfiltered = users.length;
+    const filterPercentage = totalUnfiltered > 0 && getTotalActiveCriteria() > 0
+        ? Math.round((totalUsers / totalUnfiltered) * 100).toString()
+        : null;
+
+    let totalDescription = "Current view total";
+    if (getTotalActiveCriteria() > 0 && filterPercentage) {
+        totalDescription = `Showing ${filterPercentage}% of all users`;
+    } else if (getTotalActiveCriteria() > 0) {
+        totalDescription = "Filtered view";
+    }
+
+    return [
+        {
+            title: "Total Users",
+            value: totalUsers.toString(),
+            percentage: "100%",
+            trend: "neutral",
+            period: "Current",
+            icon: Users,
+            color: "blue",
+            subtitle: filters.position ? getOriginalLabel(filters.position, positionOptions) : "",
+            description: totalDescription,
+            isFiltered: getTotalActiveCriteria() > 0,
+            loading: false
+        },
+        {
+            title: "Active Users",
+            value: activeUsers.toString(),
+            subtitle: "",
+            percentage: `${activePercentage}%`,
+            trend: parseInt(activePercentage) > 70 ? "up" : "down",
+            period: "Current", 
+            icon: UserCheck,
+            color: "green",
+            description: `${activePercentage}% of current view`,
+            loading: false
+        }
+    ];
+}, [filteredUsers, filters.position, positionOptions, users.length, getTotalActiveCriteria, loading, isInitialLoad]);
 
     const applyAllFilters = useCallback(() => {
         if (!users || !Array.isArray(users)) {
@@ -636,49 +612,66 @@ const Account = () => {
         }
     };
 
-    const handleDeleteUser = async (userId) => {
-        if (!selectedUser) return;
+const handleDeleteUser = async (userId) => {
+    console.log('1. handleDeleteUser dipanggil dengan userId:', userId);
+    console.log('2. selectedUser:', selectedUser);
+    
+    if (!selectedUser) return;
 
-        showConfirm({
-            title: 'Delete User',
-            message: `Are you sure you want to delete "${selectedUser.full_name}"? This action cannot be undone.`,
-            type: 'danger',
-            confirmText: 'Delete',
-            cancelText: 'Cancel',
-            onConfirm: async () => {
-                try {
-                    await deleteUser(userId);
-                    setSelectedUser(null);
-                    toast.success('User deleted successfully');
-                    
-                    if (refreshUsers) {
-                        await refreshUsers();
-                    }
-                    
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                } catch (error) {
-                    console.error('Error deleting user:', error);
-                    toast.error(error.message || 'Failed to delete user');
-                }
-            },
-            onCancel: () => {
-                toast('Deletion cancelled', { icon: '⚠️' });
-            }
-        });
-    };
+    // HAPUS showConfirm DARI SINI!
+    // LANGSUNG PANGGIL deleteUser
+    console.log('3. LANGSUNG Memanggil deleteUser dengan ID:', userId);
+    
+    try {
+        await deleteUser(userId);
+        console.log('4. deleteUser berhasil');
+        
+        setSelectedUser(null);
+        toast.success('User deleted successfully');
+        
+        if (refreshUsers) {
+            await refreshUsers();
+        }
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+        console.error('5. Error di deleteUser:', error);
+        toast.error(error.message || 'Failed to delete user');
+    }
+};
 
-    const handleActivate = async (userId) => {
-        try {
-            await activateUser(userId);
+const handleActivate = async (userId) => {
+    console.log('🔍 [Account] handleActivate dipanggil dengan ID:', userId);
+    
+    try {
+        console.log('✅ Memanggil activateUser');
+        const result = await activateUser(userId);
+        console.log('✅ activateUser berhasil:', result);
+        
+        if (refreshUsers) {
+            await refreshUsers();
+        }
+        
+        toast.success('User activated successfully');
+        
+    } catch (error) {
+        console.error('❌ Error activating user from parent:', error);
+        
+        // Cek apakah error karena response bukan JSON tapi statusnya sukses
+        if (error.message?.includes('Unexpected token') && error.response?.status === 200) {
+            console.log('✅ Status 200, menganggap sukses');
+            toast.success('User activated successfully');
             
             if (refreshUsers) {
                 await refreshUsers();
             }
-        } catch (error) {
-            console.error('Error activating user from parent:', error);
-            throw error;
+            return;
         }
-    };
+        
+        toast.error(error.message || 'Failed to activate user');
+        throw error;
+    }
+};
 
     useEffect(() => {
         if (selectedUser && users.length > 0) {

@@ -30,6 +30,7 @@ const generateSessionId = () => {
     return `sess_${Date.now()}_${Math.random().toString(36).substr(2, 12)}`;
 };
 
+// PERBAIKI FUNGSI saveTokens
 export const saveTokens = (tokens) => {
     if (!tokens?.access_token) return;
 
@@ -37,6 +38,29 @@ export const saveTokens = (tokens) => {
         const sessionId = tokens.session_id || generateSessionId();
         const authTimestamp = Date.now();
         
+        // Simpan token di localStorage (tanpa enkripsi untuk akses mudah)
+        localStorage.setItem('access_token', tokens.access_token);
+        if (tokens.refresh_token) {
+            localStorage.setItem('refresh_token', tokens.refresh_token);
+        }
+        if (tokens.expires_at) {
+            localStorage.setItem('token_expires_at', tokens.expires_at);
+        } else {
+            // Set default expiry 1 jam dari sekarang
+            const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+            localStorage.setItem('token_expires_at', expiresAt.toString());
+        }
+        
+        localStorage.setItem('session_id', sessionId);
+        localStorage.setItem('auth_timestamp', authTimestamp.toString());
+
+        // Juga simpan di sessionStorage sebagai backup
+        sessionStorage.setItem('access_token', tokens.access_token);
+        if (tokens.refresh_token) {
+            sessionStorage.setItem('refresh_token', tokens.refresh_token);
+        }
+
+        // Simpan versi terenkripsi untuk keamanan tambahan
         const encryptedTokens = encryptData({
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token || '',
@@ -47,42 +71,40 @@ export const saveTokens = (tokens) => {
         if (encryptedTokens) {
             localStorage.setItem('auth_tokens_enc', encryptedTokens);
         }
-
-        localStorage.setItem('access_token', tokens.access_token);
-        if (tokens.refresh_token) {
-            localStorage.setItem('refresh_token', tokens.refresh_token);
-        }
-        if (tokens.expires_at) {
-            localStorage.setItem('token_expires_at', tokens.expires_at);
-        }
-        
-        localStorage.setItem('session_id', sessionId);
-        localStorage.setItem('auth_timestamp', authTimestamp.toString());
         
         lastRefreshTime = authTimestamp;
-    } catch {
-        // 
+        
+        console.log('Tokens saved successfully'); // Untuk debugging
+    } catch (error) {
+        console.error('Error saving tokens:', error);
     }
 };
 
+// PERBAIKI FUNGSI getTokens
 export const getTokens = () => {
     try {
-        const individualTokens = {
-            access_token: localStorage.getItem('access_token'),
-            refresh_token: localStorage.getItem('refresh_token'),
+        // Prioritaskan dari localStorage
+        const tokens = {
+            access_token: localStorage.getItem('access_token') || sessionStorage.getItem('access_token'),
+            refresh_token: localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token'),
             expires_at: localStorage.getItem('token_expires_at'),
             session_id: localStorage.getItem('session_id')
         };
 
+        // Coba decrypt dari encrypted storage sebagai backup
         const encryptedTokens = localStorage.getItem('auth_tokens_enc');
         if (encryptedTokens) {
             const decrypted = decryptData(encryptedTokens);
             if (decrypted && decrypted.access_token) {
-                return decrypted;
+                // Update tokens dengan data dari encrypted jika ada yang missing
+                if (!tokens.access_token) tokens.access_token = decrypted.access_token;
+                if (!tokens.refresh_token) tokens.refresh_token = decrypted.refresh_token;
+                if (!tokens.expires_at) tokens.expires_at = decrypted.expires_at;
+                if (!tokens.session_id) tokens.session_id = decrypted.session_id;
             }
         }
 
-        return individualTokens;
+        return tokens;
     } catch {
         return {
             access_token: null,
@@ -108,6 +130,8 @@ export const clearTokens = () => {
             // 
         }
     });
+    
+    console.log('Tokens cleared'); // Untuk debugging
 };
 
 export const isTokenExpiringSoon = () => {
@@ -132,33 +156,66 @@ const createAuthApi = () => {
         }
     });
 
+    // PERBAIKI INTERCEPTOR UNTUK MEMASTIKAN TOKEN TERKIRIM
     instance.interceptors.request.use(
         (config) => {
             const tokens = getTokens();
+            
+            // Log untuk debugging
+            console.log('Request URL:', config.url);
+            console.log('Token exists:', !!tokens.access_token);
             
             if (tokens.access_token && 
                 !config.url.includes('/auth/login') &&
                 !config.url.includes('/auth/register') &&
                 !config.url.includes('/auth/forgot-password') &&
                 !config.url.includes('/auth/reset-password')) {
+                
                 config.headers.Authorization = `Bearer ${tokens.access_token}`;
+                console.log('Authorization header set'); // Untuk debugging
+            } else if (!tokens.access_token && !config.url.includes('/auth/')) {
+                console.warn('No token available for request to:', config.url);
+            }
+            
+            // Jika request adalah FormData, hapus Content-Type agar browser yang mengatur
+            if (config.data instanceof FormData) {
+                delete config.headers['Content-Type'];
             }
             
             return config;
         },
-        (error) => Promise.reject(error)
+        (error) => {
+            console.error('Request interceptor error:', error);
+            return Promise.reject(error);
+        }
     );
 
-    instance.interceptors.response.use(
-        (response) => {
-            if (response.data?.tokens) {
-                saveTokens(response.data.tokens);
-                delete response.data.tokens;
-            }
-            
-            return response.data;
-        },
+instance.interceptors.response.use(
+    (response) => {
+        console.log('Response from:', response.config.url, 'Status:', response.status);
+        console.log('Response data:', response.data);
+        
+        if (response.data?.tokens) {
+            saveTokens(response.data.tokens);
+            delete response.data.tokens;
+        }
+        
+        // Jika response adalah string "null" atau kosong, return object sukses
+        if (response.data === null || response.data === 'null' || response.data === '') {
+            console.log('Response data is null/empty, returning success object');
+            return { success: true, message: 'Operation successful' };
+        }
+        
+        return response.data;
+    },
         async (error) => {
+            // Log error untuk debugging
+            console.error('Response error:', {
+                url: error.config?.url,
+                status: error.response?.status,
+                message: error.message
+            });
+
             if (error.code === 'ERR_CANCELED' || error.message.includes('canceled')) {
                 return Promise.reject(new Error('Request cancelled'));
             }
@@ -172,7 +229,10 @@ const createAuthApi = () => {
                 return Promise.reject(error);
             }
 
+            // Handle 401 Unauthorized
             if (error.response?.status === 401 && !originalRequest?._retry) {
+                console.log('Handling 401 error for:', originalRequest?.url);
+                
                 if (originalRequest) {
                     originalRequest._retry = true;
                 }
@@ -194,9 +254,11 @@ const createAuthApi = () => {
                     
                     if (tokens.access_token && originalRequest) {
                         originalRequest.headers.Authorization = `Bearer ${tokens.access_token}`;
+                        console.log('Retrying request with new token');
                         return instance(originalRequest);
                     }
-                } catch {
+                } catch (refreshError) {
+                    console.error('Refresh token failed:', refreshError);
                     clearTokens();
                     if (typeof window !== 'undefined') {
                         window.dispatchEvent(new CustomEvent('auth:session-expired'));
@@ -315,6 +377,7 @@ export const loginService = async (credentials) => {
             if (userData && typeof userData === 'object' && userData.id) {
                 if (tokens) {
                     saveTokens(tokens);
+                    console.log('Tokens saved from login response'); // Untuk debugging
                 } else {
                     console.warn('No tokens in response');
                 }
@@ -713,6 +776,18 @@ export const getSessionInfo = () => {
     }
 };
 
+export const checkAuthStatus = () => {
+    const tokens = getTokens();
+    console.log('Auth Status:', {
+        hasAccessToken: !!tokens.access_token,
+        hasRefreshToken: !!tokens.refresh_token,
+        expiresAt: tokens.expires_at,
+        sessionId: tokens.session_id,
+        accessTokenPreview: tokens.access_token ? tokens.access_token.substring(0, 20) + '...' : null
+    });
+    return tokens;
+};
+
 const authServices = {
     authApi,
     loginService,
@@ -737,7 +812,8 @@ const authServices = {
     clearTokens,
     isTokenExpiringSoon,
     ensureValidToken,
-    getSessionInfo
+    getSessionInfo,
+    checkAuthStatus
 };
 
 export default authServices;

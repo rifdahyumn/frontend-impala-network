@@ -8,6 +8,58 @@ import ConfirmModal from "./ConfirmModal";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '';
 
+// Helper function untuk mendapatkan token
+const getAuthToken = () => {
+    return localStorage.getItem('token') || sessionStorage.getItem('token');
+};
+
+// Helper function untuk membuat request dengan autentikasi
+const fetchWithAuth = async (url, options = {}) => {
+    const token = getAuthToken();
+    
+    if (!token) {
+        throw new Error('No authentication token found. Please login again.');
+    }
+
+    const defaultOptions = {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    };
+
+    try {
+        const response = await fetch(url, {
+            ...defaultOptions,
+            ...options,
+            headers: {
+                ...defaultOptions.headers,
+                ...options.headers,
+            },
+        });
+
+        if (response.status === 401) {
+            // Token expired atau invalid
+            localStorage.removeItem('token');
+            sessionStorage.removeItem('token');
+            
+            // Redirect ke halaman login
+            window.location.href = '/login';
+            throw new Error('Session expired. Please login again.');
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Request failed with status ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Fetch error:', error);
+        throw error;
+    }
+};
+
 const AccountContent = ({ 
     selectedUser, 
     onOpenEditModal, 
@@ -74,9 +126,11 @@ const AccountContent = ({
     };
 
     const handleDelete = () => {
+        console.log('AccountContent - handleDelete called');
         if (!selectedUser) return;
         
         if (showConfirm) {
+            console.log('AccountContent - calling showConfirm with delete action');
             showConfirm({
                 title: 'Deactivate User',
                 message: `Are you sure you want to deactivate "${selectedUser.full_name}"? User will not be able to access the system.`,
@@ -84,9 +138,11 @@ const AccountContent = ({
                 confirmText: 'Deactivate',
                 cancelText: 'Cancel',
                 onConfirm: async () => {
+                    console.log('AccountContent - onConfirm executing delete');
                     setDeleteLoading(true);
                     try {
                         if (onDelete) {
+                            console.log('AccountContent - calling onDelete with ID:', selectedUser.id);
                             await onDelete(selectedUser.id);
                             toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
                             
@@ -100,26 +156,35 @@ const AccountContent = ({
                         }
                     } catch (error) {
                         console.error('Error deactivating user:', error);
-                        toast.error(error.message || 'Failed to deactivate user');
+                        
+                        if (error.message?.includes('401') || error.message?.includes('unauthorized') || error.message?.includes('Session expired')) {
+                            toast.error('Your session has expired. Please login again.');
+                        } else {
+                            toast.error(error.message || 'Failed to deactivate user');
+                        }
                     } finally {
                         setDeleteLoading(false);
                     }
                 },
                 onCancel: () => {
+                    console.log('AccountContent - delete cancelled');
                     toast('Deactivation cancelled', { icon: '⚠️' });
                 }
             });
         } else {
+            console.log('AccountContent - showConfirm not available, using local modal');
             setDeleteModalOpen(true);
         }
     };
 
     const handleConfirmDelete = async () => {
+        console.log('AccountContent - handleConfirmDelete called');
         if (!selectedUser) return;
         
         setDeleteLoading(true);
         try {
             if (onDelete) {
+                console.log('AccountContent - calling onDelete from local modal');
                 await onDelete(selectedUser.id);
                 toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
                 
@@ -133,7 +198,12 @@ const AccountContent = ({
             }
         } catch (error) {
             console.error('Error deactivating user:', error);
-            toast.error(error.message || 'Failed to deactivate user');
+            
+            if (error.message?.includes('401') || error.message?.includes('unauthorized') || error.message?.includes('Session expired')) {
+                toast.error('Your session has expired. Please login again.');
+            } else {
+                toast.error(error.message || 'Failed to deactivate user');
+            }
         } finally {
             setDeleteLoading(false);
             setDeleteModalOpen(false);
@@ -141,6 +211,7 @@ const AccountContent = ({
     };
 
     const handleActivate = () => {
+        console.log('AccountContent - handleActivate called');
         if (!selectedUser) return;
 
         if (showConfirm) {
@@ -151,6 +222,7 @@ const AccountContent = ({
                 confirmText: 'Activate',
                 cancelText: 'Cancel',
                 onConfirm: async () => {
+                    console.log('AccountContent - activate onConfirm executing');
                     setActivateLoading(true);
                     try {
                         if (onActivateUser) {
@@ -163,7 +235,12 @@ const AccountContent = ({
                         }
                     } catch (error) {
                         console.error('Error activating user:', error);
-                        toast.error(error.message || 'Failed to activate user');
+                        
+                        if (error.message?.includes('401') || error.message?.includes('unauthorized') || error.message?.includes('Session expired')) {
+                            toast.error('Your session has expired. Please login again.');
+                        } else {
+                            toast.error(error.message || 'Failed to activate user');
+                        }
                     } finally {
                         setActivateLoading(false);
                     }
@@ -178,27 +255,25 @@ const AccountContent = ({
             }
             
             setActivateLoading(true);
-            try {
-                if (onActivateUser) {
-                    onActivateUser(selectedUser.id)
-                        .then(() => {
-                            toast.success(`User "${selectedUser.full_name}" activated successfully`);
-                            if (onUserUpdated) {
-                                onUserUpdated();
-                            }
-                        })
-                        .catch((error) => {
-                            console.error('Error activating user:', error);
+            if (onActivateUser) {
+                onActivateUser(selectedUser.id)
+                    .then(() => {
+                        toast.success(`User "${selectedUser.full_name}" activated successfully`);
+                        if (onUserUpdated) {
+                            onUserUpdated();
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error activating user:', error);
+                        if (error.message?.includes('401') || error.message?.includes('unauthorized') || error.message?.includes('Session expired')) {
+                            toast.error('Your session has expired. Please login again.');
+                        } else {
                             toast.error(error.message || 'Failed to activate user');
-                        })
-                        .finally(() => {
-                            setActivateLoading(false);
-                        });
-                }
-            } catch (error) {
-                console.error('Error activating user:', error);
-                toast.error(error.message || 'Failed to activate user');
-                setActivateLoading(false);
+                        }
+                    })
+                    .finally(() => {
+                        setActivateLoading(false);
+                    });
             }
         }
     };
@@ -211,15 +286,18 @@ const AccountContent = ({
     const getAvatarUrl = (avatarPath) => {
         if (!avatarPath) return null;
         
+        // Jika sudah URL lengkap
         if (avatarPath.startsWith('http')) {
             return avatarPath;
         }
         
+        // Jika path sudah dimulai dengan /uploads/
         if (avatarPath.startsWith('/uploads/')) {
             const baseUrl = API_BASE_URL?.replace(/\/$/, '');
             return `${baseUrl}${avatarPath}`;
         }
         
+        // Format umum
         const baseUrl = API_BASE_URL?.replace(/\/$/, '');
         const path = avatarPath.startsWith('/') ? avatarPath : `/${avatarPath}`;
         return `${baseUrl}${path}`;
@@ -451,7 +529,7 @@ const AccountContent = ({
                                             onClick={() => {
                                                 setActiveCategory(category.category);
                                                 setShowPassword(false);
-                                                setAvatarLoadError(false); 
+                                                setAvatarLoadError(false);
                                             }}
                                         >
                                             <CategoryIcon className='h-4 w-4' />
@@ -513,38 +591,42 @@ const AccountContent = ({
                 </CardContent>
             </Card>
 
-            {/* Modal Konfirmasi dari props showConfirm */}
-            {showConfirm && (
+            {/* Modal Konfirmasi - Gunakan props showConfirm jika ada, fallback ke lokal jika tidak */}
+            {showConfirm ? (
+                // Gunakan props showConfirm dari parent
                 <ConfirmModal 
-                    isOpen={isOpen || deleteModalOpen}
-                    config={config || {
-                        title: 'Deactivate User',
-                        message: selectedUser ? `Are you sure you want to deactivate "${selectedUser.full_name}"? User will not be able to access the system.` : '',
-                        type: 'danger',
-                        confirmText: 'Deactivate',
-                        cancelText: 'Cancel',
+                    isOpen={isOpen}
+                    config={config}
+                    onConfirm={() => {
+                        console.log('AccountContent - calling handleConfirm from props');
+                        if (handleConfirm) {
+                            handleConfirm();
+                        }
                     }}
-                    onConfirm={handleConfirm || handleConfirmDelete}
-                    onCancel={handleCancel || (() => {
-                        setDeleteModalOpen(false);
-                        toast('Deactivation cancelled', { icon: '⚠️' });
-                    })}
+                    onCancel={() => {
+                        console.log('AccountContent - calling handleCancel from props');
+                        if (handleCancel) {
+                            handleCancel();
+                        }
+                    }}
                 />
-            )}
-
-            {/* Fallback Modal jika showConfirm tidak tersedia */}
-            {!showConfirm && (
+            ) : (
+                // Fallback modal lokal jika showConfirm tidak tersedia
                 <ConfirmModal 
                     isOpen={deleteModalOpen}
                     config={{
                         title: 'Deactivate User',
-                        message: selectedUser ? `Are you sure you want to deactivate "${selectedUser.full_name}"? User will not be able to access the system.` : '',
+                        message: selectedUser ? `Are you sure you want to deactivate "${selectedUser.full_name}"?` : '',
                         type: 'danger',
                         confirmText: 'Deactivate',
                         cancelText: 'Cancel',
                     }}
-                    onConfirm={handleConfirmDelete}
+                    onConfirm={() => {
+                        console.log('AccountContent - calling handleConfirmDelete (local)');
+                        handleConfirmDelete();
+                    }}
                     onCancel={() => {
+                        console.log('AccountContent - closing local modal');
                         setDeleteModalOpen(false);
                         toast('Deactivation cancelled', { icon: '⚠️' });
                     }}
