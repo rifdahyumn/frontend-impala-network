@@ -7,13 +7,15 @@ const memberTypeConfigs = {
             icon: User,
             fields: [
                 { key: 'full_name', label: 'Full Name', icon: User },
+                { key: 'nik', label: 'NIK', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
                 { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
                 { key: 'age', label: 'Age', icon: Clock },
                 { key: 'program_name', label: 'Program Name', icon: Award },
-                { key: 'reason_join_program', label: 'Reason Join Program', icon: Award }
+                { key: 'reason_join_program', label: 'Reason Join Program', icon: Award },
+                
             ]
         },
         {
@@ -58,6 +60,7 @@ const memberTypeConfigs = {
             icon: User,
             fields: [
                 { key: 'full_name', label: 'Full Name', icon: User },
+                { key: 'nik', label: 'NIK', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
@@ -98,6 +101,7 @@ const memberTypeConfigs = {
             icon: User,
             fields: [
                 { key: 'full_name', label: 'Full Name', icon: User },
+                { key: 'nik', label: 'NIK', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },
@@ -137,6 +141,7 @@ const memberTypeConfigs = {
             icon: User,
             fields: [
                 { key: 'full_name', label: 'Full Name', icon: User },
+                { key: 'nik', label: 'NIK', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
                 { key: 'gender', label: 'Gender', icon: User },

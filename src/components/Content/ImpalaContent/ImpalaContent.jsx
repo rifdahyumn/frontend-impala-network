@@ -158,7 +158,6 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
                 </CardContent>
             </Card>
 
-            {/* Edit Modal */}
             <EditMemberModal
                 isOpen={isEditModalOpen}
                 setIsOpen={setIsEditModalOpen}
