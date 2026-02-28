@@ -8,57 +8,53 @@ import ConfirmModal from "./ConfirmModal";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '';
 
-// Helper function untuk mendapatkan token
-const getAuthToken = () => {
-    return localStorage.getItem('token') || sessionStorage.getItem('token');
-};
+// const getAuthToken = () => {
+//     return localStorage.getItem('token') || sessionStorage.getItem('token');
+// };
 
-// Helper function untuk membuat request dengan autentikasi
-const fetchWithAuth = async (url, options = {}) => {
-    const token = getAuthToken();
+// const fetchWithAuth = async (url, options = {}) => {
+//     const token = getAuthToken();
     
-    if (!token) {
-        throw new Error('No authentication token found. Please login again.');
-    }
+//     if (!token) {
+//         throw new Error('No authentication token found. Please login again.');
+//     }
 
-    const defaultOptions = {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-        },
-    };
+//     const defaultOptions = {
+//         headers: {
+//             'Authorization': `Bearer ${token}`,
+//             'Content-Type': 'application/json',
+//         },
+//     };
 
-    try {
-        const response = await fetch(url, {
-            ...defaultOptions,
-            ...options,
-            headers: {
-                ...defaultOptions.headers,
-                ...options.headers,
-            },
-        });
+//     try {
+//         const response = await fetch(url, {
+//             ...defaultOptions,
+//             ...options,
+//             headers: {
+//                 ...defaultOptions.headers,
+//                 ...options.headers,
+//             },
+//         });
 
-        if (response.status === 401) {
-            // Token expired atau invalid
-            localStorage.removeItem('token');
-            sessionStorage.removeItem('token');
+//         if (response.status === 401) {
+//             localStorage.removeItem('token');
+//             sessionStorage.removeItem('token');
             
-            // Redirect ke halaman login
-            window.location.href = '/login';
-            throw new Error('Session expired. Please login again.');
-        }
+//             window.location.href = '/login';
+//             throw new Error('Session expired. Please login again.');
+//         }
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `Request failed with status ${response.status}`);
-        }
+//         if (!response.ok) {
+//             const errorData = await response.json().catch(() => ({}));
+//             throw new Error(errorData.message || `Request failed with status ${response.status}`);
+//         }
 
-        return await response.json();
-    } catch (error) {
-        console.error('Fetch error:', error);
-        throw error;
-    }
-};
+//         return await response.json();
+//     } catch (error) {
+//         console.error('Fetch error:', error);
+//         throw error;
+//     }
+// };
 
 const AccountContent = ({ 
     selectedUser, 
@@ -126,11 +122,9 @@ const AccountContent = ({
     };
 
     const handleDelete = () => {
-        console.log('AccountContent - handleDelete called');
         if (!selectedUser) return;
         
         if (showConfirm) {
-            console.log('AccountContent - calling showConfirm with delete action');
             showConfirm({
                 title: 'Deactivate User',
                 message: `Are you sure you want to deactivate "${selectedUser.full_name}"? User will not be able to access the system.`,
@@ -138,11 +132,9 @@ const AccountContent = ({
                 confirmText: 'Deactivate',
                 cancelText: 'Cancel',
                 onConfirm: async () => {
-                    console.log('AccountContent - onConfirm executing delete');
                     setDeleteLoading(true);
                     try {
                         if (onDelete) {
-                            console.log('AccountContent - calling onDelete with ID:', selectedUser.id);
                             await onDelete(selectedUser.id);
                             toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
                             
@@ -167,24 +159,20 @@ const AccountContent = ({
                     }
                 },
                 onCancel: () => {
-                    console.log('AccountContent - delete cancelled');
                     toast('Deactivation cancelled', { icon: '⚠️' });
                 }
             });
         } else {
-            console.log('AccountContent - showConfirm not available, using local modal');
             setDeleteModalOpen(true);
         }
     };
 
     const handleConfirmDelete = async () => {
-        console.log('AccountContent - handleConfirmDelete called');
         if (!selectedUser) return;
         
         setDeleteLoading(true);
         try {
             if (onDelete) {
-                console.log('AccountContent - calling onDelete from local modal');
                 await onDelete(selectedUser.id);
                 toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
                 
@@ -211,7 +199,6 @@ const AccountContent = ({
     };
 
     const handleActivate = () => {
-        console.log('AccountContent - handleActivate called');
         if (!selectedUser) return;
 
         if (showConfirm) {
@@ -222,7 +209,6 @@ const AccountContent = ({
                 confirmText: 'Activate',
                 cancelText: 'Cancel',
                 onConfirm: async () => {
-                    console.log('AccountContent - activate onConfirm executing');
                     setActivateLoading(true);
                     try {
                         if (onActivateUser) {
@@ -286,18 +272,15 @@ const AccountContent = ({
     const getAvatarUrl = (avatarPath) => {
         if (!avatarPath) return null;
         
-        // Jika sudah URL lengkap
         if (avatarPath.startsWith('http')) {
             return avatarPath;
         }
         
-        // Jika path sudah dimulai dengan /uploads/
         if (avatarPath.startsWith('/uploads/')) {
             const baseUrl = API_BASE_URL?.replace(/\/$/, '');
             return `${baseUrl}${avatarPath}`;
         }
         
-        // Format umum
         const baseUrl = API_BASE_URL?.replace(/\/$/, '');
         const path = avatarPath.startsWith('/') ? avatarPath : `/${avatarPath}`;
         return `${baseUrl}${path}`;
@@ -550,7 +533,6 @@ const AccountContent = ({
                                     Edit
                                 </Button>
 
-                                {/* Button Activate (muncul hanya untuk user Inactive) */}
                                 {selectedUser.status === 'Inactive' && (
                                     <Button
                                         onClick={handleActivate}
@@ -566,7 +548,6 @@ const AccountContent = ({
                                     </Button>
                                 )}
 
-                                {/* Button Deactivate (muncul hanya untuk user Active) */}
                                 {selectedUser.status === 'Active' && (
                                     <Button
                                         variant="outline"
@@ -591,27 +572,22 @@ const AccountContent = ({
                 </CardContent>
             </Card>
 
-            {/* Modal Konfirmasi - Gunakan props showConfirm jika ada, fallback ke lokal jika tidak */}
             {showConfirm ? (
-                // Gunakan props showConfirm dari parent
                 <ConfirmModal 
                     isOpen={isOpen}
                     config={config}
                     onConfirm={() => {
-                        console.log('AccountContent - calling handleConfirm from props');
                         if (handleConfirm) {
                             handleConfirm();
                         }
                     }}
                     onCancel={() => {
-                        console.log('AccountContent - calling handleCancel from props');
                         if (handleCancel) {
                             handleCancel();
                         }
                     }}
                 />
             ) : (
-                // Fallback modal lokal jika showConfirm tidak tersedia
                 <ConfirmModal 
                     isOpen={deleteModalOpen}
                     config={{
@@ -622,11 +598,9 @@ const AccountContent = ({
                         cancelText: 'Cancel',
                     }}
                     onConfirm={() => {
-                        console.log('AccountContent - calling handleConfirmDelete (local)');
                         handleConfirmDelete();
                     }}
                     onCancel={() => {
-                        console.log('AccountContent - closing local modal');
                         setDeleteModalOpen(false);
                         toast('Deactivation cancelled', { icon: '⚠️' });
                     }}

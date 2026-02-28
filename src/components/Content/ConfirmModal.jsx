@@ -1,9 +1,6 @@
 import { XCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react'
 
-const ConfirmModal = ({ isOpen, config, onConfirm, onCancel }) => {
-    console.log('ConfirmModal - isOpen:', isOpen);
-    console.log('ConfirmModal - config:', config);
-    
+const ConfirmModal = ({ isOpen, config, onConfirm, onCancel }) => {  
     if (!isOpen) return null
 
     if (!config) {
@@ -40,21 +37,15 @@ const ConfirmModal = ({ isOpen, config, onConfirm, onCancel }) => {
     const handleConfirmClick = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('🔴 ConfirmModal - Tombol Confirm DIKLIK!');
-        console.log('🔴 onConfirm exists:', !!onConfirm);
         
         if (onConfirm) {
-            console.log('🔴 Memanggil onConfirm...');
             onConfirm();
-        } else {
-            console.error('🔴 onConfirm tidak ditemukan!');
         }
     };
 
     const handleCancelClick = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('⚫ ConfirmModal - Tombol Cancel DIKLIK!');
         
         if (onCancel) {
             onCancel();

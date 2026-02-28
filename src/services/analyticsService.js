@@ -291,7 +291,7 @@ class AnalyticsService {
         } else if (Array.isArray(result.message)) {
             data = result.message;
         } else if (result.message && typeof result.message === 'object') {
-            const possibleKeys = ['data', 'items', 'records', 'monthlyData'];
+            const possibleKeys = ['data', 'items', 'records', 'monthlyData', 'revenue', 'revenueData', 'budget_offering'];
             for (const key of possibleKeys) {
                 if (result.message[key] && Array.isArray(result.message[key])) {
                     data = result.message[key];
@@ -300,40 +300,87 @@ class AnalyticsService {
             }
         }
 
-        if (!data || !Array.isArray(data)) {
-            throw new Error('Invalid monthly growth data structure received from API');
+        if (!data && result.message && result.message.revenue) {
+            if (Array.isArray(result.message.revenue)) {
+                data = result.message.revenue;
+            }
         }
+
+        if (!data && result.message && result.message.budget_offering) {
+            if (Array.isArray(result.message.budget_offering)) {
+                data = result.message.budget_offering;
+            }
+        }
+
+        if (!data && result.message && result.message.budget_offering) {
+            if (Array.isArray(result.message.budget_offering)) {
+                data = result.message.budget_offering;
+            }
+        }
+
         return data;
     }
 
     getMockMonthlyGrowthData(metric, year) {
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         
-        const baseData = months.map((month, index) => {
+        if (metric === 'revenue') {
+            return months.map((month, index) => {
+                const baseBudgetOffering = 50000000 + (index * 10000000); 
+                const growthRate = index > 0 ? (Math.random() * 20).toFixed(2) : '0';
+                
+                return {
+                    month: `${month} ${year}`,
+                    monthNumber: index + 1,
+                    newCount: Math.round(baseBudgetOffering * 0.1),
+                    totalCount: baseBudgetOffering,
+                    budget_offering: baseBudgetOffering,
+                    previous_budget: index > 0 ? baseBudgetOffering - Math.round(baseBudgetOffering * 0.1) : 0,
+                    growthRate: index > 0 ? `+${growthRate}%` : '0%',
+                    trend: index > 0 ? 'up' : 'stable'
+                };
+            });
+        }
+        
+        return months.map((month, index) => {
             const baseNew = Math.floor(Math.random() * 25) + 5;
             const baseTotal = 100 + (index * 20);
+            const growthValue = index > 0 ? (Math.random() * 15 + 5).toFixed(2) : '0';
+            const isPositive = Math.random() > 0.5;
             
             return {
                 month: `${month} ${year}`,
                 monthNumber: index + 1,
-                newCount: metric === 'revenue' ? baseNew * 10000 : baseNew,
-                totalCount: baseTotal + (metric === 'revenue' ? baseNew * 10000 : baseNew),
-                growthRate: index > 0 ? `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 15 + 5).toFixed(2)}%` : '0%',
-                trend: index > 0 ? (Math.random() > 0.5 ? 'up' : 'down') : 'stable'
+                newCount: baseNew,
+                totalCount: baseTotal + baseNew,
+                growthRate: index > 0 ? `${isPositive ? '+' : '-'}${growthValue}%` : '0%',
+                trend: index > 0 ? (isPositive ? 'up' : 'down') : 'stable'
             };
         });
+    }
+
+    formatRevenueData(revenueData) {
+        if (!revenueData || !Array.isArray(revenueData)) {
+            return [];
+        }
         
-        const multipliers = {
-            clients: 1,
-            programs: 0.7,
-            participants: 2,
-            revenue: 1
-        };
-        
-        return baseData.map(item => ({
-            ...item,
-            totalCount: Math.round(item.totalCount * (multipliers[metric] || 1))
+        return revenueData.map(item => ({
+            month: item.month,
+            newItems: item.newCount >= 0 ? `+${this.formatCurrency(item.newCount)}` : this.formatCurrency(item.newCount),
+            totalItems: item.budget_offering || item.totalCount || item.total || 0,
+            growthRate: item.growthRate || '0%',
+            trend: item.trend || 'stable',
+            rawData: item
         }));
+    }
+
+    formatCurrency(amount) {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount).replace('Rp', 'Rp ');
     }
 
     formatYearlyComparisonForFrontend(apiData, years) {
@@ -468,20 +515,61 @@ class AnalyticsService {
         return years;
     }
 
-    formatMonthlyGrowthForFrontend(data) {
+    formatMonthlyGrowthForFrontend(data, metric = null) {
         if (!data || !Array.isArray(data)) {
             return [];
         }
-
-        return data.map(item => ({
-            month: item.month,
-            newItems: item.newCount >= 0 ? `+${item.newCount}` : `${item.newCount}`,
-            totalItems: item.totalCount || item.total || 0,
-            growthRate: item.growthRate || '0%',
-            trend: item.trend || (item.growthRate?.startsWith('+') ? 'up' : 
-                   item.growthRate?.startsWith('-') ? 'down' : 'stable'),
-            rawData: item
-        }));
+        
+        if (metric === 'revenue') {
+            return data.map(item => {
+                if (item.isFuture) {
+                    return {
+                        month: item.month,
+                        newItems: null,
+                        totalItems: null,
+                        growthRate: null,
+                        trend: null,
+                        isFuture: true
+                    };
+                }
+                
+                let totalValue = item.budget_offering || item.totalCount || item.total || 0;
+                
+                return {
+                    month: item.month,
+                    newItems: item.newCount >= 0 
+                        ? `+${this.formatNumber(item.newCount, 'revenue')}` 
+                        : this.formatNumber(item.newCount, 'revenue'),
+                    totalItems: totalValue,
+                    growthRate: item.growthRate || '0%',
+                    trend: item.trend || 'stable',
+                    isFuture: false
+                };
+            });
+        }
+        
+        return data.map(item => {
+            if (item.isFuture) {
+                return {
+                    month: item.month,
+                    newItems: null,
+                    totalItems: null,
+                    growthRate: null,
+                    trend: null,
+                    isFuture: true
+                };
+            }
+            
+            return {
+                month: item.month,
+                newItems: item.newCount >= 0 ? `+${item.newCount}` : `${item.newCount}`,
+                totalItems: item.totalCount || item.total || 0,
+                growthRate: item.growthRate || '0%',
+                trend: item.trend || (item.growthRate?.startsWith('+') ? 'up' : 
+                    item.growthRate?.startsWith('-') ? 'down' : 'stable'),
+                isFuture: false
+            };
+        });
     }
 
     getMockYearlyComparisonDataWithQuarterly() {

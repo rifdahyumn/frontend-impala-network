@@ -245,11 +245,8 @@ export const useUsers = () => {
     };
 
     const deleteUser = async (userId) => {
-        console.log('8. useUser.deleteUser dipanggil dengan ID:', userId);
         try {
-            console.log('9. Memanggil userService.deleteUser');
             await userService.deleteUser(userId);
-            console.log('10. userService.deleteUser berhasil');
             toast.success('User deleted successfully');
             
             if (isMounted.current) {
@@ -269,16 +266,13 @@ export const useUsers = () => {
     };
 
 const activateUser = async (userId) => {
-    console.log('🔍 [useUser] activateUser dipanggil dengan ID:', userId);
     
     try {
         if (!userId) {
             throw new Error('User ID is required');
         }
         
-        console.log('✅ Memanggil userService.activateUser');
         const result = await userService.activateUser(userId);
-        console.log('✅ userService.activateUser berhasil:', result);
         
         toast.success(result?.message || 'User activated successfully');
         
@@ -299,11 +293,9 @@ const activateUser = async (userId) => {
         return result;
         
     } catch (error) {
-        console.error('❌ Error di activateUser hook:', error);
+        console.error('Error di activateUser hook:', error);
         
-        // Cek apakah error karena response bukan JSON tapi statusnya sukses
         if (error.message.includes('Unexpected token') && error.response?.status === 200) {
-            console.log('✅ Status 200, menganggap sukses');
             toast.success('User activated successfully');
             
             if (isMounted.current) {

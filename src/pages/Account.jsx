@@ -56,7 +56,7 @@ const Account = () => {
         addUser, 
         updateUser, 
         deleteUser, 
-        activateUser,
+        // activateUser,
     } = useUsers();
 
     const showConfirm = (config) => {
@@ -613,18 +613,10 @@ const userStats = useMemo(() => {
     };
 
 const handleDeleteUser = async (userId) => {
-    console.log('1. handleDeleteUser dipanggil dengan userId:', userId);
-    console.log('2. selectedUser:', selectedUser);
-    
     if (!selectedUser) return;
-
-    // HAPUS showConfirm DARI SINI!
-    // LANGSUNG PANGGIL deleteUser
-    console.log('3. LANGSUNG Memanggil deleteUser dengan ID:', userId);
     
     try {
         await deleteUser(userId);
-        console.log('4. deleteUser berhasil');
         
         setSelectedUser(null);
         toast.success('User deleted successfully');
@@ -640,14 +632,8 @@ const handleDeleteUser = async (userId) => {
     }
 };
 
-const handleActivate = async (userId) => {
-    console.log('🔍 [Account] handleActivate dipanggil dengan ID:', userId);
-    
-    try {
-        console.log('✅ Memanggil activateUser');
-        const result = await activateUser(userId);
-        console.log('✅ activateUser berhasil:', result);
-        
+const handleActivate = async () => {  
+    try {        
         if (refreshUsers) {
             await refreshUsers();
         }
@@ -655,11 +641,9 @@ const handleActivate = async (userId) => {
         toast.success('User activated successfully');
         
     } catch (error) {
-        console.error('❌ Error activating user from parent:', error);
+        console.error('Error activating user from parent:', error);
         
-        // Cek apakah error karena response bukan JSON tapi statusnya sukses
         if (error.message?.includes('Unexpected token') && error.response?.status === 200) {
-            console.log('✅ Status 200, menganggap sukses');
             toast.success('User activated successfully');
             
             if (refreshUsers) {

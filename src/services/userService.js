@@ -390,7 +390,7 @@ class UserService {
                 }
 
                 const dataToSend = Object.fromEntries(
-                    Object.entries(userData).filter(([_, value]) => 
+                    Object.entries(userData).filter(([value]) => 
                         value !== null && value !== undefined && value !== ''
                     )
                 );
@@ -423,7 +423,7 @@ class UserService {
             let dataToSend = userData
             if (!isFormData && typeof userData === 'object') {
                 dataToSend = Object.fromEntries(
-                    Object.entries(userData).filter(([_, value]) => 
+                    Object.entries(userData).filter(([value]) => 
                         value !== null && value !== undefined && value !== ''
                     )
                 )
@@ -435,7 +435,8 @@ class UserService {
             
             if (isFormData) {
                 let hasEntries = false
-                for (let pair of userData.entries()) {
+                // eslint-disable-next-line no-empty-pattern
+                for (let {} of userData.entries()) {
                     hasEntries = true
                     break
                 }
@@ -525,14 +526,11 @@ class UserService {
     }
 
     async deleteUser(userId) {
-        console.log('12. UserService.deleteUser dipanggil dengan ID:', userId);
         try {
             if (!userId) {
                 throw new Error('User ID is required')
             }
-            console.log('13. Memanggil makeRequest dengan method DELETE');
-            const result = await this.makeRequest('delete', `/user/${userId}`)
-        console.log('14. Response dari makeRequest:', result); 
+
             return await this.makeRequest('delete', `/user/${userId}`)
         } catch (error) {
              console.error('15. Error di UserService.deleteUser:', error)
@@ -540,40 +538,30 @@ class UserService {
         }
     }
 
-async activateUser(userId) {
-    console.log('🔍 [UserService] activateUser dipanggil dengan ID:', userId);
-    
+async activateUser(userId) {   
     try {
         if (!userId) {
             throw new Error('User ID is required');
         }
-        
-        console.log('✅ Memanggil makeRequest dengan method POST (coba ini)');
-        // Beberapa API menggunakan POST untuk activate
+
         const result = await this.makeRequest('post', `/user/${userId}/activate`);
         
-        console.log('✅ Response dari makeRequest:', result);
         return result;
         
     } catch (error) {
-        console.error('❌ UserService.activateUser failed:', error);
+        console.error(' UserService.activateUser failed:', error);
         throw error;
     }
 }
 
-async deactivateUser(userId) {
-    console.log('🔍 [UserService] deactivateUser dipanggil dengan ID:', userId);
-    
+async deactivateUser(userId) {  
     try {
         if (!userId) {
             throw new Error('User ID is required');
         }
         
-        console.log('✅ Memanggil makeRequest dengan method PUT');
-        // GANTI JUGA UNTUK DEACTIVATE
         const result = await this.makeRequest('put', `/user/${userId}/deactivate`);
         
-        console.log('✅ Response dari makeRequest:', result);
         return result;
         
     } catch (error) {

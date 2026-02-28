@@ -26,8 +26,10 @@ export const useMonthlyGrowth = (initialMetric = 'clients', initialYear = null) 
         
         try {
             const result = await AnalyticsService.fetchMonthlyGrowthData(selectedMetric, selectedYear)
+
+            let dataToFormat = result.data || []
             
-            const formatted = AnalyticsService.formatMonthlyGrowthForFrontend(result.data, selectedMetric)
+            const formatted = AnalyticsService.formatMonthlyGrowthForFrontend(dataToFormat, selectedMetric)
             
             setGrowthData(formatted)
             setMetadata(result.metadata || {})
@@ -81,6 +83,9 @@ export const useMonthlyGrowth = (initialMetric = 'clients', initialYear = null) 
     }, [fetchData])
 
     const formatNumber = useCallback((number) => {
+        if (number === null || number === undefined) {
+            return '-'
+        }
         return AnalyticsService.formatNumber(number, selectedMetric)
     }, [selectedMetric])
 

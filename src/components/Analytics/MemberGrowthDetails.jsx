@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "../ui/button"
 import { Skeleton } from "../ui/skeleton"
 import { useMonthlyGrowth } from "../../hooks/useMonthlyGrowth"
+import { useEffect } from "react"
 
 const MemberGrowthDetails = () => {
     const {
@@ -16,7 +17,6 @@ const MemberGrowthDetails = () => {
         loading,
         setSelectedMetric,
         setSelectedYear,
-        handleYearChange,
         refreshData,
         formatNumber,
     } = useMonthlyGrowth()
@@ -78,13 +78,17 @@ const MemberGrowthDetails = () => {
     const currentMetric = metricsConfig[selectedMetric]
     const MetricIcon = currentMetric.icon
 
+    useEffect(() => {
+    if (selectedMetric === 'revenue') {
+        
+        if (growthData.length === 0) {
+        console.warn('No revenue data available');
+        }
+    }
+    }, [selectedMetric, growthData]);
+
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                
-                
-            </div>
-            
             <Card>
                 <CardHeader className='pb-4'>
                     <CardTitle className='flex items-center justify-between'>
@@ -131,7 +135,7 @@ const MemberGrowthDetails = () => {
                             </Select>
                             
                             <div className="flex items-center gap-2">
-                                <Button
+                                {/* <Button
                                     variant='outline'
                                     size='icon'
                                     onClick={() => handleYearChange(-1)}
@@ -152,7 +156,7 @@ const MemberGrowthDetails = () => {
                                     disabled={selectedYear >= new Date().getFullYear()}
                                 >
                                     <ChevronRight className="h-4 w-4" />
-                                </Button>
+                                </Button> */}
                                 
                                 <Select
                                     value={selectedYear.toString()}
@@ -208,26 +212,42 @@ const MemberGrowthDetails = () => {
                                                 {row.month}
                                             </TableCell>
                                             <TableCell>
-                                                <Badge
-                                                    variant={getNewItemsVariant(row.newItems)}
-                                                    className='font-mono text-xs'
-                                                >
-                                                    {row.newItems}
-                                                </Badge>
+                                                {row.newItems !== null && row.newItems !== undefined ? (
+                                                    <Badge
+                                                        variant={getNewItemsVariant(row.newItems)}
+                                                        className='font-mono text-xs'
+                                                    >
+                                                        {row.newItems}
+                                                    </Badge>
+                                                ) : (
+                                                    <span className="text-gray-400">-</span>
+                                                )}
                                             </TableCell>
                                             <TableCell className='font-medium text-gray-700'>
-                                                {formatNumber(row.totalItems)}
+                                                {row.totalItems !== null && row.totalItems !== undefined ? (
+                                                    formatNumber(row.totalItems)
+                                                ) : (
+                                                    <span className="text-gray-400">-</span>
+                                                )}
                                             </TableCell>
                                             <TableCell>
-                                                <Badge
-                                                    variant={getGrowthVariant(row.growthRate)}
-                                                    className='font-mono text-xs'
-                                                >
-                                                    {row.growthRate}
-                                                </Badge>
+                                                {row.growthRate !== null && row.growthRate !== undefined ? (
+                                                    <Badge
+                                                        variant={getGrowthVariant(row.growthRate)}
+                                                        className='font-mono text-xs'
+                                                    >
+                                                        {row.growthRate}
+                                                    </Badge>
+                                                ) : (
+                                                    <span className="text-gray-400">-</span>
+                                                )}
                                             </TableCell>
                                             <TableCell>
-                                                {getTrendIcon(row.trend)}
+                                                {row.trend !== null && row.trend !== undefined ? (
+                                                    getTrendIcon(row.trend)
+                                                ) : (
+                                                    <span className="text-gray-400">-</span>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))}
