@@ -97,7 +97,7 @@ const renderProgramField = (field, formData, error, value, isEditMode, handleInp
     );
 };
 
-const renderSelectField = (field, value, error, formData, provinces, regencies, districts, villages, loadingLocation, handleSelectChange, isEditMode) => {
+const renderSelectField = (field, value, error, formData, provinces, regencies, districts, villages, loadingLocation, handleSelectChange) => {
     let options = field.options || [];
     
     if (field.name === 'province_id') {
@@ -110,9 +110,7 @@ const renderSelectField = (field, value, error, formData, provinces, regencies, 
         options = villages.map(v => ({ value: v.value, label: v.label }));
     }
 
-    const isLocationField = ['province_id', 'regency_id', 'district_id', 'village_id'].includes(field.name)
-    const isDisabledByEditMode = isEditMode && isLocationField
-    const isDisabled = isDisabledByEditMode || field.disabled || loadingLocation[field.name.replace('_id', '')] ||
+    const isDisabled = field.disabled || loadingLocation[field.name.replace('_id', '')] ||
         (field.name === 'regency_id' && !formData.province_id) ||
         (field.name === 'district_id' && !formData.regency_id) ||
         (field.name === 'village_id' && !formData.district_id);
