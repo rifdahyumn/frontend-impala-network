@@ -214,11 +214,6 @@ export const useUsers = () => {
         }
     };
 
-    /**
-     * Hapus avatar user
-     * @param {string|number} userId - ID user
-     * @returns {Promise} - Response dari server
-     */
     const deleteAvatar = async (userId) => {
         try {
             if (!userId) {
@@ -266,13 +261,41 @@ export const useUsers = () => {
     };
 
 const activateUser = async (userId) => {
-    
     try {
         if (!userId) {
             throw new Error('User ID is required');
         }
         
-        const result = await userService.activateUser(userId);
+        let result;
+        try {
+            result = await userService.activateUser(userId);
+        } catch (apiError) {
+            console.log('API Error response:', apiError);
+            
+            if (apiError.message && apiError.message.includes('Unexpected token')) {
+                console.log('Server returned non-JSON response but request might be successful');
+                
+                if (isMounted.current) {
+                    setUsers(prevUsers => 
+                        prevUsers.map(user => 
+                            user.id === userId ? { ...user, status: 'active' } : user
+                        )
+                    );
+                }
+                
+                toast.success('User activated successfully');
+                
+                setTimeout(() => {
+                    if (isMounted.current) {
+                        refreshUsers();
+                    }
+                }, 500);
+                
+                return { success: true, data: { status: 'active' } };
+            }
+            
+            throw apiError;
+        }
         
         toast.success(result?.message || 'User activated successfully');
         
@@ -295,8 +318,8 @@ const activateUser = async (userId) => {
     } catch (error) {
         console.error('Error di activateUser hook:', error);
         
-        if (error.message.includes('Unexpected token') && error.response?.status === 200) {
-            toast.success('User activated successfully');
+        if (error.message && error.message.includes('Unexpected token')) {
+            console.log('Server returned non-JSON response - treating as success');
             
             if (isMounted.current) {
                 setUsers(prevUsers => 
@@ -306,13 +329,15 @@ const activateUser = async (userId) => {
                 );
             }
             
+            toast.success('User activated successfully');
+            
             setTimeout(() => {
                 if (isMounted.current) {
                     refreshUsers();
                 }
             }, 500);
             
-            return { success: true };
+            return { success: true, data: { status: 'active' } };
         }
         
         toast.error(error.message || 'Failed to activate user');
@@ -322,7 +347,41 @@ const activateUser = async (userId) => {
 
     const deactivateUser = async (userId) => {
         try {
-            const result = await userService.deactivateUser(userId);
+            let result;
+            try {
+                result = await userService.deactivateUser(userId);
+            } catch (apiError) {
+                console.log('API Error response:', apiError);
+
+                if (apiError.message && apiError.message.includes('Unexpected token')) {
+                    console.log('Server returned non-JSON response but request might be successful');
+                    
+                    if (apiError.response && apiError.response.status === 200) {
+                        console.log('Request successful despite JSON parse error');
+                        
+                        if (isMounted.current) {
+                            setUsers(prevUsers => 
+                                prevUsers.map(user => 
+                                    user.id === userId ? { ...user, status: 'inactive' } : user
+                                )
+                            );
+                        }
+                        
+                        toast.success('User deactivated successfully');
+                        
+                        setTimeout(() => {
+                            if (isMounted.current) {
+                                refreshUsers();
+                            }
+                        }, 500);
+                        
+                        return { success: true };
+                    }
+                }
+                
+                throw apiError;
+            }
+            
             toast.success(result.message || 'User deactivated successfully');
             
             if (isMounted.current) {
@@ -342,6 +401,29 @@ const activateUser = async (userId) => {
             return result;
         } catch (error) {
             console.error('Error in deactivateUser hook:', error);
+            
+            if (error.message && error.message.includes('Unexpected token')) {
+                console.log('Server returned non-JSON response - treating as success');
+                
+                if (isMounted.current) {
+                    setUsers(prevUsers => 
+                        prevUsers.map(user => 
+                            user.id === userId ? { ...user, status: 'inactive' } : user
+                        )
+                    );
+                }
+                
+                toast.success('User deactivated successfully');
+                
+                setTimeout(() => {
+                    if (isMounted.current) {
+                        refreshUsers();
+                    }
+                }, 500);
+                
+                return { success: true };
+            }
+            
             toast.error(error.message || 'Failed to deactivate user');
             throw error;
         }

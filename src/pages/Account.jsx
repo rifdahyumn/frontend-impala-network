@@ -56,7 +56,8 @@ const Account = () => {
         addUser, 
         updateUser, 
         deleteUser, 
-        // activateUser,
+        activateUser,
+        deactivateUser,
     } = useUsers();
 
     const showConfirm = (config) => {
@@ -325,85 +326,85 @@ const Account = () => {
         return count;
     };
 
-const userStats = useMemo(() => {
-    if (loading && isInitialLoad) {
+    const userStats = useMemo(() => {
+        if (loading && isInitialLoad) {
+            return [
+                {
+                    title: "Total Users",
+                    value: "0",
+                    subtitle: "Loading...",
+                    percentage: "0%",
+                    trend: "neutral",
+                    period: "Current",
+                    icon: Users,
+                    color: "blue",
+                    description: "Fetching data...",
+                    loading: true
+                },
+                {
+                    title: "Active Users",
+                    value: "0",
+                    subtitle: "",
+                    percentage: "0%",
+                    trend: "neutral",
+                    period: "Current", 
+                    icon: UserCheck,
+                    color: "green",
+                    description: "Fetching data...",
+                    loading: true
+                }
+            ];
+        }
+
+        const totalUsers = filteredUsers.length;
+        const activeUsers = filteredUsers.filter(user => 
+            user.status?.toLowerCase() === 'active' 
+        ).length;
+        
+        const activePercentage = totalUsers > 0 
+            ? Math.round((activeUsers / totalUsers) * 100).toString()
+            : "0";
+
+        const totalUnfiltered = users.length;
+        const filterPercentage = totalUnfiltered > 0 && getTotalActiveCriteria() > 0
+            ? Math.round((totalUsers / totalUnfiltered) * 100).toString()
+            : null;
+
+        let totalDescription = "Current view total";
+        if (getTotalActiveCriteria() > 0 && filterPercentage) {
+            totalDescription = `Showing ${filterPercentage}% of all users`;
+        } else if (getTotalActiveCriteria() > 0) {
+            totalDescription = "Filtered view";
+        }
+
         return [
             {
                 title: "Total Users",
-                value: "0",
-                subtitle: "Loading...",
-                percentage: "0%",
+                value: totalUsers.toString(),
+                percentage: "100%",
                 trend: "neutral",
                 period: "Current",
                 icon: Users,
                 color: "blue",
-                description: "Fetching data...",
-                loading: true
+                subtitle: filters.position ? getOriginalLabel(filters.position, positionOptions) : "",
+                description: totalDescription,
+                isFiltered: getTotalActiveCriteria() > 0,
+                loading: false
             },
             {
                 title: "Active Users",
-                value: "0",
+                value: activeUsers.toString(),
                 subtitle: "",
-                percentage: "0%",
-                trend: "neutral",
+                percentage: `${activePercentage}%`,
+                trend: parseInt(activePercentage) > 70 ? "up" : "down",
                 period: "Current", 
                 icon: UserCheck,
                 color: "green",
-                description: "Fetching data...",
-                loading: true
+                description: `${activePercentage}% of current view`,
+                loading: false
             }
         ];
-    }
-
-    const totalUsers = filteredUsers.length;
-    const activeUsers = filteredUsers.filter(user => 
-        user.status?.toLowerCase() === 'active' 
-    ).length;
-    
-    const activePercentage = totalUsers > 0 
-        ? Math.round((activeUsers / totalUsers) * 100).toString()
-        : "0";
-
-    const totalUnfiltered = users.length;
-    const filterPercentage = totalUnfiltered > 0 && getTotalActiveCriteria() > 0
-        ? Math.round((totalUsers / totalUnfiltered) * 100).toString()
-        : null;
-
-    let totalDescription = "Current view total";
-    if (getTotalActiveCriteria() > 0 && filterPercentage) {
-        totalDescription = `Showing ${filterPercentage}% of all users`;
-    } else if (getTotalActiveCriteria() > 0) {
-        totalDescription = "Filtered view";
-    }
-
-    return [
-        {
-            title: "Total Users",
-            value: totalUsers.toString(),
-            percentage: "100%",
-            trend: "neutral",
-            period: "Current",
-            icon: Users,
-            color: "blue",
-            subtitle: filters.position ? getOriginalLabel(filters.position, positionOptions) : "",
-            description: totalDescription,
-            isFiltered: getTotalActiveCriteria() > 0,
-            loading: false
-        },
-        {
-            title: "Active Users",
-            value: activeUsers.toString(),
-            subtitle: "",
-            percentage: `${activePercentage}%`,
-            trend: parseInt(activePercentage) > 70 ? "up" : "down",
-            period: "Current", 
-            icon: UserCheck,
-            color: "green",
-            description: `${activePercentage}% of current view`,
-            loading: false
-        }
-    ];
-}, [filteredUsers, filters.position, positionOptions, users.length, getTotalActiveCriteria, loading, isInitialLoad]);
+    }, [filteredUsers, filters.position, positionOptions, users.length, getTotalActiveCriteria, loading, isInitialLoad]);
 
     const applyAllFilters = useCallback(() => {
         if (!users || !Array.isArray(users)) {
@@ -612,68 +613,41 @@ const userStats = useMemo(() => {
         }
     };
 
-const handleDeleteUser = async (userId) => {
-    if (!selectedUser) return;
-    
+const handleActivateUser = async (userId) => {
     try {
-        await deleteUser(userId);
+        const result = await activateUser(userId);
         
-        setSelectedUser(null);
-        toast.success('User deleted successfully');
-        
-        if (refreshUsers) {
-            await refreshUsers();
+        if (selectedUser && selectedUser.id === userId) {
+            setSelectedUser(prev => ({
+                ...prev,
+                status: 'Active'
+            }));
         }
         
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return result;
     } catch (error) {
-        console.error('5. Error di deleteUser:', error);
-        toast.error(error.message || 'Failed to delete user');
-    }
-};
-
-const handleActivate = async () => {  
-    try {        
-        if (refreshUsers) {
-            await refreshUsers();
-        }
-        
-        toast.success('User activated successfully');
-        
-    } catch (error) {
-        console.error('Error activating user from parent:', error);
-        
-        if (error.message?.includes('Unexpected token') && error.response?.status === 200) {
-            toast.success('User activated successfully');
-            
-            if (refreshUsers) {
-                await refreshUsers();
-            }
-            return;
-        }
-        
-        toast.error(error.message || 'Failed to activate user');
+        console.error('Error activating user:', error);
         throw error;
     }
 };
 
-    useEffect(() => {
-        if (selectedUser && users.length > 0) {
-            const currentSelected = users.find(member => member.id === selectedUser.id);
-            if (currentSelected) {
-                setSelectedUser(currentSelected);
-            } else {
-                setSelectedUser(null);
-            }
+const handleDeactivateUser = async (userId) => {
+    try {
+        const result = await deactivateUser(userId);
+        
+        if (selectedUser && selectedUser.id === userId) {
+            setSelectedUser(prev => ({
+                ...prev,
+                status: 'Inactive'
+            }));
         }
-    }, [users, selectedUser?.id]);
-
-    const handleRefresh = useCallback(() => {
-        if (refreshUsers) {
-            refreshUsers();
-        }
-        handleClearAllFilters();
-    }, [refreshUsers]);
+        
+        return result;
+    } catch (error) {
+        console.error('Error deactivating user:', error);
+        throw error;
+    }
+};
 
     const handlePageChange = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -798,7 +772,7 @@ const handleActivate = async () => {
                                             <Button 
                                                 variant="outline" 
                                                 size="sm" 
-                                                onClick={handleRefresh}
+                                                onClick={refreshUsers}
                                                 className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
                                             >
                                                 <Loader2 className="h-3 w-3" />
@@ -821,7 +795,6 @@ const handleActivate = async () => {
                                     />
                                 </div>
                                 
-                        
                                 <div className="relative">
                                     <Button 
                                         variant={getActiveFiltersCount() > 0 ? "default" : "outline"}
@@ -871,7 +844,6 @@ const handleActivate = async () => {
                                                         )}
                                                     </div>
                                                     
-                                                    {/* All Positions */}
                                                     <div className="mb-2">
                                                         <button
                                                             className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
@@ -1231,8 +1203,8 @@ const handleActivate = async () => {
                     <AccountContent
                         selectedUser={selectedUser}
                         onOpenEditModal={handleOpenEditModal}
-                        onDelete={handleDeleteUser}
-                        onActivateUser={handleActivate}
+                        onDelete={handleDeactivateUser}
+                        onActivateUser={handleActivateUser} 
                         detailTitle={tableConfig.detailTitle}
                         onUserUpdated={() => refreshUsers?.()}
                         onClientDeleted={() => {

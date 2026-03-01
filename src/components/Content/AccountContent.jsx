@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
 import { Edit, Trash2, User, UserCog, Mail, Phone, Shield, History, CheckCircle, Lock, Image, EyeOff, Eye, Loader2, UserCheck, AlertTriangle } from "lucide-react";
@@ -7,54 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import ConfirmModal from "./ConfirmModal";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '';
-
-// const getAuthToken = () => {
-//     return localStorage.getItem('token') || sessionStorage.getItem('token');
-// };
-
-// const fetchWithAuth = async (url, options = {}) => {
-//     const token = getAuthToken();
-    
-//     if (!token) {
-//         throw new Error('No authentication token found. Please login again.');
-//     }
-
-//     const defaultOptions = {
-//         headers: {
-//             'Authorization': `Bearer ${token}`,
-//             'Content-Type': 'application/json',
-//         },
-//     };
-
-//     try {
-//         const response = await fetch(url, {
-//             ...defaultOptions,
-//             ...options,
-//             headers: {
-//                 ...defaultOptions.headers,
-//                 ...options.headers,
-//             },
-//         });
-
-//         if (response.status === 401) {
-//             localStorage.removeItem('token');
-//             sessionStorage.removeItem('token');
-            
-//             window.location.href = '/login';
-//             throw new Error('Session expired. Please login again.');
-//         }
-
-//         if (!response.ok) {
-//             const errorData = await response.json().catch(() => ({}));
-//             throw new Error(errorData.message || `Request failed with status ${response.status}`);
-//         }
-
-//         return await response.json();
-//     } catch (error) {
-//         console.error('Fetch error:', error);
-//         throw error;
-//     }
-// };
 
 const AccountContent = ({ 
     selectedUser, 
@@ -121,6 +73,52 @@ const AccountContent = ({
         }
     };
 
+    const handleActivate = () => {
+        console.log('handleActivate called for user:', selectedUser);
+        if (!selectedUser) return;
+
+        if (showConfirm) {
+            showConfirm({
+                title: 'Activate User',
+                message: `Are you sure you want to activate "${selectedUser.full_name}"?`,
+                type: 'info',
+                confirmText: 'Activate',
+                cancelText: 'Cancel',
+                onConfirm: async () => {
+                    console.log('Activate confirmed, calling API...');
+                    setActivateLoading(true);
+                    
+                    try {
+                        if (onActivateUser) {
+                            const result = await onActivateUser(selectedUser.id);
+                            console.log('Activation API result:', result);
+                            
+                            toast.success(`User "${selectedUser.full_name}" activated successfully`);
+                            
+                            if (onUserUpdated) {
+                                console.log('Calling onUserUpdated to refresh data');
+                                try {
+                                    await onUserUpdated();
+                                    console.log('onUserUpdated completed successfully');
+                                } catch (refreshError) {
+                                    console.error('Error in onUserUpdated:', refreshError);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error activating user:', error);
+                        toast.error(error.message || 'Failed to activate user');
+                    } finally {
+                        setActivateLoading(false);
+                    }
+                },
+                onCancel: () => {
+                    toast('Activation cancelled', { icon: '⚠️' });
+                }
+            });
+        }
+    };
+
     const handleDelete = () => {
         if (!selectedUser) return;
         
@@ -133,13 +131,20 @@ const AccountContent = ({
                 cancelText: 'Cancel',
                 onConfirm: async () => {
                     setDeleteLoading(true);
+                    
                     try {
                         if (onDelete) {
-                            await onDelete(selectedUser.id);
+                            const result = await onDelete(selectedUser.id);
+                            console.log('Deactivation API result:', result);
+                            
                             toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
                             
                             if (onUserUpdated) {
-                                onUserUpdated();
+                                try {
+                                    await onUserUpdated();
+                                } catch (refreshError) {
+                                    console.error('Error in onUserUpdated:', refreshError);
+                                }
                             }
                             
                             if (onClientDeleted) {
@@ -148,12 +153,7 @@ const AccountContent = ({
                         }
                     } catch (error) {
                         console.error('Error deactivating user:', error);
-                        
-                        if (error.message?.includes('401') || error.message?.includes('unauthorized') || error.message?.includes('Session expired')) {
-                            toast.error('Your session has expired. Please login again.');
-                        } else {
-                            toast.error(error.message || 'Failed to deactivate user');
-                        }
+                        toast.error(error.message || 'Failed to deactivate user');
                     } finally {
                         setDeleteLoading(false);
                     }
@@ -171,13 +171,14 @@ const AccountContent = ({
         if (!selectedUser) return;
         
         setDeleteLoading(true);
+        
         try {
             if (onDelete) {
                 await onDelete(selectedUser.id);
                 toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
                 
                 if (onUserUpdated) {
-                    onUserUpdated();
+                    await onUserUpdated();
                 }
                 
                 if (onClientDeleted) {
@@ -186,81 +187,10 @@ const AccountContent = ({
             }
         } catch (error) {
             console.error('Error deactivating user:', error);
-            
-            if (error.message?.includes('401') || error.message?.includes('unauthorized') || error.message?.includes('Session expired')) {
-                toast.error('Your session has expired. Please login again.');
-            } else {
-                toast.error(error.message || 'Failed to deactivate user');
-            }
+            toast.error(error.message || 'Failed to deactivate user');
         } finally {
             setDeleteLoading(false);
             setDeleteModalOpen(false);
-        }
-    };
-
-    const handleActivate = () => {
-        if (!selectedUser) return;
-
-        if (showConfirm) {
-            showConfirm({
-                title: 'Activate User',
-                message: `Are you sure you want to activate "${selectedUser.full_name}"?`,
-                type: 'info',
-                confirmText: 'Activate',
-                cancelText: 'Cancel',
-                onConfirm: async () => {
-                    setActivateLoading(true);
-                    try {
-                        if (onActivateUser) {
-                            await onActivateUser(selectedUser.id);
-                            toast.success(`User "${selectedUser.full_name}" activated successfully`);
-                            
-                            if (onUserUpdated) {
-                                onUserUpdated();
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error activating user:', error);
-                        
-                        if (error.message?.includes('401') || error.message?.includes('unauthorized') || error.message?.includes('Session expired')) {
-                            toast.error('Your session has expired. Please login again.');
-                        } else {
-                            toast.error(error.message || 'Failed to activate user');
-                        }
-                    } finally {
-                        setActivateLoading(false);
-                    }
-                },
-                onCancel: () => {
-                    toast('Activation cancelled', { icon: '⚠️' });
-                }
-            });
-        } else {
-            if (!window.confirm(`Are you sure you want to activate user ${selectedUser.full_name}?`)) {
-                return;
-            }
-            
-            setActivateLoading(true);
-            if (onActivateUser) {
-                onActivateUser(selectedUser.id)
-                    .then(() => {
-                        toast.success(`User "${selectedUser.full_name}" activated successfully`);
-                        if (onUserUpdated) {
-                            onUserUpdated();
-                        }
-                    })
-                    .catch((error) => {
-                        console.error('Error activating user:', error);
-                        if (error.message?.includes('401') || error.message?.includes('unauthorized') || error.message?.includes('Session expired')) {
-                            toast.error('Your session has expired. Please login again.');
-                        } else {
-                            toast.error(error.message || 'Failed to activate user');
-                        }
-                    })
-                    .finally(() => {
-                        setActivateLoading(false);
-                    });
-            }
         }
     };
 
@@ -326,13 +256,12 @@ const AccountContent = ({
         }
         
         if (key === 'status') {
-            const status = value?.toLowerCase();
+            const status = value?.toString().toLowerCase();
             if (status === 'active') {
                 return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Active</span>;
-            } else if (status === 'inactive') {
+            } else {
                 return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">Inactive</span>;
             }
-            return value;
         }
         
         if (key === 'role') {
@@ -456,6 +385,11 @@ const AccountContent = ({
         );
     };
 
+    console.log('Rendering with selectedUser:', selectedUser?.full_name);
+    console.log('Status:', selectedUser?.status);
+    console.log('Should show Activate button:', selectedUser?.status !== 'Active' && selectedUser?.status !== 'active');
+    console.log('Should show Deactivate button:', selectedUser?.status === 'Active' || selectedUser?.status === 'active');
+
     if (!selectedUser) {
         return (
             <Card>
@@ -483,14 +417,13 @@ const AccountContent = ({
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>{detailTitle || 'User Details'}</CardTitle>
                     <div className="flex items-center gap-2">
-                        {selectedUser.status === 'Inactive' && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
-                                Inactive
-                            </span>
-                        )}
-                        {selectedUser.status === 'Active' && (
+                        {selectedUser.status === 'Active' || selectedUser.status === 'active' ? (
                             <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
                                 Active
+                            </span>
+                        ) : (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
+                                Inactive
                             </span>
                         )}
                     </div>
@@ -533,7 +466,8 @@ const AccountContent = ({
                                     Edit
                                 </Button>
 
-                                {selectedUser.status === 'Inactive' && (
+                                {/* Tombol untuk user yang tidak aktif - ACTIVATE */}
+                                {selectedUser.status !== 'Active' && selectedUser.status !== 'active' && (
                                     <Button
                                         onClick={handleActivate}
                                         disabled={activateLoading}
@@ -548,7 +482,8 @@ const AccountContent = ({
                                     </Button>
                                 )}
 
-                                {selectedUser.status === 'Active' && (
+                                {/* Tombol untuk user yang aktif - DEACTIVATE */}
+                                {(selectedUser.status === 'Active' || selectedUser.status === 'active') && (
                                     <Button
                                         variant="outline"
                                         size="sm"
