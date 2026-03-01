@@ -145,12 +145,19 @@ class ClientService {
                 throw new Error('Full name and email are required');
             }
 
-            if (clientData.gender) {
-                const genderLower = clientData.gender.toLowerCase().trim();
+            const dataToSend = { ...clientData }
+            delete dataToSend.existing_programs
+
+            if (dataToSend.logo_partner instanceof File) {
+                throw new Error('Logo must be uploaded first. Please upload logo separately.');
+            }
+
+            if (dataToSend.gender) {
+                const genderLower = dataToSend.gender.toLowerCase().trim();
                 if (genderLower.includes('male') || genderLower.includes('laki') || genderLower.includes('pria')) {
-                    clientData.gender = 'male';
+                    dataToSend.gender = 'Male'; 
                 } else if (genderLower.includes('female') || genderLower.includes('perempuan') || genderLower.includes('wanita')) {
-                    clientData.gender = 'female';
+                    dataToSend.gender = 'Female';  
                 }
             }
 
@@ -176,12 +183,19 @@ class ClientService {
                 throw new Error('Client ID is required');
             }
 
-            if (clientData.gender) {
-                const genderLower = clientData.gender.toLowerCase().trim();
+            const dataToSend = { ...clientData };
+            delete dataToSend.existing_programs;
+
+            if (dataToSend.logo_partner instanceof File) {
+                throw new Error('Logo must be uploaded first. Please upload logo separately.');
+            }
+
+            if (dataToSend.gender) {
+                const genderLower = dataToSend.gender.toLowerCase().trim();
                 if (genderLower.includes('male') || genderLower.includes('laki') || genderLower.includes('pria')) {
-                    clientData.gender = 'male';
+                    dataToSend.gender = 'Male';  
                 } else if (genderLower.includes('female') || genderLower.includes('perempuan') || genderLower.includes('wanita')) {
-                    clientData.gender = 'female';
+                    dataToSend.gender = 'Female';  
                 }
             }
 
@@ -569,6 +583,93 @@ class ClientService {
                 message: error.message || 'Error finding client by program name'
             }
         }
+    }
+
+    async uploadLogo(file) {
+        try {
+            if (!file) {
+                throw new Error('No File provided')
+            }
+
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
+            if (!validTypes.includes(file.type)) {
+                throw new Error('Invalid file type. Please upload an image file (JPEG, PNG, GIF, WEBP, SVG')
+            }
+
+            const maxSize = 2 * 1024 * 1024
+            if (file.size > maxSize) {
+                throw new Error('File too large. Maximum size is 2MB')
+            }
+
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('type', 'logo')
+
+            const response = await fetch(`${API_BASE_URL}/client/upload/logo`, {
+                method: 'POST',
+                body: formData
+            })
+
+            if (!response.ok) {
+                const error = await response.json()
+                throw new Error(error.message || 'Upload failed')
+            }
+
+            const result = await response.json()
+
+            if (!result.success) {
+                throw new Error(result.message || 'Upload Failed')
+            }
+
+            return result.data.url
+
+        } catch (error) {
+            console.error('Error uploading logo:', error)
+            throw error
+        }
+    }
+
+    async deleteLogo(logoUrl) {
+        try {
+            if (!logoUrl) return
+
+            const response = await fetch(`${API_BASE_URL}/client/upload/logo`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: logoUrl })
+            })
+
+            if (!response.ok) {
+                const error = await response.json()
+                throw new Error(error.message || 'Delete Failed')
+            }
+
+            return await response.json()
+
+        } catch (error) {
+            console.error('Error deleting logo:', error)
+            throw error
+        }
+    }
+
+    getLogo(filename){
+        if (!filename) return null
+        if (filename.startsWith('http')) {
+            return filename
+        }
+
+        return `${this.baseURL}/client/uploads/logos/${filename}`
+    }
+
+    getFullLogoUrl(logoPath) {
+        if (!logoPath) return null
+        if (logoPath.startsWith('http')) {
+            return logoPath
+        }
+
+        return `${this.baseURL}/${logoPath}`
     }
 }
 

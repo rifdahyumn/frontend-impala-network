@@ -2,7 +2,7 @@ import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { Badge } from "../../ui/badge";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, X } from "lucide-react";
 
 export const renderField = (props) => {
     const {
@@ -38,6 +38,10 @@ export const renderField = (props) => {
 
     if (field.type === 'textarea') {
         return renderTextareaField(field, value, error, handleInputChange);
+    }
+
+    if (field.type === 'file') {
+        return renderFileField(field, formData, error, handleInputChange, isEditMode);
     }
 
     if (field.name === 'full_name') {
@@ -282,3 +286,120 @@ const renderInputField = (field, value, error, handleInputChange) => {
         </div>
     );
 };
+
+const renderFileField = (field, formData, error, handleInputChange, isEditMode) => {
+    const fileValue = formData[field.name]
+
+    const handleRemoveFile = () => {
+        handleInputChange({
+            target: {
+                name: field,
+                value: null
+            }
+        })
+    }
+
+    return (
+        <div className="space-y-2">
+            <Label htmlFor={field.name}>
+                {field.label}
+                {field.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+
+            <Input
+                id={field.name}
+                name={field.name}
+                type="file"
+                accept={field.accept || "image/*"}
+                onChange={(e) => {
+                    const file = e.target.files[0]
+                    if (file) {
+                        handleInputChange({
+                            target: {
+                                name: field.name,
+                                value: file
+                            }
+                        })
+                    }
+                }}
+                disabled={field.disabled}
+                className={`${error ? 'border-red-500' : ''} ${field.disabled ? 'bg-gray-100' : ''}`}
+            />
+
+            {fileValue instanceof File && (
+                <div className="mt-2 p-3 border rounded-md bg-gray-50">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium text-gray-700">
+                                Selected: {fileValue.name}
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                                {(fileValue.size / 1024).toFixed(1)} KB
+                            </Badge>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleRemoveFile}
+                            className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
+                            title="Remove file"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
+
+                    {fileValue.type.startsWith('image/') && (
+                        <div className="mt-2">
+                            <img
+                                src={URL.createObjectURL(fileValue)}
+                                alt="Preview"
+                                className="h-20 w-20 object-contain border rounded-md bg-white"
+                                onLoad={(e) => {
+                                    URL.revokeObjectURL(e.target.src);
+                                }}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {fileValue && typeof fileValue === 'string' && (
+                <div className="mt-2 p-3 border rounded-md bg-gray-50">
+                    <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium text-gray-700">
+                            Current Logo
+                        </div>
+
+                        {!isEditMode && (
+                            <button
+                                type="button"
+                                onClick={handleRemoveFile}
+                                className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
+                                title="Remove logo"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="mt-2">
+                        <img
+                            src={fileValue}
+                            alt="Logo preview"
+                            className="h-20 w-20 object-contain border rounded-md bg-white"
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = '/placeholder-image.png';
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
+
+            <p className="text-xs text-gray-500">
+                Supported formats: JPEG, PNG, GIF, WEBP, SVG. Max size: 2MB
+            </p>
+            
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+        </div>
+    )
+}

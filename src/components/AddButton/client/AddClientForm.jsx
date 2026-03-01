@@ -15,6 +15,7 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
     const [errors, setErrors] = useState({});
     const [updateAllFields, setUpdateAllFields] = useState(true);
     const [forceCreateNewClient, setForceCreateNewClient] = useState(false)
+    const [uploading, setUploading] = useState(false)
     
     const { 
         clientExists, 
@@ -192,6 +193,8 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
             email: client.email || '',
             phone: client.phone || '',
             company: client.company || '',
+            brand_name: client.brand_name || '',
+            logo_partner: client.logo_partner || null,
             gender: client.gender || '',
             business: client.business || '',
             total_employee: client.total_employee || '',
@@ -236,19 +239,51 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
         setLoading(true)
 
         try {
-            let clientData = { ...formData }
+            let dataToSend = { ...formData }
 
-            const shouldUpdateLocation = isEditMode && (
-                formData.address !== editData?.address ||
-                formData.province_id !== editData?.province_id ||
-                formData.regency_id !== editData?.regency_id ||
-                formData.district_id !== editData?.district_id ||
-                formData.village_id !== editData?.village_id
-            );
+            if (formData.logo_partner instanceof File) {
+                setLoading(true)
+                toast.loading('Uploading logo...', { id: 'logo-upload' });
 
+                try {
+                    const logoUrl = await clientService.uploadLogo(formData.logo_partner)
+                    dataToSend.logo_partner = logoUrl
+
+                    if (isEditMode && editData?.logo_partner) {
+                        await clientService.deleteLogo(editData.logo_partner).catch(err => {
+                            console.warn('Failed to delete old logo:', err)
+                        })
+                    }
+
+                    toast.success('Logo uploaded successfully', { id: 'logo-upload' });
+
+                } catch (error) {
+                    toast.error(`Failed to upload logo: ${error.message}`)
+                    setLoading(false)
+                    setUploading(false)
+                    return
+                } finally {
+                    setUploading(false)
+                }
+            } else if (formData.logo_partner === null && isEditMode && editData?.logo_partner) {
+                dataToSend.logo_partner = null
+
+                await clientService.deleteLogo(editData.logo_partner).catch(err => {
+                    console.warn('Failed to delete logo:', err)
+                })
+            }
+
+            delete dataToSend.existing_programs
             const locationData = {};
             
             if (isEditMode) {
+                const shouldUpdateLocation = 
+                    formData.address !== editData?.address ||
+                    formData.province_id !== editData?.province_id ||
+                    formData.regency_id !== editData?.regency_id ||
+                    formData.district_id !== editData?.district_id ||
+                    formData.village_id !== editData?.village_id;
+
                 if (shouldUpdateLocation) {
                     locationData.address = formData.address || '';
                     locationData.province_id = formData.province_id || '';
@@ -259,8 +294,6 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                     locationData.district_name = formData.district_name || '';
                     locationData.village_id = formData.village_id || '';
                     locationData.village_name = formData.village_name || '';
-                } else {
-                    //
                 }
             } else {
                 locationData.address = formData.address;
@@ -287,59 +320,55 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
             } else {
                 programData = formData.program_name ? [formData.program_name.trim()] : []
             }
+            
+            const baseClientData = {
+                full_name: formData.full_name,
+                email: formData.email,
+                phone: formData.phone || null,
+                company: formData.company || null,
+                brand_name: formData.brand_name || null,  
+                gender: formData.gender || null,
+                business: formData.business || null,
+                total_employee: formData.total_employee || null,
+                position: formData.position || null,
+                program_name: programData,
+                notes: formData.notes || null,
+                logo_partner: dataToSend.logo_partner || null,  
+                ...locationData
+            };
 
             let result;
             
             if (clientExists && existingClientId && !forceCreateNewClient) {
-                clientData = {
-                    full_name: formData.full_name,
-                    email: formData.email,
-                    phone: formData.phone,
-                    company: formData.company,
-                    gender: formData.gender,
-                    business: formData.business,
-                    total_employee: formData.total_employee,
-                    position: formData.position,
-                    program_name: programData,
-                    notes: formData.notes || null,
-                    updated_at: new Date().toISOString(),
-                    ...locationData 
-                }
+                const updateData = {
+                    ...baseClientData,
+                    updated_at: new Date().toISOString()
+                };
 
                 if (onEditClient) {
-                    result = await onEditClient(existingClientId, clientData)
+                    result = await onEditClient(existingClientId, updateData)
                 } else {
-                    result = await clientService.updateClient(existingClientId, clientData)
+                    result = await clientService.updateClient(existingClientId, updateData)
                 }
                 
                 toast.success('Client updated successfully');
-            } 
-            else {
-                clientData = {
-                    full_name: formData.full_name,
-                    email: formData.email,
-                    phone: formData.phone,
-                    company: formData.company,
-                    gender: formData.gender,
-                    business: formData.business,
-                    total_employee: formData.total_employee,
-                    position: formData.position,
-                    program_name: programData,
-                    notes: formData.notes || null,
-                    status: formData.status || 'active',
-                    ...locationData, 
-                    join_date: formData.join_date || new Date().toISOString().split('T')[0]
-                }
+
+            } else {
+                const createData = {
+                    ...baseClientData,
+                    status: formData.status || 'Active',
+                    join_date: formData.join_date || new Date().toISOString().split('T')[0],
+                    created_at: new Date().toISOString()
+                };
                 
                 if (onAddClient) {
-                    result = await onAddClient(clientData)
+                    result = await onAddClient(createData)
                 } else {
-                    result = await clientService.addClient(clientData)
+                    result = await clientService.addClient(createData)
                 }
+
                 toast.success('Client added successfully');
             }
-
-            delete clientData.existing_programs
 
             if (onSuccess) {
                 onSuccess(result, isEditMode ? 'updated' : 'created');
@@ -426,16 +455,16 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                 >
                     Cancel
                 </Button>
-                <Button type="submit" disabled={loading}>
-                    {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                <Button type="submit" disabled={loading || uploading}>
+                    {(loading || uploading) && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                     {loading 
                         ? (clientExists ? 'Updating...' : 'Saving...')
-                        : (clientExists 
-                            ? (isEditMode 
-                                ? (updateAllFields ? 'Update Client' : 'Update Program Only')
-                                : 'Update Client')
-                            : (isEditMode ? 'Update Client' : 'Add Client')
-                        )
+                        : uploading 
+                            ? 'Uploading logo...' 
+                            : (clientExists 
+                                ? (isEditMode ? (updateAllFields ? 'Update Client' : 'Update Program Only') : 'Update Client')
+                                : (isEditMode ? 'Update Client' : 'Add Client')
+                            )
                     }
                 </Button>
             </div>
@@ -449,6 +478,8 @@ function getInitialFormData(isEditMode, editData) {
         email: '',
         phone: '',
         company: '',
+        brand_name: '',
+        logo_partner: '',
         program_name: '',
         existing_programs: [],
         join_date: '',
@@ -489,6 +520,8 @@ function getEditFormData(editData) {
         email: editData.email || '',
         phone: editData.phone || '',
         company: editData.company || '',
+        brand_name: editData.brand_name || '',
+        logo_partner: editData.logo_partner || null,
         program_name: '',
         existing_programs: Array.isArray(editData.program_name)
             ? editData.program_name

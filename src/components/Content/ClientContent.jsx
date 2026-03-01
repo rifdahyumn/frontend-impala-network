@@ -8,6 +8,8 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
     const [activeCategory, setActiveCategory] = useState('Personal Information');
     const [deleteLoading, setDeleteLoading] = useState(false)
     const [statusLoading, setStatusLoading] = useState(false)
+    const [imageErrors, setImageErrors] = useState({})
+    const [imageLoading, setImageLoading] = useState({})
 
     const detailFields = [
         {
@@ -26,6 +28,7 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
             icon: Building,
             fields: [
                 { key: 'company', label: 'Company', icon: Building },
+                { key: 'brand_name', label: 'Brand Name', icon: Building },
                 { key: 'business', label: 'Business Type', icon: Building },
                 { key: 'total_employee', label: 'Total Employee', icon: Building },
                 { key: 'address', label: 'Address', icon: MapPin },
@@ -33,6 +36,7 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
                 { key: 'regency_name', label: 'Regency / City', icon: MapPin },
                 { key: 'district_name', label: 'District', icon: MapPin },
                 { key: 'village_name', label: 'Village', icon: MapPin },
+                { key: 'logo_partner', label: 'Logo', icon: Building, isImage: true },
             ]
         },
         {
@@ -148,6 +152,81 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
         }
     }
 
+    const handleImageError = (fieldKey) => {
+        setImageErrors(prev => ({ ...prev, [fieldKey]: true }))
+    }
+
+    const handleImageLoad = (fieldKey) => {
+        setImageLoading(prev => ({ ...prev, [fieldKey]: false }))
+    }
+
+    const LogoDisplay = ({ imageUrl, brandName, fieldKey }) => {
+        const hasError = imageErrors[fieldKey]
+        const isLoading = imageLoading[fieldKey]
+
+        if (!imageUrl) {
+            return (
+                <div className="flex items-center gap-2">
+                    <div className="h-20 w-20 border rounded-md bg-gray-100 flex items-center justify-center">
+                        <Building className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className='text-sm text-gray-500'>No logo available</p>
+                </div>
+            )
+        }
+
+        if (hasError) {
+            return (
+                <div className="flex items-center gap-2">
+                    <div className="h-20 w-20 border rounded-md bg-gray-100 flex items-center justify-center">
+                        <AlertTriangle className="h-8 w-8 text-amber-500" />
+                    </div>
+                    <p className='text-sm text-gray-500'>Failed to load image</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="mt-1 relative">
+                {isLoading && (
+                    <div className="h-20 w-20 border rounded-md bg-gray-100 flex items-center justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                    </div>
+                )}
+                
+                <img 
+                    src={imageUrl}
+                    alt={brandName || 'Logo'}
+                    className={`h-20 w-20 object-contain border rounded-md bg-gray-50 p-1 ${
+                        isLoading ? 'hidden' : 'block'
+                    }`}
+                    onLoad={() => handleImageLoad(fieldKey)}
+                    onError={() => handleImageError(fieldKey)}
+                    loading="lazy"
+                />
+            </div>
+        )
+    }
+
+    // Tambahkan useEffect untuk debug
+    React.useEffect(() => {
+        if (selectedMember?.logo_partner) {
+            console.log('Logo URL from selectedMember:', selectedMember.logo_partner);
+            
+            // Test akses URL
+            fetch(selectedMember.logo_partner, { method: 'HEAD' })
+                .then(res => {
+                    console.log('Logo fetch status:', res.status);
+                    if (!res.ok) {
+                        console.log('Logo not accessible:', res.status);
+                    }
+                })
+                .catch(err => {
+                    console.log('Logo fetch error:', err);
+                });
+        }
+    }, [selectedMember]);
+
     const ActiveCategoryContent = () => {
         const activeCategoryData = getActiveCategoryData()
 
@@ -165,8 +244,28 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
                 <div className='grid grid-cols-2 gap-4'>
                     {activeCategoryData.fields.map((field, index) => {
                         const FieldIcon = field.icon
-                        const value = 
-                            field.key === 'program_name'
+
+                        if (field.key === 'logo_partner') {
+                            return (
+                                <div key={index} className='flex items-start gap-3 col-span-2'>
+                                    <FieldIcon className='h-4 w-4 text-gray-400 mt-1 flex-shrink-0' />
+
+                                    <div className='flex-1'>
+                                        <label className='text-sm text-gray-500 block mb-1'>
+                                            {field.label}
+                                        </label>
+
+                                        <LogoDisplay 
+                                            imageUrl={selectedMember[field.key]}
+                                            brandName={selectedMember.brand_name}
+                                            fieldKey={field.key}
+                                        />
+                                    </div>
+                                </div>
+                            )
+                        }
+
+                        const value = field.key === 'program_name'
                                 ? normalizeProgramName(selectedMember[field.key])
                                 : selectedMember[field.key] || '-'
 

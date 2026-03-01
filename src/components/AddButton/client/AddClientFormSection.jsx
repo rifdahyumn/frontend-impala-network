@@ -50,6 +50,21 @@ export const formSections = [
                 disabled: false
             },
             {
+                name: 'brand_name',
+                label: 'Brand Name',
+                type: 'text',
+                placeholder: 'Enter brand name',
+                disabled: false
+            },
+            {
+                name: 'logo_partner',
+                label: 'Logo Partner',
+                type: 'file',
+                accept: "image/*",
+                placeholder: 'Upload Logo',
+                disabled: false
+            },
+            {
                 name: 'business',
                 label: 'Business Type',
                 type: 'select',
