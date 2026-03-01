@@ -250,7 +250,6 @@ const FilterDropdown = ({
                             </div>
                         </div>
 
-                        {/* Gender */}
                         <div className="mb-3">
                             <div className="flex items-center justify-between mb-1">
                                 <h4 className="font-semibold text-gray-900 text-xs">GENDER</h4>
@@ -312,7 +311,6 @@ const FilterDropdown = ({
                             </div>
                         </div>
 
-                        {/* Business Type */}
                         <div>
                             <div className="flex items-center justify-between mb-1">
                                 <h4 className="font-semibold text-gray-900 text-xs">BUSINESS TYPE</h4>
@@ -326,7 +324,6 @@ const FilterDropdown = ({
                                 )}
                             </div>
                             
-                            {/* All Types */}
                             <div className="mb-2">
                                 <button
                                     className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
@@ -352,7 +349,6 @@ const FilterDropdown = ({
                                 </button>
                             </div>
 
-                            {/* Business Types Grid */}
                             <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-1">
                                 {filteredBusinessTypes.map((type) => {
                                     if (!type || typeof type !== 'object') return null;

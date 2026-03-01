@@ -2007,6 +2007,107 @@ class ProgramService {
             throw error;
         }
     }
+
+    async getCategories() {
+        try {
+            const response = await fetch(`${this.baseURL}/program/categories`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            const result = await this.handleResponse(response)
+
+            if (result.success && result.data) {
+                return {
+                    success: true,
+                    data: result.data.map(cat => ({
+                        id: cat.value,
+                        value: cat.value,
+                        label: cat.label,
+                        original: cat.original,
+                        mappingValues: [
+                            cat.original.toLowerCase(),
+                            ...(cat.original.toLowerCase().split(/[\s/]+/))
+                        ]
+                    }))
+                }
+            }
+
+            return {
+                success: false,
+                data: [],
+                message: result.message || 'Failed to fetch categories'
+            }
+
+        } catch (error) {
+            console.error('Error fetching categories:', error)
+            return {
+                success: false,
+                data: [],
+                message: error.message
+            };
+        }
+    }
+
+    async getDistinctCategories() {
+        try {
+            const result = await this.fetchAllPrograms({});
+
+            if (!result.success || !result.data) {
+                return {
+                    success: false,
+                    data: [],
+                    message: 'Failed to fetch programs'
+                };
+            }
+
+            const categoriesSet = new Set();
+            result.data.forEach(program => {
+                if (program.category) {
+                    if (program.category.includes(',')) {
+                        program.category.split(',').forEach(cat => {
+                            const trimmed = cat.trim();
+                            if (trimmed) categoriesSet.add(trimmed);
+                        });
+                    } else {
+                        categoriesSet.add(program.category.trim());
+                    }
+                }
+            });
+
+            const categories = Array.from(categoriesSet).sort().map(cat => ({
+                value: cat.toLowerCase().replace(/\s+/g, '_'),
+                label: cat,
+                original: cat,
+                mappingValues: [
+                    cat.toLowerCase(),
+                    ...(cat.toLowerCase().split(/[\s/]+/))
+                ]
+            }));
+
+            categories.unshift({
+                value: 'all',
+                label: 'All Categories',
+                original: 'all',
+                mappingValues: ['all', 'semua']
+            });
+
+            return {
+                success: true,
+                data: categories
+            };
+
+        } catch (error) {
+            console.error('Error getting distinct categories:', error);
+            return {
+                success: false,
+                data: [],
+                message: error.message
+            };
+        }
+    }
 }
 
 export default new ProgramService()

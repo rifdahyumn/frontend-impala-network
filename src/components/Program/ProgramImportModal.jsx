@@ -13,7 +13,7 @@ const ProgramImportModal = ({
     validationErrors,
     setValidationErrors,
     isImporting,
-    importProgress,
+    // importProgress,
     parseExcelFile,
     handleImportExcel,
     resetImport,
@@ -115,9 +115,9 @@ const ProgramImportModal = ({
         }
     };
 
-    const handleChangeFile = () => {
-        handleTriggerFileInput();
-    };
+    // const handleChangeFile = () => {
+    //     handleTriggerFileInput();
+    // };
 
     const resetImportState = () => {
         setImportFile(null);
@@ -225,13 +225,13 @@ const ProgramImportModal = ({
                                     >
                                         Remove File
                                     </Button>
-                                    <Button
+                                    {/* <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={handleChangeFile}
                                     >
                                         Change File
-                                    </Button>
+                                    </Button> */}
                                 </div>
                             </div>
                         ) : (
@@ -293,7 +293,7 @@ const ProgramImportModal = ({
                         </div>
                     )}
 
-                    {isImporting && (
+                    {/* {isImporting && (
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
@@ -309,7 +309,7 @@ const ProgramImportModal = ({
                                 />
                             </div>
                         </div>
-                    )}
+                    )} */}
                 </div>
                 
                 <DialogFooter className="flex flex-col sm:flex-row gap-3">

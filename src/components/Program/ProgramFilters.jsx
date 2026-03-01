@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Upload, Filter, Tag, X, Check, CheckSquare } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Plus, Upload, Filter, Tag, X, Check, CheckSquare, RefreshCw } from "lucide-react";
 import { Button } from "../ui/button";
 import SearchBar from "../SearchFilter/SearchBar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import programService from '../../services/programService';
 
 const ProgramFilters = ({
     filters,
@@ -19,7 +20,9 @@ const ProgramFilters = ({
     handleDownloadTemplate,
     loading,
     isImporting,
-    exportComponent
+    exportComponent,
+    onCategoriesUpdate,
+    useDistinctFromPrograms = false
 }) => {
     const statusOptions = [
         { value: 'Active', label: 'Active', color: 'text-green-600 bg-green-50' },
@@ -28,10 +31,53 @@ const ProgramFilters = ({
 
     const filterRef = useRef(null)
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const [categoriesLoading, setCategoriesLoading] = useState(false);
+    const [categoriesError, setCategoriesError] = useState(null);
     const [tempFilters, setTempFilters] = useState({
         status: filters.status || '',
         category: filters.category || 'all'
     });
+
+    const fetchCategories = useCallback(async () => {
+        try {
+            setCategoriesLoading(true);
+            setCategoriesError(null);
+
+            let result;
+            if (useDistinctFromPrograms) {
+                result = await programService.getDistinctCategories();
+            } else {
+                result = await programService.getCategories();
+            }
+
+            if (result.success) {
+                setCategories(result.data);
+                
+                if (onCategoriesUpdate) {
+                    onCategoriesUpdate(result.data);
+                }
+            } else {
+                setCategoriesError(result.message || 'Failed to load categories');
+                setCategories([]);
+            }
+
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+            setCategoriesError(error.message);
+            setCategories([]);
+        } finally {
+            setCategoriesLoading(false)
+        }
+    }, [useDistinctFromPrograms, onCategoriesUpdate])
+
+    useEffect(() => {
+        fetchCategories()
+    }, [fetchCategories])
+
+    const refreshCategories = () => {
+        fetchCategories()
+    }
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -58,39 +104,12 @@ const ProgramFilters = ({
         });
     }, [filters]);
 
-    const allowedCategories = [
-        { 
-            value: 'Seminar / Webinar', 
-            label: 'Seminar / Webinar', 
-            original: 'Seminar / Webinar',
-            mappingValues: ['seminar', 'webinar', 'seminar/webinar', 'seminar / webinar', 'seminar-webinar']
-        },
-        { 
-            value: 'Workshop', 
-            label: 'Workshop', 
-            original: 'Workshop',
-            mappingValues: ['workshop', 'training', 'workshop training', 'workshop/training', 'workshop-training']
-        },
-        { 
-            value: 'Community Service', 
-            label: 'Community Service', 
-            original: 'Community Service',
-            mappingValues: ['community service', 'volunteer', 'volunteer/community', 'volunteer / community service', 'community']
-        },
-        { 
-            value: 'Expo', 
-            label: 'Expo', 
-            original: 'Expo',
-            mappingValues: ['expo', 'exhibition', 'exhibition/expo', 'exhibition / expo', 'exhibition-expo']
-        }
-    ];
-
     const mapToAllowedCategory = (categoryValue) => {
         if (!categoryValue) return 'all';
         
         const normalizedValue = categoryValue.toLowerCase().trim();
         
-        for (const category of allowedCategories) {
+        for (const category of categories) {
             if (category.mappingValues.includes(normalizedValue)) {
                 return category.value;
             }
@@ -102,7 +121,7 @@ const ProgramFilters = ({
     const getCategoryLabel = (categoryValue) => {
         if (!categoryValue || categoryValue === "all") return "All Categories";
         
-        const category = allowedCategories.find(c => 
+        const category = categories.find(c => 
             c.value.toLowerCase() === categoryValue.toLowerCase() ||
             c.mappingValues.includes(categoryValue.toLowerCase())
         );
@@ -248,7 +267,6 @@ const ProgramFilters = ({
                                 </div>
 
                                 <div className="p-3">
-                                    {/* Status */}
                                     <div className="mb-3">
                                         <div className="flex items-center justify-between mb-1">
                                             <h4 className="font-semibold text-gray-900 text-xs">STATUS</h4>
@@ -291,7 +309,6 @@ const ProgramFilters = ({
                                         </div>
                                     </div>
 
-                                    {/* Category */}
                                     <div>
                                         <div className="flex items-center justify-between mb-1">
                                             <h4 className="font-semibold text-gray-900 text-xs">CATEGORY</h4>
@@ -303,40 +320,72 @@ const ProgramFilters = ({
                                                     Clear
                                                 </button>
                                             )}
-                                        </div>
-                                        
-                                        <div className="mb-2">
                                             <button
-                                                className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
-                                                    !tempFilters.category || tempFilters.category === 'all'
-                                                        ? 'border-amber-500 bg-amber-50 text-amber-700'
-                                                        : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
-                                                }`}
-                                                onClick={() => handleTempCategoryChange('all')}
+                                                onClick={refreshCategories}
+                                                className='text-xs text-blue-500 hover:text-blue-700'
+                                                title="Refresh categories"
+                                                disabled={categoriesLoading}
                                             >
-                                                <div className="flex items-center gap-1.5">
-                                                    <div className={`h-2 w-2 rounded-full ${
-                                                        !tempFilters.category || tempFilters.category === 'all' 
-                                                            ? 'bg-amber-500' 
-                                                            : 'bg-gray-400'
-                                                    }`} />
-                                                    <span className="font-medium text-xs">All Categories</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    {(!tempFilters.category || tempFilters.category === 'all') && (
-                                                        <Check className="h-3 w-3 text-amber-600" />
-                                                    )}
-                                                </div>
+                                                <RefreshCw className={`h-3 w-3 ${categoriesLoading ? 'animate-spin' : ''}`} />
                                             </button>
                                         </div>
+                                    </div>
 
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {allowedCategories.map((category) => {
+                                    <div className='mb-2'>
+                                        <button
+                                            className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs w-full ${
+                                                !tempFilters.category || tempFilters.category === 'all'
+                                                    ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                                    : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-gray-700'
+                                            }`}
+                                            onClick={() => handleTempCategoryChange('all')}
+                                        >
+                                            <div className="flex items-center gap-1.5">
+                                                <div className={`h-2 w-2 rounded-full ${
+                                                    !tempFilters.category || tempFilters.category === 'all' 
+                                                        ? 'bg-amber-500' 
+                                                        : 'bg-gray-400'
+                                                }`} />
+                                                <span className="font-medium text-xs">All Categories</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                {(!tempFilters.category || tempFilters.category === 'all') && (
+                                                    <Check className="h-3 w-3 text-amber-600" />
+                                                )}
+                                            </div>
+                                        </button>
+                                    </div>
+
+                                    {categoriesError && (
+                                        <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                            <div className="flex items-start gap-2">
+                                                <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-red-600">{categoriesError}</p>
+                                                    <button
+                                                        onClick={refreshCategories}
+                                                        className="text-xs text-red-700 underline mt-1"
+                                                    >
+                                                        Try again
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {categoriesLoading && categories.length === 0 ? (
+                                        <div className="flex justify-center items-center py-4">
+                                            <RefreshCw className="h-4 w-4 text-gray-400 animate-spin" />
+                                            <span className="text-xs text-gray-500 ml-2">Loading categories...</span>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                                            {categories.filter(c => c.value !== 'all').map((category) => {
                                                 const isSelected = tempFilters.category === category.value;
                                                 
                                                 return (
                                                     <button
-                                                        key={category.value}
+                                                        key={category.id || category.value}
                                                         className={`flex items-center justify-between px-2 py-1.5 rounded-lg border transition-all text-xs ${
                                                             isSelected
                                                                 ? 'border-amber-500 bg-amber-50 text-amber-700'
@@ -361,7 +410,13 @@ const ProgramFilters = ({
                                                 );
                                             })}
                                         </div>
-                                    </div>
+                                    )}
+
+                                    {!categoriesLoading && categories.length === 0 && !categoriesError && (
+                                        <div className="text-center py-3">
+                                            <p className="text-xs text-gray-500">No categories found</p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="border-t p-2">

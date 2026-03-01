@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, Building, User, MapPin, Calendar, DollarSign, Share2Icon, ExternalLink, Loader2, TrendingUp, Users, BarChart, PenTool, FileText, Settings, Play, Target, CheckCircle2, Award, Clock, Circle, Presentation, Info, CheckCircle, RefreshCw, ChevronLeft, ClipboardList, Package, Briefcase, Tag} from "lucide-react";
+import { Edit, Trash2, Building, User, MapPin, Calendar, DollarSign, Share2Icon, ExternalLink, Loader2, TrendingUp, Users, BarChart, PenTool, FileText, Settings, Play, Target, CheckCircle2, Award, Clock, Circle, Presentation, Info, CheckCircle, RefreshCw, ChevronLeft, ClipboardList, Package, Briefcase, Tag, Crown, Layers, UserCircle, UserPlus, Activity, Handshake, Star} from "lucide-react";
 import toast from 'react-hot-toast';
 import clientService from '../../services/clientService';
 import ClientDetailModal from './ClientDetailModal';
@@ -195,14 +195,9 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
             category: 'Schedule & Duration',
             icon: Calendar,
             fields: [
-
-                { key: 'program_name', label: 'Program Name', icon: Building },
-                { key: 'category', label: 'Category', icon: Building },
-                { key: 'status', label: 'Status', icon: Building },
                 { key: 'duration', label: 'Duration', icon: Calendar },
                 { key: 'start_date', label: 'Start Date', icon: Calendar },
                 { key: 'end_date', label: 'End Date', icon: Calendar },
-                { key: 'description', label: 'Description', icon: Building },
             ]
         },
         {
@@ -235,11 +230,11 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
             category: 'Team',
             icon: Users,
             fields: [
-                { key: 'man_power_leads', label: 'Team Leads', icon: User },
-                { key: 'man_power_division', label: 'Division', icon: User },
-                { key: 'man_power_pic', label: 'PIC Team', icon: User, isArray: true },
-                { key: 'jumlah_team_internal', label: 'Internal Team', icon: User },
-                { key: 'jumlah_team_eksternal', label: 'External Team', icon: User },
+                { key: 'man_power_leads', label: 'Team Leads', icon: Crown },
+                { key: 'man_power_division', label: 'Division', icon: Layers },
+                { key: 'man_power_pic', label: 'PIC Team', icon: Users, isArray: true },
+                { key: 'jumlah_team_internal', label: 'Internal Team', icon: UserCircle },
+                { key: 'jumlah_team_eksternal', label: 'External Team', icon: UserPlus },
                 { key: 'link_kontrak_freelance', label: 'Freelance Contract', icon: Share2Icon, isLink: true },
                 { key: 'link_surat_tugas', label: 'Assignment Letter', icon: Share2Icon, isLink: true },
                 { key: 'link_document_kontrak_partner', label: 'Partner Contract', icon: Share2Icon, isLink: true },
@@ -255,10 +250,10 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
                 { key: 'link_drive_e_catalogue_beneficiary', label: 'E-Catalogue', icon: Share2Icon, isLink: true },
                 { key: 'participant', label: 'Participants', icon: Users },
                 { key: 'area', label: 'Area', icon: MapPin },
-                { key: 'activity', label: 'Activity', icon: FileText },
-                { key: 'kolaborator', label: 'Collaborators', icon: Users, isArray: true },
-                { key: 'instructors', label: 'Talents', icon: User, isArray: true },
-                { key: 'tags', label: 'Tags', icon: User, isArray: true },
+                { key: 'activity', label: 'Activity', icon: Activity },
+                { key: 'kolaborator', label: 'Collaborators', icon: Handshake, isArray: true },
+                { key: 'instructors', label: 'Talents', icon: Star, isArray: true },
+                { key: 'tags', label: 'Tags', icon: Tag, isArray: true },
                 { key: 'link_drive_bast', label: 'BAST', icon: Share2Icon, isLink: true },
                 { key: 'satisfaction_survey_link', label: 'Survey Link', icon: Share2Icon, isLink: true },
             ]

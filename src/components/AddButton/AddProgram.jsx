@@ -611,12 +611,31 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, editData 
                         </SelectTrigger>
                         <SelectContent>
                             {[
-                                'Seminar / Webinar',
+                               'Seminar / Webinar',
                                 'Workshop',
                                 'Community Service',
                                 'Expo',
                                 'Training',
-                                'Conference'
+                                'Conference',
+                                'Bootcamp',
+                                'Certification Program',
+                                'Executive Education',
+                                'Focus Group Discussion',
+                                'Forum Group Discussion',
+                                'Internal Meeting',
+                                'Kick Off Meeting',
+                                'Leadership Program',
+                                'Mentoring',
+                                'Networking Event',
+                                'Onboarding Program',
+                                'Public Lecture',
+                                'Roadshow',
+                                'Socialization',
+                                'Study Visit',
+                                'Symposium',
+                                'Talk Show',
+                                'Team Building',
+                                'Webinar Series'
                             ].map(cat => (
                                 <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                             ))}
@@ -799,7 +818,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, editData 
 
                 <div className="space-y-2">
                     <Label htmlFor="margin_estimasi_margin" className="text-gray-600">
-                        Estimasi Margin (Otomatis)
+                        Estimasi Margin (Automatic)
                     </Label>
                     <Input
                         id="margin_estimasi_margin"
@@ -812,7 +831,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, editData 
 
                 <div className="space-y-2">
                     <Label htmlFor="budget_finance_closure_realisasi_penyerapan" className="text-gray-600">
-                        Realisasi Penyerapan (Otomatis)
+                        Realisasi Penyerapan (Automatic)
                     </Label>
                     <Input
                         id="budget_finance_closure_realisasi_penyerapan"
@@ -825,7 +844,7 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, editData 
 
                 <div className="space-y-2">
                     <Label htmlFor="margin_real_margin" className="text-gray-600">
-                        Real Margin (Otomatis)
+                        Real Margin (Automatic)
                     </Label>
                     <Input
                         id="margin_real_margin"
@@ -847,14 +866,14 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, editData 
                 </div>
             </div>
             
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mt-2">
+            {/* <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mt-2">
                 <h4 className="text-sm font-medium text-blue-800 mb-1">💡 Informasi Perhitungan Otomatis</h4>
                 <ul className="text-xs text-blue-700 space-y-1">
                     <li>• <strong>Estimasi Margin</strong> = Budget Offering - Budget Usage Plan</li>
                     <li>• <strong>Realisasi Penyerapan</strong> = (Budget Finance Closure / Budget Offering) × 100%</li>
                     <li>• <strong>Real Margin</strong> = Budget Finance Closure - Biaya Aktual</li>
                 </ul>
-            </div>
+            </div> */}
         </div>
     );
 
