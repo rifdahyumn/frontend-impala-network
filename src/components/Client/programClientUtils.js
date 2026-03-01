@@ -89,9 +89,11 @@ export const parseExcelData = (data) => {
             'Phone': 'phone',
             'Gender': 'gender',
             'Company': 'company',
+            'Brand Name': 'brand_name',
             'Position': 'position',
             'Total Employee': 'total_employee',
             'Business': 'business',
+            'Business Type': 'business',
             'Program Name': 'program_name',
             'Status': 'status',
             'Address': 'address',
@@ -107,6 +109,7 @@ export const parseExcelData = (data) => {
             'phone': 'phone',
             'gender': 'gender',
             'company': 'company',
+            'brand_name': 'brand_name',
             'position': 'position',
             'total_employee': 'total_employee',
             'business': 'business',
@@ -137,12 +140,16 @@ export const parseExcelData = (data) => {
                     if (normalizedHeader === 'gender' && cleanValue) {
                         const genderLower = cleanValue.toLowerCase().trim();
 
-                        if (genderLower.includes('male') || genderLower.includes('laki') || genderLower.includes('pria')) {
-                            cleanRow[normalizedHeader] = 'male';
-                        } else if (genderLower.includes('female') || genderLower.includes('perempuan') || genderLower.includes('wanita')) {
-                            cleanRow[normalizedHeader] = 'female';
+                        if (genderLower.includes('female') || 
+                            genderLower.includes('perempuan') || 
+                            genderLower.includes('wanita')) {
+                                cleanRow[normalizedHeader] = 'female';
+                        } else if (genderLower.includes('male') || 
+                            genderLower.includes('laki') || 
+                            genderLower.includes('pria')) {
+                                cleanRow[normalizedHeader] = 'male';
                         } else {
-                            cleanRow[normalizedHeader] = genderLower; 
+                            cleanRow[normalizedHeader] = genderLower;
                         }
                     } else {
                         cleanRow[normalizedHeader] = cleanValue;
@@ -223,12 +230,17 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
             'Phone': client.phone || '-',
             'Gender': client.gender || '-',
             'Company': client.company || '-',
+            'Brand Name': client.brand_name || '-',
             'Position': client.position || '-',
             'Total Employee': client.total_employee || '-',
             'Business Type': getBusinessDisplayName(client.business) || '-',
             'Program Name': client.program_name || '-',
             'Status': client.status || '-',
             'Address': client.address || '-',
+            'Province': client.province_name || '-',
+            'Regency/City': client.regency_name || '-',
+            'District': client.district_name || '-',
+            'Village': client.village_name || '-',
             'Join Date': client.join_date || '-',
             'Notes': client.notes || '-',
             'Created Date': client.created_at 
@@ -244,17 +256,26 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
             
             const wscols = [
             { wch: 5 },
-            { wch: 25 },
             { wch: 30 },
-            { wch: 15 },
+            { wch: 35 },
+            { wch: 20 },
+            { wch: 10 },
             { wch: 30 },
             { wch: 20 },
             { wch: 25 },
-            { wch: 10 },
-            { wch: 40 },
+            { wch: 15 },
+            { wch: 25 },
             { wch: 40 },
             { wch: 12 },
-            { wch: 12 }
+            { wch: 40 },
+            { wch: 20 },
+            { wch: 25 },
+            { wch: 20 },
+            { wch: 20 },
+            { wch: 15 },
+            { wch: 40 },
+            { wch: 15 },
+            { wch: 15 },
             ];
 
             ws['!cols'] = wscols;
@@ -294,6 +315,7 @@ export const downloadTemplate = () => {
             'Phone': 'Contoh: +62 812 3456 7890',
             'Gender': 'Male/Female',
             'Company': 'Contoh: Aurora Tech Solutions',
+            'Brand Name': 'Contoh: ATS',
             'Position': 'Contoh: Head of Digital Transformation',
             'Total Employee': 'Contoh: 50-100 employees',
             'Business': 'Contoh: Technology',
@@ -316,6 +338,7 @@ export const downloadTemplate = () => {
             'Phone': 'Contoh: +62 812 3456 7890',
             'Gender': 'Male/Female',
             'Company': 'Contoh: Aurora Tech Solutions',
+            'Brand Name': 'Contoh: ATS',
             'Position': 'Contoh: Head of Digital Transformation',
             'Total Employee': 'Contoh: 50-100 employees',
             'Business': 'Contoh: Technology',
@@ -342,6 +365,7 @@ export const downloadTemplate = () => {
         { wch: 20 }, 
         { wch: 10 }, 
         { wch: 25 },
+        { wch: 10 },
         { wch: 25 }, 
         { wch: 20 },
         { wch: 20 }, 
@@ -429,11 +453,17 @@ export const formatGenders = (members) => {
     
     const standardizedGenders = uniqueGenders.map(gender => {
         const genderLower = gender.toLowerCase().trim();
-        if (genderLower.includes('male') || genderLower.includes('laki') || genderLower.includes('pria')) {
-            return 'male';
-        } else if (genderLower.includes('female') || genderLower.includes('perempuan') || genderLower.includes('wanita')) {
+        
+        if (genderLower.includes('female') || 
+            genderLower.includes('perempuan') || 
+            genderLower.includes('wanita')) {
             return 'female';
+        } else if (genderLower.includes('male') || 
+                 genderLower.includes('laki') || 
+                 genderLower.includes('pria')) {
+            return 'male';
         }
+
         return genderLower;
     });
     
@@ -481,6 +511,7 @@ export const formatMembersForTable = (members, pagination, isInShowAllMode, getB
             phone: client.phone,
             gender: client.gender, 
             company: client.company,
+            brandName: client.brand_name,
             business: getBusinessDisplayName(client.business),
             programName: client.program_name,
             status: client.status,

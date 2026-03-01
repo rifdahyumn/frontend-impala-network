@@ -361,7 +361,9 @@ export const useClients = (initialFilters = {}) => {
     const updateClient = async (clientId, clientData) => {
         try {
             setLoading(true)
+            
             const result = await clientService.updateClient(clientId, clientData)
+            
             toast.success("Client updated successfully")
 
             setMembers(prevMembers => 
@@ -374,8 +376,10 @@ export const useClients = (initialFilters = {}) => {
 
             return result.data || result
         } catch (error) {
-            toast.error('Failed to update client')
-            throw error
+            console.error('🔴 useClients.updateClient error:', error);
+            toast.error(error.message || 'Failed to update client')
+            
+            throw error;
         } finally {
             setLoading(false)
         }

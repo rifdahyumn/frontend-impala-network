@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import locationService from '../../services/locationService';
 
 const useLocationData = (formConfig, toast) => {
@@ -13,6 +13,12 @@ const useLocationData = (formConfig, toast) => {
         regencies: false,
         districts: false,
         villages: false,
+    });
+
+    const loadedRef = useRef({
+        regencies: false,
+        districts: false,
+        villages: false
     });
 
     const loadProvinces = useCallback(async () => {
@@ -39,7 +45,10 @@ const useLocationData = (formConfig, toast) => {
 
     const loadRegencies = useCallback(async (provinceId) => {
         if (!provinceId) {
-            setLocationData(prev => ({ ...prev, regencies: [], districts: [], villages: [] }));
+            return;
+        }
+
+        if (loadedRef.current.regencies && locationData.regencies.length > 0) {
             return;
         }
 
@@ -51,20 +60,22 @@ const useLocationData = (formConfig, toast) => {
                 setLocationData(prev => ({
                     ...prev,
                     regencies: regenciesData,
-                    districts: [],
-                    villages: []
                 }));
+                loadedRef.current.regencies = true; 
             }
         } catch (error) {
             console.error('Error loading regencies:', error);
         } finally {
             setLoadingLocation(prev => ({ ...prev, regencies: false }));
         }
-    }, []);
+    }, [locationData.regencies.length]);
 
     const loadDistricts = useCallback(async (regencyId) => {
         if (!regencyId) {
-            setLocationData(prev => ({ ...prev, districts: [], villages: [] }));
+            return;
+        }
+
+        if (loadedRef.current.districts && locationData.districts.length > 0) {
             return;
         }
 
@@ -76,19 +87,22 @@ const useLocationData = (formConfig, toast) => {
                 setLocationData(prev => ({
                     ...prev,
                     districts: districtsData,
-                    villages: []
                 }));
+                loadedRef.current.districts = true; 
             }
         } catch (error) {
             console.error('Error loading districts:', error);
         } finally {
             setLoadingLocation(prev => ({ ...prev, districts: false }));
         }
-    }, []);
+    }, [locationData.districts.length]);
 
     const loadVillages = useCallback(async (districtId) => {
         if (!districtId) {
-            setLocationData(prev => ({ ...prev, villages: [] }));
+            return;
+        }
+
+        if (loadedRef.current.villages && locationData.villages.length > 0) {
             return;
         }
 
@@ -98,13 +112,14 @@ const useLocationData = (formConfig, toast) => {
 
             if (villagesData && Array.isArray(villagesData)) {
                 setLocationData(prev => ({ ...prev, villages: villagesData }));
+                loadedRef.current.villages = true; 
             }
         } catch (error) {
             console.error('Error loading villages:', error);
         } finally {
             setLoadingLocation(prev => ({ ...prev, villages: false }));
         }
-    }, []);
+    }, [locationData.villages.length]);
 
     const handleLocationChange = useCallback((fieldName, value, currentFormData) => {
         const newData = { ...currentFormData, [fieldName]: value };
@@ -113,13 +128,19 @@ const useLocationData = (formConfig, toast) => {
             newData.regency_id = '';
             newData.district_id = '';
             newData.village_id = '';
+            loadedRef.current.regencies = false;
+            loadedRef.current.districts = false;
+            loadedRef.current.villages = false;
             loadRegencies(value);
         } else if (fieldName === 'regency_id') {
             newData.district_id = '';
             newData.village_id = '';
+            loadedRef.current.districts = false;
+            loadedRef.current.villages = false;
             loadDistricts(value);
         } else if (fieldName === 'district_id') {
             newData.village_id = '';
+            loadedRef.current.villages = false;
             loadVillages(value);
         }
         

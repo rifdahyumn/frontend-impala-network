@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { locationService } from "../../../services/locationService";
 
-export const useLocationData = (formData, setFormData) => {
+// Di AddClientLocation.js
+export const useLocationData = (formData) => {
     const [provinces, setProvinces] = useState([]);
     const [regencies, setRegencies] = useState([]);
     const [districts, setDistricts] = useState([]);
@@ -27,104 +28,90 @@ export const useLocationData = (formData, setFormData) => {
         }
     };
 
+    const loadRegencies = async (provinceId) => {
+        if (!provinceId) {
+            setRegencies([]);
+            return;
+        }
+
+        setLoadingLocation(prev => ({ ...prev, regencies: true }));
+        try {
+            const regenciesData = await locationService.getRegencies(provinceId);
+            setRegencies(regenciesData || []);
+        } catch (error) {
+            console.error(`Error fetching regencies:`, error);
+            toast.error('Error loading regency');
+            setRegencies([]);
+        } finally {
+            setLoadingLocation(prev => ({ ...prev, regencies: false }));
+        }
+    };
+
+    const loadDistricts = async (regencyId) => {
+        if (!regencyId) {
+            setDistricts([]);
+            return;
+        }
+
+        setLoadingLocation(prev => ({ ...prev, districts: true }));
+        try {
+            const districtsData = await locationService.getDistricts(regencyId);
+            setDistricts(districtsData || []);
+        } catch (error) {
+            console.error(`Error fetching districts:`, error);
+            toast.error('Gagal memuat data kecamatan');
+            setDistricts([]);
+        } finally {
+            setLoadingLocation(prev => ({ ...prev, districts: false }));
+        }
+    };
+
+    const loadVillages = async (districtId) => {
+        if (!districtId) {
+            setVillages([]);
+            return;
+        }
+
+        setLoadingLocation(prev => ({ ...prev, villages: true }));
+        try {
+            const villagesData = await locationService.getVillages(districtId);
+            setVillages(villagesData || []);
+        } catch (error) {
+            console.error(`Error fetching villages:`, error);
+            toast.error('Gagal memuat data desa/kelurahan');
+            setVillages([]);
+        } finally {
+            setLoadingLocation(prev => ({ ...prev, villages: false }));
+        }
+    };
+
     useEffect(() => {
         loadProvinces()
-    }, [])
+    }, []);
 
+    // Efek-efek yang sudah ada untuk reset data ketika pilihan berubah
     useEffect(() => {
-        const loadRegencies = async () => {
-            if (!formData.province_id) {
-                setRegencies([]);
-                return;
-            }
-
-            setLoadingLocation(prev => ({ ...prev, regencies: true }));
-            try {
-                const regenciesData = await locationService.getRegencies(formData.province_id);
-                setRegencies(regenciesData || []);
-                
-                setFormData(prev => ({
-                    ...prev,
-                    regency_id: '',
-                    district_id: '',
-                    village_id: '',
-                    regency_name: '',
-                    district_name: '',
-                    village_name: ''
-                }));
-                setDistricts([]);
-                setVillages([]);
-            } catch (error) {
-                console.error(`Error fetching regencies:`, error);
-                toast.error('Error loading regency');
-                setRegencies([]);
-            } finally {
-                setLoadingLocation(prev => ({ ...prev, regencies: false }));
-            }
-        };
-
-        loadRegencies();
+        if (formData.province_id) {
+            loadRegencies(formData.province_id);
+        } else {
+            setRegencies([]);
+        }
     }, [formData.province_id]);
 
     useEffect(() => {
-        const loadDistricts = async () => {
-            if (!formData.regency_id) {
-                setDistricts([]);
-                return;
-            }
-
-            setLoadingLocation(prev => ({ ...prev, districts: true }));
-            try {
-                const districtsData = await locationService.getDistricts(formData.regency_id);
-                setDistricts(districtsData || []);
-                
-                setFormData(prev => ({
-                    ...prev,
-                    district_id: '',
-                    village_id: '',
-                    district_name: '',
-                    village_name: ''
-                }));
-                setVillages([]);
-            } catch (error) {
-                console.error(`Error fetching districts:`, error);
-                toast.error('Gagal memuat data kecamatan');
-                setDistricts([]);
-            } finally {
-                setLoadingLocation(prev => ({ ...prev, districts: false }));
-            }
-        };
-
-        loadDistricts();
+        if (formData.regency_id) {
+            loadDistricts(formData.regency_id);
+        } else {
+            setDistricts([]);
+        }
     }, [formData.regency_id]);
 
     useEffect(() => {
-        const loadVillages = async () => {
-            if (!formData.district_id) {
-                setVillages([]);
-                return;
-            }
-
-            setLoadingLocation(prev => ({ ...prev, villages: true }));
-            try {
-                const villagesData = await locationService.getVillages(formData.district_id);
-                setVillages(villagesData || []);
-                
-                setFormData(prev => ({
-                    ...prev,
-                    village_id: '',
-                    village_name: ''
-                }));
-            } catch (error) {
-                console.error(`Error fetching villages:`, error);
-                toast.error('Gagal memuat data desa/kelurahan');
-                setVillages([]);
-            } finally {
-                setLoadingLocation(prev => ({ ...prev, villages: false }));
-            }
-        };
-
-        loadVillages();
+        if (formData.district_id) {
+            loadVillages(formData.district_id);
+        } else {
+            setVillages([]);
+        }
     }, [formData.district_id]);
 
     return {
@@ -133,6 +120,9 @@ export const useLocationData = (formData, setFormData) => {
         districts,
         villages,
         loadingLocation,
-        loadProvinces
+        loadProvinces,
+        loadRegencies,    // ✅ EXPOSE FUNGSI INI
+        loadDistricts,    // ✅ EXPOSE FUNGSI INI
+        loadVillages      // ✅ EXPOSE FUNGSI INI
     };
 };

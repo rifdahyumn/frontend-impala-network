@@ -23,7 +23,7 @@ export const formSections = [
                 label: 'Phone',
                 type: 'tel',
                 required: true,
-                placeholder: 'Enter phone number'
+                placeholder: 'Enter phone number 08'
             },
             {
                 name: 'gender',

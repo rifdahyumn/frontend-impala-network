@@ -308,17 +308,21 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
             }
 
             let programData = []
+            let shouldIncludeProgram = false;
             if (clientExists && existingClientId) {
                 const existingPrograms = formData.existing_programs || []
                 const newProgram = formData.program_name?.trim()
 
                 if (newProgram) {
                     programData = [...existingPrograms, newProgram]
+                    shouldIncludeProgram = true;
                 } else {
+                    shouldIncludeProgram = true;
                     programData = existingPrograms
                 }
             } else {
                 programData = formData.program_name ? [formData.program_name.trim()] : []
+                shouldIncludeProgram = programData.length > 0;
             }
             
             const baseClientData = {
@@ -337,6 +341,10 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                 ...locationData
             };
 
+            if (shouldIncludeProgram) {
+                baseClientData.program_name = programData;
+            }
+
             let result;
             
             if (clientExists && existingClientId && !forceCreateNewClient) {
@@ -344,6 +352,10 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                     ...baseClientData,
                     updated_at: new Date().toISOString()
                 };
+
+                if (!shouldIncludeProgram) {
+                    delete updateData.program_name
+                }
 
                 if (onEditClient) {
                     result = await onEditClient(existingClientId, updateData)

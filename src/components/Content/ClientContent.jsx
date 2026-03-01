@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
-import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, Loader2, DollarSign, XCircle, CheckCircle, AlertTriangle } from "lucide-react";
+import { Edit, Trash2, Building, User, Mail, Phone, MapPin, Calendar, Loader2, DollarSign, XCircle, CheckCircle, AlertTriangle, Users, Briefcase, Tag, Image, Award, CircleDot } from "lucide-react";
 import toast from 'react-hot-toast';
 
 const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal, onClientEdited, onStatusChange, showConfirm, ConfirmModal }) => {
@@ -19,8 +19,8 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
                 { key: 'full_name', label: 'Full Name', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
-                { key: 'gender', label: 'Gender', icon: User },
-                { key: 'position', label: 'Position', icon: User }
+                { key: 'gender', label: 'Gender', icon: Users },
+                { key: 'position', label: 'Position', icon: Briefcase }
             ]
         },
         {
@@ -29,22 +29,22 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
             fields: [
                 { key: 'company', label: 'Company', icon: Building },
                 { key: 'brand_name', label: 'Brand Name', icon: Building },
-                { key: 'business', label: 'Business Type', icon: Building },
-                { key: 'total_employee', label: 'Total Employee', icon: Building },
+                { key: 'business', label: 'Business Type', icon: Tag },
+                { key: 'total_employee', label: 'Total Employee', icon: Users },
                 { key: 'address', label: 'Address', icon: MapPin },
                 { key: 'province_name', label: 'Province', icon: MapPin },
                 { key: 'regency_name', label: 'Regency / City', icon: MapPin },
                 { key: 'district_name', label: 'District', icon: MapPin },
                 { key: 'village_name', label: 'Village', icon: MapPin },
-                { key: 'logo_partner', label: 'Logo', icon: Building, isImage: true },
+                { key: 'logo_partner', label: 'Logo', icon: Image, isImage: true },
             ]
         },
         {
             category: 'Program',
             icon: DollarSign,
             fields: [
-                { key: 'program_name', label: 'Program Name', icon: DollarSign },
-                { key: 'status', label: 'Status', icon: DollarSign },
+                { key: 'program_name', label: 'Program Name', icon: Award },
+                { key: 'status', label: 'Status', icon: CircleDot },
                 { key: 'join_date', label: 'Join Date', icon: Calendar }
             ]
         },
@@ -207,25 +207,6 @@ const ClientContent = ({ selectedMember, onDelete, detailTitle, onOpenEditModal,
             </div>
         )
     }
-
-    // Tambahkan useEffect untuk debug
-    React.useEffect(() => {
-        if (selectedMember?.logo_partner) {
-            console.log('Logo URL from selectedMember:', selectedMember.logo_partner);
-            
-            // Test akses URL
-            fetch(selectedMember.logo_partner, { method: 'HEAD' })
-                .then(res => {
-                    console.log('Logo fetch status:', res.status);
-                    if (!res.ok) {
-                        console.log('Logo not accessible:', res.status);
-                    }
-                })
-                .catch(err => {
-                    console.log('Logo fetch error:', err);
-                });
-        }
-    }, [selectedMember]);
 
     const ActiveCategoryContent = () => {
         const activeCategoryData = getActiveCategoryData()
