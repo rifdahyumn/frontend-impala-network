@@ -509,6 +509,59 @@ class ImpalaService {
             throw error;
         }
     }
+
+    async fetchProgramsFromImpala() {
+        try {
+            const response = await fetch(`${this.baseURL}/impala/programs`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed fetch program name')
+            }
+
+            const result = await response.json()
+
+            if (result.success && result.data) {
+                const programOptions = result.data
+                    .filter(item => item.program_name && item.program_name.trim() !== '')
+                    .map(item => ({
+                        value: item.program_name.toLowerCase().replace(/\s+/g, '_'),
+                        label: item.program_name,
+                        original: item.program_name,
+                        count: item.count || 0
+                    }));
+
+                const sortedPrograms = programOptions
+                    .filter((program, index, self) =>
+                        index === self.findIndex(p => p.original === program.original)
+                    )
+                    .sort((a, b) => a.original.localeCompare(b.original));
+                
+                return {
+                    success: true,
+                    data: sortedPrograms
+                };
+            }
+
+            return {
+                success: false,
+                data: [],
+                message: 'No data found'
+            };
+
+        } catch (error) {
+            console.error('Error fetching programs from impala:', error);
+            return {
+                success: false,
+                data: [],
+                message: error.message
+            };
+        }
+    }
 }
 
 export default new ImpalaService()

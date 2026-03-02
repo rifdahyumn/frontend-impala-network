@@ -28,7 +28,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
     }
 
     const copyFullLink = (template) => {
-        const fullLink = `${baseUrl}/register/${template.unique_slug}`
+        const fullLink = `${baseUrl}/pendaftaran/${template.unique_slug}`
         navigator.clipboard.writeText(fullLink)
             .then(() => {
                 setCopiedTemplateId(template.id)
@@ -59,7 +59,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
     }
 
     const openFullLink = (template) => {
-        const fullLink = `${baseUrl}/register/${template.unique_slug}`
+        const fullLink = `${baseUrl}/pendaftaran/${template.unique_slug}`
         window.open(fullLink, '_blank', 'noopener,noreferrer')
     }
 
@@ -120,10 +120,10 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                 </div>
                                 <div className="flex-1">
                                     <h3 className="text-xl font-bold text-gray-900">
-                                        Konfirmasi Penghapusan
+                                        Confirm Deletion
                                     </h3>
                                     <p className="text-sm text-gray-600 mt-1">
-                                        Anda akan menghapus form berikut
+                                        You will delete the following form
                                     </p>
                                 </div>
                             </div>
@@ -137,11 +137,11 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                         </h4>
                                         <div className="mt-2 space-y-1">
                                             <p className="text-xs text-gray-700">
-                                                Dibuat: {new Date(templateToDelete?.created_at).toLocaleDateString('id-ID')}
+                                                Created: {new Date(templateToDelete?.created_at).toLocaleDateString('id-ID')}
                                             </p>
                                             {templateToDelete?.unique_slug && (
                                                 <p className="text-xs text-gray-600 font-mono">
-                                                    /register/{templateToDelete?.unique_slug}
+                                                    /pendaftaran/{templateToDelete?.unique_slug}
                                                 </p>
                                             )}
                                         </div>
@@ -154,12 +154,12 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                     <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
                                     <div className="ml-3">
                                         <h4 className="text-sm font-semibold text-amber-800">
-                                            Perhatian!
+                                            Attention!
                                         </h4>
                                         <div className="mt-1 text-sm text-amber-700">
-                                            <p className="mb-1">• Tindakan ini <span className="font-bold">tidak dapat dibatalkan</span></p>
-                                            <p className="mb-1">• Semua data form akan dihapus permanen</p>
-                                            <p>• Link form tidak akan dapat diakses lagi</p>
+                                            <p className="mb-1">• This action <span className="font-bold">cannot be undone</span></p>
+                                            <p className="mb-1">• All form data will be permanently deleted</p>
+                                            <p>• The form link will no longer be accessible.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -172,7 +172,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                     onClick={cancelDelete}
                                     className="px-6 py-2.5 rounded-lg border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 text-gray-700 font-medium"
                                 >
-                                    Batalkan
+                                    Cancel
                                 </Button>
                                 <Button
                                     type="button"
@@ -180,7 +180,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                     onClick={confirmDelete}
                                     className="px-6 py-2.5 rounded-lg font-medium"
                                 >
-                                    Ya, Hapus Form
+                                    Yes, Delete Form
                                 </Button>
                             </div>
                         </div>
@@ -216,10 +216,10 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                     <FileText className='h-10 w-10 text-gray-400' />
                                 </div>
                                 <p className="text-gray-600">
-                                    Tidak ada template aktif
+                                    There are no active templates
                                 </p>
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Semua template telah berakhir atau program tidak ditemukan
+                                    All templates have expired or program not found
                                 </p>
                             </div>
                         ) : (
@@ -259,7 +259,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                                 <div className='flex items-center gap-2 text-sm text-green-600 mb-4'>
                                                     <Calendar className='h-4 w-4 text-green-500' />
                                                     <span className="font-medium">
-                                                        Dibuat : {new Date(template.created_at).toLocaleDateString('id-ID', {
+                                                        Created : {new Date(template.created_at).toLocaleDateString('id-ID', {
                                                             day: 'numeric',
                                                             month: 'long',
                                                             year: 'numeric'
@@ -275,7 +275,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                                             expiryStatus === 'soon' ? 'text-amber-500' : 'text-red-500'
                                                         }`} />
                                                         <span className="font-medium">
-                                                            Berakhir: {new Date(template.end_date).toLocaleDateString('id-ID', {
+                                                            End: {new Date(template.end_date).toLocaleDateString('id-ID', {
                                                                 day: 'numeric',
                                                                 month: 'long',
                                                                 year: 'numeric',
@@ -285,7 +285,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                                         </span>
                                                         {expiryStatus === 'soon' && (
                                                             <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                                                                Segera berakhir
+                                                                Ending soon
                                                             </span>
                                                         )}
                                                     </div>
@@ -297,7 +297,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                                     <div className="flex items-center justify-between">
                                                         <p className='text-sm text-blue-700 font-medium bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100'>
                                                             <span className="text-gray-600">Link: </span>
-                                                            /register/{template.unique_slug}
+                                                            http:/localhost:5173/pendaftaran/{template.unique_slug}
                                                         </p>
                                                     </div>
 
@@ -387,7 +387,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                             {!template.unique_slug && (
                                                 <div className="space-y-3">
                                                     <p className='text-sm text-gray-500 italic bg-gray-50 px-3 py-2 rounded-lg'>
-                                                        Belum memiliki link (belum dipublish)
+                                                        No link yet (not published yet)
                                                     </p>
                                                     <div className="flex gap-2">
                                                         <Button
@@ -402,7 +402,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                                             ) : (
                                                                 <Trash2 className='h-3.5 w-3.5' />
                                                             )}
-                                                            Hapus
+                                                            Delete
                                                         </Button>
                                                     </div>
                                                 </div>

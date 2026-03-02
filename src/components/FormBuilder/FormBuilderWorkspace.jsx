@@ -258,7 +258,7 @@ const FormBuilderWorkspace = () => {
             setSelectedTemplate(enhancedTemplate);
 
             const publicUrl = import.meta.env.VITE_PUBLIC_URL || window.location.origin;
-            const formLink = `${publicUrl}/register/${publishedTemplate.unique_slug}`;
+            const formLink = `${publicUrl}/pendaftaran/${publishedTemplate.unique_slug}`;
 
             await navigator.clipboard.writeText(formLink);
             

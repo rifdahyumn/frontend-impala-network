@@ -15,7 +15,7 @@ import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx'
 import ConfirmModal from "../components/Content/ConfirmModal";
 
-import programService from "../services/programService";
+import impalaService from "../services/impalaService";
 
 const ImpalaManagement = () => {
     const [selectedParticipant, setSelectedParticipant] = useState(null);
@@ -49,27 +49,17 @@ const ImpalaManagement = () => {
     const fetchProgramsFromSystem = async () => {
         setLoadingPrograms(true);
         try {
-            const response = await programService.getProgramNamesFromClients('');
+            const result = await impalaService.fetchProgramsFromImpala();
             
-            if (response && response.data && Array.isArray(response.data)) {
-                const programOptions = response.data
-                    .filter(item => item.program_name && item.program_name.trim() !== '')
-                    .map(item => ({
-                        value: item.program_name.toLowerCase().replace(/\s+/g, '_'),
-                        label: item.program_name,
-                        original: item.program_name,
-                        client: item.company || item.client_name || ''
-                    }));
-                
-                const sortedPrograms = programOptions
-                    .filter((program, index, self) =>
-                        index === self.findIndex(p => p.original === program.original)
-                    )
-                    .sort((a, b) => a.original.localeCompare(b.original));
+            if (result.success && result.data) {
+                const programs = result.data.map(program => ({
+                    ...program,
+                    client: ''
+                }));
                 
                 setAvailablePrograms(prev => {
                     const deletedPrograms = prev.filter(p => 
-                        !sortedPrograms.find(sp => sp.original === p.original)
+                        !programs.find(sp => sp.original === p.original)
                     );
                     
                     if (deletedPrograms.length > 0) {
@@ -83,10 +73,10 @@ const ImpalaManagement = () => {
                         });
                     }
                     
-                    return sortedPrograms;
+                    return programs;
                 });
             } else {
-                console.warn('Invalid response format from getProgramNamesFromClients:', response);
+                console.warn('Gagal mengambil program:', result.message);
                 fetchProgramsFromParticipants();
             }
         } catch (error) {
@@ -624,7 +614,7 @@ const ImpalaManagement = () => {
                     'Peran dalam Komunitas': 'Contoh: Koordinator',
 
                     // Umum
-                    'Bidang Minta': 'Contoh: Teknologi Informatika',
+                    'Bidang Minat': 'Contoh: Teknologi Informatika',
                     'Latar Belakang': 'Contoh: Freelancer',
                     'Tingkat Pengalaman': 'Contoh: Pemula'
                 },
@@ -633,19 +623,30 @@ const ImpalaManagement = () => {
             const dataWorksheet = XLSX.utils.json_to_sheet(templateData)
 
             const wscols = [
-                { wch: 5 },    { wch: 10 },   { wch: 25 },   { wch: 30 },
-                { wch: 15 },   { wch: 15 },   { wch: 20 },   { wch: 30 },
-                { wch: 15 },   { wch: 8 },    { wch: 40 },   { wch: 20 },
-                { wch: 20 },   { wch: 20 },   { wch: 20 },   { wch: 20 },
-                { wch: 20 },   { wch: 10 },   { wch: 25 },   { wch: 40 },
-                { wch: 15 },   { wch: 15 },   { wch: 25 },   { wch: 20 },
-                { wch: 40 },   { wch: 20 },   { wch: 15 },   { wch: 10 },
-                { wch: 15 },   { wch: 25 },   { wch: 20 },   { wch: 15 },
-                { wch: 20 },   { wch: 30 },   { wch: 25 },   { wch: 30 },
-                { wch: 15 },   { wch: 20 },   { wch: 25 },   { wch: 20 },
-                { wch: 30 },   { wch: 30 },   { wch: 30 },   { wch: 30 },
-                { wch: 30 }    
-            ]
+                // Informasi Pribadi 
+                { wch: 30 }, { wch: 25 }, { wch: 35 }, { wch: 20 }, { wch: 15 },
+                { wch: 15 }, { wch: 25 }, { wch: 30 }, { wch: 40 }, { wch: 40 },
+                { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 12 },
+                { wch: 25 }, { wch: 60 },
+                
+                // UMKM 
+                { wch: 30 }, { wch: 25 }, { wch: 40 }, { wch: 20 }, { wch: 15 },
+                { wch: 20 }, { wch: 15 }, { wch: 30 }, { wch: 40 }, { wch: 40 },
+                { wch: 35 },
+                
+                // Mahasiswa 
+                { wch: 30 }, { wch: 30 }, { wch: 12 }, { wch: 15 }, { wch: 35 },
+                { wch: 40 },
+                
+                // Profesional
+                { wch: 30 }, { wch: 25 }, { wch: 15 }, { wch: 25 }, { wch: 45 },
+                
+                // Komunitas 
+                { wch: 30 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 25 },
+                
+                // Umum 
+                { wch: 25 }, { wch: 25 }, { wch: 15 }
+            ];
             dataWorksheet[!'cols'] = wscols
 
             const workbook = XLSX.utils.book_new()
@@ -1344,7 +1345,7 @@ const ImpalaManagement = () => {
                                     <p className="text-sm text-gray-500 max-w-md">
                                         {getTotalActiveCriteria() > 0 
                                             ? "No participants match your current filters. Try adjusting your criteria."
-                                            : "Get started by adding your first participant."
+                                            : ""
                                         }
                                     </p>
                                 </div>
@@ -1358,12 +1359,6 @@ const ImpalaManagement = () => {
                                             Clear Filters
                                         </Button>
                                     )}
-                                    <Button 
-                                        className="flex items-center gap-2"
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                        Add New beneficiaries
-                                    </Button>
                                 </div>
                             </div>
                         ) : (

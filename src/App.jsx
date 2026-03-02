@@ -165,7 +165,7 @@ function AppContent() {
     return (
         <Routes>
             <Route 
-                path="/register/:slug" 
+                path="/pendaftaran/:slug" 
                 element={
                     <PublicFormRoute>
                         <PublicForm />

@@ -680,7 +680,7 @@ const FormSubmissionsList = () => {
                                                     <h4 className="font-semibold text-lg text-gray-800">{template.program_name}</h4>
                                                     <p className="text-sm text-gray-500 mt-1 flex items-center">
                                                         <Calendar className="h-3 w-3 inline mr-1" />
-                                                        Dibuat: {formatDate(template.created_at)}
+                                                        Created: {formatDate(template.created_at)}
                                                     </p>
                                                 </div>
                                                 <ChevronRight className="h-5 w-5 text-gray-400" />
@@ -836,12 +836,12 @@ const FormSubmissionsList = () => {
                             <Users className="h-12 w-12 mx-auto text-gray-300 mb-2" />
                             <p>Belum ada data pendaftar untuk program ini</p>
                             <p className="text-sm mt-1">
-                                Form: /register/{selectedProgram.toLowerCase().replace(/\s+/g, '-')}
+                                Form: /pendaftaran/{selectedProgram.toLowerCase().replace(/\s+/g, '-')}
                             </p>
                             <Button 
                                 variant="outline" 
                                 className="mt-4"
-                                onClick={() => window.open(`/register/${selectedProgram.toLowerCase().replace(/\s+/g, '-')}`, '_blank')}
+                                onClick={() => window.open(`/pendaftaran/${selectedProgram.toLowerCase().replace(/\s+/g, '-')}`, '_blank')}
                             >
                                 Buka Form Pendaftaran
                             </Button>

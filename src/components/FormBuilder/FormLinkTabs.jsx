@@ -42,7 +42,7 @@ const FormLinksTab = ({ formTemplates, formatDate }) => {
                                                 <p className='flex items-center gap-2'>
                                                     <Link className='h-4 w-4' />
                                                     <span>
-                                                        /register/{template.unique_slug}
+                                                        /pendaftaran/{template.unique_slug}
                                                     </span>
                                                 </p>
                                                 <p className='flex items-center gap-2'>
@@ -92,7 +92,7 @@ const FormLinksTab = ({ formTemplates, formatDate }) => {
                                             <div className='space-y-1 text-sm text-gray-600'>
                                                 <p className='flex items-center gap-2'>
                                                     <Calendar className='h-4 w-4' />
-                                                    Dibuat: {formatDate(template.created_at)}
+                                                    Created: {formatDate(template.created_at)}
                                                 </p>
                                                 <p className='text-xs text-gray-500'>
                                                     ID: {template.id}

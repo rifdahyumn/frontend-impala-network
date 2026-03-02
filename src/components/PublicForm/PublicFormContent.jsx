@@ -37,12 +37,12 @@ const PublicFormContent = ({
                 
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 text-center">
-                        <h2 className="text-xl font-semibold">
+                        <h2 className="text-sm md:text-xl font-semibold">
                             {getFormHeaderTitle()}
                         </h2>
                     </div>
 
-                    <div className="p-6">
+                    <div className="p-6 text-xs md:text-base">
                         <form onSubmit={handleSubmit}>
                             <PersonalInfoSection
                                 personalFields={personalFields}

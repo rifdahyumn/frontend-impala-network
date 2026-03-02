@@ -102,10 +102,10 @@ const FormCanvas = ({
 
     const renderProgramField = () => {
         const isRequired = true;
-        const hasSelectedProgram = safeFormConfig.programName && safeFormConfig.programName !== "";
-        const selectedProgram = availablePrograms.find(
-            p => getProgramName(p) === safeFormConfig.programName
-        );
+        // const hasSelectedProgram = safeFormConfig.programName && safeFormConfig.programName !== "";
+        // const selectedProgram = availablePrograms.find(
+        //     p => getProgramName(p) === safeFormConfig.programName
+        // );
 
         return (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
@@ -116,15 +116,15 @@ const FormCanvas = ({
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Pilih Program Perusahaan</h3>
-                        <p className="text-sm text-gray-500">Pilih program yang akan digunakan untuk form pendaftaran</p>
+                        <h3 className="text-lg font-semibold text-gray-900">Select Company Program</h3>
+                        <p className="text-sm text-gray-500">Select the program that will be used for the registration form</p>
                     </div>
                 </div>
                 
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Nama Program
+                            Program Name
                             {isRequired && <span className="text-red-500 ml-1">*</span>}
                         </label>
                         
@@ -137,7 +137,7 @@ const FormCanvas = ({
                                     disabled={loadingPrograms || availablePrograms.length === 0}
                                     className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white font-medium appearance-none"
                                 >
-                                    <option value="">{loadingPrograms ? 'Memuat program...' : '-- Pilih Program Perusahaan --'}</option>
+                                    <option value="">{loadingPrograms ? 'Loading Program...' : '-- Select Company Program --'}</option>
                                     {availablePrograms.map((program, index) => {
                                         const programName = getProgramName(program);
                                         
@@ -177,48 +177,26 @@ const FormCanvas = ({
                                 {loadingPrograms ? (
                                     <>
                                         <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
-                                        <span className="text-xs text-blue-600">Memuat daftar program...</span>
+                                        <span className="text-xs text-blue-600">Loading program list...</span>
                                     </>
                                 ) : availablePrograms.length === 0 ? (
                                     <>
                                         <AlertCircle className="h-3 w-3 text-gray-400" />
                                         <span className="text-xs text-gray-500">
-                                            Tidak ada program yang ditemukan
+                                            No Programs Found
                                         </span>
                                     </>
                                 ) : (
                                     <>
                                         <Shield className="h-3 w-3 text-gray-400" />
                                         <span className="text-xs text-gray-500">
-                                            {availablePrograms.length} program tersedia
+                                            {availablePrograms.length} Program Available
                                         </span>
                                     </>
                                 )}
                             </div>
                         </div>
                     </div>
-                    
-                    {hasSelectedProgram && selectedProgram && (
-                        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-                            <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <CheckCircle className="w-6 h-6 text-white" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h4 className="font-bold text-blue-900">Program Terpilih</h4>
-                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            <Target className="w-3 h-3 mr-1" /> Active
-                                        </span>
-                                    </div>
-                                    <p className="text-blue-800 font-medium mb-2">{safeFormConfig.programName}</p>
-                                    <p className="text-sm text-blue-600">
-                                        Form pendaftaran akan dikaitkan dengan program ini
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
         );
@@ -234,8 +212,8 @@ const FormCanvas = ({
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Konfigurasi Form</h3>
-                        <p className="text-sm text-gray-500">Atur saluran komunikasi dan pesan untuk peserta</p>
+                        <h3 className="text-lg font-semibold text-gray-900">Form Configuration</h3>
+                        <p className="text-sm text-gray-500">Set up communication channels and messages for participants</p>
                     </div>
                 </div>
                 
@@ -252,13 +230,13 @@ const FormCanvas = ({
 
                         <div className='relative'>
                             <div className='flex items-center'>
-                                <span className='absolute left-3 text-gray-400 text-sm'>/register/</span>
+                                <span className='absolute left-3 text-gray-400 text-sm'>/pendaftaran/</span>
                                 <input 
                                     type="text"
                                     placeholder='Enter url here...'
                                     value={slug}
                                     onChange={handleSlugChange}
-                                    className='w-full pl-20 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white font-mono text-sm'
+                                    className='w-full pl-[7.3rem] pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white font-mono text-sm'
                                 />
                             </div>
 
@@ -266,13 +244,13 @@ const FormCanvas = ({
                                 <div className='mt-2 flex items-center gap-2 text-gray-600 text-sm'>
                                     <CheckCircle className='w-4 h-4' />
                                     <span>
-                                        Preview: https://domain.com/register/{slug}
+                                        Preview: https://domain.com/pendaftaran/{slug}
                                     </span>
                                 </div>
                             )}
 
                             <p className='text-xs text-gray-500 mt-2'>
-                                URL akan digunakan sebagai url unik form pendaftaran
+                                The URL will be used as the unique URL for the registration form
                             </p>
                         </div>
                         <div className='h-px bg-gray-200 my-6'></div>
@@ -282,7 +260,7 @@ const FormCanvas = ({
                         <div className="flex items-center gap-2 mb-3">
                             <Users className="w-5 h-5 text-green-600" />
                             <label className="block text-sm font-medium text-gray-700">
-                                Link Grup WhatsApp Perusahaan
+                                WhatsApp Group Link
                                 <span className="text-gray-500 font-normal ml-2">(Opsional)</span>
                             </label>
                         </div>
@@ -307,18 +285,9 @@ const FormCanvas = ({
                             )}
                             
                             {whatsappLink && whatsappLink.includes('chat.whatsapp.com') && (
-                                <div className="mt-4 flex items-center gap-3">
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        className="border-green-200 text-green-700 hover:bg-green-50"
-                                        onClick={() => window.open(whatsappLink, '_blank')}
-                                    >
-                                        <ExternalLink className="w-3 h-3 mr-2" />
-                                        Test Link
-                                    </Button>
+                                <div className="mt-2 flex items-center gap-3">
                                     <span className="text-xs text-green-600">
-                                        Link WhatsApp grup valid
+                                        Valid WhatsApp group link
                                     </span>
                                 </div>
                             )}
@@ -331,7 +300,7 @@ const FormCanvas = ({
                         <div className="flex items-center gap-2 mb-3">
                             <MessageSquare className="w-5 h-5 text-purple-600" />
                             <label className="block text-sm font-medium text-gray-700">
-                                Pesan Konfirmasi Pendaftaran
+                                Registration Confirmation Message
                             </label>
                         </div>
                         
@@ -349,7 +318,7 @@ const FormCanvas = ({
                         </div>
                         
                         <p className="text-xs text-gray-500 mt-2">
-                            Pesan ini akan ditampilkan setelah peserta menyelesaikan pendaftaran
+                            This message will be displayed after the participant completes registration.
                         </p>
                     </div>
                 </div>
@@ -370,11 +339,11 @@ const FormCanvas = ({
                                     <Rocket className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-900">Publish Form Pendaftaran</h3>
+                                    <h3 className="text-lg font-bold text-gray-900">Publish Registration Form</h3>
                                     <p className="text-sm text-gray-600">
                                         {selectedTemplate && selectedTemplate.is_published 
-                                            ? "Form sudah terpublikasi. Update perubahan dan publish ulang untuk menyebarkan versi terbaru."
-                                            : "Publish form untuk membuatnya dapat diakses oleh publik melalui link unik."
+                                            ? "The form has been published. Update the changes and republish to distribute the latest version."
+                                            : "Publish the form to make it publicly accessible via a unique link."
                                         }
                                     </p>
                                 </div>
@@ -406,14 +375,14 @@ const FormCanvas = ({
                                 {isSaving ? (
                                     <>
                                         <Loader2 className="w-5 h-5 animate-spin" />
-                                        <span>Memproses...</span>
+                                        <span>Processing...</span>
                                     </>
                                 ) : (
                                     <>
                                         <Rocket className="w-5 h-5" />
                                         <span>
                                             {selectedTemplate && selectedTemplate.is_published 
-                                                ? 'Update & Publish Ulang' 
+                                                ? 'Update & Republish' 
                                                 : 'Publish Form'
                                             }
                                         </span>
@@ -431,8 +400,8 @@ const FormCanvas = ({
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] bg-white rounded-xl border border-gray-200 p-8">
                 <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Memuat Workspace</h3>
-                <p className="text-gray-600">Menyiapkan konfigurasi form...</p>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Loading Workspace</h3>
+                <p className="text-gray-600">Setting up the form configuration...</p>
             </div>
         );
     }
@@ -442,7 +411,7 @@ const FormCanvas = ({
             <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">Form Builder Workspace</h1>
                 <p className="text-gray-600">
-                    Konfigurasikan form pendaftaran untuk program perusahaan Anda
+                    Configure the registration form for your company's program
                 </p>
                 {selectedTemplate && (
                     <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
@@ -452,34 +421,11 @@ const FormCanvas = ({
                 )}
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               
                 <div className="lg:col-span-2 space-y-6">
                     {renderProgramField()}
                     {safeFormConfig.programName && renderWhatsAppSettings()}
-                </div>
-         
-                <div className="space-y-6">
-                    <div className="bg-blue-50 rounded-xl border border-blue-200 p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                            <Shield className="w-6 h-6 text-blue-600" />
-                            <h3 className="font-semibold text-blue-900">Tips Profesional</h3>
-                        </div>
-                        <ul className="space-y-3 text-sm text-blue-800">
-                            <li className="flex items-start gap-2">
-                                <div className="w-2 h-2 bg-blue-400 rounded-full mt-1 flex-shrink-0"></div>
-                                <span>Gunakan nama program yang jelas dan deskriptif</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <div className="w-2 h-2 bg-blue-400 rounded-full mt-1 flex-shrink-0"></div>
-                                <span>Pastikan link WhatsApp grup valid dan aktif</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <div className="w-2 h-2 bg-blue-400 rounded-full mt-1 flex-shrink-0"></div>
-                                <span>Pesan konfirmasi harus informatif dan profesional</span>
-                            </li>
-                        </ul>
-                    </div>
                 </div>
             </div>
 
