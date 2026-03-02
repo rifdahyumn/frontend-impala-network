@@ -810,7 +810,6 @@ const FormSubmissionsList = () => {
                         </div>
                     </div>
 
-                    {/* Info export */}
                     {exporting && (
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                             <div className="flex items-center gap-3">

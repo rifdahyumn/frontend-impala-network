@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
 import { Edit, Trash2, User, UserCog, Mail, Phone, Shield, History, CheckCircle, Lock, Image, EyeOff, Eye, Loader2, UserCheck, AlertTriangle } from "lucide-react";
@@ -466,7 +466,6 @@ const AccountContent = ({
                                     Edit
                                 </Button>
 
-                                {/* Tombol untuk user yang tidak aktif - ACTIVATE */}
                                 {selectedUser.status !== 'Active' && selectedUser.status !== 'active' && (
                                     <Button
                                         onClick={handleActivate}
@@ -482,7 +481,6 @@ const AccountContent = ({
                                     </Button>
                                 )}
 
-                                {/* Tombol untuk user yang aktif - DEACTIVATE */}
                                 {(selectedUser.status === 'Active' || selectedUser.status === 'active') && (
                                     <Button
                                         variant="outline"

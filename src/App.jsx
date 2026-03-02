@@ -185,7 +185,6 @@ function AppContent() {
                 } 
             />
 
-            {/* 🔑 AUTH ROUTES */}
             <Route 
                 path="/login" 
                 element={
@@ -195,11 +194,10 @@ function AppContent() {
                 } 
             />
 
-            {/* ✅ RESET PASSWORD ROUTE - TAMBAHKAN INI! */}
 <Route 
     path="/reset-password" 
     element={
-        <MinimalLayout>  {/* Atau langsung <ResetPasswordPage /> tanpa layout */}
+        <MinimalLayout> 
             <ResetPasswordPage />
         </MinimalLayout>
     } 
@@ -223,7 +221,6 @@ function AppContent() {
                 }
             />
             
-            {/* 📊 DASHBOARD ROUTES */}
             <Route 
                 path="/" 
                 element={
@@ -305,7 +302,6 @@ function AppContent() {
                 } 
             />
             
-            {/* 🚫 404 ROUTE */}
             <Route path="*" element={
                 <div className="min-h-screen flex items-center justify-center bg-gray-50">
                     <div className="text-center">

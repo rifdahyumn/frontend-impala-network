@@ -128,7 +128,6 @@ export default function ResetPasswordPage() {
             <img src={logo2} alt="Logo Hetero" className="login-logo" />
           </div>
 
-          {/* Tombol kembali ke login dengan fungsi baru */}
           <button 
             onClick={handleBackToLogin}
             className="flex items-center text-blue-500 hover:text-blue-700 mb-6 text-sm"

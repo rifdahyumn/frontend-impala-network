@@ -225,13 +225,6 @@ const ProgramImportModal = ({
                                     >
                                         Remove File
                                     </Button>
-                                    {/* <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleChangeFile}
-                                    >
-                                        Change File
-                                    </Button> */}
                                 </div>
                             </div>
                         ) : (
@@ -293,23 +286,6 @@ const ProgramImportModal = ({
                         </div>
                     )}
 
-                    {/* {isImporting && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                                    <span className="text-sm font-medium text-blue-700">Importing...</span>
-                                </div>
-                                <span className="text-sm font-medium text-blue-600">{importProgress}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div 
-                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                    style={{ width: `${importProgress}%` }}
-                                />
-                            </div>
-                        </div>
-                    )} */}
                 </div>
                 
                 <DialogFooter className="flex flex-col sm:flex-row gap-3">

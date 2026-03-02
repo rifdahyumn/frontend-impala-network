@@ -297,7 +297,6 @@ const EditMemberForm = ({
                         })}
                     </div>
 
-                    {/* Conditional Field for Disability Type */}
                     {activeCategoryData.category === 'Personal Information' && 
                      disabilityStatus === 'Lainnya' && (
                         <div className="mt-4 pt-4 border-t border-gray-200 md:col-span-2">
@@ -326,7 +325,6 @@ const EditMemberForm = ({
                 </div>
             )}
 
-            {/* Form Actions */}
             <div className="flex justify-end gap-3 pt-6 border-t">
                 <Button
                     type="button"

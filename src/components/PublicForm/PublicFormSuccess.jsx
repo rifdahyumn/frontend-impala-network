@@ -97,14 +97,6 @@ const PublicFormSuccess = ({ template, submittedData, getAfterSubmitMessage }) =
                                     <MessageCircle className="h-4 w-4" />
                                     Gabung Grup WhatsApp
                                 </Button>
-                                {/* <Button
-                                    onClick={() => navigate('/')}
-                                    variant="outline"
-                                    className="flex items-center gap-2"
-                                >
-                                    <Home className="h-4 w-4" />
-                                    Kembali ke Beranda
-                                </Button> */}
                             </div>
                         )}
 

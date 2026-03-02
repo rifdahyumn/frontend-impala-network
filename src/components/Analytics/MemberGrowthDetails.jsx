@@ -135,29 +135,6 @@ const MemberGrowthDetails = () => {
                             </Select>
                             
                             <div className="flex items-center gap-2">
-                                {/* <Button
-                                    variant='outline'
-                                    size='icon'
-                                    onClick={() => handleYearChange(-1)}
-                                    disabled={selectedYear <= (availableYears[0] || new Date().getFullYear() - 4)}
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                </Button>
-                                
-                                <div className="flex items-center gap-2 px-3 py-2 border rounded-md bg-white">
-                                    <Calendar className="h-4 w-4 text-gray-500" />
-                                    <span className="font-medium">{selectedYear}</span>
-                                </div>
-                                
-                                <Button
-                                    variant='outline'
-                                    size='icon'
-                                    onClick={() => handleYearChange(1)}
-                                    disabled={selectedYear >= new Date().getFullYear()}
-                                >
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button> */}
-                                
                                 <Select
                                     value={selectedYear.toString()}
                                     onValueChange={(value) => setSelectedYear(parseInt(value))}
