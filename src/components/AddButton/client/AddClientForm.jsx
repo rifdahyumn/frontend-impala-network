@@ -222,13 +222,27 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
         setUpdateAllFields(false);
     };
 
+    useEffect(() => {
+        if (Object.keys(errors).length > 0) {
+            const firstErrorField = Object.keys(errors)[0];
+            const element = document.getElementById(firstErrorField);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element.classList.add('ring-2', 'ring-red-500', 'ring-offset-2');
+                setTimeout(() => {
+                    element.classList.remove('ring-2', 'ring-red-500', 'ring-offset-2');
+                }, 3000);
+            }
+        }
+    }, [errors]);
+
     const handleSubmit = async (e) => {
         e.preventDefault()
 
-        const isUpdateAll = isEditMode ? true : updateAllFields;
+        // const isUpdateAll = isEditMode ? true : updateAllFields;
 
         const isValid = validateForm(
-            formData, formSections, clientExists && !forceCreateNewClient, setErrors, isEditMode, isUpdateAll
+            formData, formSections, clientExists && !forceCreateNewClient, setErrors, isEditMode, updateAllFields
         )
 
         if (!isValid) {
@@ -413,7 +427,7 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             {formSections.map((section, sectionIndex) => (
                 <div key={section.title} className="space-y-4">
                     <div className="border-b pb-2">

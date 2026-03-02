@@ -905,13 +905,39 @@ class ProgramService {
         }
     }
 
+    parseCurrencyToNumber(currencyString) {
+        if (!currencyString) return null;
+        
+        if (typeof currencyString === 'number') return currencyString;
+        
+        if (typeof currencyString === 'string') {
+            const cleaned = currencyString
+                .replace(/^Rp\.?\s*/i, '')  
+                .replace(/\./g, '')        
+                .replace(/,/g, '')         
+                .trim();
+            
+            return cleaned ? parseInt(cleaned) : null;
+        }
+        
+        return null;
+    }
+
     async updateProgram(programId, programData) {
         try {
             if (!programId) {
                 throw new Error('Program ID is required');
             }
 
-            const parsedData = { ...programData };
+            const parsedData = { 
+                ...programData,
+                instructors: Array.isArray(programData.instructors) ? programData.instructors : [],
+                tags: Array.isArray(programData.tags) ? programData.tags : [],
+                interest_of_program: Array.isArray(programData.interest_of_program) ? programData.interest_of_program : [],
+                man_power_pic: Array.isArray(programData.man_power_pic) ? programData.man_power_pic : [],
+                kolaborator: Array.isArray(programData.kolaborator) ? programData.kolaborator : [],
+            };
+            
             const currencyFields = [
                 'budget_offering', 'budget_usage_plan', 'budget_finance_closure',
                 'margin_estimasi_margin', 'margin_real_margin'
@@ -923,30 +949,25 @@ class ProgramService {
                 }
             });
 
+            delete parsedData._raw_instructors;
+            delete parsedData._raw_tags;
+            delete parsedData._raw_interest_of_program;
+            delete parsedData._raw_man_power_pic;
+            delete parsedData._raw_kolaborator;
+
             const response = await fetch(`${this.baseURL}/program/${programId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(parsedData)
-            })
+            });
 
-            return await this.handleResponse(response)
+            return await this.handleResponse(response);
         } catch (error) {
-            console.error('Error updating program: ', error)
-            throw error
+            console.error('Error updating program: ', error);
+            throw error;
         }
-    }
-
-    parseCurrencyToNumber(currencyString) {
-        if (!currencyString) return null;
-        
-        const cleaned = currencyString
-            .replace('Rp. ', '')
-            .replace(/\./g, '')
-            .trim();
-        
-        return cleaned ? parseInt(cleaned) : null;
     }
 
     prepareInstructorsForBackend(instructors) {

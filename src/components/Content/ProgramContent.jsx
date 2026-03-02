@@ -333,16 +333,63 @@ const ProgramContent = ({ selectedProgram, onDelete, detailTitle, onOpenEditModa
         return detailFields.find(category => category.category === activeCategory);
     };
 
+    const parseCurrencyToNumber = (value) => {
+        if (!value) return null;
+        
+        if (typeof value === 'number') return value;
+        
+        if (typeof value === 'string') {
+            const cleaned = value
+                .replace(/^Rp\.?\s*/i, '')
+                .replace(/\./g, '')
+                .trim();
+            
+            const parsed = parseInt(cleaned);
+            return isNaN(parsed) ? null : parsed;
+        }
+        
+        return value;
+    };
+
     const handleEdit = () => {
         if (!selectedProgram) return;
-        if (onOpenEditModal) {
-            onOpenEditModal(selectedProgram, (updatedProgram) => {
+        
+        if (onOpenEditModal && typeof onOpenEditModal === 'function') {
+            const programForEdit = {
+                ...selectedProgram,
+                instructors: Array.isArray(selectedProgram.instructors) 
+                    ? selectedProgram.instructors 
+                    : (selectedProgram.instructors ? String(selectedProgram.instructors).split(',').map(i => i.trim()) : []),
+                tags: Array.isArray(selectedProgram.tags) 
+                    ? selectedProgram.tags 
+                    : (selectedProgram.tags ? String(selectedProgram.tags).split(',').map(t => t.trim()) : []),
+                interest_of_program: Array.isArray(selectedProgram.interest_of_program) 
+                    ? selectedProgram.interest_of_program 
+                    : (selectedProgram.interest_of_program ? String(selectedProgram.interest_of_program).split(',').map(i => i.trim()) : []),
+                man_power_pic: Array.isArray(selectedProgram.man_power_pic) 
+                    ? selectedProgram.man_power_pic 
+                    : (selectedProgram.man_power_pic ? String(selectedProgram.man_power_pic).split(',').map(m => m.trim()) : []),
+                kolaborator: Array.isArray(selectedProgram.kolaborator) 
+                    ? selectedProgram.kolaborator 
+                    : (selectedProgram.kolaborator ? String(selectedProgram.kolaborator).split(',').map(k => k.trim()) : []),
+                budget_offering: parseCurrencyToNumber(selectedProgram.budget_offering),
+                budget_usage_plan: parseCurrencyToNumber(selectedProgram.budget_usage_plan),
+                budget_finance_closure: parseCurrencyToNumber(selectedProgram.budget_finance_closure),
+                margin_real_margin: parseCurrencyToNumber(selectedProgram.margin_real_margin),
+                margin_estimasi_margin: parseCurrencyToNumber(selectedProgram.margin_estimasi_margin),
+                start_date: selectedProgram.start_date ? selectedProgram.start_date.split('T')[0] : '',
+                end_date: selectedProgram.end_date ? selectedProgram.end_date.split('T')[0] : '',
+            };
+
+            onOpenEditModal(programForEdit, (updatedProgram) => {
                 if (onProgramEdited) {
                     onProgramEdited(updatedProgram);
                 }
-
                 toast.success('Program updated successfully');
             });
+        } else {
+            console.error('onOpenEditModal is not a function or not provided');
+            toast.error('Edit functionality not available');
         }
     };
 

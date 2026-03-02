@@ -102,7 +102,7 @@ export const formSections = [
                 name: 'program_name',
                 label: 'Program Name',
                 type: 'text',
-                required: false,
+                required: true,
                 placeholder: 'Enter Program Name',
                 fullWidth: true
             },

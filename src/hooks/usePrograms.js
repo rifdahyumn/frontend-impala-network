@@ -589,7 +589,7 @@ export const usePrograms = (initialFilters = {}) => {
             try {
                 await fetchAllStats();
             } catch (statsError) {
-                console.warn('⚠️ Stats update error (non-critical):', statsError);
+                console.warn('Stats update error (non-critical):', statsError);
             }
 
             toast.success('Program deleted successfully');

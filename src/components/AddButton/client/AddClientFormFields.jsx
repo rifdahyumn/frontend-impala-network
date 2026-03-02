@@ -25,8 +25,10 @@ export const renderField = (props) => {
         handleForceCreateNewClient
     } = props;
 
-    const error = errors[field.name];
+    const error = errors?.[field.name];
     const value = formData[field.name] || '';
+
+    console.log(`Field ${field.name}:`, { error, errors });
 
     if (field.name === 'program_name') {
         return renderProgramField(field, formData, error, value, isEditMode, handleInputChange);
@@ -52,6 +54,8 @@ export const renderField = (props) => {
 };
 
 const renderProgramField = (field, formData, error, value, isEditMode, handleInputChange) => {
+    const hasError = !!error;
+    
     if (isEditMode) {
         return (
             <div className="space-y-2">
@@ -67,7 +71,7 @@ const renderProgramField = (field, formData, error, value, isEditMode, handleInp
         <div className="space-y-2">
             {formData.existing_programs && formData.existing_programs.length > 0 && (
                 <>
-                    <Label htmlFor={field.name}>Existing Programs</Label>
+                    <Label>Existing Programs</Label>
                     <div className="flex flex-wrap gap-2 mb-3">
                         {formData.existing_programs.map((program, idx) => (
                             <Badge key={idx} variant="secondary" className="px-3 py-1">
@@ -78,9 +82,9 @@ const renderProgramField = (field, formData, error, value, isEditMode, handleInp
                 </>
             )}
 
-            <Label htmlFor={field.name}>
+            <Label htmlFor={field.name} className="flex items-center gap-1">
                 {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
+                {field.required && <span className="text-red-500">*</span>}
             </Label>
             <Input
                 id={field.name}
@@ -88,11 +92,16 @@ const renderProgramField = (field, formData, error, value, isEditMode, handleInp
                 value={value}
                 onChange={handleInputChange}
                 placeholder={field.placeholder}
-                required={field.required}
+                // required={field.required}
                 disabled={field.disabled}
-                className={error ? 'border-red-500' : ''}
+                className={hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
+                style={hasError ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
             />
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {hasError && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    {error}
+                </p>
+            )}
         </div>
     );
 };
@@ -115,11 +124,13 @@ const renderSelectField = (field, value, error, formData, provinces, regencies, 
         (field.name === 'district_id' && !formData.regency_id) ||
         (field.name === 'village_id' && !formData.district_id);
 
+    const hasError = !!error;
+
     return (
         <div className="space-y-2">
-            <Label htmlFor={field.name}>
+            <Label htmlFor={field.name} className="flex items-center gap-1">
                 {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
+                {field.required && <span className="text-red-500">*</span>}
             </Label>
             <Select
                 value={value}
@@ -127,7 +138,10 @@ const renderSelectField = (field, value, error, formData, provinces, regencies, 
                 required={field.required}
                 disabled={isDisabled}
             >
-                <SelectTrigger className={error ? 'border-red-500' : ''}>
+                <SelectTrigger 
+                    className={hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
+                    style={hasError ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
+                >
                     <SelectValue placeholder={field.placeholder} />
                 </SelectTrigger>
                 <SelectContent>
@@ -149,17 +163,23 @@ const renderSelectField = (field, value, error, formData, provinces, regencies, 
                     )}
                 </SelectContent>
             </Select>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {hasError && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    {error}
+                </p>
+            )}
         </div>
     );
 };
 
 const renderTextareaField = (field, value, error, handleInputChange) => {
+    const hasError = !!error;
+    
     return (
         <div className="space-y-2 md:col-span-2">
-            <Label htmlFor={field.name}>
+            <Label htmlFor={field.name} className="flex items-center gap-1">
                 {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
+                {field.required && <span className="text-red-500">*</span>}
             </Label>
             <textarea
                 id={field.name}
@@ -170,9 +190,18 @@ const renderTextareaField = (field, value, error, handleInputChange) => {
                 required={field.required}
                 disabled={field.disabled}
                 rows={3}
-                className={`w-full px-3 py-2 border rounded-md ${error ? 'border-red-500' : 'border-gray-300'} ${field.disabled ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''} focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                className={`w-full px-3 py-2 border rounded-md 
+                    ${hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'} 
+                    ${field.disabled ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''} 
+                    focus:outline-none focus:ring-2 transition-colors duration-200
+                `}
+                style={hasError ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
             />
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {hasError && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    {error}
+                </p>
+            )}
         </div>
     );
 };
@@ -190,13 +219,14 @@ const renderFullNameField = (
     handleSelectClient, 
     handleForceCreateNewClient 
 ) => {
-    const isDisabled = false
+    const isDisabled = false;
+    const hasError = !!error;
     
     return (
         <div className="space-y-2 relative">
-            <Label htmlFor={field.name}>
+            <Label htmlFor={field.name} className="flex items-center gap-1">
                 {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
+                {field.required && <span className="text-red-500">*</span>}
             </Label>
             <div className="relative">
                 <Input
@@ -208,7 +238,13 @@ const renderFullNameField = (
                     placeholder={field.placeholder}
                     required={field.required}
                     disabled={isDisabled}
-                    className={`${error ? 'border-red-500' : ''} ${searchingClient ? 'pr-10' : ''} ${isDisabled ? 'bg-gray-100 text-gray-600' : ''}`}
+                    className={`
+                        ${hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} 
+                        ${searchingClient ? 'pr-10' : ''} 
+                        ${isDisabled ? 'bg-gray-100 text-gray-600' : ''}
+                        transition-colors duration-200
+                    `}
+                    style={hasError ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
                 />
 
                 {!isEditMode && searchingClient && (
@@ -224,7 +260,11 @@ const renderFullNameField = (
                 )}
             </div>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {hasError && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    {error}
+                </p>
+            )}
             
             {!isEditMode && value.length > 0 && value.length < 3 && (
                 <p className="text-xs text-gray-500">
@@ -234,7 +274,6 @@ const renderFullNameField = (
 
             {!isEditMode && showSearchResults && clientSearchResults.length > 0 && (
                 <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto search-results-container">
-                    
                     {clientSearchResults.map((client) => (
                         <div
                             key={client.id}
@@ -255,7 +294,6 @@ const renderFullNameField = (
                             + Tetap buat client baru dengan nama ini
                         </button>
                     </div>
-
                 </div>
             )}
         </div>
@@ -263,11 +301,14 @@ const renderFullNameField = (
 };
 
 const renderInputField = (field, value, error, handleInputChange) => {
+    const isDisabled = field.disabled;
+    const hasError = !!error;
+    
     return (
         <div className="space-y-2">
-            <Label htmlFor={field.name}>
+            <Label htmlFor={field.name} className="flex items-center gap-1">
                 {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
+                {field.required && <span className="text-red-500">*</span>}
             </Label>
             <Input
                 id={field.name}
@@ -277,16 +318,26 @@ const renderInputField = (field, value, error, handleInputChange) => {
                 onChange={handleInputChange}
                 placeholder={field.placeholder}
                 required={field.required}
-                disabled={field.disabled}
-                className={`${error ? 'border-red-500' : ''} ${field.disabled ? 'bg-gray-100 text-gray-600' : ''}`}
+                disabled={isDisabled}
+                className={`
+                    ${hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} 
+                    ${isDisabled ? 'bg-gray-100 cursor-not-allowed' : ''}
+                    transition-colors duration-200
+                `}
+                style={hasError ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
             />
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {hasError && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    {error}
+                </p>
+            )}
         </div>
     );
 };
 
 const renderFileField = (field, formData, error, handleInputChange, isEditMode) => {
     const fileValue = formData[field.name]
+    const hasError = !!error;
 
     const handleRemoveFile = () => {
         handleInputChange({
@@ -299,7 +350,7 @@ const renderFileField = (field, formData, error, handleInputChange, isEditMode) 
 
     return (
         <div className="space-y-2">
-            <Label htmlFor={field.name}>
+            <Label htmlFor={field.name} className="flex items-center gap-1">
                 {field.label}
                 {field.required && <span className="text-red-500 ml-1">*</span>}
             </Label>
@@ -310,18 +361,19 @@ const renderFileField = (field, formData, error, handleInputChange, isEditMode) 
                 type="file"
                 accept={field.accept || "image/*"}
                 onChange={(e) => {
-                    const file = e.target.files[0]
+                    const file = e.target.files[0];
                     if (file) {
                         handleInputChange({
                             target: {
                                 name: field.name,
                                 value: file
                             }
-                        })
+                        });
                     }
                 }}
                 disabled={field.disabled}
-                className={`${error ? 'border-red-500' : ''} ${field.disabled ? 'bg-gray-100' : ''}`}
+                className={hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
+                style={hasError ? { borderColor: '#ef4444' } : {}}
             />
 
             {fileValue instanceof File && (
@@ -397,7 +449,11 @@ const renderFileField = (field, formData, error, handleInputChange, isEditMode) 
                 Supported formats: JPEG, PNG, GIF, WEBP, SVG. Max size: 2MB
             </p>
             
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {hasError && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    {error}
+                </p>
+            )}
         </div>
     )
 }

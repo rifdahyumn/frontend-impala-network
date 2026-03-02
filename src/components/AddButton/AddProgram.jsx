@@ -303,14 +303,49 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, editData 
                         'margin_estimasi_margin', 'margin_real_margin'].includes(key)) {
                         newFormData[key] = value ? formatCurrency(value.toString()) : 'Rp. ';
                     } else if (['instructors', 'tags', 'interest_of_program', 'man_power_pic', 'kolaborator'].includes(key)) {
-                        newFormData[key] = Array.isArray(value) ? value : [];
+
+                        if (Array.isArray(value)) {
+                            newFormData[key] = value.filter(item => item && item.trim() !== '');
+                        } else if (typeof value === 'string') {
+                            if (value.includes(',')) {
+                                newFormData[key] = value.split(',').map(item => item.trim()).filter(item => item);
+                            } else if (value && value.trim() !== '') {
+                                newFormData[key] = [value.trim()];
+                            } else {
+                                newFormData[key] = [];
+                            }
+                        } else {
+                            newFormData[key] = [];
+                        }
                     } else {
-                        newFormData[key] = value || '';
+                        newFormData[key] = value !== null && value !== undefined ? value : '';
                     }
                 }
             });
 
+            if (newFormData.budget_offering && newFormData.budget_usage_plan) {
+                newFormData.margin_estimasi_margin = calculateEstimasiMargin(
+                    newFormData.budget_offering,
+                    newFormData.budget_usage_plan
+                );
+            }
+
+            if (newFormData.budget_offering && newFormData.budget_finance_closure) {
+                newFormData.budget_finance_closure_realisasi_penyerapan = calculateRealisasiPenyerapan(
+                    newFormData.budget_finance_closure,
+                    newFormData.budget_offering
+                );
+                
+                if (newFormData.budget_finance_closure_realisasi_penyerapan) {
+                    newFormData.margin_real_margin = calculateMarginRealisasi(
+                        newFormData.budget_offering,
+                        newFormData.budget_finance_closure
+                    );
+                }
+            }
+
             setFormData(newFormData);
+
         } else {
             setFormData({
                 program_name: '',
@@ -374,6 +409,26 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, editData 
         }
     }, [isEditMode, editData, isAddProgramModalOpen]);
 
+    const scrollToErrorTab = (errors) => {
+        const fieldToTab = {
+            'program_name': 'basic',
+            'client': 'basic',
+            'category': 'basic',
+            'description': 'basic',
+            'start_date': 'schedule',
+            'end_date': 'schedule',
+            'location': 'schedule',
+            'budget_offering': 'financial'
+        };
+
+        for (const [field, tab] of Object.entries(fieldToTab)) {
+            if (errors[field]) {
+                setActiveTab(tab);
+                break;
+            }
+        }
+    };
+
     const validateForm = () => {
         const newErrors = {};
 
@@ -390,7 +445,12 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, editData 
 
         requiredFields.forEach(field => {
             const value = formData[field.name];
-            if (!value || value.toString().trim() === '' || value === 'Rp. ') {
+        
+            if (value === undefined || value === null || value === '') {
+                newErrors[field.name] = `${field.label} is required`;
+            } else if (typeof value === 'string' && value.trim() === '') {
+                newErrors[field.name] = `${field.label} is required`;
+            } else if (field.name === 'budget_offering' && (value === 'Rp. ' || value === 'Rp.' || value === '')) {
                 newErrors[field.name] = `${field.label} is required`;
             }
         });
@@ -404,6 +464,20 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, editData 
         }
 
         setErrors(newErrors);
+        
+        if (Object.keys(newErrors).length > 0) {
+            const errorMessages = Object.values(newErrors).join('\n• ');
+            toast.error(`Please fix the following errors:\n• ${errorMessages}`, {
+                duration: 5000,
+                style: {
+                    whiteSpace: 'pre-line',
+                    maxWidth: '400px'
+                }
+            });
+            
+            scrollToErrorTab(newErrors);
+        }
+        
         return Object.keys(newErrors).length === 0;
     };
 
@@ -1350,21 +1424,39 @@ const AddProgram = ({ isAddProgramModalOpen, setIsAddProgramModalOpen, editData 
                 </DialogHeader>
 
                 <div className="flex border-b px-6 overflow-x-auto">
-                    {tabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                                activeTab === tab.id
-                                    ? 'border-amber-500 text-amber-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                            }`}
-                        >
-                            <span>{tab.icon}</span>
-                            {tab.label}
-                        </button>
-                    ))}
+                    {tabs.map(tab => {
+                        const hasError = (() => {
+                            if (tab.id === 'basic') {
+                                return ['program_name', 'client', 'category', 'description'].some(field => errors[field]);
+                            }
+                            if (tab.id === 'schedule') {
+                                return ['start_date', 'end_date', 'location'].some(field => errors[field]);
+                            }
+                            if (tab.id === 'financial') {
+                                return ['budget_offering'].some(field => errors[field]);
+                            }
+                            return false;
+                        })();
+
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap relative ${
+                                    activeTab === tab.id
+                                        ? 'border-amber-500 text-amber-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <span>{tab.icon}</span>
+                                {tab.label}
+                                {hasError && (
+                                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
