@@ -135,7 +135,7 @@ class AnalyticsService {
         }
     }
 
-        async fetchYearlyComparison(options = {}) {
+    async fetchYearlyComparison(options = {}) {
         try {
             const cacheKey = `yearly-comparison-${JSON.stringify(options)}`;
             const cached = this.getFromCache(cacheKey);
