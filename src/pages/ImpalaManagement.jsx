@@ -488,20 +488,20 @@ const ImpalaManagement = () => {
         if (!selectedParticipant) return;
 
         showConfirm({
-            title: 'Hapus Peserta',
-            message: `Apakah Anda yakin ingin menghapus "${selectedParticipant.full_name}"? Tindakan ini tidak dapat dibatalkan.`,
+            title: 'Delete Beneficiaries',
+            message: `Are you sure you want to delete? "${selectedParticipant.full_name}"? This action cannot be undone.`,
             type: 'danger',
-            confirmText: 'Hapus',
-            cancelText: 'Batal',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
             onConfirm: async () => {
                 try {
                     await deleteParticipant(selectedParticipant.id);
                     setSelectedParticipant(null);
-                    toast.success('Peserta berhasil dihapus');
+                    toast.success('Beneficiaries successfully deleted');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } catch (error) {
-                    console.error('Error deleting participant:', error);
-                    toast.error(error.message || 'Gagal menghapus peserta');
+                    console.error('Error deleting Beneficiaries:', error);
+                    toast.error(error.message || 'Failed to delete Beneficiaries');
                 }
             },
             onCancel: () => {

@@ -694,12 +694,33 @@ const HeteroSurakarta = () => {
                     
                     for (const memberData of parsedData) {
                         try {
+                            let genderValue = null;
+                            if (memberData.gender) {
+                                const genderLower = memberData.gender.toString().toLowerCase().trim();
+                                
+                                if (genderLower === 'female' || 
+                                    genderLower === 'perempuan' || 
+                                    genderLower === 'wanita' ||
+                                    genderLower === 'cewek') {
+                                    genderValue = 'Female';
+                                } else if (genderLower === 'male' || 
+                                        genderLower === 'laki-laki' || 
+                                        genderLower === 'laki' || 
+                                        genderLower === 'pria' ||
+                                        genderLower === 'cowok') {
+                                    genderValue = 'Male';
+                                } else {
+                                    genderValue = memberData.gender.trim().charAt(0).toUpperCase() + 
+                                                memberData.gender.trim().slice(1).toLowerCase();
+                                }
+                            }
+                            
                             const importData = {
                                 full_name: memberData.full_name,
                                 nik: memberData.nik || null,
                                 email: memberData.email,
                                 phone: memberData.phone,
-                                gender: memberData.gender || null,
+                                gender: genderValue, 
                                 date_of_birth: memberData.date_of_birth || null,
                                 education: memberData.education || null,
                                 address: memberData.address || null,

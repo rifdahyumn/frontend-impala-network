@@ -8,10 +8,13 @@ const PersonalInfoSection = ({
     renderCustomDisabilityField 
 }) => {
     return (
-        <div className="space-y-6 mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">
+        <div className="mb-8">
+            <h3 className="text-xl font-semibold text-gray-800 mb-1">
                 Informasi Pribadi
             </h3>
+            <p className='text-[10px] md:text-xs pb-8 text-red-500'>
+                *Isikan NIK atau Email Anda untuk memuat data secara otomatis jika pernah mengikuti program Impala sebelumnya.
+            </p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {personalFields.map((field) => (

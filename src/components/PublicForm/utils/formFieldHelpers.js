@@ -5,7 +5,7 @@ export const getPersonalInfoFields = (formConfig, formData, locationData) => {
     const allFields = formConfig.personalInfo.fields;
     
     const fieldOrder = [
-        'full_name', 'nik', 'email', 'phone', 'gender', 
+        'nik', 'email', 'full_name', 'phone', 'gender', 
         'date_of_birth', 'education', 'disability_status', 
         'address', 'province_id', 'regency_id', 'district_id', 
         'village_id', 'postal_code', 'reason'

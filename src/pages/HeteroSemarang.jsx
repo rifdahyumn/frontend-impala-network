@@ -819,6 +819,7 @@ const HeteroSemarang = () => {
                 'Postal Code': member.postal_code || '-',
                 'Company': member.company || '-',
                 'Space': member.space || '-',
+                'Duration': member.duration || '-',
                 'Start Date': member.start_date || '-',
                 'End Date': member.end_date || '-',
                 'Status': member.status || '-',

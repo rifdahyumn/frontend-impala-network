@@ -41,15 +41,7 @@
             description: "Data diri peserta",
             locked: true,
             fields: [
-                {
-                    id: 'full_name',
-                    type: 'text',
-                    name: 'full_name',
-                    label: 'Nama Lengkap',
-                    required: true,
-                    placeholder: 'Masukkan nama lengkap',
-                    locked: true
-                },
+                
                 { 
                     id: 'nik', 
                     type: 'number', 
@@ -66,6 +58,15 @@
                     label: 'Email',
                     required: true,
                     placeholder: 'email@example.com',
+                    locked: true
+                },
+                {
+                    id: 'full_name',
+                    type: 'text',
+                    name: 'full_name',
+                    label: 'Nama Lengkap',
+                    required: true,
+                    placeholder: 'Masukkan nama lengkap',
                     locked: true
                 },
                 {
