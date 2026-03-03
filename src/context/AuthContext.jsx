@@ -20,7 +20,6 @@ export const AuthProvider = ({ children }) => {
         const initializeAuth = async () => {  
             try {
                 if (authServicesIsAuthenticated()) {
-                    
                     const storedUser = localStorage.getItem('user');
                     if (storedUser) {
                         try {
@@ -50,8 +49,12 @@ export const AuthProvider = ({ children }) => {
         try {
             const result = await loginService({ email, password });
 
-            if (result?.success && (result?.data || result?.user)) {
+            if (result?.success) {
                 const userData = result.data || result.user;
+                
+                if (!userData) {
+                    throw new Error('No user data in response');
+                }
                 
                 const completeUserData = {
                     id: userData.id || '',
@@ -76,19 +79,43 @@ export const AuthProvider = ({ children }) => {
                 };
             } else {
                 const errorMsg = result?.message || result?.error || 'Login failed';
-                console.error('Login failed with message:', errorMsg);
+                console.error('Login failed:', errorMsg);
                 setError(errorMsg);
                 setLoading(false);
-                return { success: false, error: errorMsg };
+                return { 
+                    success: false, 
+                    error: errorMsg,
+                    code: result?.code,
+                    status: result?.status
+                };
             }
         } catch (error) {
-            console.error('Error details:', error);
-            console.error('Error stack:', error.stack);
-            const errorMsg = error.message || 'Login failed';
+            console.error('Login error:', error);
+            
+            let errorMsg = error.message || 'Login failed';
+            let status = error.status;
+            let code = error.code;
+            
+            if (status === 403) {
+                if (errorMsg.includes('dinonaktifkan')) {
+                    errorMsg = 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.';
+                } else {
+                    errorMsg = 'Akses ditolak';
+                }
+            } else if (status === 401) {
+                errorMsg = 'Email atau password salah';
+            }
+            
             console.error('Setting error:', errorMsg);
             setError(errorMsg);
             setLoading(false);
-            return { success: false, error: errorMsg };
+            
+            return { 
+                success: false, 
+                error: errorMsg,
+                status,
+                code
+            };
         }
     }, []);
 

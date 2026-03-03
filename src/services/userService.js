@@ -448,12 +448,12 @@ async deactivateUser(userId) {
             throw new Error('User ID is required');
         }
         
-        const result = await this.makeRequest('put', `/user/${userId}/deactivate`);
+        const result = await this.makeRequest('delete', `/user/${userId}`);
         
         return result;
         
     } catch (error) {
-        console.error('❌ UserService.deactivateUser failed:', error);
+        console.error('UserService.deactivateUser failed:', error);
         throw error;
     }
 }

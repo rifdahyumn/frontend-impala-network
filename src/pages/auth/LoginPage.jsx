@@ -1,16 +1,17 @@
 import React, { useEffect, useState, useCallback } from "react";
-import "../../App.css";  
-import { FaUser, FaLock } from "react-icons/fa";
+import "../../App.css";
+import { FaUser, FaLock, FaExclamationTriangle } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth"; 
 import logo from "../../assets/impalalogo.png"; 
 import logo2 from "../../assets/heterologo.png";
-import { validateEmail } from "../../utils/validation";  
+import { validateEmail } from "../../utils/validation"; 
 
 export default function LoginPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { login, user, loading: authLoading } = useAuth();
+    const { login, user, loading: authLoading, error: authContextError } = useAuth(); 
+    
     const [formData, setFormData] = useState({
         email: "",
         password: ""
@@ -18,9 +19,25 @@ export default function LoginPage() {
     const [localLoading, setLocalLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [authError, setAuthError] = useState("");
-    
-    const isDevelopment = import.meta.env.DEV;
-    const appUrl = import.meta.env.VITE_APP_URL;
+    const [errorType, setErrorType] = useState("");
+
+    useEffect(() => {
+        if (authContextError) {           
+            if (authContextError.includes('dinonaktifkan') || authContextError.includes('Akses ditolak')) {
+                setAuthError('Akun Anda telah dinonaktifkan. Silakan hubungi admin.');
+                setErrorType('inactive');
+            } else if (authContextError.includes('salah') || authContextError.includes('Invalid')) {
+                setAuthError('Email atau password salah. Silakan coba lagi.');
+                setErrorType('invalid');
+            } else if (authContextError.includes('verifikasi')) {
+                setAuthError('Email belum diverifikasi. Silakan cek inbox email Anda.');
+                setErrorType('unverified');
+            } else {
+                setAuthError(authContextError);
+                setErrorType('general');
+            }
+        }
+    }, [authContextError]);
 
     useEffect(() => {
         if (user) {
@@ -70,7 +87,10 @@ export default function LoginPage() {
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: "" }));
         }
-        if (authError) setAuthError("");
+        if (authError) {
+            setAuthError("");
+            setErrorType("");
+        }
     }, [errors, authError]);
 
     const handleLogin = useCallback(async (e) => {
@@ -80,6 +100,7 @@ export default function LoginPage() {
         
         setLocalLoading(true);
         setAuthError("");
+        setErrorType("");
 
         try {
             const result = await login(formData.email.trim(), formData.password);
@@ -89,18 +110,10 @@ export default function LoginPage() {
                 navigate(redirectPath, { replace: true });
             } else {
                 setLocalLoading(false);
-                const errorMsg = result?.error || 'Login failed';
-                setAuthError(errorMsg.includes('credentials') || errorMsg.includes('Email atau password') 
-                    ? 'Email atau password salah' 
-                    : errorMsg);
             }
-            
         } catch (err) {
             setLocalLoading(false);
-            const errorMessage = err.message || 'Login gagal';
-            setAuthError(errorMessage.includes('credentials') || errorMessage.includes('Email atau password') 
-                ? 'Email atau password salah' 
-                : errorMessage);
+            console.error('Unexpected error:', err);
         }
     }, [formData, validateForm, login, getRedirectPath, navigate]);
 
@@ -112,6 +125,14 @@ export default function LoginPage() {
 
     const isLoading = localLoading;
 
+    const getErrorBorderColor = (field) => {
+        if (errors[field]) return "border-red-500";
+        if (authError && (errorType === 'invalid' || errorType === 'inactive')) {
+            return "border-red-300";
+        }
+        return "";
+    };
+
     return (
         <div className="login-page">
             <div className="wave-top"></div>
@@ -121,17 +142,6 @@ export default function LoginPage() {
                         <img src={logo} alt="Logo Impala" className="login-logo" />
                         <img src={logo2} alt="Logo Hetero" className="login-logo" />
                     </div>
-
-                    {isDevelopment && (
-                        <div className="mb-4 p-2 bg-yellow-100 border border-yellow-300 rounded text-center">
-                            <p className="text-xs text-yellow-800">
-                                Development Mode - {appUrl}
-                            </p>
-                            <p className="text-xs text-yellow-800 mt-1">
-                                Backend: {import.meta.env.VITE_API_BASE_URL}
-                            </p>
-                        </div>
-                    )}
 
                     <form onSubmit={handleLogin} noValidate>
                         <div className="input-field">
@@ -146,7 +156,7 @@ export default function LoginPage() {
                                 required
                                 autoComplete="email"
                                 aria-label="Email"
-                                className={errors.email ? "border-red-500" : ""}
+                                className={getErrorBorderColor('email')}
                             />
                         </div>
                         {errors.email && (
@@ -165,7 +175,7 @@ export default function LoginPage() {
                                 required
                                 autoComplete="current-password"
                                 aria-label="Password"
-                                className={errors.password ? "border-red-500" : ""}
+                                className={getErrorBorderColor('password')}
                             />
                         </div>
                         {errors.password && (
@@ -173,8 +183,44 @@ export default function LoginPage() {
                         )}
 
                         {authError && (
-                            <div className="error-message mt-4 p-3 bg-red-50 border border-red-200 rounded">
-                                <p className="text-red-600 text-sm">{authError}</p>
+                            <div className={`
+                                mt-4 p-4 rounded-lg border flex items-start gap-3
+                                ${errorType === 'inactive' ? 'bg-orange-50 border-orange-300' : 
+                                  errorType === 'invalid' ? 'bg-red-50 border-red-300' :
+                                  errorType === 'unverified' ? 'bg-yellow-50 border-yellow-300' :
+                                  errorType === 'notfound' ? 'bg-blue-50 border-blue-300' :
+                                  'bg-red-50 border-red-300'}
+                            `}>
+                                <FaExclamationTriangle className={`
+                                    mt-0.5 flex-shrink-0
+                                    ${errorType === 'inactive' ? 'text-orange-500' : 
+                                      errorType === 'invalid' ? 'text-red-500' :
+                                      errorType === 'unverified' ? 'text-yellow-500' :
+                                      errorType === 'notfound' ? 'text-blue-500' :
+                                      'text-red-500'}
+                                `} />
+                                <div>
+                                    <p className={`
+                                        text-sm font-medium
+                                        ${errorType === 'inactive' ? 'text-orange-700' : 
+                                          errorType === 'invalid' ? 'text-red-700' :
+                                          errorType === 'unverified' ? 'text-yellow-700' :
+                                          errorType === 'notfound' ? 'text-blue-700' :
+                                          'text-red-700'}
+                                    `}>
+                                        {authError}
+                                    </p>
+                                    {/* {errorType === 'inactive' && (
+                                        <p className="text-xs text-orange-600 mt-1">
+                                            Hubungi administrator untuk mengaktifkan kembali akun Anda.
+                                        </p>
+                                    )} */}
+                                    {errorType === 'unverified' && (
+                                        <p className="text-xs text-yellow-600 mt-1">
+                                            Jika tidak menerima email verifikasi, cek folder spam atau hubungi administrator.
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         )}
 

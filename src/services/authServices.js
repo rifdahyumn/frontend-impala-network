@@ -324,23 +324,13 @@ export const authApi = createAuthApi();
 
 export const loginService = async (credentials) => {
     try {
-        const response = await axios.post(
-            `${API_BASE_URL}/auth/login`,
-            {
-                email: credentials.email.trim().toLowerCase(),
-                password: credentials.password
-            },
-            {
-                headers: { 
-                    'Content-Type': 'application/json'
-                },
-                timeout: 30000,
-                validateStatus: (status) => status < 500
-            }
-        );
+        const response = await authApi.post('/auth/login', {
+            email: credentials.email.trim().toLowerCase(),
+            password: credentials.password
+        });
         
-        if (response.status === 200 && response.data?.success) {
-            const responseData = response.data.data;
+        if (response?.success) {
+            const responseData = response.data;
 
             const userData = responseData?.user || responseData;
             const tokens = responseData?.tokens;
@@ -368,7 +358,7 @@ export const loginService = async (credentials) => {
                     data: userData,
                     tokens: tokens,
                     requiresMFA: responseData?.requires_mfa || false,
-                    message: response.data?.message || 'Login successful'
+                    message: response?.message || 'Login successful'
                 };
                 return successResponse;
                 
@@ -377,39 +367,33 @@ export const loginService = async (credentials) => {
                 throw new Error('Invalid user data in response: missing required fields');
             }
         } else {
-            const errorData = response.data;
-            let errorMessage = errorData?.message || errorData?.error || 'Login failed';
-            
-            console.error('Login failed:', errorMessage);
-            throw new Error(errorMessage);
+            const errorMsg = response?.error || response?.message || 'Login failed';
+            console.error('Login failed:', errorMsg);
+            throw new Error(errorMsg);
         }
     } catch (error) {
         console.error('Login service error:', error);
         
         let errorMessage = error.message || 'Login failed';
         
-        if (error.response) {
-            const status = error.response.status;
-            const data = error.response.data;
-
-            if (status === 401) {
-                errorMessage = data?.message || 'Email atau password salah';
-            } else if (status === 403) {
-                errorMessage = data?.error || 'Access denied';
-            } else if (status === 429) {
-                errorMessage = 'Too many attempts. Please wait before trying again.';
-            } else if (data?.error) {
-                errorMessage = data.error;
-            } else if (data?.message) {
-                errorMessage = data.message;
+        if (error.status === 403) {
+            if (error.message.includes('dinonaktifkan')) {
+                errorMessage = 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.';
+            } else {
+                errorMessage = 'Akses ditolak';
             }
-        } else if (error.code === 'ECONNABORTED') {
-            errorMessage = 'Connection timeout. Please check your internet connection.';
+        } else if (error.status === 401) {
+            errorMessage = 'Email atau password salah';
+        } else if (error.message.includes('timeout')) {
+            errorMessage = 'Koneksi timeout. Silakan coba lagi.';
         } else if (error.message.includes('Network')) {
-            errorMessage = 'Cannot connect to server';
+            errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
         }
-
-        throw new Error(errorMessage);
+        
+        const enhancedError = new Error(errorMessage);
+        enhancedError.status = error.status;
+        enhancedError.code = error.code;
+        throw enhancedError;
     }
 };
 

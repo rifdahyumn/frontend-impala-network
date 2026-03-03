@@ -1,215 +1,276 @@
-import React, { useEffect, useState, useCallback } from "react";
-import "../../App.css";
-import { FaUser, FaLock } from "react-icons/fa";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth"; 
-import logo from "../../assets/impalalogo.png"; 
-import logo2 from "../../assets/heterologo.png";
-import { validateEmail } from "../../utils/validation"; 
+// import React, { useEffect, useState, useCallback } from "react";
+// import "../../App.css";
+// import { FaUser, FaLock } from "react-icons/fa";
+// import { useNavigate, useLocation } from "react-router-dom";
+// import { useAuth } from "../../hooks/useAuth"; 
+// import logo from "../../assets/impalalogo.png"; 
+// import logo2 from "../../assets/heterologo.png";
+// import { validateEmail } from "../../utils/validation"; 
 
-export default function LoginPage() {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { login, user, loading: authLoading } = useAuth();
-    const [formData, setFormData] = useState({
-        email: "",
-        password: ""
-    });
-    const [localLoading, setLocalLoading] = useState(false);
-    const [errors, setErrors] = useState({});
-    const [authError, setAuthError] = useState("");
+// export default function LoginPage() {
+//     const navigate = useNavigate();
+//     const location = useLocation();
+//     const { login, user, loading: authLoading } = useAuth();
+//     const [formData, setFormData] = useState({
+//         email: "",
+//         password: ""
+//     });
+//     const [localLoading, setLocalLoading] = useState(false);
+//     const [errors, setErrors] = useState({});
+//     const [authError, setAuthError] = useState("");
+//     const [errorType, setErrorType] = useState("");
     
-    const isDevelopment = import.meta.env.DEV;
-    const appUrl = import.meta.env.VITE_APP_URL;
 
-    useEffect(() => {
-        if (user) {
-            const from = location.state?.from?.pathname || getRedirectPath(user.role);
-            navigate(from, { replace: true });
-        }
-    }, [user, navigate, location]);
+//     useEffect(() => {
+//         if (user) {
+//             const from = location.state?.from?.pathname || getRedirectPath(user.role);
+//             navigate(from, { replace: true });
+//         }
+//     }, [user, navigate, location]);
 
-    const getRedirectPath = useCallback((role) => {
-        switch (role) {
-            case 'komunitas':
-                return '/hetero/banyumas';
-            case 'admin':
-            case 'manajer_program': 
-                return '/';
-            default:
-                return '/';
-        }
-    }, []);
+//     const getRedirectPath = useCallback((role) => {
+//         switch (role) {
+//             case 'komunitas':
+//                 return '/hetero/banyumas';
+//             case 'admin':
+//             case 'manajer_program': 
+//                 return '/';
+//             default:
+//                 return '/';
+//         }
+//     }, []);
 
-    const validateForm = useCallback(() => {
-        const newErrors = {};
+//     const validateForm = useCallback(() => {
+//         const newErrors = {};
         
-        if (!formData.email.trim()) {
-            newErrors.email = "Email harus diisi";
-        } else if (!validateEmail(formData.email)) {
-            newErrors.email = "Format email tidak valid";
-        }
+//         if (!formData.email.trim()) {
+//             newErrors.email = "Email harus diisi";
+//         } else if (!validateEmail(formData.email)) {
+//             newErrors.email = "Format email tidak valid";
+//         }
         
-        if (!formData.password) {
-            newErrors.password = "Password harus diisi";
-        } else if (formData.password.length < 6) {
-            newErrors.password = "Password minimal 6 karakter";
-        }
+//         if (!formData.password) {
+//             newErrors.password = "Password harus diisi";
+//         } else if (formData.password.length < 6) {
+//             newErrors.password = "Password minimal 6 karakter";
+//         }
         
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    }, [formData]);
+//         setErrors(newErrors);
+//         return Object.keys(newErrors).length === 0;
+//     }, [formData]);
 
-    const handleChange = useCallback((e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+//     const handleChange = useCallback((e) => {
+//         const { name, value } = e.target;
+//         setFormData(prev => ({
+//             ...prev,
+//             [name]: value
+//         }));
 
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: "" }));
-        }
-        if (authError) setAuthError("");
-    }, [errors, authError]);
+//         if (errors[name]) {
+//             setErrors(prev => ({ ...prev, [name]: "" }));
+//         }
+//         if (authError) {
+//             setAuthError("");
+//             setErrorType("")
+//         }
+//     }, [errors, authError]);
 
-    const handleLogin = useCallback(async (e) => {
-        e.preventDefault();
+//     const handleLogin = useCallback(async (e) => {
+//         e.preventDefault();
         
-        if (!validateForm()) return;
+//         if (!validateForm()) return;
         
-        setLocalLoading(true);
-        setAuthError("");
+//         setLocalLoading(true);
+//         setAuthError("");
+//         setErrorType("")
 
-        try {
-            const result = await login(formData.email.trim(), formData.password);
+//         try {
+//             const result = await login(formData.email.trim(), formData.password);
             
-            if (result?.success) {
-                const redirectPath = getRedirectPath(result.user?.role);
-                navigate(redirectPath, { replace: true });
-            } else {
-                setLocalLoading(false);
-                const errorMsg = result?.error || 'Login failed';
-                setAuthError(errorMsg.includes('credentials') || errorMsg.includes('Email atau password') 
-                    ? 'Email atau password salah' 
-                    : errorMsg);
-            }
+//             if (result?.success) {
+//                 const redirectPath = getRedirectPath(result.user?.role);
+//                 navigate(redirectPath, { replace: true });
+//             } else {
+//                 setLocalLoading(false);
+
+//                 const errorMsg = result?.error || 'Login gagal';
+//                 const errorCode = result?.code || '';
+                
+//                 if (errorCode === 'ACCOUNT_INACTIVE') {
+//                     setAuthError('Akun Anda telah dinonaktifkan. Silakan hubungi administrator.');
+//                     setErrorType('inactive');
+//                 } else if (errorMsg.includes('Email atau password salah') || errorCode === 'INVALID_CREDENTIALS') {
+//                     setAuthError('Email atau password salah. Silakan coba lagi.');
+//                     setErrorType('invalid');
+//                 } else if (errorCode === 'EMAIL_NOT_CONFIRMED') {
+//                     setAuthError('Email belum diverifikasi. Silakan cek inbox email Anda.');
+//                     setErrorType('unverified');
+//                 } else if (errorCode === 'USER_NOT_FOUND') {
+//                     setAuthError('Email tidak terdaftar. Silakan hubungi administrator.');
+//                     setErrorType('notfound');
+//                 } else {
+//                     setAuthError(errorMsg);
+//                     setErrorType('general');
+//                 }
+//             }
             
-        } catch (err) {
-            setLocalLoading(false);
-            const errorMessage = err.message || 'Login gagal';
-            setAuthError(errorMessage.includes('credentials') || errorMessage.includes('Email atau password') 
-                ? 'Email atau password salah' 
-                : errorMessage);
-        }
-    }, [formData, validateForm, login, getRedirectPath, navigate]);
+//         } catch (err) {
+//             setLocalLoading(false);
+            
+//             const errorMessage = err.message || 'Login gagal';
+            
+//             if (errorMessage.includes('Akun Anda telah dinonaktifkan')) {
+//                 setAuthError('Akun Anda telah dinonaktifkan. Silakan hubungi administrator.');
+//                 setErrorType('inactive');
+//             } else if (errorMessage.includes('Email atau password salah') || errorMessage.includes('credentials')) {
+//                 setAuthError('Email atau password salah. Silakan coba lagi.');
+//                 setErrorType('invalid');
+//             } else {
+//                 setAuthError(errorMessage);
+//                 setErrorType('general');
+//             }
+//         }
+//     }, [formData, validateForm, login, getRedirectPath, navigate]);
 
-    useEffect(() => {
-        if (authLoading === false && localLoading === true) {
-            setLocalLoading(false);
-        }
-    }, [authLoading, localLoading]);
+//     useEffect(() => {
+//         if (authLoading === false && localLoading === true) {
+//             setLocalLoading(false);
+//         }
+//     }, [authLoading, localLoading]);
 
-    const isLoading = localLoading;
+//     const isLoading = localLoading;
 
-    return (
-        <div className="login-page">
-            <div className="wave-top"></div>
-            <div className="login-container">
-                <div className="login-box">
-                    <div className="logo-group">
-                        <img src={logo} alt="Logo Impala" className="login-logo" />
-                        <img src={logo2} alt="Logo Hetero" className="login-logo" />
-                    </div>
+//     const getErrorBorderColor = (field) => {
+//         if (errors[field]) return "border-red-500";
+//         if (authError && (errorType === 'invalid' || errorType === 'inactive')) {
+//             return "border-red-300";
+//         }
+//         return "";
+//     };
 
-                    {isDevelopment && (
-                        <div className="mb-4 p-2 bg-yellow-100 border border-yellow-300 rounded text-center">
-                            <p className="text-xs text-yellow-800">
-                                Development Mode - {appUrl}
-                            </p>
-                            <p className="text-xs text-yellow-800 mt-1">
-                                Backend: {import.meta.env.VITE_API_BASE_URL}
-                            </p>
-                        </div>
-                    )}
+//     return (
+//         <div className="login-page">
+//             <div className="wave-top"></div>
+//             <div className="login-container">
+//                 <div className="login-box">
+//                     <div className="logo-group">
+//                         <img src={logo} alt="Logo Impala" className="login-logo" />
+//                         <img src={logo2} alt="Logo Hetero" className="login-logo" />
+//                     </div>
 
-                    <form onSubmit={handleLogin} noValidate>
-                        <div className="input-field">
-                            <FaUser className="icon" />
-                            <input 
-                                type="email" 
-                                name="email"
-                                placeholder="Email" 
-                                value={formData.email}
-                                onChange={handleChange}
-                                disabled={isLoading}
-                                required
-                                autoComplete="email"
-                                aria-label="Email"
-                                className={errors.email ? "border-red-500" : ""}
-                            />
-                        </div>
-                        {errors.email && (
-                            <p className="text-red-500 text-xs mt-1 ml-8">{errors.email}</p>
-                        )}
+//                     <form onSubmit={handleLogin} noValidate>
+//                         <div className="input-field">
+//                             <FaUser className="icon" />
+//                             <input 
+//                                 type="email" 
+//                                 name="email"
+//                                 placeholder="Email" 
+//                                 value={formData.email}
+//                                 onChange={handleChange}
+//                                 disabled={isLoading}
+//                                 required
+//                                 autoComplete="email"
+//                                 aria-label="Email"
+//                                 className={errors.email ? "border-red-500" : ""}
+//                             />
+//                         </div>
+//                         {errors.email && (
+//                             <p className="text-red-500 text-xs mt-1 ml-8">{errors.email}</p>
+//                         )}
 
-                        <div className="input-field mt-4">
-                            <FaLock className="icon" />
-                            <input 
-                                type="password" 
-                                name="password"
-                                placeholder="Password" 
-                                value={formData.password}
-                                onChange={handleChange}
-                                disabled={isLoading}
-                                required
-                                autoComplete="current-password"
-                                aria-label="Password"
-                                className={errors.password ? "border-red-500" : ""}
-                            />
-                        </div>
-                        {errors.password && (
-                            <p className="text-red-500 text-xs mt-1 ml-8">{errors.password}</p>
-                        )}
+//                         <div className="input-field mt-4">
+//                             <FaLock className="icon" />
+//                             <input 
+//                                 type="password" 
+//                                 name="password"
+//                                 placeholder="Password" 
+//                                 value={formData.password}
+//                                 onChange={handleChange}
+//                                 disabled={isLoading}
+//                                 required
+//                                 autoComplete="current-password"
+//                                 aria-label="Password"
+//                                 className={errors.password ? "border-red-500" : ""}
+//                             />
+//                         </div>
+//                         {errors.password && (
+//                             <p className="text-red-500 text-xs mt-1 ml-8">{errors.password}</p>
+//                         )}
 
-                        {authError && (
-                            <div className="error-message mt-4 p-3 bg-red-50 border border-red-200 rounded">
-                                <p className="text-red-600 text-sm">{authError}</p>
-                            </div>
-                        )}
+//                         {authError && (
+//                             <div className={`
+//                                 mt-4 p-4 rounded-lg border flex items-start gap-3
+//                                 ${errorType === 'inactive' ? 'bg-orange-50 border-orange-300' : 
+//                                   errorType === 'invalid' ? 'bg-red-50 border-red-300' :
+//                                   errorType === 'unverified' ? 'bg-yellow-50 border-yellow-300' :
+//                                   errorType === 'notfound' ? 'bg-blue-50 border-blue-300' :
+//                                   'bg-red-50 border-red-300'}
+//                             `}>
+//                                 <FaExclamationTriangle className={`
+//                                     mt-0.5 flex-shrink-0
+//                                     ${errorType === 'inactive' ? 'text-orange-500' : 
+//                                       errorType === 'invalid' ? 'text-red-500' :
+//                                       errorType === 'unverified' ? 'text-yellow-500' :
+//                                       errorType === 'notfound' ? 'text-blue-500' :
+//                                       'text-red-500'}
+//                                 `} />
+//                                 <div>
+//                                     <p className={`
+//                                         text-sm font-medium
+//                                         ${errorType === 'inactive' ? 'text-orange-700' : 
+//                                           errorType === 'invalid' ? 'text-red-700' :
+//                                           errorType === 'unverified' ? 'text-yellow-700' :
+//                                           errorType === 'notfound' ? 'text-blue-700' :
+//                                           'text-red-700'}
+//                                     `}>
+//                                         {authError}
+//                                     </p>
+//                                     {errorType === 'inactive' && (
+//                                         <p className="text-xs text-orange-600 mt-1">
+//                                             Hubungi administrator untuk mengaktifkan kembali akun Anda.
+//                                         </p>
+//                                     )}
+//                                     {errorType === 'unverified' && (
+//                                         <p className="text-xs text-yellow-600 mt-1">
+//                                             Jika tidak menerima email verifikasi, cek folder spam atau hubungi administrator.
+//                                         </p>
+//                                     )}
+//                                 </div>
+//                             </div>
+//                         )}
 
-                        <div className="forgot mt-4">
-                            <button
-                                type="button"
-                                className={`text-blue-500 hover:text-blue-700 text-sm bg-transparent border-none p-0 cursor-pointer ${
-                                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                                }`}
-                                onClick={() => navigate('/forgot-password')}
-                                disabled={isLoading}
-                            >
-                                Lupa Password?
-                            </button>
-                        </div>
+//                         <div className="forgot mt-4">
+//                             <button
+//                                 type="button"
+//                                 className={`text-blue-500 hover:text-blue-700 text-sm bg-transparent border-none p-0 cursor-pointer ${
+//                                     isLoading ? 'opacity-50 cursor-not-allowed' : ''
+//                                 }`}
+//                                 onClick={() => navigate('/forgot-password')}
+//                                 disabled={isLoading}
+//                             >
+//                                 Lupa Password?
+//                             </button>
+//                         </div>
 
-                        <button 
-                            type="submit" 
-                            className="login-btn mt-6" 
-                            disabled={isLoading}
-                            aria-busy={isLoading}
-                        >
-                            {isLoading ? (
-                                <div className="flex items-center justify-center">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                    Loading...
-                                </div>
-                            ) : (
-                                'Log In'
-                            )}
-                        </button>
-                    </form>
-                </div>
-            </div>
-            <div className="wave-bottom"></div>
-        </div>
-    );
-}
+//                         <button 
+//                             type="submit" 
+//                             className="login-btn mt-6" 
+//                             disabled={isLoading}
+//                             aria-busy={isLoading}
+//                         >
+//                             {isLoading ? (
+//                                 <div className="flex items-center justify-center">
+//                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+//                                     Loading...
+//                                 </div>
+//                             ) : (
+//                                 'Log In'
+//                             )}
+//                         </button>
+//                     </form>
+//                 </div>
+//             </div>
+//             <div className="wave-bottom"></div>
+//         </div>
+//     );
+// }

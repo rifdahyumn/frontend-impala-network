@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './hooks/useAuth';
@@ -92,16 +92,23 @@ const FullPageLoader = () => {
 };
 
 const ProtectedRoute = ({ children }) => {
-    const { user, loading, isAuthenticated, checkAuthStatus } = useAuth();
+    const { user, loading, isAuthenticated } = useAuth();
     const location = useLocation();
+    const [isRedirecting, setIsRedirecting] = useState(false);
 
     useEffect(() => {
-        if (!loading && !isAuthenticated && location.pathname !== '/login') {
-            checkAuthStatus?.();
+        if (isAuthenticated && !loading) {
+            setIsRedirecting(true);
+            
+            const timer = setTimeout(() => {
+                setIsRedirecting(false);
+            }, 2000);
+            
+            return () => clearTimeout(timer);
         }
-    }, [loading, isAuthenticated, user, location.pathname, checkAuthStatus]);
+    }, [isAuthenticated, loading]);
 
-    if (loading) {
+    if (loading || isRedirecting) {
         return <FullPageLoader />;
     }
 
@@ -134,11 +141,7 @@ const ProtectedRouteMinimal = ({ children }) => {
 };
 
 const PublicRoute = ({ children }) => {
-    const { loading, isAuthenticated } = useAuth();
-
-    if (loading) {
-        return <FullPageLoader />;
-    }
+    const { isAuthenticated } = useAuth();
 
     if (isAuthenticated) {
         return <Navigate to="/" replace />;
@@ -156,12 +159,6 @@ const PublicFormRoute = ({ children }) => {
 };
 
 function AppContent() {
-    const { loading } = useAuth();
-
-    if (loading) {
-        return <FullPageLoader />;
-    }
-
     return (
         <Routes>
             <Route 
@@ -194,23 +191,23 @@ function AppContent() {
                 } 
             />
 
-<Route 
-    path="/reset-password" 
-    element={
-        <MinimalLayout> 
-            <ResetPasswordPage />
-        </MinimalLayout>
-    } 
-/>
+            <Route 
+                path="/reset-password" 
+                element={
+                    <MinimalLayout> 
+                        <ResetPasswordPage />
+                    </MinimalLayout>
+                } 
+            />
 
-<Route 
-    path="/forgot-password" 
-    element={
-        <PublicRoute>
-            <ForgotPasswordPage />
-        </PublicRoute>
-    } 
-/>
+            <Route 
+                path="/forgot-password" 
+                element={
+                    <PublicRoute>
+                        <ForgotPasswordPage />
+                    </PublicRoute>
+                } 
+            />
 
             <Route 
                 path="/account-settings" 

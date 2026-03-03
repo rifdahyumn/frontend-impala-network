@@ -395,7 +395,7 @@ const Account = () => {
 
         return [
             {
-                title: "Total Users (All Pages)",
+                title: "Total Users ",
                 value: totalUsers.toString(),
                 subtitle: getTotalActiveCriteria() > 0 
                     ? `Showing ${filteredTotal} filtered` 
@@ -411,7 +411,7 @@ const Account = () => {
                 loading: statsLoading
             },
             {
-                title: "Active Users (All Pages)",
+                title: "Active Users",
                 value: activeUsers.toString(),
                 subtitle: getTotalActiveCriteria() > 0 
                     ? `${filteredActive} active in current page` 
@@ -730,23 +730,23 @@ const Account = () => {
                                         <span className="text-2xl font-bold text-gray-800">
                                             {stat.value}
                                         </span>
-                                        <span className={`text-sm font-medium px-2 py-1 rounded-full ${
+                                        {/* <span className={`text-sm font-medium px-2 py-1 rounded-full ${
                                             stat.trend === 'up' ? 'bg-green-100 text-green-800' : 
                                             stat.trend === 'down' ? 'bg-red-100 text-red-800' : 
                                             'bg-gray-100 text-gray-800'
                                         }`}>
                                             {stat.percentage}
-                                        </span>
+                                        </span> */}
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="mt-4 text-sm text-gray-500">
+                        {/* <div className="mt-4 text-sm text-gray-500">
                             {stat.description}
                             {stat.subtitle && (
                                 <span className="block text-xs text-gray-400 mt-1">{stat.subtitle}</span>
                             )}
-                        </div>
+                        </div> */}
                     </div>
                 ))}
             </div>

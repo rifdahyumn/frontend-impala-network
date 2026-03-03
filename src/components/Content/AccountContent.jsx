@@ -5,6 +5,7 @@ import { Edit, Trash2, User, UserCog, Mail, Phone, Shield, History, CheckCircle,
 import toast from 'react-hot-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import ConfirmModal from "./ConfirmModal";
+import userService from '../../services/userService';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '';
 
@@ -12,8 +13,6 @@ const AccountContent = ({
     selectedUser, 
     onOpenEditModal, 
     detailTitle, 
-    onDelete, 
-    onActivateUser,
     onUserUpdated,
     onClientDeleted,
     showConfirm,
@@ -87,21 +86,19 @@ const AccountContent = ({
                     setActivateLoading(true);
                     
                     try {
-                        if (onActivateUser) {
-                            // const result = await onActivateUser(selectedUser.id);
-                            
-                            toast.success(`User "${selectedUser.full_name}" activated successfully`);
-                            
-                            if (onUserUpdated) {
-                                try {
-                                    await onUserUpdated();
-                                } catch (refreshError) {
-                                    console.error('Error in onUserUpdated:', refreshError);
-                                }
-                            }
+                        await userService.activateUser(selectedUser.id);
+                        
+                        toast.success(`User "${selectedUser.full_name}" activated successfully`);
+                        
+                        if (selectedUser) {
+                            selectedUser.status = 'active';
                         }
+                        
+                        if (onUserUpdated) {
+                            await onUserUpdated();
+                        }
+                        
                     } catch (error) {
-                        console.error('Error activating user:', error);
                         toast.error(error.message || 'Failed to activate user');
                     } finally {
                         setActivateLoading(false);
@@ -114,7 +111,7 @@ const AccountContent = ({
         }
     };
 
-    const handleDelete = () => {
+    const handleDeactivate = () => {
         if (!selectedUser) return;
         
         if (showConfirm) {
@@ -128,25 +125,24 @@ const AccountContent = ({
                     setDeleteLoading(true);
                     
                     try {
-                        if (onDelete) {
-                            // const result = await onDelete(selectedUser.id);
-                            
-                            toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
-                            
-                            if (onUserUpdated) {
-                                try {
-                                    await onUserUpdated();
-                                } catch (refreshError) {
-                                    console.error('Error in onUserUpdated:', refreshError);
-                                }
-                            }
-                            
-                            if (onClientDeleted) {
-                                onClientDeleted();
-                            }
+                        await userService.deactivateUser(selectedUser.id);
+                        
+                        toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
+                        
+                        if (selectedUser) {
+                            selectedUser.status = 'inactive';
                         }
+                        
+                        if (onUserUpdated) {
+                            await onUserUpdated();
+                        }
+                        
+                        if (onClientDeleted) {
+                            onClientDeleted();
+                        }
+                        
                     } catch (error) {
-                        console.error('Error deactivating user:', error);
+                        console.error('4. Error deactivating user:', error);
                         toast.error(error.message || 'Failed to deactivate user');
                     } finally {
                         setDeleteLoading(false);
@@ -161,24 +157,28 @@ const AccountContent = ({
         }
     };
 
-    const handleConfirmDelete = async () => {
+    const handleConfirmDeactivate = async () => {
         if (!selectedUser) return;
         
         setDeleteLoading(true);
         
         try {
-            if (onDelete) {
-                await onDelete(selectedUser.id);
-                toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
-                
-                if (onUserUpdated) {
-                    await onUserUpdated();
-                }
-                
-                if (onClientDeleted) {
-                    onClientDeleted();
-                }
+            await userService.deactivateUser(selectedUser.id);
+            
+            toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
+            
+            if (selectedUser) {
+                selectedUser.status = 'inactive';
             }
+            
+            if (onUserUpdated) {
+                await onUserUpdated();
+            }
+            
+            if (onClientDeleted) {
+                onClientDeleted();
+            }
+            
         } catch (error) {
             console.error('Error deactivating user:', error);
             toast.error(error.message || 'Failed to deactivate user');
@@ -475,7 +475,7 @@ const AccountContent = ({
                                         variant="outline"
                                         size="sm"
                                         className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                                        onClick={handleDelete}
+                                        onClick={handleDeactivate}
                                         disabled={deleteLoading}
                                     >
                                         {deleteLoading ? (
@@ -520,7 +520,7 @@ const AccountContent = ({
                         cancelText: 'Cancel',
                     }}
                     onConfirm={() => {
-                        handleConfirmDelete();
+                        handleConfirmDeactivate();
                     }}
                     onCancel={() => {
                         setDeleteModalOpen(false);
