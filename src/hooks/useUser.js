@@ -12,6 +12,12 @@ export const useUsers = () => {
         total: 0,
         totalPages: 1
     })
+    
+    const [totalStats, setTotalStats] = useState({
+        totalUsers: 0,
+        totalActive: 0
+    })
+    const [statsLoading, setStatsLoading] = useState(false)
 
     const isMounted = useRef(true)
     const hasFetched = useRef(false)
@@ -44,7 +50,6 @@ export const useUsers = () => {
             }
 
             const result = await userService.fetchUsers(serviceParams)
-
 
             if (!isMounted.current) {
                 return
@@ -79,6 +84,13 @@ export const useUsers = () => {
                 total: total,
                 totalPages: totalPages
             })
+            
+            if (isMounted.current && total > 0) {
+                setTotalStats(prev => ({
+                    ...prev,
+                    totalUsers: total
+                }))
+            }
 
         } catch (error) {
             console.error('useUsers.fetchUsers error:', error)
@@ -102,6 +114,150 @@ export const useUsers = () => {
         }
     }, [])
 
+    const fetchTotalStats = useCallback(async () => {
+        if (!isMounted.current) return
+        
+        if (statsLoading) return
+        
+        try {
+            setStatsLoading(true)
+            
+            let totalActive = 0
+            let totalUsers = pagination.total || 0
+
+            if (userService.getTotalStats) {
+                try {
+                    const result = await userService.getTotalStats()
+                    if (result && result.success && result.data) {
+                        if (isMounted.current) {
+                            setTotalStats({
+                                totalUsers: result.data.totalUsers || totalUsers,
+                                totalActive: result.data.totalActive || 0
+                            })
+                            setStatsLoading(false)
+                            return
+                        }
+                    }
+                } catch (error) {
+                    console.log('getTotalStats not available, using fallback method')
+                }
+            }
+            
+            if (totalUsers > 0 && pagination.totalPages > 1) {
+                try {
+                    let allUsers = [...users]
+                    
+                    const totalPages = pagination.totalPages
+                    
+                    const fetchPromises = []
+                    for (let page = 2; page <= totalPages; page++) {
+                        fetchPromises.push(
+                            userService.fetchUsers({ 
+                                page: page, 
+                                limit: pagination.limit || 10,
+                            })
+                            .then(res => {
+                                if (res && res.success && res.data) {
+                                    return Array.isArray(res.data) ? res.data : []
+                                }
+                                return []
+                            })
+                            .catch(err => {
+                                console.error(`Error fetching page ${page}:`, err)
+                                return []
+                            })
+                        )
+                    }
+                    
+                    if (fetchPromises.length > 0) {
+                        const results = await Promise.all(fetchPromises)
+                        
+                        results.forEach(pageUsers => {
+                            if (pageUsers.length > 0) {
+                                allUsers = [...allUsers, ...pageUsers]
+                            }
+                        })
+                    }
+                    
+                    totalActive = allUsers.filter(u => 
+                        u.status?.toLowerCase() === 'active' || 
+                        u.status?.toLowerCase() === 'aktif'
+                    ).length
+                    
+                } catch (error) {
+                    console.error('Error fetching all pages:', error)
+                    
+                    totalActive = users.filter(u => 
+                        u.status?.toLowerCase() === 'active' || 
+                        u.status?.toLowerCase() === 'aktif'
+                    ).length
+                    
+                    if (pagination.totalPages > 1) {
+                        const avgPerPage = users.length
+                        const estimatedTotal = avgPerPage * pagination.totalPages
+                        const activePerPage = totalActive
+                        const estimatedActive = Math.round((activePerPage / avgPerPage) * estimatedTotal)
+                        
+                        totalActive = Math.min(estimatedActive, totalUsers)
+                    }
+                }
+            } else {
+                totalActive = users.filter(u => 
+                    u.status?.toLowerCase() === 'active' || 
+                    u.status?.toLowerCase() === 'aktif'
+                ).length
+            }
+            
+            if (isMounted.current) {
+                setTotalStats({
+                    totalUsers: totalUsers,
+                    totalActive: totalActive
+                })
+            }
+            
+        } catch (error) {
+            console.error('Error fetching total stats:', error)
+            
+            if (isMounted.current) {
+                setTotalStats({
+                    totalUsers: pagination.total || 0,
+                    totalActive: users.filter(u => 
+                        u.status?.toLowerCase() === 'active' || 
+                        u.status?.toLowerCase() === 'aktif'
+                    ).length
+                })
+            }
+        } finally {
+            if (isMounted.current) {
+                setStatsLoading(false)
+            }
+        }
+    }, [users, pagination.total, pagination.totalPages, pagination.limit, statsLoading])
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (!loading && pagination.total > 0) {
+                fetchTotalStats()
+            }
+        }, 500)
+
+        return () => {
+            clearTimeout(timer)
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    useEffect(() => {
+        if (!loading && pagination.total > 0) {
+            const timer = setTimeout(() => {
+                fetchTotalStats()
+            }, 300)
+            
+            return () => clearTimeout(timer)
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pagination.total, loading])
+
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchUsers(1)
@@ -116,8 +272,13 @@ export const useUsers = () => {
         if (isMounted.current) {
             hasFetched.current = false
             fetchUsers(pagination.page)
+            setTimeout(() => {
+                if (isMounted.current) {
+                    fetchTotalStats()
+                }
+            }, 500)
         }
-    }, [fetchUsers, pagination.page])
+    }, [fetchUsers, pagination.page, fetchTotalStats])
 
     const addUser = async (userData) => {
         try {
@@ -268,17 +429,62 @@ export const useUsers = () => {
         }
     };
 
-const activateUser = async (userId) => {
-    try {
-        if (!userId) {
-            throw new Error('User ID is required');
-        }
-        
-        let result;
+    const activateUser = async (userId) => {
         try {
-            result = await userService.activateUser(userId);
-        } catch (apiError) {           
-            if (apiError.message && apiError.message.includes('Unexpected token')) {
+            if (!userId) {
+                throw new Error('User ID is required');
+            }
+            
+            let result;
+            try {
+                result = await userService.activateUser(userId);
+            } catch (apiError) {           
+                if (apiError.message && apiError.message.includes('Unexpected token')) {
+                    
+                    if (isMounted.current) {
+                        setUsers(prevUsers => 
+                            prevUsers.map(user => 
+                                user.id === userId ? { ...user, status: 'active' } : user
+                            )
+                        );
+                    }
+                    
+                    toast.success('User activated successfully');
+                    
+                    setTimeout(() => {
+                        if (isMounted.current) {
+                            refreshUsers();
+                        }
+                    }, 500);
+                    
+                    return { success: true, data: { status: 'active' } };
+                }
+                
+                throw apiError;
+            }
+            
+            toast.success(result?.message || 'User activated successfully');
+            
+            if (isMounted.current) {
+                setUsers(prevUsers => 
+                    prevUsers.map(user => 
+                        user.id === userId ? { ...user, status: 'active' } : user
+                    )
+                );
+            }
+            
+            setTimeout(() => {
+                if (isMounted.current) {
+                    refreshUsers();
+                }
+            }, 500);
+            
+            return result;
+            
+        } catch (error) {
+            console.error('Error di activateUser hook:', error);
+            
+            if (error.message && error.message.includes('Unexpected token')) {
                 
                 if (isMounted.current) {
                     setUsers(prevUsers => 
@@ -299,55 +505,10 @@ const activateUser = async (userId) => {
                 return { success: true, data: { status: 'active' } };
             }
             
-            throw apiError;
+            toast.error(error.message || 'Failed to activate user');
+            throw error;
         }
-        
-        toast.success(result?.message || 'User activated successfully');
-        
-        if (isMounted.current) {
-            setUsers(prevUsers => 
-                prevUsers.map(user => 
-                    user.id === userId ? { ...user, status: 'active' } : user
-                )
-            );
-        }
-        
-        setTimeout(() => {
-            if (isMounted.current) {
-                refreshUsers();
-            }
-        }, 500);
-        
-        return result;
-        
-    } catch (error) {
-        console.error('Error di activateUser hook:', error);
-        
-        if (error.message && error.message.includes('Unexpected token')) {
-            
-            if (isMounted.current) {
-                setUsers(prevUsers => 
-                    prevUsers.map(user => 
-                        user.id === userId ? { ...user, status: 'active' } : user
-                    )
-                );
-            }
-            
-            toast.success('User activated successfully');
-            
-            setTimeout(() => {
-                if (isMounted.current) {
-                    refreshUsers();
-                }
-            }, 500);
-            
-            return { success: true, data: { status: 'active' } };
-        }
-        
-        toast.error(error.message || 'Failed to activate user');
-        throw error;
-    }
-};
+    };
 
     const deactivateUser = async (userId) => {
         try {
@@ -447,6 +608,9 @@ const activateUser = async (userId) => {
         deactivateUser,
         getUserById,
         uploadAvatar,  
-        deleteAvatar   
+        deleteAvatar,
+        totalStats,
+        statsLoading,
+        fetchTotalStats
     }
 }
