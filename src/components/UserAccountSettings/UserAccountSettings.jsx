@@ -6,7 +6,7 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Card, CardContent } from "../ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Upload, X, ChevronDown, LogOut, Loader2 } from "lucide-react";
+import { Upload, X, ChevronDown, LogOut, Loader2, CheckCircle } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { toast } from "react-hot-toast"; 
 
@@ -33,6 +33,9 @@ const UserAccountSettings = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false); 
     const [errors, setErrors] = useState({}); 
+    // State untuk popup konfirmasi sukses
+    const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
 
     useEffect(() => {
         if (user && !authLoading) {
@@ -67,6 +70,15 @@ const UserAccountSettings = () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    useEffect(() => {
+        if (showSuccessPopup) {
+            const timer = setTimeout(() => {
+                setShowSuccessPopup(false);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [showSuccessPopup]);
 
     if (authLoading) {
         return (
@@ -341,6 +353,9 @@ const UserAccountSettings = () => {
                 }
                 
                 toast.success('Profile updated successfully!');
+                
+                setSuccessMessage('Your profile changes have been saved successfully!');
+                setShowSuccessPopup(true);
 
                 if (changePassword) {
                     setFormData(prev => ({
@@ -494,6 +509,47 @@ const UserAccountSettings = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-amber-50 to-yellow-50">
+            {/* Success Popup */}
+            {showSuccessPopup && (
+                <div className="fixed inset-0 flex items-start justify-center z-50 pointer-events-none">
+                    <div className="mt-24 w-full max-w-md mx-4 animate-in fade-in slide-in-from-top-5 duration-300 pointer-events-auto">
+                        <div className="bg-white rounded-lg shadow-2xl border-l-4 border-green-500 overflow-hidden">
+                            <div className="p-6">
+                                <div className="flex items-start">
+                                    <div className="flex-shrink-0">
+                                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                                            <CheckCircle className="h-6 w-6 text-green-600" />
+                                        </div>
+                                    </div>
+                                    <div className="ml-4 flex-1">
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                            Success!
+                                        </h3>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            {successMessage}
+                                        </p>
+                                        <div className="mt-4 flex justify-end">
+                                            <button
+                                                onClick={() => setShowSuccessPopup(false)}
+                                                className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                                            >
+                                                OK
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowSuccessPopup(false)}
+                                        className="text-gray-400 hover:text-gray-600"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <header className="bg-white/80 backdrop-blur-sm border-b border-amber-100 shadow-sm">
                 <div className="container mx-auto px-6 py-4">
                     <div className="flex justify-between items-center">
