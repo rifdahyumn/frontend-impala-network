@@ -1,8 +1,22 @@
-import { authApi } from "./authServices"
+import { authApi, getTokens } from "./authServices"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+const getValidToken = () => {
+    const tokens = getTokens();
+    
+    const token = tokens?.access_token || localStorage.getItem('access_token');
+    
+    if (!token) {
+        console.error('No access token found');
+        return null;
+    }
+    
+    return token;
+};
+
 class UserService {
+    
     constructor() {
         this.baseURL = API_BASE_URL
         this.pendingRequests = new Map()
@@ -85,7 +99,58 @@ class UserService {
                         throw new Error(`Unsupported method: ${method}`)
                 }
                 
-                const result = this.handleResponse(response)
+                let result;
+                
+                if (response && typeof response === 'object') {
+                    if (response.success !== undefined) {
+                        result = response;
+                    } else {
+                        result = {
+                            success: true,
+                            data: response,
+                            message: 'Success'
+                        };
+                    }
+                } else if (Array.isArray(response)) {
+                    result = {
+                        success: true,
+                        data: response,
+                        message: 'Success',
+                        pagination: {
+                            page: 1,
+                            limit: response.length,
+                            total: response.length,
+                            totalPages: 1
+                        }
+                    };
+                } else if (response === null || response === undefined) {
+                    result = {
+                        success: true,
+                        message: 'Success',
+                        data: null
+                    };
+                } else if (typeof response === 'string') {
+                    try {
+                        const parsed = JSON.parse(response);
+                        result = {
+                            success: true,
+                            data: parsed,
+                            message: 'Success'
+                        };
+                    } catch {
+                        result = {
+                            success: true,
+                            data: response,
+                            message: 'Success'
+                        };
+                    }
+                } else {
+                    result = {
+                        success: true,
+                        data: response,
+                        message: 'Success'
+                    };
+                }
                 
                 if (method.toLowerCase() !== 'get') {
                     this.clearListCache()
@@ -102,14 +167,8 @@ class UserService {
                 console.error(`${method.toUpperCase()} request failed:`, error.message)
                 
                 if (error.response) {
-                    const status = error.response.status
-                    if (status === 400) {
-                        error.message = error.response.data?.message || 'Bad request: Invalid data sent'
-                    } else if (status === 404) {
-                        error.message = 'Resource not found'
-                    } else if (status === 500) {
-                        error.message = 'Server error, please try again later'
-                    }
+                    console.error('Error response status:', error.response.status);
+                    console.error('Error response data:', error.response.data);
                 }
                 
                 throw error
@@ -426,37 +485,79 @@ class UserService {
         }
     }
 
-async activateUser(userId) {   
-    try {
-        if (!userId) {
-            throw new Error('User ID is required');
-        }
+    async activateUser(userId) {   
+        try {
+            if (!userId) {
+                throw new Error('User ID is required');
+            }
 
-        const result = await this.makeRequest('post', `/user/${userId}/activate`);
-        
-        return result;
-        
-    } catch (error) {
-        console.error(' UserService.activateUser failed:', error);
-        throw error;
-    }
-}
-
-async deactivateUser(userId) {  
-    try {
-        if (!userId) {
-            throw new Error('User ID is required');
+            const token = getValidToken();
+            if (!token) {
+                throw new Error('No access token available');
+            }
+            
+            const response = await fetch(`${API_BASE_URL}/user/${userId}/activate`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    throw new Error('Session expired');
+                }
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            return data;
+            
+        } catch (error) {
+            console.error('UserService.activateUser failed:', error);
+            throw error;
         }
-        
-        const result = await this.makeRequest('delete', `/user/${userId}`);
-        
-        return result;
-        
-    } catch (error) {
-        console.error('UserService.deactivateUser failed:', error);
-        throw error;
     }
-}
+
+    async deactivateUser(userId) {  
+        try {
+            if (!userId) {
+                throw new Error('User ID is required');
+            }
+            
+            const token = getValidToken();
+            if (!token) {
+                throw new Error('No access token available');
+            }
+            
+            const response = await fetch(`${API_BASE_URL}/user/${userId}/deactivate`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    throw new Error('Session expired');
+                }
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            return data;
+            
+        } catch (error) {
+            console.error('UserService.deactivateUser failed:', error);
+            throw error;
+        }
+    }
 
     async getUserById(userId) {
         try {

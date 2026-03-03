@@ -17,6 +17,7 @@ const Account = () => {
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
     
     const [confirmModal, setConfirmModal] = useState({
         isOpen: false,
@@ -55,9 +56,6 @@ const Account = () => {
         refreshUsers, 
         addUser, 
         updateUser, 
-        deleteUser, 
-        activateUser,
-        deactivateUser,
         totalStats,       
         statsLoading      
     } = useUsers();
@@ -562,6 +560,26 @@ const Account = () => {
         }
     }, [users, searchTerm, filters, applyAllFilters]);
 
+    useEffect(() => {
+        if (selectedUser && users.length > 0) {
+            const updatedUser = users.find(u => u.id === selectedUser.id);
+            if (updatedUser) {
+                if (updatedUser.status !== selectedUser.status) {
+                    setSelectedUser(updatedUser);
+                }
+            }
+        }
+    }, [users, selectedUser?.id]);
+
+    useEffect(() => {
+        if (selectedUser && refreshTrigger > 0) {
+            const updatedUser = users.find(u => u.id === selectedUser.id);
+            if (updatedUser) {
+                setSelectedUser(updatedUser);
+            }
+        }
+    }, [users, refreshTrigger, selectedUser?.id]);
+
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
     };
@@ -603,51 +621,6 @@ const Account = () => {
         }
     };
 
-    const handleDeleteUser = async (userId) => {
-        if (!selectedUser) return;
-
-        showConfirm({
-            title: 'Delete User',
-            message: `Are you sure you want to delete "${selectedUser.full_name}"? This action cannot be undone.`,
-            type: 'danger',
-            confirmText: 'Delete',
-            cancelText: 'Cancel',
-            onConfirm: async () => {
-                try {
-                    await deleteUser(userId);
-                    setSelectedUser(null);
-                    toast.success('User deleted successfully');
-                    
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                } catch (error) {
-                    console.error('Error deleting user:', error);
-                    toast.error(error.message || 'Failed to delete user');
-                }
-            },
-            onCancel: () => {
-                toast('Deletion cancelled', { icon: '⚠️' });
-            }
-        });
-    };
-
-    const handleActivate = async (userId) => {
-        try {
-            await activateUser(userId);
-        } catch (error) {
-            console.error('Error activating user from parent:', error);
-            throw error;
-        }
-    };
-
-    const handleDeactivate = async (userId) => {
-        try {
-            await deactivateUser(userId);
-        } catch (error) {
-            console.error('Error deactivating user from parent:', error);
-            throw error;
-        }
-    };
-
     useEffect(() => {
         if (selectedUser && users.length > 0) {
             const currentSelected = users.find(member => member.id === selectedUser.id);
@@ -658,6 +631,21 @@ const Account = () => {
             }
         }
     }, [users, selectedUser?.id]);
+
+    const handleUserUpdated = useCallback(async () => {
+        const selectedId = selectedUser?.id;
+        
+        await refreshUsers();
+        
+        if (selectedId) {
+            const updatedUser = users.find(u => u.id === selectedId);
+            if (updatedUser) {
+                setSelectedUser(updatedUser);
+            }
+        }
+        
+        setRefreshTrigger(prev => prev + 1);
+    }, [refreshUsers, users, selectedUser?.id]);
 
     const handleRefresh = useCallback(() => {
         if (refreshUsers) {
@@ -1242,17 +1230,13 @@ const Account = () => {
                     `}
                 >
                     <AccountContent
+                        key={selectedUser?.id + selectedUser?.status}
                         selectedUser={selectedUser}
                         onOpenEditModal={handleOpenEditModal}
-                        onDelete={handleDeleteUser}
-                        onActivateUser={handleActivate}
-                        onDeactivateUser={handleDeactivate}
                         detailTitle={tableConfig.detailTitle}
-                        onUserUpdated={() => {
-                            refreshUsers?.();
-                        }}
+                        onUserUpdated={handleUserUpdated}
                         onClientDeleted={() => {
-                            refreshUsers?.();
+                            refreshUsers();
                             setSelectedUser(null);
                         }}
                         showConfirm={showConfirm}

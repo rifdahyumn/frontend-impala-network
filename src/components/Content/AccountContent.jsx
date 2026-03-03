@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from "../ui/button";
 import { Edit, Trash2, User, UserCog, Mail, Phone, Shield, History, CheckCircle, Lock, Image, EyeOff, Eye, Loader2, UserCheck, AlertTriangle } from "lucide-react";
@@ -27,6 +27,13 @@ const AccountContent = ({
     const [activateLoading, setActivateLoading] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [avatarLoadError, setAvatarLoadError] = useState(false);
+    const [displayUser, setDisplayUser] = useState(selectedUser);
+
+    useEffect(() => {
+        setDisplayUser(selectedUser);
+        setShowPassword(false);
+        setAvatarLoadError(false);
+    }, [selectedUser]);
 
     const detailFields = [
         {
@@ -73,12 +80,12 @@ const AccountContent = ({
     };
 
     const handleActivate = () => {
-        if (!selectedUser) return;
+        if (!displayUser) return;
 
         if (showConfirm) {
             showConfirm({
                 title: 'Activate User',
-                message: `Are you sure you want to activate "${selectedUser.full_name}"?`,
+                message: `Are you sure you want to activate "${displayUser.full_name}"?`,
                 type: 'info',
                 confirmText: 'Activate',
                 cancelText: 'Cancel',
@@ -86,20 +93,30 @@ const AccountContent = ({
                     setActivateLoading(true);
                     
                     try {
-                        await userService.activateUser(selectedUser.id);
+                        const result = await userService.activateUser(displayUser.id);
                         
-                        toast.success(`User "${selectedUser.full_name}" activated successfully`);
-                        
-                        if (selectedUser) {
-                            selectedUser.status = 'active';
-                        }
-                        
-                        if (onUserUpdated) {
-                            await onUserUpdated();
+                        if (result?.success === true) {
+                            toast.success(`User "${displayUser.full_name}" activated successfully`);
+                            
+                            if (onUserUpdated) {
+                                await onUserUpdated();
+                            }
+                        } else {
+                            toast.error(result?.message || 'Failed to activate user');
                         }
                         
                     } catch (error) {
-                        toast.error(error.message || 'Failed to activate user');
+                        console.error('Activation error:', error);
+                        
+                        if (error.message === 'Session expired') {
+                            toast.error('Session expired. Please login again.');
+                            setTimeout(() => {
+                                window.location.href = '/login';
+                            }, 2000);
+                        } else {
+                            toast.error(error.message || 'Failed to activate user');
+                        }
+                        
                     } finally {
                         setActivateLoading(false);
                     }
@@ -112,12 +129,12 @@ const AccountContent = ({
     };
 
     const handleDeactivate = () => {
-        if (!selectedUser) return;
+        if (!displayUser) return;
         
         if (showConfirm) {
             showConfirm({
                 title: 'Deactivate User',
-                message: `Are you sure you want to deactivate "${selectedUser.full_name}"? User will not be able to access the system.`,
+                message: `Are you sure you want to deactivate "${displayUser.full_name}"? User will not be able to access the system.`,
                 type: 'danger',
                 confirmText: 'Deactivate',
                 cancelText: 'Cancel',
@@ -125,25 +142,34 @@ const AccountContent = ({
                     setDeleteLoading(true);
                     
                     try {
-                        await userService.deactivateUser(selectedUser.id);
+                        const result = await userService.deactivateUser(displayUser.id);
                         
-                        toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
-                        
-                        if (selectedUser) {
-                            selectedUser.status = 'inactive';
-                        }
-                        
-                        if (onUserUpdated) {
-                            await onUserUpdated();
-                        }
-                        
-                        if (onClientDeleted) {
-                            onClientDeleted();
+                        if (result?.success === true) {
+                            toast.success(`User "${displayUser.full_name}" deactivated successfully`);
+                            
+                            if (onUserUpdated) {
+                                await onUserUpdated();
+                            }
+                            
+                            if (onClientDeleted) {
+                                onClientDeleted();
+                            }
+                        } else {
+                            toast.error(result?.message || 'Failed to deactivate user');
                         }
                         
                     } catch (error) {
-                        console.error('4. Error deactivating user:', error);
-                        toast.error(error.message || 'Failed to deactivate user');
+                        console.error('Deactivation error:', error);
+                        
+                        if (error.message === 'Session expired') {
+                            toast.error('Session expired. Please login again.');
+                            setTimeout(() => {
+                                window.location.href = '/login';
+                            }, 2000);
+                        } else {
+                            toast.error(error.message || 'Failed to deactivate user');
+                        }
+                        
                     } finally {
                         setDeleteLoading(false);
                     }
@@ -158,17 +184,17 @@ const AccountContent = ({
     };
 
     const handleConfirmDeactivate = async () => {
-        if (!selectedUser) return;
+        if (!displayUser) return;
         
         setDeleteLoading(true);
         
         try {
-            await userService.deactivateUser(selectedUser.id);
+            await userService.deactivateUser(displayUser.id);
             
-            toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
+            toast.success(`User "${displayUser.full_name}" deactivated successfully`);
             
             if (selectedUser) {
-                selectedUser.status = 'inactive';
+                displayUser.status = 'inactive';
             }
             
             if (onUserUpdated) {
@@ -287,7 +313,7 @@ const AccountContent = ({
                 <div className='grid grid-cols-2 gap-4'>
                     {activeCategoryData.fields.map((field, index) => {
                         const FieldIcon = field.icon;
-                        let displayValue = selectedUser[field.key];
+                        let displayValue = displayUser[field.key];
 
                         if (field.isPassword) {
                             return (
