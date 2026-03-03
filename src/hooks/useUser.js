@@ -12,6 +12,12 @@ export const useUsers = () => {
         total: 0,
         totalPages: 1
     })
+
+    const [searchTerm, setSearchTerm] = useState('')
+    const [filters, setFilters] = useState({
+        position: '',
+        role: ''
+    })
     
     const [totalStats, setTotalStats] = useState({
         totalUsers: 0,
@@ -138,8 +144,8 @@ export const useUsers = () => {
                             return
                         }
                     }
-                } catch (error) {
-                    console.log('getTotalStats not available, using fallback method')
+                } catch  {
+                    //
                 }
             }
             
@@ -268,17 +274,54 @@ export const useUsers = () => {
         }
     }, [fetchUsers])
 
-    const refreshUsers = useCallback(() => {
-        if (isMounted.current) {
-            hasFetched.current = false
-            fetchUsers(pagination.page)
-            setTimeout(() => {
-                if (isMounted.current) {
-                    fetchTotalStats()
-                }
-            }, 500)
+    const refreshUsers = useCallback(async () => {
+        if (!isMounted.current) return;
+        
+        try {
+            setLoading(true);
+
+            const result = await userService.fetchUsers({
+                page: pagination.page,
+                limit: pagination.limit,
+                search: searchTerm,
+                position: filters.position,
+                role: filters.role,
+                _t: Date.now() 
+            });
+            
+            if (!isMounted.current) return;
+            
+            if (result && result.success === true) {
+                let usersData = Array.isArray(result.data) ? result.data : [];
+                let total = result.pagination?.total || 0;
+
+                setUsers(usersData);
+                
+                setPagination(prev => ({
+                    ...prev,
+                    total: total,
+                    totalPages: result.pagination?.totalPages || Math.ceil(total / prev.limit)
+                }));
+                
+                const totalActive = usersData.filter(u => 
+                    u.status?.toLowerCase() === 'active'
+                ).length;
+                
+                setTotalStats({
+                    totalUsers: total,
+                    totalActive: totalActive
+                });
+            }
+            
+        } catch (error) {
+            console.error('Refresh users failed:', error);
+            setError(error.message);
+        } finally {
+            if (isMounted.current) {
+                setLoading(false);
+            }
         }
-    }, [fetchUsers, pagination.page, fetchTotalStats])
+    }, [pagination.page, pagination.limit, searchTerm, filters.position, filters.role]);
 
     const addUser = async (userData) => {
         try {
@@ -435,74 +478,28 @@ export const useUsers = () => {
                 throw new Error('User ID is required');
             }
             
-            let result;
-            try {
-                result = await userService.activateUser(userId);
-            } catch (apiError) {           
-                if (apiError.message && apiError.message.includes('Unexpected token')) {
-                    
-                    if (isMounted.current) {
-                        setUsers(prevUsers => 
-                            prevUsers.map(user => 
-                                user.id === userId ? { ...user, status: 'active' } : user
-                            )
-                        );
-                    }
-                    
-                    toast.success('User activated successfully');
-                    
-                    setTimeout(() => {
-                        if (isMounted.current) {
-                            refreshUsers();
-                        }
-                    }, 500);
-                    
-                    return { success: true, data: { status: 'active' } };
-                }
-                
-                throw apiError;
-            }
+            const result = await userService.activateUser(userId);
             
-            toast.success(result?.message || 'User activated successfully');
+            
+            toast.success('User activated successfully');
             
             if (isMounted.current) {
-                setUsers(prevUsers => 
-                    prevUsers.map(user => 
-                        user.id === userId ? { ...user, status: 'active' } : user
-                    )
-                );
+                await refreshUsers();
             }
-            
-            setTimeout(() => {
-                if (isMounted.current) {
-                    refreshUsers();
-                }
-            }, 500);
             
             return result;
             
         } catch (error) {
-            console.error('Error di activateUser hook:', error);
+            console.error('Error in activateUser hook:', error);
             
-            if (error.message && error.message.includes('Unexpected token')) {
+            if (error.response?.data?.code === 'ALREADY_ACTIVE') {
+                toast.success('User is already active');
                 
                 if (isMounted.current) {
-                    setUsers(prevUsers => 
-                        prevUsers.map(user => 
-                            user.id === userId ? { ...user, status: 'active' } : user
-                        )
-                    );
+                    await refreshUsers();
                 }
                 
-                toast.success('User activated successfully');
-                
-                setTimeout(() => {
-                    if (isMounted.current) {
-                        refreshUsers();
-                    }
-                }, 500);
-                
-                return { success: true, data: { status: 'active' } };
+                return { success: true };
             }
             
             toast.error(error.message || 'Failed to activate user');
@@ -512,75 +509,30 @@ export const useUsers = () => {
 
     const deactivateUser = async (userId) => {
         try {
-            let result;
-            try {
-                result = await userService.deactivateUser(userId);
-            } catch (apiError) {
-
-                if (apiError.message && apiError.message.includes('Unexpected token')) {
-                    
-                    if (apiError.response && apiError.response.status === 200) {
-                        
-                        if (isMounted.current) {
-                            setUsers(prevUsers => 
-                                prevUsers.map(user => 
-                                    user.id === userId ? { ...user, status: 'inactive' } : user
-                                )
-                            );
-                        }
-                        
-                        toast.success('User deactivated successfully');
-                        
-                        setTimeout(() => {
-                            if (isMounted.current) {
-                                refreshUsers();
-                            }
-                        }, 500);
-                        
-                        return { success: true };
-                    }
-                }
-                
-                throw apiError;
+            if (!userId) {
+                throw new Error('User ID is required');
             }
             
-            toast.success(result.message || 'User deactivated successfully');
+            const result = await userService.deactivateUser(userId);
+            
+            
+            toast.success('User deactivated successfully');
             
             if (isMounted.current) {
-                setUsers(prevUsers => 
-                    prevUsers.map(user => 
-                        user.id === userId ? { ...user, status: 'inactive' } : user
-                    )
-                );
+                await refreshUsers();
             }
             
-            setTimeout(() => {
-                if (isMounted.current) {
-                    refreshUsers();
-                }
-            }, 500);
-            
             return result;
+            
         } catch (error) {
             console.error('Error in deactivateUser hook:', error);
             
-            if (error.message && error.message.includes('Unexpected token')) {
+            if (error.response?.data?.code === 'ALREADY_INACTIVE') {
+                toast.success('User is already inactive');
                 
                 if (isMounted.current) {
-                    setUsers(prevUsers => 
-                        prevUsers.map(user => 
-                            user.id === userId ? { ...user, status: 'inactive' } : user
-                        )
-                    );
+                    await refreshUsers();
                 }
-                
-                toast.success('User deactivated successfully');
-                
-                setTimeout(() => {
-                    if (isMounted.current) {
-                        refreshUsers();
-                    }
-                }, 500);
                 
                 return { success: true };
             }
@@ -611,6 +563,10 @@ export const useUsers = () => {
         deleteAvatar,
         totalStats,
         statsLoading,
-        fetchTotalStats
+        fetchTotalStats,
+        searchTerm,
+        setSearchTerm,
+        filters,
+        setFilters
     }
 }

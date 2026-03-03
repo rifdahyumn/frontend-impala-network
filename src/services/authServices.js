@@ -171,25 +171,38 @@ const createAuthApi = () => {
         }
     );
 
-instance.interceptors.response.use(
-    (response) => {      
-        if (response.data?.tokens) {
-            saveTokens(response.data.tokens);
-            delete response.data.tokens;
-        }
-        
-        if (response.data === null || response.data === 'null' || response.data === '') {
-            return { success: true, message: 'Operation successful' };
-        }
-        
-        return response.data;
-    },
+    instance.interceptors.response.use(
+        (response) => {      
+
+            if (response.data?.tokens) {
+                saveTokens(response.data.tokens);
+                delete response.data.tokens;
+            }
+            
+            if (response.data === null || response.data === 'null' || response.data === '') {
+                return { success: true, message: 'Operation successful' };
+            }
+            
+            return response.data;
+        },
         async (error) => {
             console.error('Response error:', {
                 url: error.config?.url,
                 status: error.response?.status,
+                data: error.response?.data,
                 message: error.message
             });
+
+            const url = error.config?.url || '';
+            if (url.includes('/activate') || url.includes('/deactivate')) {
+                if (error.response?.data) {
+                    return error.response.data;
+                }
+                
+                if (error.response?.status === 200) {
+                    return { success: true, message: 'Operation successful' };
+                }
+            }
 
             if (error.code === 'ERR_CANCELED' || error.message.includes('canceled')) {
                 return Promise.reject(new Error('Request cancelled'));
