@@ -142,7 +142,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                         { value: 'Legal', label: 'Legal' },
                         { value: 'Talent Manager', label: 'Talent Manager' },
                         { value: 'Ecosystem Manager', label: 'Ecosystem Manager' },
-                        { value: 'Strategic Partnership_Executive', label: 'Strategic Partnership Executive' },
+                        { value: 'Strategic Partnership Executive', label: 'Strategic Partnership Executive' },
                         { value: 'Program Manager', label: 'Program Manager' },
                         { value: 'Space Manager', label: 'Space Manager' },
                         { value: 'Creative', label: 'Creative' }
