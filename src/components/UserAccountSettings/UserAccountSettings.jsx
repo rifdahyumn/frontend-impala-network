@@ -10,6 +10,8 @@ import { Upload, X, ChevronDown, LogOut, Loader2, CheckCircle } from "lucide-rea
 import { useAuth } from "../../hooks/useAuth";
 import { toast } from "react-hot-toast"; 
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
 const UserAccountSettings = () => {
     const navigate = useNavigate();
     const { user, logout, updateUser, loading: authLoading } = useAuth(); 
@@ -80,6 +82,14 @@ const UserAccountSettings = () => {
         }
     }, [showSuccessPopup]);
 
+    useEffect(() => {
+        const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+        if (!token) {
+            toast.error('Session expired. Please login again.');
+            navigate('/login');
+        }
+    }, [navigate]);
+
     if (authLoading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-amber-50 to-yellow-50 flex items-center justify-center">
@@ -130,7 +140,7 @@ const UserAccountSettings = () => {
 
     const handleLogout = async () => {
         try {
-            await fetch("http://localhost:3000/api/auth/logout", {
+            await fetch(`${API_BASE_URL}/auth/logout`, {
                 method: "POST",
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('access_token')}`
@@ -308,6 +318,8 @@ const UserAccountSettings = () => {
         return Object.keys(newErrors).length === 0;
     };
 
+
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -325,10 +337,22 @@ const UserAccountSettings = () => {
                 position: formData.position,
                 avatar: formData.avatar || ''
             };
+
+            if (changePassword) {
+                updateData.currentPassword = formData.currentPassword;
+                updateData.newPassword = formData.newPassword;
+            }
             
             const token = localStorage.getItem('access_token') || localStorage.getItem('token');
 
-            const response = await fetch('http://localhost:3000/api/auth/profile', {
+            
+            if (!token) {
+                toast.error('Please login again');
+                navigate('/login');
+                return;
+            }
+
+            const response = await fetch(`${API_BASE_URL}/auth/profile`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -352,20 +376,23 @@ const UserAccountSettings = () => {
                     updateUser(updatedUserData);
                 }
                 
-                toast.success('Profile updated successfully!');
+                if (changePassword && data.data?.password_updated) {
+                    toast.success('Profile and password updated successfully!');
+                    setSuccessMessage('Your profile and password have been updated successfully!');
+                } else {
+                    toast.success('Profile updated successfully!');
+                    setSuccessMessage('Your profile changes have been saved successfully!');
+                }
                 
-                setSuccessMessage('Your profile changes have been saved successfully!');
                 setShowSuccessPopup(true);
 
-                if (changePassword) {
-                    setFormData(prev => ({
-                        ...prev,
-                        currentPassword: '',
-                        newPassword: '',
-                        confirmPassword: ''
-                    }));
-                    setChangePassword(false);
-                }
+                setFormData(prev => ({
+                    ...prev,
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmPassword: ''
+                }));
+                setChangePassword(false);
                 
             } else {
                 const errorMsg = data.error || data.message || 'Failed to update profile';
