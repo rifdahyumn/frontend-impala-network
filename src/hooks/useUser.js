@@ -34,11 +34,17 @@ export const useUsers = () => {
             setError(null)
             hasFetched.current = true
 
-            const result = await userService.fetchUsers({
+            const serviceParams = {
                 page: page,
                 limit: 10,
+                search: options.search || '',
+                position: options.position || '',
+                role: options.role || '',
                 ...options
-            })
+            }
+
+            const result = await userService.fetchUsers(serviceParams)
+
 
             if (!isMounted.current) {
                 return
@@ -47,15 +53,22 @@ export const useUsers = () => {
             let usersData = []
             let total = 0
             let currentPage = page
+            let totalPages = 1
 
             if (result && result.success === true) {
                 if (result.data) {
                     usersData = Array.isArray(result.data) ? result.data : []
                 }
                 
-                if (result.pagination) {
+                if (result.metadata && result.metadata.pagination) {
+                    total = result.metadata.pagination.total || 0
+                    currentPage = result.metadata.pagination.page || page
+                    totalPages = result.metadata.pagination.totalPages || Math.ceil(total / 10)
+                }
+                else if (result.pagination) {
                     total = result.pagination.total || 0
                     currentPage = result.pagination.page || page
+                    totalPages = result.pagination.totalPages || Math.ceil(total / 10)
                 }
             }
 
@@ -64,7 +77,7 @@ export const useUsers = () => {
                 page: currentPage,
                 limit: 10,
                 total: total,
-                totalPages: Math.ceil(total / 10) || 1
+                totalPages: totalPages
             })
 
         } catch (error) {
@@ -74,11 +87,6 @@ export const useUsers = () => {
             
             hasFetched.current = false
             
-            if (error.message.includes('Tidak ada respon')) {
-                console.warn('Network error, ignoring')
-                return
-            }
-
             setError(error.message || 'Failed to fetch users')
             setUsers([])
             setPagination({
@@ -269,11 +277,8 @@ const activateUser = async (userId) => {
         let result;
         try {
             result = await userService.activateUser(userId);
-        } catch (apiError) {
-            console.log('API Error response:', apiError);
-            
+        } catch (apiError) {           
             if (apiError.message && apiError.message.includes('Unexpected token')) {
-                console.log('Server returned non-JSON response but request might be successful');
                 
                 if (isMounted.current) {
                     setUsers(prevUsers => 
@@ -319,7 +324,6 @@ const activateUser = async (userId) => {
         console.error('Error di activateUser hook:', error);
         
         if (error.message && error.message.includes('Unexpected token')) {
-            console.log('Server returned non-JSON response - treating as success');
             
             if (isMounted.current) {
                 setUsers(prevUsers => 
@@ -351,13 +355,10 @@ const activateUser = async (userId) => {
             try {
                 result = await userService.deactivateUser(userId);
             } catch (apiError) {
-                console.log('API Error response:', apiError);
 
                 if (apiError.message && apiError.message.includes('Unexpected token')) {
-                    console.log('Server returned non-JSON response but request might be successful');
                     
                     if (apiError.response && apiError.response.status === 200) {
-                        console.log('Request successful despite JSON parse error');
                         
                         if (isMounted.current) {
                             setUsers(prevUsers => 
@@ -403,7 +404,6 @@ const activateUser = async (userId) => {
             console.error('Error in deactivateUser hook:', error);
             
             if (error.message && error.message.includes('Unexpected token')) {
-                console.log('Server returned non-JSON response - treating as success');
                 
                 if (isMounted.current) {
                     setUsers(prevUsers => 

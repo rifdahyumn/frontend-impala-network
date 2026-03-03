@@ -166,6 +166,8 @@ class UserService {
                 page = 1,
                 limit = 10,
                 search = '',
+                position = '',  
+                role = '',     
                 sortBy = 'created_at',
                 sortOrder = 'desc'
             } = params
@@ -174,9 +176,20 @@ class UserService {
                 page: page.toString(),
                 limit: limit.toString(),
                 sort_by: sortBy,
-                sort_order: sortOrder,
-                ...(search && { search }),
+                sort_order: sortOrder
             })
+
+            if (search) {
+                queryParams.append('search', search)
+            }
+
+            if (position) {
+                queryParams.append('position', position)
+            }
+
+            if (role) {
+                queryParams.append('role', role)
+            }
 
             const url = `/user?${queryParams}`
             
@@ -199,157 +212,32 @@ class UserService {
     getMockUsers(params = {}) {
         const page = params.page || 1
         const limit = params.limit || 10
+        const search = params.search || ''
+        const position = params.position || ''  
+        const role = params.role || ''        
         
-        const mockUsers = [
-            {
-                id: 1,
-                employee_id: 'EMP001',
-                full_name: 'Admin User',
-                email: 'admin@example.com',
-                position: 'Managing Director',
-                role: 'superadmin',
-                status: 'Active',
-                phone: '08123456789',
-                last_login: new Date().toISOString(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                avatar: null
-            },
-            {
-                id: 2,
-                employee_id: 'EMP002',
-                full_name: 'Manager User',
-                email: 'manager@example.com',
-                position: 'Head Manager',
-                role: 'admin',
-                status: 'Active',
-                phone: '08123456788',
-                last_login: new Date().toISOString(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                avatar: null
-            },
-            {
-                id: 3,
-                employee_id: 'EMP003',
-                full_name: 'Finance Officer',
-                email: 'finance@example.com',
-                position: 'Finance',
-                role: 'user',
-                status: 'Active',
-                phone: '08123456787',
-                last_login: new Date().toISOString(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                avatar: null
-            },
-            {
-                id: 4,
-                employee_id: 'EMP004',
-                full_name: 'Legal Advisor',
-                email: 'legal@example.com',
-                position: 'Legal',
-                role: 'user',
-                status: 'Inactive',
-                phone: '08123456786',
-                last_login: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                avatar: null
-            },
-            {
-                id: 5,
-                employee_id: 'EMP005',
-                full_name: 'Creative Designer',
-                email: 'creative@example.com',
-                position: 'Creative',
-                role: 'user',
-                status: 'Active',
-                phone: '08123456785',
-                last_login: new Date().toISOString(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                avatar: null
-            },
-            {
-                id: 6,
-                employee_id: 'EMP006',
-                full_name: 'Talent Manager',
-                email: 'talent@example.com',
-                position: 'Talent Manager',
-                role: 'user',
-                status: 'Active',
-                phone: '08123456784',
-                last_login: new Date().toISOString(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                avatar: null
-            },
-            {
-                id: 7,
-                employee_id: 'EMP007',
-                full_name: 'Ecosystem Manager',
-                email: 'ecosystem@example.com',
-                position: 'Ecosystem Manager',
-                role: 'user',
-                status: 'Active',
-                phone: '08123456783',
-                last_login: new Date().toISOString(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                avatar: null
-            },
-            {
-                id: 8,
-                employee_id: 'EMP008',
-                full_name: 'Program Manager',
-                email: 'program@example.com',
-                position: 'Program Manager',
-                role: 'user',
-                status: 'Inactive',
-                phone: '08123456782',
-                last_login: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                avatar: null
-            },
-            {
-                id: 9,
-                employee_id: 'EMP009',
-                full_name: 'Space Manager',
-                email: 'space@example.com',
-                position: 'Space Manager',
-                role: 'user',
-                status: 'Active',
-                phone: '08123456781',
-                last_login: new Date().toISOString(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                avatar: null
-            },
-            {
-                id: 10,
-                employee_id: 'EMP010',
-                full_name: 'Strategic Partner',
-                email: 'partner@example.com',
-                position: 'Strategic Partnership Executive',
-                role: 'admin',
-                status: 'Active',
-                phone: '08123456780',
-                last_login: new Date().toISOString(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                avatar: null
-            }
-        ]
+        const mockUsers = [ /* data mock users */ ]
         
         let filteredUsers = mockUsers
-        if (params.search) {
-            const searchTerm = params.search.toLowerCase()
-            filteredUsers = mockUsers.filter(user => 
+        
+        if (search) {
+            const searchTerm = search.toLowerCase()
+            filteredUsers = filteredUsers.filter(user => 
                 user.full_name.toLowerCase().includes(searchTerm) ||
                 user.email.toLowerCase().includes(searchTerm) ||
                 user.employee_id.toLowerCase().includes(searchTerm)
+            )
+        }
+        
+        if (position) {
+            filteredUsers = filteredUsers.filter(user => 
+                user.position?.toLowerCase() === position.toLowerCase()
+            )
+        }
+        
+        if (role) {
+            filteredUsers = filteredUsers.filter(user => 
+                user.role?.toLowerCase() === role.toLowerCase()
             )
         }
         

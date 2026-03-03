@@ -28,8 +28,6 @@ export const renderField = (props) => {
     const error = errors?.[field.name];
     const value = formData[field.name] || '';
 
-    console.log(`Field ${field.name}:`, { error, errors });
-
     if (field.name === 'program_name') {
         return renderProgramField(field, formData, error, value, isEditMode, handleInputChange);
     }

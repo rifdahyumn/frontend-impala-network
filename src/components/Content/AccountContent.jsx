@@ -74,7 +74,6 @@ const AccountContent = ({
     };
 
     const handleActivate = () => {
-        console.log('handleActivate called for user:', selectedUser);
         if (!selectedUser) return;
 
         if (showConfirm) {
@@ -85,21 +84,17 @@ const AccountContent = ({
                 confirmText: 'Activate',
                 cancelText: 'Cancel',
                 onConfirm: async () => {
-                    console.log('Activate confirmed, calling API...');
                     setActivateLoading(true);
                     
                     try {
                         if (onActivateUser) {
-                            const result = await onActivateUser(selectedUser.id);
-                            console.log('Activation API result:', result);
+                            // const result = await onActivateUser(selectedUser.id);
                             
                             toast.success(`User "${selectedUser.full_name}" activated successfully`);
                             
                             if (onUserUpdated) {
-                                console.log('Calling onUserUpdated to refresh data');
                                 try {
                                     await onUserUpdated();
-                                    console.log('onUserUpdated completed successfully');
                                 } catch (refreshError) {
                                     console.error('Error in onUserUpdated:', refreshError);
                                 }
@@ -134,8 +129,7 @@ const AccountContent = ({
                     
                     try {
                         if (onDelete) {
-                            const result = await onDelete(selectedUser.id);
-                            console.log('Deactivation API result:', result);
+                            // const result = await onDelete(selectedUser.id);
                             
                             toast.success(`User "${selectedUser.full_name}" deactivated successfully`);
                             
@@ -384,11 +378,6 @@ const AccountContent = ({
             </div>
         );
     };
-
-    console.log('Rendering with selectedUser:', selectedUser?.full_name);
-    console.log('Status:', selectedUser?.status);
-    console.log('Should show Activate button:', selectedUser?.status !== 'Active' && selectedUser?.status !== 'active');
-    console.log('Should show Deactivate button:', selectedUser?.status === 'Active' || selectedUser?.status === 'active');
 
     if (!selectedUser) {
         return (

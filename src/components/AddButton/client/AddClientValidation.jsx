@@ -3,29 +3,8 @@ import toast from "react-hot-toast";
 export const validateForm = (formData, formSections, clientExists, setErrors, isEditMode, updateAllFields = true) => {
     const newErrors = {};
 
-    const isNewClientMode = !isEditMode && !clientExists;
-    const isAddProgramToExisting = !isEditMode && clientExists;
-    const isEditModeWithAllFields = isEditMode && updateAllFields;
-    const isEditModeWithProgramOnly = isEditMode && !updateAllFields;
-
-    console.log('Validation Mode:', {
-        isNewClientMode,
-        isAddProgramToExisting,
-        isEditModeWithAllFields,
-        isEditModeWithProgramOnly,
-        clientExists,
-        isEditMode,
-        updateAllFields
-    });
-
     formSections.forEach(section => {
         section.fields.forEach(field => {
-            if (field.name === 'program_name') {
-                if (isEditModeWithProgramOnly) {
-                    return; 
-                }
-            }
-
             if (field.required) {
                 const value = formData[field.name];
                 

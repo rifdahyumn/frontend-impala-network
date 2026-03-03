@@ -24,14 +24,12 @@ const Account = () => {
     });
     
     const [isExporting, setIsExporting] = useState(false);
-    
     const [highlightDetail, setHighlightDetail] = useState(false);
     
     const userDetailRef = useRef(null);
     const filterRef = useRef(null)
     
     const [searchTerm, setSearchTerm] = useState("");
-    
     const [filters, setFilters] = useState({
         position: null, 
         role: null, 
@@ -43,7 +41,6 @@ const Account = () => {
         role: filters.role || 'all'
     });
     
-    const [filteredUsers, setFilteredUsers] = useState([]);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     const { 
@@ -55,7 +52,6 @@ const Account = () => {
         refreshUsers, 
         addUser, 
         updateUser, 
-        deleteUser, 
         activateUser,
         deactivateUser,
     } = useUsers();
@@ -116,15 +112,15 @@ const Account = () => {
 
     const handleExport = useCallback(async () => {
         try {
-            if (!filteredUsers || filteredUsers.length === 0) {
+            if (!users || users.length === 0) {
                 toast.error('No data to export');
                 return;
             }
             
             setIsExporting(true);
 
-            const exportData = filteredUsers.map((user, index) => ({
-                'No': index + 1,
+            const exportData = users.map((user, index) => ({
+                'No': (pagination.page - 1) * pagination.limit + index + 1,
                 'Employee ID': user.employee_id || '-',
                 'Full Name': user.full_name || '-',
                 'Email': user.email || '-',
@@ -193,10 +189,10 @@ const Account = () => {
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Account Users");
             
-            const activeUsers = filteredUsers.filter(u => 
+            const activeUsers = users.filter(u => 
                 u.status?.toLowerCase() === 'active'
             ).length;
-            const inactiveUsers = filteredUsers.length - activeUsers;
+            const inactiveUsers = users.length - activeUsers;
             
             const filterInfo = [
                 ['USER ACCOUNT EXPORT'],
@@ -209,7 +205,7 @@ const Account = () => {
                     minute: '2-digit',
                     second: '2-digit'
                 })],
-                ['Total Records Exported', filteredUsers.length],
+                ['Total Records Exported', users.length],
                 ['', ''],
                 ['APPLIED FILTERS'],
                 ['Search Term', searchTerm || 'None'],
@@ -219,9 +215,9 @@ const Account = () => {
                 ['STATISTICS'],
                 ['Total Active Users', activeUsers],  
                 ['Total Inactive Users', inactiveUsers],  
-                ['Total Admin Users', filteredUsers.filter(u => u.role === 'admin').length],
-                ['Total Manajer Program Users', filteredUsers.filter(u => u.role === 'manajer_program').length],
-                ['Total Community Team Users', filteredUsers.filter(u => u.role === 'komunitas').length],
+                ['Total Admin Users', users.filter(u => u.role === 'admin').length],
+                ['Total Manajer Program Users', users.filter(u => u.role === 'manajer_program').length],
+                ['Total Community Team Users', users.filter(u => u.role === 'komunitas').length],
                 ['', ''],
                 ['EXPORT INFORMATION'],
                 ['Generated On', new Date().toLocaleDateString('en-US', {
@@ -270,11 +266,10 @@ const Account = () => {
         } finally {
             setIsExporting(false);
         }
-    }, [filteredUsers, searchTerm, filters, positionOptions, roleOptions]);
+    }, [users, searchTerm, filters, positionOptions, roleOptions]);
 
     const handleSelectUser = useCallback((user) => {
         setSelectedUser(user);
-        
         setHighlightDetail(true);
         
         setTimeout(() => {
@@ -356,8 +351,8 @@ const Account = () => {
             ];
         }
 
-        const totalUsers = filteredUsers.length;
-        const activeUsers = filteredUsers.filter(user => 
+        const totalUsers = users.length;
+        const activeUsers = users.filter(user => 
             user.status?.toLowerCase() === 'active' 
         ).length;
         
@@ -365,29 +360,17 @@ const Account = () => {
             ? Math.round((activeUsers / totalUsers) * 100).toString()
             : "0";
 
-        const totalUnfiltered = users.length;
-        const filterPercentage = totalUnfiltered > 0 && getTotalActiveCriteria() > 0
-            ? Math.round((totalUsers / totalUnfiltered) * 100).toString()
-            : null;
-
-        let totalDescription = "Current view total";
-        if (getTotalActiveCriteria() > 0 && filterPercentage) {
-            totalDescription = `Showing ${filterPercentage}% of all users`;
-        } else if (getTotalActiveCriteria() > 0) {
-            totalDescription = "Filtered view";
-        }
-
         return [
             {
-                title: "Total Users",
+                title: `Total Users`,
                 value: totalUsers.toString(),
-                percentage: "100%",
+                percentage: `${Math.round((totalUsers / pagination.total) * 100)}% of total`,
                 trend: "neutral",
                 period: "Current",
                 icon: Users,
                 color: "blue",
                 subtitle: filters.position ? getOriginalLabel(filters.position, positionOptions) : "",
-                description: totalDescription,
+                description: `Showing page ${pagination.page} of ${pagination.totalPages}`,
                 isFiltered: getTotalActiveCriteria() > 0,
                 loading: false
             },
@@ -400,57 +383,34 @@ const Account = () => {
                 period: "Current", 
                 icon: UserCheck,
                 color: "green",
-                description: `${activePercentage}% of current view`,
+                description: `${activePercentage}% of current page`,
                 loading: false
             }
         ];
-    }, [filteredUsers, filters.position, positionOptions, users.length, getTotalActiveCriteria, loading, isInitialLoad]);
-
-    const applyAllFilters = useCallback(() => {
-        if (!users || !Array.isArray(users)) {
-            setFilteredUsers([]);
-            return;
-        }
-        
-        let result = [...users];
-        
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase();
-            result = result.filter(user =>
-                user.full_name?.toLowerCase().includes(term) ||
-                user.email?.toLowerCase().includes(term) ||
-                user.employee_id?.toLowerCase().includes(term) ||
-                user.position?.toLowerCase().includes(term) ||
-                user.phone?.toLowerCase().includes(term)
-            );
-        }
-        
-        if (filters.position) {
-            result = result.filter(user => {
-                const userPosition = user.position?.toLowerCase();
-                if (!userPosition) return false;
-                
-                return userPosition === filters.position.toLowerCase() ||
-                       userPosition.includes(filters.position.toLowerCase()) ||
-                       filters.position.toLowerCase().includes(userPosition);
-            });
-        }
-        
-        if (filters.role && filters.role !== 'all') {
-            result = result.filter(user => {
-                const userRole = user.role?.toLowerCase();
-                if (!userRole) return false;
-                
-                return userRole === filters.role.toLowerCase();
-            });
-        }
-        
-        setFilteredUsers(result);
-    }, [users, searchTerm, filters]);
+    }, [users, filters.position, positionOptions, pagination, loading, isInitialLoad]);
 
     const handleSearch = (term) => {
         setSearchTerm(term);
+        fetchUsers(1, {
+            search: term,
+            position: filters.position,
+            role: filters.role
+        })
     };
+
+    const handleApplyFilters = () => {
+        setFilters({
+            position: tempFilters.position || null,
+            role: tempFilters.role || null
+        })
+        setIsFilterOpen(false)
+
+        fetchUsers(1, {
+            search: searchTerm,
+            position: tempFilters.position || null,
+            role: tempFilters.role || null
+        });
+    }
 
     const handleTempPositionChange = (position) => {
         setTempFilters(prev => ({ 
@@ -461,14 +421,6 @@ const Account = () => {
 
     const handleTempRoleChange = (role) => {
         setTempFilters(prev => ({ ...prev, role }));
-    };
-
-    const handleApplyFilters = () => {
-        setFilters({
-            position: tempFilters.position || null,
-            role: tempFilters.role || null
-        });
-        setIsFilterOpen(false);
     };
 
     const handleCancelFilters = () => {
@@ -492,18 +444,41 @@ const Account = () => {
             position: null,
             role: null,
         });
-        setSelectedUser(null); 
+        setSelectedUser(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        fetchUsers(1, {});
     };
 
     const clearFilter = (filterType) => {
+        let newFilters = { ...filters };
+        
         if (filterType === 'search') {
             setSearchTerm("");
+            newFilters = { ...filters };
         } else if (filterType === 'position') {
-            setFilters(prev => ({ ...prev, position: null }));
+            newFilters = { ...filters, position: null };
         } else if (filterType === 'role') {
-            setFilters(prev => ({ ...prev, role: null }));
+            newFilters = { ...filters, role: null };
         }
+        
+        setFilters(newFilters);
+        
+        fetchUsers(1, {
+            search: filterType === 'search' ? "" : searchTerm,
+            position: newFilters.position,
+            role: newFilters.role
+        });
+    };
+
+    const handlePageChange = (page) => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        fetchUsers(page, {
+            search: searchTerm,
+            position: filters.position,
+            role: filters.role
+        });
     };
 
     useEffect(() => {
@@ -532,11 +507,9 @@ const Account = () => {
     }, [filters]);
 
     useEffect(() => {
-        if (users && users.length > 0) {
-            setIsInitialLoad(false);
-            applyAllFilters();
-        }
-    }, [users, searchTerm, filters, applyAllFilters]);
+        fetchUsers(1, {});
+        setIsInitialLoad(false);
+    }, []);
 
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
@@ -613,48 +586,42 @@ const Account = () => {
         }
     };
 
-const handleActivateUser = async (userId) => {
-    try {
-        const result = await activateUser(userId);
-        
-        if (selectedUser && selectedUser.id === userId) {
-            setSelectedUser(prev => ({
-                ...prev,
-                status: 'Active'
-            }));
-        }
-        
-        return result;
-    } catch (error) {
-        console.error('Error activating user:', error);
-        throw error;
-    }
-};
-
-const handleDeactivateUser = async (userId) => {
-    try {
-        const result = await deactivateUser(userId);
-        
-        if (selectedUser && selectedUser.id === userId) {
-            setSelectedUser(prev => ({
-                ...prev,
-                status: 'Inactive'
-            }));
-        }
-        
-        return result;
-    } catch (error) {
-        console.error('Error deactivating user:', error);
-        throw error;
-    }
-};
-
-    const handlePageChange = (page) => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        if (fetchUsers) {
-            fetchUsers(page); 
+    const handleActivateUser = async (userId) => {
+        try {
+            const result = await activateUser(userId);
+            
+            if (selectedUser && selectedUser.id === userId) {
+                setSelectedUser(prev => ({
+                    ...prev,
+                    status: 'Active'
+                }));
+            }
+            
+            return result;
+        } catch (error) {
+            console.error('Error activating user:', error);
+            throw error;
         }
     };
+
+    const handleDeactivateUser = async (userId) => {
+        try {
+            const result = await deactivateUser(userId);
+            
+            if (selectedUser && selectedUser.id === userId) {
+                setSelectedUser(prev => ({
+                    ...prev,
+                    status: 'Inactive'
+                }));
+            }
+            
+            return result;
+        } catch (error) {
+            console.error('Error deactivating user:', error);
+            throw error;
+        }
+    };
+
 
     const tableConfig = {
         headers: ['No', 'Employee ID', 'Full Name', 'Email', 'Position', 'Role', 'Status', 'Last Login', 'Action'],
@@ -664,14 +631,12 @@ const handleDeactivateUser = async (userId) => {
     };
 
     const formattedUsers = useMemo(() => {
-        if (!filteredUsers || filteredUsers.length === 0) {
+        if (!users || users.length === 0) {
             return [];
         }
 
-        return filteredUsers.map((user, index) => {
-            const currentPage = pagination.page || 1;
-            const itemsPerPage = pagination.limit || 10;
-            const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
+        return users.map((user, index) => {
+            const itemNumber = (pagination.page - 1) * pagination.limit + index + 1;
 
             return {
                 id: user.id,
@@ -690,7 +655,7 @@ const handleDeactivateUser = async (userId) => {
                 ...user
             };
         });
-    }, [filteredUsers, pagination.page, pagination.limit]);
+    }, [users, pagination.page, pagination.limit]);
 
     const UserStatsCards = ({ statsData }) => {
         return (
@@ -706,19 +671,19 @@ const handleDeactivateUser = async (userId) => {
                                     <h3 className="text-sm font-medium text-gray-600">{stat.title}</h3>
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className="text-2xl font-bold text-gray-800">{stat.value}</span>
-                                        <span className={`text-sm font-medium px-2 py-1 rounded-full ${stat.trend === 'up' ? 'bg-green-100 text-green-800' : stat.trend === 'down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
+                                        {/* <span className={`text-sm font-medium px-2 py-1 rounded-full ${stat.trend === 'up' ? 'bg-green-100 text-green-800' : stat.trend === 'down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
                                             {stat.percentage}
-                                        </span>
+                                        </span> */}
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="mt-4 text-sm text-gray-500">
+                        {/* <div className="mt-4 text-sm text-gray-500">
                             {stat.description}
                             {stat.subtitle && (
                                 <span className="block text-xs text-gray-400 mt-1">{stat.subtitle}</span>
                             )}
-                        </div>
+                        </div> */}
                     </div>
                 ))}
             </div>
@@ -1018,7 +983,7 @@ const handleDeactivateUser = async (userId) => {
                                 <Button
                                     variant="outline"
                                     className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
-                                    disabled={loading || filteredUsers.length === 0 || isExporting}
+                                    disabled={loading || users.length === 0 || isExporting}
                                     onClick={handleExport}
                                 >
                                     {isExporting ? (
@@ -1102,7 +1067,7 @@ const handleDeactivateUser = async (userId) => {
                                 <div className="flex items-center justify-between">
                                     <div className="text-sm text-gray-600">
                                         <span>
-                                            Showing <span className="font-semibold">{filteredUsers.length}</span> users
+                                            Showing <span className="font-semibold">{users.length}</span> users
                                             {filters.position && (
                                                 <span> in <span className="font-semibold">{getFilterLabel('position')}</span> position</span>
                                             )}
@@ -1118,7 +1083,7 @@ const handleDeactivateUser = async (userId) => {
                             </div>
                         )}
 
-                        {!loading && filteredUsers.length === 0 && (
+                        {!loading && users.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
                                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
                                     <Users className="w-10 h-10 text-gray-400" />
@@ -1157,7 +1122,7 @@ const handleDeactivateUser = async (userId) => {
                             </div>
                         )}
 
-                        {filteredUsers.length > 0 && (
+                        {users.length > 0 && (
                             <>
                                 <div className="relative">
                                     {loading && (
@@ -1179,10 +1144,10 @@ const handleDeactivateUser = async (userId) => {
 
                                 <div className='mt-6 flex flex-col sm:flex-row justify-between items-center gap-4'>
                                     <Pagination 
-                                        currentPage={pagination.page || 1}
-                                        totalPages={pagination.totalPages || 1}
-                                        totalItems={pagination.total || 0}
-                                        itemsPerPage={pagination.limit || 10}
+                                        currentPage={pagination.page}
+                                        totalPages={pagination.totalPages}
+                                        totalItems={pagination.total}
+                                        itemsPerPage={pagination.limit}
                                         onPageChange={handlePageChange}
                                         disabled={loading}
                                     />
