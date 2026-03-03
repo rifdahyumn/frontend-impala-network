@@ -71,7 +71,6 @@ const UserAccountSettings = () => {
         };
     }, []);
 
-    // Auto-hide popup after 3 seconds
     useEffect(() => {
         if (showSuccessPopup) {
             const timer = setTimeout(() => {
@@ -353,10 +352,8 @@ const UserAccountSettings = () => {
                     updateUser(updatedUserData);
                 }
                 
-                // Tampilkan toast notification
                 toast.success('Profile updated successfully!');
                 
-                // Tampilkan popup sukses
                 setSuccessMessage('Your profile changes have been saved successfully!');
                 setShowSuccessPopup(true);
 
