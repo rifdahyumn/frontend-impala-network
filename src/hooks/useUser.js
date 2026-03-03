@@ -294,8 +294,6 @@ export const useUsers = () => {
             if (result && result.success === true) {
                 let usersData = Array.isArray(result.data) ? result.data : [];
                 let total = result.pagination?.total || 0;
-                
-                const activatedUser = usersData.find(u => u.id === 'e4a1237c-74f9-4936-be5d-cd6ad14df2a2');
 
                 setUsers(usersData);
                 
