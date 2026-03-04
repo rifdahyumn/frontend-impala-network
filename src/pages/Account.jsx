@@ -10,7 +10,6 @@ import Pagination from '../components/Pagination/Pagination';
 import AddUser from "../components/AddButton/AddUser";
 import { useUsers } from "../hooks/useUser";
 import toast from "react-hot-toast";
-import * as XLSX from 'xlsx'; 
 
 const Account = () => {
     const [selectedUser, setSelectedUser] = useState(null);
@@ -57,7 +56,8 @@ const Account = () => {
         addUser, 
         updateUser, 
         totalStats,       
-        statsLoading      
+        statsLoading,
+        exportUsers
     } = useUsers();
 
     const showConfirm = (config) => {
@@ -110,182 +110,38 @@ const Account = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const roleOptions = [
         { value: 'admin', label: 'Admin', original: 'Admin' },
-        { value: 'user', label: 'User', original: 'User' },
-        { value: 'superadmin', label: 'Super Admin', original: 'Super Admin' },
-        { value: 'manager_programmer', label: 'Manager Programmer', original: 'Manager Programmer' },
+        { value: 'manajer_program', label: 'Manajer Program', original: 'Manajer Program' },
         { value: 'komunitas', label: 'Komunitas', original: 'Komunitas' }
     ];
 
     const handleExport = useCallback(async () => {
         try {
-            if (!filteredUsers || filteredUsers.length === 0) {
+            if (totalStats.totalUsers === 0) {
                 toast.error('No data to export');
                 return;
             }
             
             setIsExporting(true);
-
-            const exportData = filteredUsers.map((user, index) => ({
-                'No': index + 1,
-                'Employee ID': user.employee_id || '-',
-                'Full Name': user.full_name || '-',
-                'Email': user.email || '-',
-                'Position': user.position || '-',
-                'Role': user.role || '-',
-                'Status': user.status || '-',
-                'Phone': user.phone || '-',
-                'Last Login': user.last_login 
-                    ? new Date(user.last_login).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }) 
-                    : '-',
-                'Created Date': user.created_at 
-                    ? new Date(user.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }) 
-                    : '-',
-                'Last Updated': user.updated_at 
-                    ? new Date(user.updated_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }) 
-                    : '-'
-            }));
-
-            const ws = XLSX.utils.json_to_sheet(exportData);
             
-            const wscols = [
-                { wch: 5 },   
-                { wch: 15 },  
-                { wch: 25 },   
-                { wch: 30 },  
-                { wch: 25 },  
-                { wch: 15 },
-                { wch: 15 }, 
-                { wch: 15 },  
-                { wch: 20 }, 
-                { wch: 20 }, 
-                { wch: 20 },  
-            ];
-            ws['!cols'] = wscols;
+            toast.loading('Mengambil semua data dari database...');
             
-            const range = XLSX.utils.decode_range(ws['!ref']);
-            for (let C = range.s.c; C <= range.e.c; ++C) {
-                const cell_address = { c: C, r: 0 };
-                const cell_ref = XLSX.utils.encode_cell(cell_address);
-                if (!ws[cell_ref]) continue;
-                ws[cell_ref].s = {
-                    font: { bold: true },
-                    fill: { fgColor: { rgb: "E0E0E0" } },
-                    alignment: { vertical: "center", horizontal: "center" }
-                };
-            }
+            const exportFilters = {
+                search: searchTerm || undefined,
+                position: filters.position || undefined,
+                role: filters.role !== 'all' ? filters.role : undefined
+            };
             
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Account Users");
+            await exportUsers('xlsx', exportFilters, true);
             
-            const activeUsers = filteredUsers.filter(u => 
-                u.status?.toLowerCase() === 'active'
-            ).length;
-            const inactiveUsers = filteredUsers.length - activeUsers;
+            toast.success(`Berhasil mengexport semua data (${totalStats.totalUsers} users) ke Excel`);
             
-            const filterInfo = [
-                ['USER ACCOUNT EXPORT'],
-                ['', ''],
-                ['Export Date', new Date().toLocaleString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                })],
-                ['Total Records Exported', filteredUsers.length],
-                ['', ''],
-                ['APPLIED FILTERS'],
-                ['Search Term', searchTerm || 'None'],
-                ['Position Filter', filters.position ? getOriginalLabel(filters.position, positionOptions) : 'All'],
-                ['Role Filter', filters.role && filters.role !== 'all' ? getOriginalLabel(filters.role, roleOptions) : 'All'],
-                ['', ''],
-                ['STATISTICS (Exported Data)'],
-                ['Total Active Users (Exported)', activeUsers],  
-                ['Total Inactive Users (Exported)', inactiveUsers],  
-                ['Total Admin Users (Exported)', filteredUsers.filter(u => u.role === 'admin').length],
-                ['Total Super Admin Users (Exported)', filteredUsers.filter(u => u.role === 'superadmin').length],
-                ['Total Manager Programmer (Exported)', filteredUsers.filter(u => u.role === 'manager_programmer').length],
-                ['Total Komunitas (Exported)', filteredUsers.filter(u => u.role === 'komunitas').length],
-                ['', ''],
-                ['SYSTEM STATISTICS (All Pages)'],
-                ['Total Users (All Pages)', totalStats.totalUsers],
-                ['Total Active Users (All Pages)', totalStats.totalActive],
-                ['Active Percentage', totalStats.totalUsers > 0 
-                    ? `${((totalStats.totalActive / totalStats.totalUsers) * 100).toFixed(1)}%` 
-                    : '0%'],
-                ['', ''],
-                ['PAGINATION INFO'],
-                ['Current Page', pagination.page || 1],
-                ['Total Pages', pagination.totalPages || 1],
-                ['Items Per Page', pagination.limit || 10],
-                ['', ''],
-                ['EXPORT INFORMATION'],
-                ['Generated On', new Date().toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                })],
-                ['System', 'User Account Management System'],
-                ['Version', '1.0.0']
-            ];
-            
-            const wsInfo = XLSX.utils.aoa_to_sheet(filterInfo);
-            
-            const infoCols = [
-                { wch: 30 },
-                { wch: 40 }
-            ];
-            wsInfo['!cols'] = infoCols;
-            
-            const infoRange = XLSX.utils.decode_range(wsInfo['!ref']);
-            for (let R = 0; R <= Math.min(2, infoRange.e.r); R++) {
-                for (let C = infoRange.s.c; C <= infoRange.e.c; C++) {
-                    const cell_address = { c: C, r: R };
-                    const cell_ref = XLSX.utils.encode_cell(cell_address);
-                    if (wsInfo[cell_ref]) {
-                        wsInfo[cell_ref].s = {
-                            font: { bold: true, color: { rgb: "FFFFFF" } },
-                            fill: { fgColor: { rgb: "4F46E5" } },
-                            alignment: { vertical: "center", horizontal: "center" }
-                        };
-                    }
-                }
-            }
-            
-            XLSX.utils.book_append_sheet(wb, wsInfo, "Export Info");
-            
-            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-').replace(/\..+/, '');
-            const fileName = `user_accounts_export_${timestamp}.xlsx`;
-            
-            XLSX.writeFile(wb, fileName);
-            
-            toast.success(`Successfully exported ${exportData.length} users to Excel`);
         } catch (error) {
             console.error('Export failed:', error);
-            toast.error(`Failed to export: ${error.message}`);
+            toast.error(error.message || 'Gagal mengexport data');
         } finally {
             setIsExporting(false);
         }
-    }, [filteredUsers, searchTerm, filters, positionOptions, roleOptions, totalStats, pagination]);
+    }, [exportUsers, searchTerm, filters, totalStats.totalUsers]);
 
     const handleSelectUser = useCallback((user) => {
         setSelectedUser(user);
@@ -718,23 +574,10 @@ const Account = () => {
                                         <span className="text-2xl font-bold text-gray-800">
                                             {stat.value}
                                         </span>
-                                        {/* <span className={`text-sm font-medium px-2 py-1 rounded-full ${
-                                            stat.trend === 'up' ? 'bg-green-100 text-green-800' : 
-                                            stat.trend === 'down' ? 'bg-red-100 text-red-800' : 
-                                            'bg-gray-100 text-gray-800'
-                                        }`}>
-                                            {stat.percentage}
-                                        </span> */}
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        {/* <div className="mt-4 text-sm text-gray-500">
-                            {stat.description}
-                            {stat.subtitle && (
-                                <span className="block text-xs text-gray-400 mt-1">{stat.subtitle}</span>
-                            )}
-                        </div> */}
                     </div>
                 ))}
             </div>
@@ -845,7 +688,6 @@ const Account = () => {
                                             ref={filterRef}
                                             className="absolute left-0 top-full mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-[450px]"
                                         >
-                                            {/* Konten filter tetap sama */}
                                             <div className="p-3 border-b">
                                                 <div className="flex items-center justify-between">
                                                     <h3 className="font-bold text-gray-900 text-xs">Filter Options</h3>
@@ -1043,7 +885,7 @@ const Account = () => {
                                 <Button
                                     variant="outline"
                                     className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 whitespace-nowrap"
-                                    disabled={loading || filteredUsers.length === 0 || isExporting}
+                                    disabled={loading || totalStats.totalUsers === 0 || isExporting}
                                     onClick={handleExport}
                                 >
                                     {isExporting ? (
@@ -1122,30 +964,29 @@ const Account = () => {
                             </div>
                         )}
 
-                        {getTotalActiveCriteria() > 0 && (
-                            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                                <div className="flex items-center justify-between">
-                                    <div className="text-sm text-gray-600">
-                                        <span>
-                                            Showing <span className="font-semibold">{filteredUsers.length}</span> users
-                                            {filters.position && (
-                                                <span> in <span className="font-semibold">{getFilterLabel('position')}</span> position</span>
-                                            )}
-                                            {filters.role && filters.role !== 'all' && (
-                                                <span> with role <span className="font-semibold">{getFilterLabel('role')}</span></span>
-                                            )}
-                                            {filters.role === 'all' && (
-                                                <span> in all roles</span>
-                                            )}
-                                        </span>
-                                    </div>
-                                    <div className="text-xs text-gray-400">
-                                        Total in system: <span className="font-semibold">{totalStats.totalUsers}</span> users
-                                        {statsLoading && <Loader2 className="h-3 w-3 animate-spin inline ml-1" />}
-                                    </div>
+                        {/* BAGIAN YANG DIHILANGKAN - Menghapus div dengan bg-gray-50 */}
+                        {/* <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm text-gray-600">
+                                    <span>
+                                        Showing <span className="font-semibold">{filteredUsers.length}</span> users
+                                        {filters.position && (
+                                            <span> in <span className="font-semibold">{getFilterLabel('position')}</span> position</span>
+                                        )}
+                                        {filters.role && filters.role !== 'all' && (
+                                            <span> with role <span className="font-semibold">{getFilterLabel('role')}</span></span>
+                                        )}
+                                        {filters.role === 'all' && (
+                                            <span> in all roles</span>
+                                        )}
+                                    </span>
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                    Total in system: <span className="font-semibold">{totalStats.totalUsers}</span> users
+                                    {statsLoading && <Loader2 className="h-3 w-3 animate-spin inline ml-1" />}
                                 </div>
                             </div>
-                        )}
+                        </div> */}
 
                         {!loading && filteredUsers.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">

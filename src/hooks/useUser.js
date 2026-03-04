@@ -1,6 +1,7 @@
 import userService from "../services/userService"
 import { useState, useEffect, useCallback, useRef } from "react"
 import toast from "react-hot-toast"
+import * as XLSX from 'xlsx'
 
 export const useUsers = () => {
     const [users, setUsers] = useState([])
@@ -546,6 +547,150 @@ export const useUsers = () => {
         return users.find(user => user.id === userId) || null;
     }, [users]);
 
+    const exportUsers = useCallback(async (format = 'xlsx', currentFilters = {}, exportAll = true) => {
+        try {
+            const exportFilters = {
+                search: currentFilters.search !== undefined ? currentFilters.search : searchTerm,
+                position: currentFilters.position !== undefined ? currentFilters.position : filters.position,
+                role: currentFilters.role !== undefined ? currentFilters.role : filters.role
+            };
+
+            const result = await userService.exportUsers(exportFilters, exportAll);
+            
+            if (result.isBlob && result.data) {
+                const url = window.URL.createObjectURL(result.data);
+                const link = document.createElement('a');
+                link.href = url;
+                
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-').replace(/\..+/, '');
+                link.setAttribute('download', `users_export_${timestamp}.xlsx`);
+                
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(url);
+                
+                return { success: true, message: 'Export successful' };
+            }
+            
+            if (result.data && Array.isArray(result.data)) {
+                const exportData = result.data.map((user, index) => ({
+                    'No': index + 1,
+                    'Employee ID': user.employee_id || '-',
+                    'Full Name': user.full_name || '-',
+                    'Email': user.email || '-',
+                    'Position': user.position || '-',
+                    'Role': user.role || '-',
+                    'Status': user.status || '-',
+                    'Phone': user.phone || '-',
+                    'Last Login': user.last_login 
+                        ? new Date(user.last_login).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }) 
+                        : '-',
+                    'Created Date': user.created_at 
+                        ? new Date(user.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }) 
+                        : '-',
+                    'Last Updated': user.updated_at 
+                        ? new Date(user.updated_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }) 
+                        : '-'
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                
+                const wscols = [
+                    { wch: 5 },   
+                    { wch: 15 },  
+                    { wch: 25 },  
+                    { wch: 30 },  
+                    { wch: 25 },  
+                    { wch: 15 },  
+                    { wch: 15 },  
+                    { wch: 15 },  
+                    { wch: 20 },  
+                    { wch: 20 },  
+                    { wch: 20 },  
+                ];
+                ws['!cols'] = wscols;
+                
+                const range = XLSX.utils.decode_range(ws['!ref']);
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const cell_address = { c: C, r: 0 };
+                    const cell_ref = XLSX.utils.encode_cell(cell_address);
+                    if (!ws[cell_ref]) continue;
+                    ws[cell_ref].s = {
+                        font: { bold: true },
+                        fill: { fgColor: { rgb: "E0E0E0" } },
+                        alignment: { vertical: "center", horizontal: "center" }
+                    };
+                }
+                
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Users");
+                
+                const activeUsers = result.data.filter(u => 
+                    u.status?.toLowerCase() === 'active'
+                ).length;
+                
+                const filterInfo = [
+                    ['USER ACCOUNT EXPORT - ALL DATA'],
+                    ['', ''],
+                    ['Export Date', new Date().toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    })],
+                    ['Total Records Exported', result.data.length],
+                    ['', ''],
+                    ['APPLIED FILTERS'],
+                    ['Search Term', exportFilters.search || 'None'],
+                    ['Position Filter', exportFilters.position || 'All'],
+                    ['Role Filter', exportFilters.role || 'All'],
+                    ['', ''],
+                    ['STATISTICS'],
+                    ['Total Active Users', activeUsers],
+                    ['Total Inactive Users', result.data.length - activeUsers]
+                ];
+                
+                const wsInfo = XLSX.utils.aoa_to_sheet(filterInfo);
+                XLSX.utils.book_append_sheet(wb, wsInfo, "Export Info");
+                
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-').replace(/\..+/, '');
+                const fileName = `users_export_all_${timestamp}.xlsx`;
+                
+                XLSX.writeFile(wb, fileName);
+                
+                return { success: true, message: 'Export successful' };
+            }
+            
+            return { success: true, message: 'Export completed' };
+            
+        } catch (error) {
+            console.error('Export error in hook:', error);
+            toast.error(error.message || 'Failed to export users');
+            throw error;
+        }
+    }, [searchTerm, filters]);
+
     return {
         users, 
         loading, 
@@ -567,6 +712,7 @@ export const useUsers = () => {
         searchTerm,
         setSearchTerm,
         filters,
-        setFilters
+        setFilters,
+        exportUsers
     }
 }

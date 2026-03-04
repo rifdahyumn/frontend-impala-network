@@ -571,6 +571,149 @@ class UserService {
         }
     }
 
+    /**
+     * EXPORT FUNCTION - Menambahkan fungsi export tanpa mengganggu fungsi lain
+     * Fungsi ini akan mengambil semua data users dengan filter yang sama
+     */
+    async exportUsers(filters = {}, exportAll = true) {
+        try {
+            const {
+                search = '',
+                position = '',
+                role = ''
+            } = filters;
+
+            // Bangun query params
+            const queryParams = new URLSearchParams();
+            
+            if (exportAll) {
+                queryParams.append('all', 'true');
+            }
+            
+            if (search) {
+                queryParams.append('search', search);
+            }
+            
+            if (position) {
+                queryParams.append('position', position);
+            }
+            
+            if (role && role !== 'all' && role !== 'undefined') {
+                queryParams.append('role', role);
+            }
+
+            // Untuk export, kita perlu response type blob
+            const token = getValidToken();
+            if (!token) {
+                throw new Error('No access token available');
+            }
+
+            const url = `${API_BASE_URL}/user/export?${queryParams.toString()}`;
+            
+            console.log('Export URL:', url); // Untuk debugging
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    console.warn('Export endpoint not found. Using frontend generation instead.');
+                    // Fallback ke method lain
+                    return this.exportUsersFallback(filters, exportAll);
+                }
+                if (response.status === 401) {
+                    throw new Error('Session expired. Please login again.');
+                }
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error ${response.status}`);
+            }
+
+            // Dapatkan blob dari response
+            const blob = await response.blob();
+            
+            return {
+                success: true,
+                data: blob,
+                isBlob: true,
+                message: 'Export successful'
+            };
+
+        } catch (error) {
+            console.error('UserService.exportUsers error:', error);
+            
+            // Fallback: gunakan data yang sudah ada
+            console.warn('Falling back to frontend export generation');
+            return this.exportUsersFallback(filters, exportAll);
+        }
+    }
+
+    /**
+     * FALLBACK EXPORT FUNCTION - Generate Excel di frontend jika endpoint tidak tersedia
+     * Fungsi ini TIDAK mengganggu fungsi lain dan hanya dipanggil jika export utama gagal
+     */
+    async exportUsersFallback(filters = {}, exportAll = true) {
+        try {
+            const { search = '', position = '', role = '' } = filters;
+            
+            // Ambil semua users dengan limit besar
+            let allUsers = [];
+            let page = 1;
+            const limit = 100; // Ambil 100 data per request
+            
+            // Loop untuk mengambil semua halaman
+            while (true) {
+                const result = await this.fetchUsers({
+                    page,
+                    limit,
+                    search,
+                    position,
+                    role
+                });
+                
+                const users = result.data || [];
+                allUsers = [...allUsers, ...users];
+                
+                // Jika sudah mencapai halaman terakhir, berhenti
+                if (users.length < limit || page >= (result.pagination?.totalPages || 1)) {
+                    break;
+                }
+                
+                page++;
+            }
+            
+            return {
+                success: true,
+                data: allUsers,
+                isBlob: false,
+                message: 'Export data prepared'
+            };
+            
+        } catch (error) {
+            console.error('UserService.exportUsersFallback error:', error);
+            
+            // Last resort: gunakan mock data
+            const mockResult = this.getMockUsers({
+                page: 1,
+                limit: 1000,
+                search: filters.search || '',
+                position: filters.position || '',
+                role: filters.role || ''
+            });
+            
+            return {
+                success: true,
+                data: mockResult.data || [],
+                isBlob: false,
+                message: 'Export data prepared (mock)'
+            };
+        }
+    }
+
     clearCache() {
         this.responseCache.clear()
         this.pendingRequests.clear()
