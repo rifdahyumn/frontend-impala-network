@@ -7,6 +7,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useAuth } from "../../hooks/useAuth";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
 const Header = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
@@ -23,7 +25,7 @@ const Header = () => {
 
     const handleLogout = async () => {
         try {
-            await fetch("http://localhost:3000/api/auth/logout", {
+            await fetch(`${API_BASE_URL}/auth/logout`, {
                 method: "POST",
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
