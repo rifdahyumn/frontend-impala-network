@@ -9,13 +9,15 @@ import { useLocationData } from "./AddClientLocation";
 import { validateForm } from "./AddClientValidation";
 import useClientSearch from "../../../hooks/useClientSearch";
 
-const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess, onAddClient, onEditClient }) => {
+const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess, onAddClient, onEditClient, onLocationChange, regencies: parentRegencies = [], districts: parentDistricts = [], villages: parentVillages = []
+ }) => {
     const [formData, setFormData] = useState(getInitialFormData(isEditMode, editData));
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [updateAllFields, setUpdateAllFields] = useState(true);
     const [forceCreateNewClient, setForceCreateNewClient] = useState(false)
     const [uploading, setUploading] = useState(false)
+    const [selectKey, setSelectKey] = useState(0);
     
     const { 
         clientExists, 
@@ -36,11 +38,15 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
     
     const {
         provinces,
-        regencies,
-        districts,
-        villages,
+        regencies: hookRegencies,
+        districts: hookDistricts,
+        villages: hookVillages,
         loadingLocation,
     } = useLocationData(formData, setFormData);
+
+    const regencies = parentRegencies.length > 0 ? parentRegencies : hookRegencies;
+    const districts = parentDistricts.length > 0 ? parentDistricts : hookDistricts;
+    const villages = parentVillages.length > 0 ? parentVillages : hookVillages;
 
     useEffect(() => {
         if (isEditMode && editData) {
@@ -131,6 +137,15 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
 
         if (name === 'province_id') {
             const selectedProvince = provinces.find(p => p.value === value)
+            
+            if (onLocationChange) {
+                onLocationChange({
+                    province_id: value,
+                    regency_id: '',
+                    district_id: ''
+                });
+            }
+            
             setFormData(prev => ({
                 ...prev,
                 [name]: value,
@@ -141,9 +156,21 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                 regency_name: '',
                 district_name: '',
                 village_name: ''
-            }))
+            }));
+            
+            setSelectKey(prev => prev + 1);
+            
         } else if (name === 'regency_id') {
             const selectedRegency = regencies.find(r => r.value === value);
+            
+            if (onLocationChange) {
+                onLocationChange({
+                    province_id: formData.province_id,
+                    regency_id: value,
+                    district_id: ''
+                });
+            }
+            
             setFormData(prev => ({
                 ...prev,
                 [name]: value,
@@ -153,8 +180,20 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                 district_name: '',
                 village_name: ''
             }));
+            
+            setSelectKey(prev => prev + 1);
+            
         } else if (name === 'district_id') {
             const selectedDistrict = districts.find(d => d.value === value);
+            
+            if (onLocationChange) {
+                onLocationChange({
+                    province_id: formData.province_id,
+                    regency_id: formData.regency_id,
+                    district_id: value
+                });
+            }
+            
             setFormData(prev => ({
                 ...prev,
                 [name]: value,
@@ -162,6 +201,9 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                 village_id: '',
                 village_name: ''
             }));
+            
+            setSelectKey(prev => prev + 1);
+            
         } else if (name === 'village_id') {
             const selectedVillage = villages.find(v => v.value === value);
             setFormData(prev => ({
@@ -169,6 +211,8 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                 [name]: value,
                 village_name: selectedVillage?.label || ''
             }));
+            setSelectKey(prev => prev + 1);
+            
         } else {
             setFormData(prev => ({
                 ...prev,
@@ -180,43 +224,77 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
             setErrors(prev => ({
                 ...prev,
                 [name]: ''
-            }))
+            }));
         }
     };
 
-    const handleSelectClientAndFillForm = (client) => {
+    const handleSelectClientAndFillForm = async (client) => {
         handleSelectClient(client);
 
-        setFormData(prev => ({
-            ...prev,
-            full_name: client.full_name || '',
-            email: client.email || '',
-            phone: client.phone || '',
-            company: client.company || '',
-            brand_name: client.brand_name || '',
-            logo_partner: client.logo_partner || null,
-            gender: client.gender || '',
-            business: client.business || '',
-            total_employee: client.total_employee || '',
-            position: client.position || '',
-            address: client.address || '',
+        if (onLocationChange) {
+            onLocationChange({
+                province_id: '',
+                regency_id: '',
+                district_id: ''
+            });
+        }
 
-            province_id: client.province_id || '',
-            province_name: client.province_name || '',
-            regency_id: client.regency_id || '',
-            regency_name: client.regency_name || '',
-            district_id: client.district_id || '',
-            district_name: client.district_name || '',
-            village_id: client.village_id || '',
-            village_name: client.village_name || '',
+        setSelectKey(prev => {
+            return prev + 1;
+        });
 
-            existing_programs: Array.isArray(client.program_name)
-                ? client.program_name
-                : client.program_name
-                    ? [client.program_name]
-                    : [],
-            program_name: ''
-        }));
+        setFormData(prev => {
+            
+            return {
+                ...prev,
+                full_name: client.full_name || '',
+                email: client.email || '',
+                phone: client.phone || '',
+                company: client.company || '',
+                brand_name: client.brand_name || '',
+                logo_partner: client.logo_partner || null,
+                gender: client.gender || '',
+                business: client.business || '',
+                total_employee: client.total_employee || '',
+                position: client.position || '',
+                address: client.address || '',
+
+                province_id: client.province_id || '',
+                province_name: client.province_name || '',
+                regency_id: client.regency_id || '',
+                regency_name: client.regency_name || '',
+                district_id: client.district_id || '',
+                district_name: client.district_name || '',
+                village_id: client.village_id || '',
+                village_name: client.village_name || '',
+
+                existing_programs: Array.isArray(client.program_name)
+                    ? client.program_name
+                    : client.program_name
+                        ? [client.program_name]
+                        : [],
+                program_name: ''
+            };
+        });
+
+        setSelectKey(prev => {
+            return prev + 1;
+        });
+
+        if (client.province_id && onLocationChange) {
+            setTimeout(() => {
+                
+                onLocationChange({
+                    province_id: client.province_id,
+                    regency_id: client.regency_id,
+                    district_id: client.district_id
+                });
+                
+                setSelectKey(prev => {
+                    return prev + 1;
+                });
+            }, 100);
+        }
 
         setErrors({});
         setUpdateAllFields(false);
@@ -252,6 +330,7 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
 
         try {
             let dataToSend = { ...formData }
+
 
             if (formData.logo_partner instanceof File) {
                 setLoading(true)
@@ -336,6 +415,15 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                 programData = formData.program_name ? [formData.program_name.trim()] : []
                 shouldIncludeProgram = programData.length > 0;
             }
+
+            let programNameToSend = programData;
+            if (programData.length === 1) {
+                programNameToSend = programData[0];
+            } else if (programData.length > 1) {
+                programNameToSend = programData; 
+            } else {
+                programNameToSend = null; 
+            }
             
             const baseClientData = {
                 full_name: formData.full_name,
@@ -347,15 +435,11 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                 business: formData.business || null,
                 total_employee: formData.total_employee || null,
                 position: formData.position || null,
-                program_name: programData,
+                program_name: programNameToSend,
                 notes: formData.notes || null,
                 logo_partner: dataToSend.logo_partner || null,  
                 ...locationData
             };
-
-            if (shouldIncludeProgram) {
-                baseClientData.program_name = programData;
-            }
 
             let result;
             
@@ -364,6 +448,7 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                     ...baseClientData,
                     updated_at: new Date().toISOString()
                 };
+
 
                 if (!shouldIncludeProgram) {
                     delete updateData.program_name
@@ -459,7 +544,8 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                                     handleInputChange,
                                     handleSelectChange,
                                     handleForceCreateNewClient,
-                                    handleSelectClient: handleSelectClientAndFillForm
+                                    handleSelectClient: handleSelectClientAndFillForm,
+                                    selectKey 
                                 })}
                             </div>
                         ))}

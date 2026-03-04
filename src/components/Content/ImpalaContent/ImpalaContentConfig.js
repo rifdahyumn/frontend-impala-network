@@ -10,7 +10,13 @@ const memberTypeConfigs = {
                 { key: 'nik', label: 'NIK', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
-                { key: 'gender', label: 'Gender', icon: User },
+                { 
+                    key: 'gender', 
+                    label: 'Gender', 
+                    icon: User,
+                    type: 'select',
+                    options: ['Laki-laki', 'Perempuan']
+                },
                 { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
                 { key: 'age', label: 'Age', icon: Clock },
                 { key: 'program_name', label: 'Program Name', icon: Award },
@@ -63,7 +69,13 @@ const memberTypeConfigs = {
                 { key: 'nik', label: 'NIK', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
-                { key: 'gender', label: 'Gender', icon: User },
+                { 
+                    key: 'gender', 
+                    label: 'Gender', 
+                    icon: User,
+                    type: 'select',
+                    options: ['Laki-laki', 'Perempuan']
+                },
                 { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
                 { key: 'age', label: 'Age', icon: Clock },
                 { key: 'program_name', label: 'Program Name', icon: Award },
@@ -104,7 +116,13 @@ const memberTypeConfigs = {
                 { key: 'nik', label: 'NIK', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
-                { key: 'gender', label: 'Gender', icon: User },
+                { 
+                    key: 'gender', 
+                    label: 'Gender', 
+                    icon: User,
+                    type: 'select',
+                    options: ['Laki-laki', 'Perempuan']
+                },
                 { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
                 { key: 'age', label: 'Age', icon: Clock },
                 { key: 'program_name', label: 'Program Name', icon: Award },
@@ -144,7 +162,13 @@ const memberTypeConfigs = {
                 { key: 'nik', label: 'NIK', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
-                { key: 'gender', label: 'Gender', icon: User },
+                { 
+                    key: 'gender', 
+                    label: 'Gender', 
+                    icon: User,
+                    type: 'select',
+                    options: ['Laki-laki', 'Perempuan']
+                },
                 { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
                 { key: 'age', label: 'Age', icon: Clock },
                 { key: 'program_name', label: 'Program Name', icon: Award },
@@ -183,7 +207,13 @@ const memberTypeConfigs = {
                 { key: 'full_name', label: 'Full Name', icon: User },
                 { key: 'email', label: 'Email', icon: Mail },
                 { key: 'phone', label: 'Phone', icon: Phone },
-                { key: 'gender', label: 'Gender', icon: User },
+                { 
+                    key: 'gender', 
+                    label: 'Gender', 
+                    icon: User,
+                    type: 'select',
+                    options: ['Laki-laki', 'Perempuan']
+                },
                 { key: 'date_of_birth', label: 'Date Of Birth', icon: Calendar },
                 { key: 'age', label: 'Age', icon: Clock },
                 { key: 'program_name', label: 'Program Name', icon: Award },

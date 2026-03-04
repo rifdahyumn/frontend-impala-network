@@ -203,8 +203,25 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
             params.append('business_type', businessFilterValue.trim());
         }
 
-        if (currentFilters.gender?.trim()) {
-            params.append('gender', currentFilters.gender.trim())
+        if (currentFilters.gender?.trim() && currentFilters.gender !== 'all') {
+            const genderValue = currentFilters.gender.trim();
+            
+            if (genderValue.toLowerCase() === 'male' || 
+                genderValue.toLowerCase() === 'female') {
+                params.append('gender', genderValue.toLowerCase());
+            } else {
+                if (genderValue.toLowerCase().includes('male') || 
+                    genderValue.toLowerCase().includes('laki') || 
+                    genderValue.toLowerCase().includes('pria')) {
+                    params.append('gender', 'male');
+                } else if (genderValue.toLowerCase().includes('female') || 
+                           genderValue.toLowerCase().includes('perempuan') || 
+                           genderValue.toLowerCase().includes('wanita')) {
+                    params.append('gender', 'female');
+                } else {
+                    params.append('gender', genderValue);
+                }
+            }
         }
 
         const url = `/api/client/export?${params.toString()}`

@@ -8,14 +8,17 @@ const useClientSearch = (isEditMode) => {
     const [clientSearchResults, setClientSearchResults] = useState([]);
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [searchingClient, setSearchingClient] = useState(false);
+    const [selectedClientData, setSelectedClientData] = useState(null);
 
     const handleSelectClient = (client) => {
-        setClientExists(true)
-        setExistingClientId(client.id)
-        setShowClientInfo(true)
+        setSelectedClientData(client);
+        setClientExists(true);
+        setExistingClientId(client.id);
+        setShowClientInfo(true);
+        setShowSearchResults(false);
+        setClientSearchResults([]);
 
-        setShowSearchResults(false)
-        setClientSearchResults([])
+        return client
     }
 
     const checkExistingClient = async (name, email) => {
@@ -44,6 +47,15 @@ const useClientSearch = (isEditMode) => {
         }
     };
 
+    const resetClientSearch = () => {
+        setClientExists(false);
+        setExistingClientId(null);
+        setShowClientInfo(false);
+        setClientSearchResults([]);
+        setShowSearchResults(false);
+        setSelectedClientData(null);
+    };
+
     return {
         clientExists,
         existingClientId,
@@ -51,13 +63,15 @@ const useClientSearch = (isEditMode) => {
         clientSearchResults,
         showSearchResults,
         searchingClient,
+        selectedClientData, 
         checkExistingClient,
         handleSelectClient,
         setClientExists,
         setExistingClientId,
         setShowClientInfo,
         setClientSearchResults,
-        setShowSearchResults
+        setShowSearchResults,
+        resetClientSearch
     };
 };
 

@@ -5,8 +5,9 @@ import { Button } from "../../ui/button";
 import { useDetailFields } from './ImpalaContentConfig';
 import EditMemberModal from './EditMemberModal';
 import toast from 'react-hot-toast';
+import impalaService from "../../../services/impalaService";
 
-const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated }) => {
+const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onRefresh }) => {
     const [activeCategory, setActiveCategory] = useState('Personal Information');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const { getDetailFields } = useDetailFields();
@@ -25,15 +26,30 @@ const ImpalaContent = ({ selectedMember, onDelete, detailTitle, onMemberUpdated 
         setIsEditModalOpen(true);
     };
 
-    const handleMemberUpdated = async (updatedMember) => {
+    const handleMemberUpdated = async (updatedData) => {
         try {
-            if (onMemberUpdated) {
-                await onMemberUpdated(updatedMember);
-            } else {
-                toast.error('Update function not available');
+            const memberId = selectedMember?.id || selectedMember?._id;
+            
+            if (!memberId) {
+                toast.error('Member ID not found');
+                return { success: false };
+            }
+
+            const response = await impalaService.updateImpala(memberId, updatedData);
+            
+            if (response.success) {
+                toast.success('Member updated successfully');
+                setIsEditModalOpen(false);
+                
+                if (onRefresh) {
+                    await onRefresh();
+                }
+                
+                return { success: true };
             }
         } catch (error) {
-            toast.error('Failed to update member', error);
+            toast.error(error.message);
+            return { success: false };
         }
     };
 

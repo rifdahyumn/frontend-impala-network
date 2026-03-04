@@ -3,6 +3,59 @@ import { Label } from "../../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { Badge } from "../../ui/badge";
 import { Search, Loader2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+
+// eslint-disable-next-line react-refresh/only-export-components
+const LocationSelect = ({ field, value, error, options, isDisabled, handleSelectChange, selectKey }) => {
+    const [internalValue, setInternalValue] = useState(value);
+    const [key, setKey] = useState(0);
+    
+    useEffect(() => {
+        setInternalValue(value);
+        setKey(prev => prev + 1);
+    }, [value, selectKey]);
+    
+    return (
+        <div className="space-y-2" key={`wrapper-${field.name}-${key}`}>
+            <Label htmlFor={field.name} className="flex items-center gap-1">
+                {field.label}
+                {field.required && <span className="text-red-500">*</span>}
+            </Label>
+            <Select
+                key={`select-${field.name}-${key}`}
+                value={internalValue}
+                onValueChange={(val) => {
+                    setInternalValue(val);
+                    handleSelectChange(field.name, val);
+                }}
+                disabled={isDisabled}
+            >
+                <SelectTrigger 
+                    className={error ? 'border-red-500' : ''}
+                    style={error ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
+                >
+                    <SelectValue placeholder={field.placeholder} />
+                </SelectTrigger>
+                <SelectContent>
+                    {options.length > 0 ? (
+                        options.map((option) => (
+                            <SelectItem key={option.value} value={option.value.toString()}>
+                                {option.label}
+                            </SelectItem>
+                        ))
+                    ) : (
+                        <SelectItem value="no-options" disabled>
+                            Tidak ada data
+                        </SelectItem>
+                    )}
+                </SelectContent>
+            </Select>
+            {error && (
+                <p className="text-red-500 text-xs mt-1">{error}</p>
+            )}
+        </div>
+    );
+};
 
 export const renderField = (props) => {
     const {
@@ -22,7 +75,8 @@ export const renderField = (props) => {
         handleInputChange,
         handleSelectChange,
         handleSelectClient,
-        handleForceCreateNewClient
+        handleForceCreateNewClient,
+        selectKey
     } = props;
 
     const error = errors?.[field.name];
@@ -33,7 +87,7 @@ export const renderField = (props) => {
     }
 
     if (field.type === 'select') {
-        return renderSelectField(field, value, error, formData, provinces, regencies, districts, villages, loadingLocation, handleSelectChange, isEditMode);
+        return renderSelectField(field, value, error, formData, provinces, regencies, districts, villages, loadingLocation, handleSelectChange, isEditMode, selectKey);
     }
 
     if (field.type === 'textarea') {
@@ -90,7 +144,6 @@ const renderProgramField = (field, formData, error, value, isEditMode, handleInp
                 value={value}
                 onChange={handleInputChange}
                 placeholder={field.placeholder}
-                // required={field.required}
                 disabled={field.disabled}
                 className={hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                 style={hasError ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
@@ -104,7 +157,7 @@ const renderProgramField = (field, formData, error, value, isEditMode, handleInp
     );
 };
 
-const renderSelectField = (field, value, error, formData, provinces, regencies, districts, villages, loadingLocation, handleSelectChange) => {
+const renderSelectField = (field, value, error, formData, provinces, regencies, districts, villages, loadingLocation, handleSelectChange, selectKey) => {
     let options = field.options || [];
     
     if (field.name === 'province_id') {
@@ -122,51 +175,16 @@ const renderSelectField = (field, value, error, formData, provinces, regencies, 
         (field.name === 'district_id' && !formData.regency_id) ||
         (field.name === 'village_id' && !formData.district_id);
 
-    const hasError = !!error;
-
     return (
-        <div className="space-y-2">
-            <Label htmlFor={field.name} className="flex items-center gap-1">
-                {field.label}
-                {field.required && <span className="text-red-500">*</span>}
-            </Label>
-            <Select
-                value={value}
-                onValueChange={(val) => handleSelectChange(field.name, val)}
-                required={field.required}
-                disabled={isDisabled}
-            >
-                <SelectTrigger 
-                    className={hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-                    style={hasError ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
-                >
-                    <SelectValue placeholder={field.placeholder} />
-                </SelectTrigger>
-                <SelectContent>
-                    {options.length > 0 ? (
-                        options
-                            .filter(option => option.value && option.value.toString().trim() !== '')
-                            .map((option) => (
-                                <SelectItem 
-                                    key={option.value} 
-                                    value={option.value.toString()}
-                                >
-                                    {option.label}
-                                </SelectItem>
-                            ))
-                    ) : (
-                        <SelectItem value="no-options" disabled>
-                            {field.placeholder || 'No options available'}
-                        </SelectItem>
-                    )}
-                </SelectContent>
-            </Select>
-            {hasError && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    {error}
-                </p>
-            )}
-        </div>
+        <LocationSelect
+            field={field}
+            value={value}
+            error={error}
+            options={options}
+            isDisabled={isDisabled}
+            handleSelectChange={handleSelectChange}
+            selectKey={selectKey}
+        />
     );
 };
 

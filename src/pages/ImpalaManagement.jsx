@@ -1408,6 +1408,7 @@ const ImpalaManagement = () => {
                         selectedMember={selectedParticipant}
                         onEdit={handleEdit}
                         onDelete={handleDelete}
+                        onRefresh={refreshData}
                         detailTitle={tableConfig.detailTitle}
                     />
                 </div>

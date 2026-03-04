@@ -61,6 +61,7 @@ const EditMemberForm = ({
         try {
             setIsSubmitting(true);
 
+            // Validasi
             if (!formData.full_name?.trim()) {
                 toast.error('Nama lengkap harus diisi');
                 setIsSubmitting(false);
@@ -91,19 +92,34 @@ const EditMemberForm = ({
 
                 const updatedData = {
                     ...formData,
-
                     updated_at: new Date().toISOString()
                 };
                 
-                await onMemberUpdated(updatedData);
-                setIsModalOpen(false);
+                // TUNGGU proses update selesai
+                const result = await onMemberUpdated(updatedData);
+                
+                // Cek apakah update berhasil
+                if (result && result.success === false) {
+                    throw new Error(result.message || 'Update failed');
+                }
+                
+                // Baru tutup modal setelah sukses
+                toast.success('Data beneficiary berhasil diupdate');
+                
+                // Beri sedikit delay agar user lihat pesan sukses
+                setTimeout(() => {
+                    setIsModalOpen(false);
+                }, 500);
+                
             } else {
                 toast.error('Update function not available');
+                setIsSubmitting(false);
             }
         } catch (error) {
+            console.error('Update error:', error);
             toast.error(error.message || 'Gagal menyimpan data');
-        } finally {
             setIsSubmitting(false);
+            // JANGAN tutup modal kalau error
         }
     };
 

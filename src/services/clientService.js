@@ -236,14 +236,15 @@ class ClientService {
 
     async searchClient(name, email) {
         try {
-            const params = new URLSearchParams()
-            if (name) params.append('name', name)
-            if (email) params.append('email', email)
-
-            const response = await fetch(`${this.baseURL}/client/search?${params.toString()}`)
-            return await this.handleResponse(response) 
+            const params = new URLSearchParams();
+            if (name) params.append('name', name);
+            if (email) params.append('email', email);
+            
+            const response = await fetch(`${this.baseURL}/client/search?${params}`);
+            const result = await this.handleResponse(response);
+            return result;
         } catch (error) {
-            console.error('Error searching client:', error);
+            console.error('Error searching clients:', error);
             throw error;
         }
     }
