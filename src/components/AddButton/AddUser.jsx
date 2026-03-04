@@ -88,7 +88,8 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                     label: 'Password',
                     type: 'password',
                     required: !isEditMode,
-                    placeholder: isEditMode ? 'Leave blank to keep current password' : 'Enter password'
+                    placeholder: isEditMode ? 'Leave blank to keep current password' : 'Enter password',
+                    disabled: isEditMode
                 },
                 {
                     name: 'email',
@@ -172,7 +173,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
             const newFormData = {
                 employee_id: editData.employee_id || '',
                 email: editData.email || '',
-                password: '',
+                password: '', 
                 role: editData.role || '',
                 full_name: editData.full_name || '',
                 position: editData.position || '',
@@ -210,11 +211,11 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
 
         formSections.forEach(section => {
             section.fields.forEach(field => {
-                if (isEditMode && field.name === 'password') {
+                if (field.disabled) {
                     return;
                 }
                 
-                if (field.required && !field.disabled) {
+                if (field.required) {
                     const value = formData[field.name];
                     const strValue = getStringValue(value);
                     if (!strValue || strValue.trim() === '') {
@@ -248,7 +249,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
             .flatMap(section => section.fields)
             .find(field => field.name === name);
 
-        if (fieldConfig?.disabled) {
+        if (fieldConfig?.disabled || loading) {
             return;
         }
 
@@ -270,7 +271,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
             .flatMap(section => section.fields)
             .find(field => field.name === name);
             
-        if (fieldConfig?.disabled) {
+        if (fieldConfig?.disabled || loading) {
             return;
         }
 
@@ -408,6 +409,8 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
     };
 
     const renderField = (field) => {
+        const isFieldDisabled = field.disabled || loading;
+        
         if (field.type === 'file') {
             return (
                 <Card key={field.name} className="p-4">
@@ -423,16 +426,18 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                                             </AvatarFallback>
                                         </Avatar>
 
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="icon"
-                                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                                            onClick={removeAvatar}
-                                            disabled={loading}
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </Button>
+                                        {!loading && (
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="icon"
+                                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                                                onClick={removeAvatar}
+                                                disabled={loading}
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </Button>
+                                        )}
                                     </div>
                                 ) : (
                                     <Avatar className="w-20 h-20 border-2 border-dashed border-muted-foreground/25">
@@ -479,7 +484,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                     <Select
                         value={formData[field.name]}
                         onValueChange={(value) => handleSelectChange(field.name, value)}
-                        disabled={loading}
+                        disabled={isFieldDisabled}
                     >
                         <SelectTrigger className={errors[field.name] ? 'border-red-500' : ''}>
                             <SelectValue placeholder={field.placeholder} />
@@ -516,7 +521,7 @@ const AddUser = ({ isAddUserModalOpen, setIsAddUserModalOpen, onAddUser, editDat
                     onChange={handleInputChange}
                     placeholder={field.placeholder}
                     className={`w-full ${errors[field.name] ? 'border-red-500' : ''}`}
-                    disabled={loading}
+                    disabled={isFieldDisabled}
                 />
                 {errors[field.name] && (
                     <p className="text-sm text-red-500">{errors[field.name]}</p>

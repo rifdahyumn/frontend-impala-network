@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { locationService } from "../../../services/locationService";
 
-// Di AddClientLocation.js
 export const useLocationData = (formData) => {
     const [provinces, setProvinces] = useState([]);
     const [regencies, setRegencies] = useState([]);
@@ -89,7 +88,6 @@ export const useLocationData = (formData) => {
         loadProvinces()
     }, []);
 
-    // Efek-efek yang sudah ada untuk reset data ketika pilihan berubah
     useEffect(() => {
         if (formData.province_id) {
             loadRegencies(formData.province_id);
@@ -121,8 +119,8 @@ export const useLocationData = (formData) => {
         villages,
         loadingLocation,
         loadProvinces,
-        loadRegencies,    // ✅ EXPOSE FUNGSI INI
-        loadDistricts,    // ✅ EXPOSE FUNGSI INI
-        loadVillages      // ✅ EXPOSE FUNGSI INI
+        loadRegencies,    
+        loadDistricts,    
+        loadVillages      
     };
 };

@@ -34,8 +34,7 @@ const UserAccountSettings = () => {
     const [avatarFile, setAvatarFile] = useState(null); 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false); 
-    const [errors, setErrors] = useState({}); 
-    // State untuk popup konfirmasi sukses
+    const [errors, setErrors] = useState({});
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
