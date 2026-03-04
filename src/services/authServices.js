@@ -412,93 +412,69 @@ export const loginService = async (credentials) => {
 
 export const forgotPasswordService = async (email) => {
     try {
-        const response = await axios.post(
-            `${API_BASE_URL}/auth/forgot-password`,
-            { 
-                email: email.trim(),
-                reset_url: `${window.location.origin}/reset-password`
-            },
-            {
-                headers: { 
-                    'Content-Type': 'application/json'
-                },
-                timeout: 30000
-            }
-        );
+        const response = await authApi.post('/auth/forgot-password', { 
+            email: email.trim(),
+            reset_url: `${window.location.origin}/reset-password`
+        });
         
-        if (response.data?.success) {
+        if (response?.success) {
             return {
                 success: true,
-                message: response.data.message || 'Reset password link sent successfully'
+                message: response.message || 'Reset password link sent successfully'
             };
         }
         
-        throw new Error(response.data?.message || 'Failed to send reset link');
+        throw new Error(response?.message || 'Failed to send reset link');
     } catch (error) {
         console.error('Forgot password error:', error);
         
         let errorMessage = 'Failed to send reset link';
         
-        if (error.response) {
-            const data = error.response.data;
-            errorMessage = data?.message || data?.error || `Error ${error.response.status}`;
-        } else if (error.message.includes('timeout')) {
-            errorMessage = 'Connection timeout. Please try again.';
-        } else if (error.message.includes('Network')) {
-            errorMessage = 'Cannot connect to server. Check your internet connection.';
+        if (error.response?.data) {
+            errorMessage = error.response.data.message || error.response.data.error || errorMessage;
+        } else if (error.message) {
+            errorMessage = error.message;
         }
         
-        throw new Error(errorMessage);
+        const enhancedError = new Error(errorMessage);
+        enhancedError.status = error.status;
+        enhancedError.originalError = error;
+        throw enhancedError;
     }
 };
 
 export const resetPasswordService = async (token, email, newPassword, confirmPassword) => {
     try {
-        const response = await axios.post(
-            `${API_BASE_URL}/auth/reset-password`,
-            { 
-                token: token,              
-                email: email,                
-                newPassword: newPassword,  
-                confirmPassword: confirmPassword 
-            },
-            {
-                headers: { 
-                    'Content-Type': 'application/json'
-                },
-                timeout: 30000
-            }
-        );
+        const response = await authApi.post('/auth/reset-password', { 
+            token: token,              
+            email: email,                
+            newPassword: newPassword,  
+            confirmPassword: confirmPassword 
+        });
         
-        if (response.data?.success) {
+        if (response?.success) {
             return {
                 success: true,
-                message: response.data.message || 'Password reset successfully'
+                message: response.message || 'Password reset successfully'
             };
         }
         
-        throw new Error(response.data?.message || 'Failed to reset password');
+        throw new Error(response?.message || 'Failed to reset password');
     } catch (error) {
         console.error('Reset password error:', error);
         
         let errorMessage = 'Failed to reset password';
         
-        if (error.response) {
-            const status = error.response.status;
-            const data = error.response.data;
-            
-            if (status === 400) {
-                errorMessage = data?.message || 'Invalid or expired token';
-            } else if (status === 401) {
-                errorMessage = 'Token has expired. Please request a new reset link.';
-            } else {
-                errorMessage = data?.message || data?.error || `Error ${status}`;
-            }
-        } else if (error.message.includes('timeout')) {
-            errorMessage = 'Connection timeout. Please try again.';
+        if (error.response?.data) {
+            errorMessage = error.response.data.message || error.response.data.error || errorMessage;
+        } else if (error.message) {
+            errorMessage = error.message;
         }
         
-        throw new Error(errorMessage);
+        const enhancedError = new Error(errorMessage);
+        enhancedError.status = error.status;
+        enhancedError.originalError = error;
+        throw enhancedError;
     }
 };
 
@@ -541,26 +517,17 @@ export const refreshTokenService = async () => {
             throw new Error('Refresh too frequent');
         }
 
-        const response = await axios.post(
-            `${API_BASE_URL}/auth/refresh`,
-            { 
-                refresh_token: tokens.refresh_token,
-                session_id: tokens.session_id
-            },
-            {
-                headers: { 
-                    'Content-Type': 'application/json'
-                },
-                timeout: 10000
-            }
-        );
+        const response = await authApi.post('/auth/refresh', { 
+            refresh_token: tokens.refresh_token,
+            session_id: tokens.session_id
+        });
 
-        if (response.data?.data?.access_token) {
-            saveTokens(response.data.data);
+        if (response?.data?.access_token) {
+            saveTokens(response.data);
             lastRefreshTime = Date.now();
             return {
                 success: true,
-                tokens: response.data.data
+                tokens: response.data
             };
         }
 

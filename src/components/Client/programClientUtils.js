@@ -312,7 +312,7 @@ export const downloadTemplate = () => {
         {
             'Full Name': 'Contoh: Jonathan Ardi Wijaya',
             'Email': 'Contoh: jonathan.wijaya@auroratech.co.id',
-            'Phone': 'Contoh: +62 812 3456 7890',
+            'Phone': 'Contoh: 081234567890',
             'Gender': 'Male/Female',
             'Company': 'Contoh: Aurora Tech Solutions',
             'Brand Name': 'Contoh: ATS',
@@ -335,7 +335,7 @@ export const downloadTemplate = () => {
         {
             'Full Name': 'Contoh: Jonathan Ardi Wijaya',
             'Email': 'Contoh: jonathan.wijaya@auroratech.co.id',
-            'Phone': 'Contoh: +62 812 3456 7890',
+            'Phone': 'Contoh: 081234567890',
             'Gender': 'Male/Female',
             'Company': 'Contoh: Aurora Tech Solutions',
             'Brand Name': 'Contoh: ATS',
