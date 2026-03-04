@@ -74,7 +74,7 @@ class HeteroBanyumasService {
             if (space && space !== 'all') queryParams.append('space', space);
             if (status) queryParams.append('status', status);
 
-            const response = await fetch(`${this.baseURL}/hetero/banyumas/export?${queryParams}`, {
+            const response = await fetch(`${this.baseURL}/hetero/banyumas?${queryParams}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'

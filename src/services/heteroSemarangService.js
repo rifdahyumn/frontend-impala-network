@@ -75,7 +75,7 @@ class HeteroSemarangService {
             if (space && space !== 'all') queryParams.append('space', space);
             if (status) queryParams.append('status', status);
 
-            const response = await fetch(`${this.baseURL}/hetero/semarang/export?${queryParams}`, {
+            const response = await fetch(`${this.baseURL}/hetero/semarang?${queryParams}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'

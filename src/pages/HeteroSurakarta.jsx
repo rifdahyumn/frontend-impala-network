@@ -11,7 +11,7 @@ import HeteroSoloContent from "../components/Content/HeteroSurakartaContent";
 import { useHeteroSolo } from "../hooks/useHeteroSolo";
 import toast from "react-hot-toast";
 import MemberStatsCards from "../MemberHetero/MemberStatsCard";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "../components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "../components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import * as XLSX from 'xlsx';
@@ -53,13 +53,6 @@ const HeteroSurakarta = () => {
         if (genderValue === 'male') return 'Male';
         if (genderValue === 'female') return 'Female';
         return genderValue;
-    };
-
-    const getStatusLabel = (statusValue) => {
-        if (!statusValue) return "";
-        if (statusValue === 'active') return 'Active';
-        if (statusValue === 'inactive') return 'Inactive';
-        return statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
     };
 
     const { members, loading, error, pagination, fetchMembers, addMemberHeteroSolo, 
@@ -814,17 +807,22 @@ const HeteroSurakarta = () => {
         try {
             setIsExporting(true)
 
-            const allData = await fetchAllMembers()
+            const exportFilters = {};
+            
+            if (filters.gender) exportFilters.gender = filters.gender;
+            if (filters.space && filters.space !== 'all') exportFilters.space = filters.space;
+            if (filters.status) exportFilters.status = filters.status;
+            if (searchTerm) exportFilters.search = searchTerm;
 
-            if (!allData || allData.length === 0) {
-                toast.error('No data to export');
+            const filteredData = await fetchAllMembers(exportFilters);
+
+            if (!filteredData || filteredData.length === 0) {
+                toast.error('No data to export with current filters');
                 setIsExporting(false)
                 return;
             }
             
-            setIsExporting(true);
-            
-            const exportData = allData.map((member, index) => ({
+            const exportData = filteredData.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
                 'NIK': member.nik || '-',
@@ -859,29 +857,11 @@ const HeteroSurakarta = () => {
             const ws = XLSX.utils.json_to_sheet(exportData);
             
             const wscols = [
-                { wch: 5 },  
-                { wch: 25 }, 
-                { wch: 20 }, 
-                { wch: 30 }, 
-                { wch: 15 },
-                { wch: 10 }, 
-                { wch: 15 }, 
-                { wch: 20 }, 
-                { wch: 40 }, 
-                { wch: 20 },  
-                { wch: 20 }, 
-                { wch: 20 },
-                { wch: 20 }, 
-                { wch: 10 },  
-                { wch: 30 },  
-                { wch: 25 }, 
-                { wch: 12 },  
-                { wch: 12 },  
-                { wch: 10 }, 
-                { wch: 30 },  
-                { wch: 30 },  
-                { wch: 15 }, 
-                { wch: 15 },
+                { wch: 5 },  { wch: 25 }, { wch: 20 }, { wch: 30 }, { wch: 15 },
+                { wch: 10 }, { wch: 15 }, { wch: 20 }, { wch: 40 }, { wch: 20 },  
+                { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 10 }, { wch: 30 },  
+                { wch: 25 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 30 },  
+                { wch: 30 }, { wch: 15 }, { wch: 15 },
             ];
             ws['!cols'] = wscols;
             
@@ -912,11 +892,11 @@ const HeteroSurakarta = () => {
         } finally {
             setIsExporting(false);
         }
-    }, [fetchAllMembers, searchTerm, filters, getSpaceLabel, getGenderLabel, getStatusLabel]);
+    }, [filters, searchTerm, fetchAllMembers]); 
 
     useEffect(() => {
         const preventDefaults = (e) => {
-            e.preventDefault();
+            e.preventDefault(); 
             e.stopPropagation();
         };
         

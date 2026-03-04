@@ -74,7 +74,7 @@ class HeteroSoloService {
             if (space && space !== 'all') queryParams.append('space', space);
             if (status) queryParams.append('status', status);
 
-            const response = await fetch(`${this.baseURL}/hetero/solo/export?${queryParams}`, {
+            const response = await fetch(`${this.baseURL}/hetero/solo?${queryParams}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'

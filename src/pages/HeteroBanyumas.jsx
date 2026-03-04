@@ -694,12 +694,33 @@ const HeteroBanyumas = () => {
 
                     for (const memberData of parsedData) {
                         try {
+                            let genderValue = null;
+                            if (memberData.gender) {
+                                const genderLower = memberData.gender.toString().toLowerCase().trim();
+                                
+                                if (genderLower === 'female' || 
+                                    genderLower === 'perempuan' || 
+                                    genderLower === 'wanita' ||
+                                    genderLower === 'cewek') {
+                                    genderValue = 'Female';
+                                } else if (genderLower === 'male' || 
+                                        genderLower === 'laki-laki' || 
+                                        genderLower === 'laki' || 
+                                        genderLower === 'pria' ||
+                                        genderLower === 'cowok') {
+                                    genderValue = 'Male';
+                                } else {
+                                    genderValue = memberData.gender.trim().charAt(0).toUpperCase() + 
+                                                memberData.gender.trim().slice(1).toLowerCase();
+                                }
+                            }
+
                             const importData = {
                                 full_name: memberData.full_name,
                                 nik: memberData.nik || null,
                                 email: memberData.email,
                                 phone: memberData.phone,
-                                gender: memberData.gender || null,
+                                gender: genderValue,
                                 date_of_birth: memberData.date_of_birth || null,
                                 education: memberData.education || null,
                                 address: memberData.address || null,
@@ -792,17 +813,22 @@ const HeteroBanyumas = () => {
         try {
             setIsExporting(true)
 
-            const allData = await fetchAllMembers()
+            const exportFilters = {};
+        
+            if (filters.gender) exportFilters.gender = filters.gender;
+            if (filters.space && filters.space !== 'all') exportFilters.space = filters.space;
+            if (filters.status) exportFilters.status = filters.status;
+            if (searchTerm) exportFilters.search = searchTerm;
 
-            if (!allData || allData.length === 0) {
-                toast.error('No data to export');
+            const filteredData = await fetchAllMembers(exportFilters);
+
+            if (!filteredData || filteredData.length === 0) {
+                toast.error('No data to export with current filters');
                 setIsExporting(false)
                 return;
             }
             
-            setIsExporting(true);
-            
-            const exportData = allData.map((member, index) => ({
+            const exportData = filteredData.map((member, index) => ({
                 'No': index + 1,
                 'Full Name': member.full_name || '-',
                 'NIK': member.nik || '-',
