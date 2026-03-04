@@ -416,9 +416,9 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
                 shouldIncludeProgram = programData.length > 0;
             }
 
-            let programNameToSend = programData;
+            let programNameToSend;
             if (programData.length === 1) {
-                programNameToSend = programData[0];
+                programNameToSend = programData[0]; 
             } else if (programData.length > 1) {
                 programNameToSend = programData; 
             } else {

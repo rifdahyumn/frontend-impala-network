@@ -1,5 +1,30 @@
 import * as XLSX from 'xlsx';
 
+export const formatProgramForDisplay = (program) => {
+    if (!program) return '-';
+    
+    if (Array.isArray(program)) {
+        return program.join(', ');
+    }
+    
+    if (typeof program === 'string') {
+        if (program.startsWith('[') && program.endsWith(']')) {
+            try {
+                const parsed = JSON.parse(program);
+                if (Array.isArray(parsed)) {
+                    return parsed.join(', ');
+                }
+                return parsed;
+            } catch {
+                return program;
+            }
+        }
+        return program;
+    }
+    
+    return String(program);
+};
+
 export const getBusinessDisplayName = (businessValue) => {
     if (!businessValue) return '-';
     if (typeof businessValue === 'string') return businessValue;
@@ -251,7 +276,7 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
             'Position': client.position || '-',
             'Total Employee': client.total_employee || '-',
             'Business Type': getBusinessDisplayName(client.business) || '-',
-            'Program Name': client.program_name || '-',
+            'Program Name': formatProgramForDisplay(client.program_name),
             'Status': client.status || '-',
             'Address': client.address || '-',
             'Province': client.province_name || '-',
@@ -530,7 +555,7 @@ export const formatMembersForTable = (members, pagination, isInShowAllMode, getB
             company: client.company,
             brandName: client.brand_name,
             business: getBusinessDisplayName(client.business),
-            programName: client.program_name,
+            programName: formatProgramForDisplay(client.program_name),
             status: client.status,
             action: 'Detail',
             ...client
