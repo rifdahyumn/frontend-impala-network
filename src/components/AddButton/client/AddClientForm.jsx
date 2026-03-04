@@ -239,8 +239,6 @@ const AddClientForm = ({ isEditMode, editData, setIsAddUserModalOpen, onSuccess,
     const handleSubmit = async (e) => {
         e.preventDefault()
 
-        // const isUpdateAll = isEditMode ? true : updateAllFields;
-
         const isValid = validateForm(
             formData, formSections, clientExists && !forceCreateNewClient, setErrors, isEditMode, updateAllFields
         )

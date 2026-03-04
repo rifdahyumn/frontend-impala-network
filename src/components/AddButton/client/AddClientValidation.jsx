@@ -5,6 +5,10 @@ export const validateForm = (formData, formSections, clientExists, setErrors, is
 
     formSections.forEach(section => {
         section.fields.forEach(field => {
+            if (isEditMode && field.name === 'program_name') {
+                return; 
+            }
+            
             if (field.required) {
                 const value = formData[field.name];
                 

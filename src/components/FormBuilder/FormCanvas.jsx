@@ -102,10 +102,6 @@ const FormCanvas = ({
 
     const renderProgramField = () => {
         const isRequired = true;
-        // const hasSelectedProgram = safeFormConfig.programName && safeFormConfig.programName !== "";
-        // const selectedProgram = availablePrograms.find(
-        //     p => getProgramName(p) === safeFormConfig.programName
-        // );
 
         return (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
