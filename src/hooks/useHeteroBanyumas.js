@@ -97,7 +97,7 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
             else if (lowerSpace.includes('private office 5'));
             else if (lowerSpace.includes('private office 6'));
             else if (lowerSpace.includes('virtual office'));
-            else if (lowerSpace.includes('gatra event space'));
+            else if (lowerSpace.includes('gatra event space indoor'));
             else if (lowerSpace.includes('gatra wedding hall'));
             else if (lowerSpace.includes('outdoorspace'));
             else if (lowerSpace.includes('amphitheater'));
@@ -184,9 +184,9 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
             toast.error('Tidak ada data yang ditemukan untuk diexport');
             return [];
 
-        } catch (error) {
-            console.error('Error fetching all members:', error)
-            toast.error('Failed to fetch all members')
+        } catch (err) {
+            console.error('Hook - Error:', err)
+            toast.error('Failed to load members')
             return []
         } finally {
             setIsFetchingAll(false)
@@ -220,9 +220,9 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
                 totalPages: result.metadata?.pagination?.totalPages || 0,
             }))
 
-        } catch (error) {
-            console.error('Error fetching members:', error)
-            setError(error.message)
+        } catch (err) {
+            console.error('Hook - Error:', err)
+            setError(err.message)
             toast.error('Failed to load member')
         } finally {
             setLoading(false)
@@ -250,7 +250,7 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
                 }
             } catch {
                 const total = members.length
-                const active = members.filter(m => m.status === 'active').length
+                const active = members.filter(m => m.status === 'Active').length
                 const activePercentage = total > 0 ? ((active / total) * 100).toFixed(1) : "0.0"
     
                 setStats({
@@ -317,6 +317,7 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
                 // 
             }
         }
+
         initializeData()
     }, [])
 
@@ -385,9 +386,9 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
             }))
 
             await fetchMemberStats()
-        } catch (error) {
+        } catch (err) {
             toast.error('Failed to delete member')
-            throw error
+            throw err
         } finally {
             setLoading(false)
         }
@@ -406,10 +407,34 @@ export const useHeteroBanyumas = (initialFilters = {}) => {
     }, [fetchSpaceOptions])
 
     return {
-        ...confirmDialog, members, loading, error, pagination, filters, spaceOptions, loadingSpaceOptions,
-        genderOptions, allMembers, isFetchingAll, fetchAllMembers, setFilters: refetchWithFilters, updateFilters: refetchWithFilters,
-        fetchMembers, handlePageChange: changePage, addMemberHeteroBanyumas, updateMemberHeteroBanyumas, deleteMemberHeteroBanyumas,
-        fetchMemberStats, stats, statsLoading, refreshAll, searchAndFilter, fetchSpaceOptions: refetchSpaceOptions,
-        extractSpacesFromMembers, getSpaceLabel, getGenderLabel, spaceOptionsError
+        ...confirmDialog, 
+        members, 
+        loading,
+        error, 
+        pagination, 
+        filters, 
+        spaceOptions, 
+        loadingSpaceOptions,
+        spaceOptionsError,
+        genderOptions, 
+        allMembers, 
+        isFetchingAll, 
+        fetchAllMembers, 
+        setFilters: refetchWithFilters, 
+        updateFilters: refetchWithFilters,
+        fetchMembers, 
+        handlePageChange: changePage, 
+        addMemberHeteroBanyumas, 
+        updateMemberHeteroBanyumas,
+        deleteMemberHeteroBanyumas,
+        fetchMemberStats,
+        stats, 
+        statsLoading,
+        refreshAll,
+        searchAndFilter,
+        fetchSpaceOptions: refetchSpaceOptions,
+        extractSpacesFromMembers, 
+        getSpaceLabel, 
+        getGenderLabel,
     }
 }
