@@ -31,6 +31,7 @@ const Account = () => {
     const filterRef = useRef(null)
     
     const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1); 
     
     const [filters, setFilters] = useState({
         position: null, 
@@ -43,8 +44,7 @@ const Account = () => {
         role: filters.role || 'all'
     });
     
-    const [filteredUsers, setFilteredUsers] = useState([]);
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [isInitialLoad, setIsInitialLoad] = useState(true); 
 
     const { 
         users, 
@@ -234,8 +234,7 @@ const Account = () => {
             ? ((activeUsers / totalUsers) * 100).toFixed(1) 
             : "0";
 
-        const filteredTotal = filteredUsers.length;
-        const filteredActive = filteredUsers.filter(user => 
+        const currentPageActive = users.filter(user => 
             user.status?.toLowerCase() === 'active'
         ).length;
 
@@ -249,10 +248,10 @@ const Account = () => {
 
         return [
             {
-                title: "Total Users ",
+                title: "Total Users",
                 value: totalUsers.toString(),
                 subtitle: getTotalActiveCriteria() > 0 
-                    ? `Showing ${filteredTotal} filtered` 
+                    ? `Showing ${users.length} filtered` 
                     : `Page ${pagination.page || 1} of ${pagination.totalPages || 1}`,
                 percentage: "100%",
                 trend: "neutral",
@@ -260,7 +259,7 @@ const Account = () => {
                 icon: Users,
                 color: "blue",
                 description: getTotalActiveCriteria() > 0 
-                    ? `${filteredTotal} users match current filters`
+                    ? `${users.length} users match current filters`
                     : `Total registered users in system`,
                 loading: statsLoading
             },
@@ -268,7 +267,7 @@ const Account = () => {
                 title: "Active Users",
                 value: activeUsers.toString(),
                 subtitle: getTotalActiveCriteria() > 0 
-                    ? `${filteredActive} active in current page` 
+                    ? `${currentPageActive} active in current page` 
                     : "",
                 percentage: `${activePercentage}%`,
                 trend: trend,
@@ -276,58 +275,22 @@ const Account = () => {
                 icon: UserCheck,
                 color: "green",
                 description: getTotalActiveCriteria() > 0
-                    ? `${filteredActive} of ${filteredTotal} filtered users are active`
+                    ? `${currentPageActive} of ${users.length} filtered users are active`
                     : `${activePercentage}% of total users are active`,
                 loading: statsLoading
             }
         ];
-    }, [totalStats, filteredUsers, loading, isInitialLoad, pagination.page, pagination.totalPages, getTotalActiveCriteria, statsLoading]);
-
-    const applyAllFilters = useCallback(() => {
-        if (!users || !Array.isArray(users)) {
-            setFilteredUsers([]);
-            return;
-        }
-        
-        let result = [...users];
-        
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase();
-            result = result.filter(user =>
-                user.full_name?.toLowerCase().includes(term) ||
-                user.email?.toLowerCase().includes(term) ||
-                user.employee_id?.toLowerCase().includes(term) ||
-                user.position?.toLowerCase().includes(term) ||
-                user.phone?.toLowerCase().includes(term)
-            );
-        }
-        
-        if (filters.position) {
-            result = result.filter(user => {
-                const userPosition = user.position?.toLowerCase();
-                if (!userPosition) return false;
-                
-                return userPosition === filters.position ||
-                       userPosition.includes(filters.position) ||
-                       filters.position.includes(userPosition);
-            });
-        }
-        
-        if (filters.role && filters.role !== 'all') {
-            result = result.filter(user => {
-                const userRole = user.role?.toLowerCase();
-                if (!userRole) return false;
-                
-                return userRole === filters.role;
-            });
-        }
-        
-        setFilteredUsers(result);
-        
-    }, [users, searchTerm, filters]);
+    }, [totalStats, users, loading, isInitialLoad, pagination.page, pagination.totalPages, getTotalActiveCriteria, statsLoading]);
 
     const handleSearch = (term) => {
         setSearchTerm(term);
+        setCurrentPage(1);
+
+        fetchUsers(1, {
+            search: term,
+            position: filters.position || '',
+            role: filters.role || ''
+        });
     };
 
     const handleTempPositionChange = (position) => {
@@ -347,6 +310,13 @@ const Account = () => {
             role: tempFilters.role || null
         });
         setIsFilterOpen(false);
+        setCurrentPage(1);
+        
+        fetchUsers(1, {
+            search: searchTerm,
+            position: tempFilters.position || '',
+            role: tempFilters.role || ''
+        });
     };
 
     const handleCancelFilters = () => {
@@ -370,18 +340,39 @@ const Account = () => {
             position: null,
             role: null,
         });
-        setSelectedUser(null); 
+        setSelectedUser(null);
+        setCurrentPage(1);
+        
+        fetchUsers(1, {
+            search: '',
+            position: '',
+            role: ''
+        });
+        
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const clearFilter = (filterType) => {
+        let newFilters = { ...filters };
+        let newSearchTerm = searchTerm;
+        
         if (filterType === 'search') {
             setSearchTerm("");
+            newSearchTerm = "";
         } else if (filterType === 'position') {
-            setFilters(prev => ({ ...prev, position: null }));
+            newFilters.position = null;
         } else if (filterType === 'role') {
-            setFilters(prev => ({ ...prev, role: null }));
+            newFilters.role = null;
         }
+        
+        setFilters(newFilters);
+        setCurrentPage(1);
+        
+        fetchUsers(1, {
+            search: filterType === 'search' ? '' : newSearchTerm,
+            position: filterType === 'position' ? '' : (newFilters.position || ''),
+            role: filterType === 'role' ? '' : (newFilters.role || '')
+        });
     };
 
     useEffect(() => {
@@ -412,9 +403,16 @@ const Account = () => {
     useEffect(() => {
         if (users && users.length > 0) {
             setIsInitialLoad(false);
-            applyAllFilters();
         }
-    }, [users, searchTerm, filters, applyAllFilters]);
+    }, [users]);
+
+    useEffect(() => {
+        fetchUsers(1, {
+            search: '',
+            position: '',
+            role: ''
+        });
+    }, []); 
 
     useEffect(() => {
         if (selectedUser && users.length > 0) {
@@ -445,6 +443,12 @@ const Account = () => {
             await addUser(userData);
             setIsAddUserModalOpen(false);
             toast.success('User added successfully');
+            
+            fetchUsers(currentPage, {
+                search: searchTerm,
+                position: filters.position || '',
+                role: filters.role || ''
+            });
         } catch (error) {
             console.error('Error adding user:', error);
             toast.error(error.message || 'Failed to add user');
@@ -471,6 +475,12 @@ const Account = () => {
             setIsEditModalOpen(false);
             setEditingUser(null);
             toast.success('User updated successfully');
+            
+            fetchUsers(currentPage, {
+                search: searchTerm,
+                position: filters.position || '',
+                role: filters.role || ''
+            });
         } catch (error) {
             console.error('Error updating', error);
             toast.error(error.message || 'Failed to update user');
@@ -512,9 +522,13 @@ const Account = () => {
 
     const handlePageChange = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        if (fetchUsers) {
-            fetchUsers(page); 
-        }
+        setCurrentPage(page);
+        
+        fetchUsers(page, {
+            search: searchTerm,
+            position: filters.position || '',
+            role: filters.role || ''
+        });
     };
 
     const tableConfig = {
@@ -525,14 +539,12 @@ const Account = () => {
     };
 
     const formattedUsers = useMemo(() => {
-        if (!filteredUsers || filteredUsers.length === 0) {
+        if (!users || users.length === 0) {
             return [];
         }
 
-        return filteredUsers.map((user, index) => {
-            const currentPage = pagination.page || 1;
-            const itemsPerPage = pagination.limit || 10;
-            const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
+        return users.map((user, index) => {
+            const itemNumber = (currentPage - 1) * (pagination.limit || 10) + index + 1;
 
             return {
                 id: user.id,
@@ -551,7 +563,7 @@ const Account = () => {
                 ...user
             };
         });
-    }, [filteredUsers, pagination.page, pagination.limit]);
+    }, [users, currentPage, pagination.limit]);
 
     const UserStatsCards = ({ statsData }) => {
         return (
@@ -964,31 +976,8 @@ const Account = () => {
                             </div>
                         )}
 
-                        {/* BAGIAN YANG DIHILANGKAN - Menghapus div dengan bg-gray-50 */}
-                        {/* <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm text-gray-600">
-                                    <span>
-                                        Showing <span className="font-semibold">{filteredUsers.length}</span> users
-                                        {filters.position && (
-                                            <span> in <span className="font-semibold">{getFilterLabel('position')}</span> position</span>
-                                        )}
-                                        {filters.role && filters.role !== 'all' && (
-                                            <span> with role <span className="font-semibold">{getFilterLabel('role')}</span></span>
-                                        )}
-                                        {filters.role === 'all' && (
-                                            <span> in all roles</span>
-                                        )}
-                                    </span>
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                    Total in system: <span className="font-semibold">{totalStats.totalUsers}</span> users
-                                    {statsLoading && <Loader2 className="h-3 w-3 animate-spin inline ml-1" />}
-                                </div>
-                            </div>
-                        </div> */}
-
-                        {!loading && filteredUsers.length === 0 && (
+                        {/* GANTI filteredUsers dengan users */}
+                        {!loading && users.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
                                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
                                     <Users className="w-10 h-10 text-gray-400" />
@@ -1027,7 +1016,8 @@ const Account = () => {
                             </div>
                         )}
 
-                        {filteredUsers.length > 0 && (
+                        {/* GANTI filteredUsers dengan users */}
+                        {users.length > 0 && (
                             <>
                                 <div className="relative">
                                     {loading && (
