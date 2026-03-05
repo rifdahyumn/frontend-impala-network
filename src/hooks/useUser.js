@@ -581,7 +581,7 @@ export const useUsers = () => {
                 position: currentFilters.position !== undefined ? currentFilters.position : filters.position,
                 role: currentFilters.role !== undefined ? currentFilters.role : filters.role
             };
-
+            
             const result = await userService.exportUsers(exportFilters, exportAll);
             
             if (result.isBlob && result.data) {
@@ -601,6 +601,12 @@ export const useUsers = () => {
             }
             
             if (result.data && Array.isArray(result.data)) {
+                if (result.data.length === 0) {
+                    console.warn('⚠️ Data kosong!');
+                    toast.error('Tidak ada data untuk diexport');
+                    return;
+                }
+                
                 const exportData = result.data.map((user, index) => ({
                     'No': index + 1,
                     'Employee ID': user.employee_id || '-',
@@ -643,76 +649,35 @@ export const useUsers = () => {
                 
                 const wscols = [
                     { wch: 5 },   
+                    { wch: 15 },   
+                    { wch: 25 },   
+                    { wch: 30 },   
+                    { wch: 25 },   
                     { wch: 15 },  
-                    { wch: 25 },  
-                    { wch: 30 },  
-                    { wch: 25 },  
-                    { wch: 15 },  
-                    { wch: 15 },  
-                    { wch: 15 },  
-                    { wch: 20 },  
-                    { wch: 20 },  
-                    { wch: 20 },  
+                    { wch: 15 },   
+                    { wch: 15 },   
+                    { wch: 20 },   
+                    { wch: 20 },   
+                    { wch: 20 },   
                 ];
                 ws['!cols'] = wscols;
-                
-                const range = XLSX.utils.decode_range(ws['!ref']);
-                for (let C = range.s.c; C <= range.e.c; ++C) {
-                    const cell_address = { c: C, r: 0 };
-                    const cell_ref = XLSX.utils.encode_cell(cell_address);
-                    if (!ws[cell_ref]) continue;
-                    ws[cell_ref].s = {
-                        font: { bold: true },
-                        fill: { fgColor: { rgb: "E0E0E0" } },
-                        alignment: { vertical: "center", horizontal: "center" }
-                    };
-                }
                 
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Users");
                 
-                const activeUsers = result.data.filter(u => 
-                    u.status?.toLowerCase() === 'active'
-                ).length;
-                
-                const filterInfo = [
-                    ['USER ACCOUNT EXPORT - ALL DATA'],
-                    ['', ''],
-                    ['Export Date', new Date().toLocaleString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit'
-                    })],
-                    ['Total Records Exported', result.data.length],
-                    ['', ''],
-                    ['APPLIED FILTERS'],
-                    ['Search Term', exportFilters.search || 'None'],
-                    ['Position Filter', exportFilters.position || 'All'],
-                    ['Role Filter', exportFilters.role || 'All'],
-                    ['', ''],
-                    ['STATISTICS'],
-                    ['Total Active Users', activeUsers],
-                    ['Total Inactive Users', result.data.length - activeUsers]
-                ];
-                
-                const wsInfo = XLSX.utils.aoa_to_sheet(filterInfo);
-                XLSX.utils.book_append_sheet(wb, wsInfo, "Export Info");
-                
                 const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-').replace(/\..+/, '');
-                const fileName = `users_export_all_${timestamp}.xlsx`;
+                const fileName = `users_export_${timestamp}.xlsx`;
                 
                 XLSX.writeFile(wb, fileName);
                 
                 return { success: true, message: 'Export successful' };
             }
             
-            return { success: true, message: 'Export completed' };
+            console.error('Data tidak valid:', result);
+            toast.error('Format data tidak valid');
             
         } catch (error) {
-            console.error('Export error in hook:', error);
+            console.error('Export error:', error);
             toast.error(error.message || 'Failed to export users');
             throw error;
         }

@@ -124,22 +124,22 @@ const Account = () => {
             }
             
             setIsExporting(true);
-            
-            toast.loading('Mengambil semua data dari database...');
+            toast.loading('Menyiapkan data export...', { id: 'export' });
             
             const exportFilters = {
                 search: searchTerm || undefined,
                 position: filters.position || undefined,
-                role: filters.role !== 'all' ? filters.role : undefined
+                role: filters.role !== 'all' ? filters.role : undefined,
+                include_deleted: 'false'
             };
+
+            await exportUsers(exportFilters, true);
             
-            await exportUsers('xlsx', exportFilters, true);
-            
-            toast.success(`Berhasil mengexport semua data (${totalStats.totalUsers} users) ke Excel`);
+            toast.success('Export berhasil!', { id: 'export' });
             
         } catch (error) {
             console.error('Export failed:', error);
-            toast.error(error.message || 'Gagal mengexport data');
+            toast.error(error.message || 'Gagal export', { id: 'export' });
         } finally {
             setIsExporting(false);
         }
