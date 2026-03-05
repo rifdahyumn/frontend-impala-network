@@ -17,7 +17,7 @@ const ConfirmModal = ({ isOpen, config, onConfirm, onCancel }) => {
             case 'success':
                 return <CheckCircle className="h-6 w-6 text-green-600" />
             default:
-                return <Info className='h-6 w-6 text-blue-600' />
+                return <Info className='h-6 w-6 text-green-600' />
         }
     }
 
@@ -30,7 +30,7 @@ const ConfirmModal = ({ isOpen, config, onConfirm, onCancel }) => {
             case 'success':
                 return 'bg-green-600 hover:bg-green-700 text-white';
             default:
-                return 'bg-blue-600 hover:bg-blue-700 text-white';
+                return 'bg-green-600 hover:bg-green-700 text-white';
         }
     }
 

@@ -28,6 +28,11 @@ const AccountContent = ({
     const [avatarLoadError, setAvatarLoadError] = useState(false);
     const [displayUser, setDisplayUser] = useState(selectedUser);
 
+    const isUserActive = (status) => {
+        if (!status) return false;
+        return status.toString().toLowerCase() === 'active';
+    };
+
     useEffect(() => {
         setDisplayUser(selectedUser);
         setAvatarLoadError(false);
@@ -98,22 +103,11 @@ const AccountContent = ({
                             if (onUserUpdated) {
                                 await onUserUpdated();
                             }
-                        } else {
-                            toast.error(result?.message || 'Failed to activate user');
                         }
                         
                     } catch (error) {
                         console.error('Activation error:', error);
-                        
-                        if (error.message === 'Session expired') {
-                            toast.error('Session expired. Please login again.');
-                            setTimeout(() => {
-                                window.location.href = '/login';
-                            }, 2000);
-                        } else {
-                            toast.error(error.message || 'Failed to activate user');
-                        }
-                        
+                        toast.error(error.message || 'Failed to activate user');
                     } finally {
                         setActivateLoading(false);
                     }
@@ -130,11 +124,6 @@ const AccountContent = ({
         
         if (showConfirm) {
             showConfirm({
-                title: 'Deactivate User',
-                message: `Are you sure you want to deactivate "${displayUser.full_name}"? User will not be able to access the system.`,
-                type: 'danger',
-                confirmText: 'Deactivate',
-                cancelText: 'Cancel',
                 onConfirm: async () => {
                     setDeleteLoading(true);
                     
@@ -144,39 +133,27 @@ const AccountContent = ({
                         if (result?.success === true) {
                             toast.success(`User "${displayUser.full_name}" deactivated successfully`);
                             
-                            if (onUserUpdated) {
-                                await onUserUpdated();
-                            }
+                            const userData = await userService.getUserById(displayUser.id);
                             
-                            if (onClientDeleted) {
-                                onClientDeleted();
+                            if (userData?.success && userData.data) {
+                                if (onUserUpdated) {
+                                    await onUserUpdated(userData.data);
+                                }
+                            } else {
+                                if (onUserUpdated) {
+                                    await onUserUpdated();
+                                }
                             }
-                        } else {
-                            toast.error(result?.message || 'Failed to deactivate user');
                         }
                         
                     } catch (error) {
                         console.error('Deactivation error:', error);
-                        
-                        if (error.message === 'Session expired') {
-                            toast.error('Session expired. Please login again.');
-                            setTimeout(() => {
-                                window.location.href = '/login';
-                            }, 2000);
-                        } else {
-                            toast.error(error.message || 'Failed to deactivate user');
-                        }
-                        
+                        toast.error(error.message || 'Failed to deactivate user');
                     } finally {
                         setDeleteLoading(false);
                     }
-                },
-                onCancel: () => {
-                    toast('Deactivation cancelled', { icon: '⚠️' });
                 }
             });
-        } else {
-            setDeleteModalOpen(true);
         }
     };
 
@@ -186,20 +163,18 @@ const AccountContent = ({
         setDeleteLoading(true);
         
         try {
-            await userService.deactivateUser(displayUser.id);
+            const result = await userService.deactivateUser(displayUser.id);
             
-            toast.success(`User "${displayUser.full_name}" deactivated successfully`);
-            
-            if (selectedUser) {
-                displayUser.status = 'inactive';
-            }
-            
-            if (onUserUpdated) {
-                await onUserUpdated();
-            }
-            
-            if (onClientDeleted) {
-                onClientDeleted();
+            if (result?.success === true) {
+                toast.success(`User "${displayUser.full_name}" deactivated successfully`);
+                
+                if (onUserUpdated) {
+                    await onUserUpdated();
+                }
+                
+                if (onClientDeleted) {
+                    onClientDeleted();
+                }
             }
             
         } catch (error) {
@@ -392,7 +367,7 @@ const AccountContent = ({
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>{detailTitle || 'User Details'}</CardTitle>
                     <div className="flex items-center gap-2">
-                        {selectedUser.status === 'Active' || selectedUser.status === 'active' ? (
+                        {isUserActive(selectedUser.status) ? (
                             <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
                                 Active
                             </span>
@@ -440,7 +415,7 @@ const AccountContent = ({
                                     Edit
                                 </Button>
 
-                                {selectedUser.status !== 'Active' && selectedUser.status !== 'active' && (
+                                {!isUserActive(selectedUser.status) && (
                                     <Button
                                         onClick={handleActivate}
                                         disabled={activateLoading}
@@ -455,7 +430,7 @@ const AccountContent = ({
                                     </Button>
                                 )}
 
-                                {(selectedUser.status === 'Active' || selectedUser.status === 'active') && (
+                                {isUserActive(selectedUser.status) && (
                                     <Button
                                         variant="outline"
                                         size="sm"

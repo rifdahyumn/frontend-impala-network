@@ -10,6 +10,8 @@ import Pagination from '../components/Pagination/Pagination';
 import AddUser from "../components/AddButton/AddUser";
 import { useUsers } from "../hooks/useUser";
 import toast from "react-hot-toast";
+import userService from "../services/userService";
+import { flushSync } from 'react-dom';
 
 const Account = () => {
     const [selectedUser, setSelectedUser] = useState(null);
@@ -17,6 +19,7 @@ const Account = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [forceRenderKey, setForceRenderKey] = useState(0);
     
     const [confirmModal, setConfirmModal] = useState({
         isOpen: false,
@@ -57,7 +60,8 @@ const Account = () => {
         updateUser, 
         totalStats,       
         statsLoading,
-        exportUsers
+        exportUsers,
+        updateUserInList  
     } = useUsers();
 
     const showConfirm = (config) => {
@@ -414,26 +418,6 @@ const Account = () => {
         });
     }, []); 
 
-    useEffect(() => {
-        if (selectedUser && users.length > 0) {
-            const updatedUser = users.find(u => u.id === selectedUser.id);
-            if (updatedUser) {
-                if (updatedUser.status !== selectedUser.status) {
-                    setSelectedUser(updatedUser);
-                }
-            }
-        }
-    }, [users, selectedUser?.id]);
-
-    useEffect(() => {
-        if (selectedUser && refreshTrigger > 0) {
-            const updatedUser = users.find(u => u.id === selectedUser.id);
-            if (updatedUser) {
-                setSelectedUser(updatedUser);
-            }
-        }
-    }, [users, refreshTrigger, selectedUser?.id]);
-
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
     };
@@ -487,38 +471,50 @@ const Account = () => {
         }
     };
 
-    useEffect(() => {
-        if (selectedUser && users.length > 0) {
-            const currentSelected = users.find(member => member.id === selectedUser.id);
-            if (currentSelected) {
-                setSelectedUser(currentSelected);
-            } else {
-                setSelectedUser(null);
+    const handleUserUpdated = useCallback(async (updatedDataFromChild) => {       
+        if (updatedDataFromChild) {
+            const selectedId = updatedDataFromChild.id;
+            
+            setSelectedUser(updatedDataFromChild);
+            
+            if (updateUserInList) {
+                updateUserInList(selectedId, updatedDataFromChild);
             }
+            
+            setForceRenderKey(prev => prev + 1);
+            
+            toast.success('User status updated successfully', { id: 'user-update' });
+            return;
         }
-    }, [users, selectedUser?.id]);
-
-    const handleUserUpdated = useCallback(async () => {
+        
         const selectedId = selectedUser?.id;
         
-        await refreshUsers();
+        if (!selectedId) return;
         
-        if (selectedId) {
-            const updatedUser = users.find(u => u.id === selectedId);
-            if (updatedUser) {
-                setSelectedUser(updatedUser);
+        try {
+            toast.loading('Updating user status...', { id: 'user-update' });
+            
+            const response = await userService.getUserById(selectedId);
+            
+            if (response?.success && response.data) {
+                const updatedUserData = response.data;
+                
+                setSelectedUser(updatedUserData);
+                
+                if (updateUserInList) {
+                    updateUserInList(selectedId, updatedUserData);
+                }
+                
+                setForceRenderKey(prev => prev + 1);
+                
+                toast.success('User status updated successfully', { id: 'user-update' });
             }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            toast.error('Failed to update user status', { id: 'user-update' });
         }
-        
-        setRefreshTrigger(prev => prev + 1);
-    }, [refreshUsers, users, selectedUser?.id]);
-
-    const handleRefresh = useCallback(() => {
-        if (refreshUsers) {
-            refreshUsers();
-        }
-        handleClearAllFilters();
-    }, [refreshUsers]);
+    }, [selectedUser, updateUserInList]);
 
     const handlePageChange = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -615,7 +611,7 @@ const Account = () => {
     }
 
     return (
-        <div className='flex pt-20 min-h-screen bg-gray-100'>
+        <div key={forceRenderKey} className='flex pt-20 min-h-screen bg-gray-100'>
             <div className='flex-1 p-6'>
                 <Header />
                 
@@ -651,7 +647,6 @@ const Account = () => {
                                             <Button 
                                                 variant="outline" 
                                                 size="sm" 
-                                                onClick={handleRefresh}
                                                 className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
                                             >
                                                 <Loader2 className="h-3 w-3" />

@@ -571,10 +571,6 @@ class UserService {
         }
     }
 
-    /**
-     * EXPORT FUNCTION - Menambahkan fungsi export tanpa mengganggu fungsi lain
-     * Fungsi ini akan mengambil semua data users dengan filter yang sama
-     */
     async exportUsers(filters = {}, exportAll = true) {
         try {
             const {
@@ -583,7 +579,6 @@ class UserService {
                 role = ''
             } = filters;
 
-            // Bangun query params
             const queryParams = new URLSearchParams();
             
             if (exportAll) {
@@ -602,15 +597,12 @@ class UserService {
                 queryParams.append('role', role);
             }
 
-            // Untuk export, kita perlu response type blob
             const token = getValidToken();
             if (!token) {
                 throw new Error('No access token available');
             }
 
             const url = `${API_BASE_URL}/user/export?${queryParams.toString()}`;
-            
-            console.log('Export URL:', url); // Untuk debugging
             
             const response = await fetch(url, {
                 method: 'GET',
@@ -623,7 +615,6 @@ class UserService {
             if (!response.ok) {
                 if (response.status === 404) {
                     console.warn('Export endpoint not found. Using frontend generation instead.');
-                    // Fallback ke method lain
                     return this.exportUsersFallback(filters, exportAll);
                 }
                 if (response.status === 401) {
@@ -633,7 +624,6 @@ class UserService {
                 throw new Error(errorData.message || `HTTP error ${response.status}`);
             }
 
-            // Dapatkan blob dari response
             const blob = await response.blob();
             
             return {
@@ -646,26 +636,19 @@ class UserService {
         } catch (error) {
             console.error('UserService.exportUsers error:', error);
             
-            // Fallback: gunakan data yang sudah ada
             console.warn('Falling back to frontend export generation');
             return this.exportUsersFallback(filters, exportAll);
         }
     }
 
-    /**
-     * FALLBACK EXPORT FUNCTION - Generate Excel di frontend jika endpoint tidak tersedia
-     * Fungsi ini TIDAK mengganggu fungsi lain dan hanya dipanggil jika export utama gagal
-     */
-    async exportUsersFallback(filters = {}, exportAll = true) {
+    async exportUsersFallback(filters = {}) {
         try {
             const { search = '', position = '', role = '' } = filters;
             
-            // Ambil semua users dengan limit besar
             let allUsers = [];
             let page = 1;
-            const limit = 100; // Ambil 100 data per request
+            const limit = 100; 
             
-            // Loop untuk mengambil semua halaman
             while (true) {
                 const result = await this.fetchUsers({
                     page,
@@ -678,7 +661,6 @@ class UserService {
                 const users = result.data || [];
                 allUsers = [...allUsers, ...users];
                 
-                // Jika sudah mencapai halaman terakhir, berhenti
                 if (users.length < limit || page >= (result.pagination?.totalPages || 1)) {
                     break;
                 }
@@ -696,7 +678,6 @@ class UserService {
         } catch (error) {
             console.error('UserService.exportUsersFallback error:', error);
             
-            // Last resort: gunakan mock data
             const mockResult = this.getMockUsers({
                 page: 1,
                 limit: 1000,

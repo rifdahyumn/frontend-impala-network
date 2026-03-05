@@ -99,6 +99,8 @@ export const useUsers = () => {
                 }))
             }
 
+            return usersData
+
         } catch (error) {
             console.error('useUsers.fetchUsers error:', error)
             
@@ -114,6 +116,9 @@ export const useUsers = () => {
                 total: 0,
                 totalPages: 1
             })
+
+            return []
+
         } finally {
             if (isMounted.current) {
                 setLoading(false)
@@ -324,6 +329,36 @@ export const useUsers = () => {
         }
     }, [pagination.page, pagination.limit, searchTerm, filters.position, filters.role]);
 
+    const updateUserInList = useCallback((userId, newData) => {
+        const callId = Math.random().toString(36).substring(7);
+        
+        if (newData.id && newData.id !== userId) {
+            console.error(`[${callId}] MISMATCH ID! userId: ${userId}, newData.id: ${newData.id}`);
+            newData = { ...newData, id: userId };
+        }
+        
+        setUsers(prevUsers => {
+            const userToUpdate = prevUsers.find(u => u.id === userId);
+            if (!userToUpdate) {
+                console.error(`[${callId}] User dengan ID ${userId} tidak ditemukan!`);
+                return prevUsers;
+            }
+            
+            const updatedUsers = prevUsers.map(user => {
+                if (user.id === userId) {
+                    return {
+                        ...user,
+                        ...newData,
+                        status: newData.status || user.status
+                    };
+                }
+                return { ...user };
+            });
+            
+            return updatedUsers;
+        });
+    }, []);
+
     const addUser = async (userData) => {
         try {
             const isFormData = userData instanceof FormData;
@@ -484,10 +519,6 @@ export const useUsers = () => {
             
             toast.success('User activated successfully');
             
-            if (isMounted.current) {
-                await refreshUsers();
-            }
-            
             return result;
             
         } catch (error) {
@@ -519,10 +550,6 @@ export const useUsers = () => {
             
             toast.success('User deactivated successfully');
             
-            if (isMounted.current) {
-                await refreshUsers();
-            }
-            
             return result;
             
         } catch (error) {
@@ -547,7 +574,7 @@ export const useUsers = () => {
         return users.find(user => user.id === userId) || null;
     }, [users]);
 
-    const exportUsers = useCallback(async (format = 'xlsx', currentFilters = {}, exportAll = true) => {
+    const exportUsers = useCallback(async (currentFilters = {}, exportAll = true) => {
         try {
             const exportFilters = {
                 search: currentFilters.search !== undefined ? currentFilters.search : searchTerm,
@@ -713,6 +740,7 @@ export const useUsers = () => {
         setSearchTerm,
         filters,
         setFilters,
-        exportUsers
+        exportUsers,
+        updateUserInList
     }
 }
