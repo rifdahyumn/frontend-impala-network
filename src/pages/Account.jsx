@@ -10,13 +10,14 @@ import Pagination from '../components/Pagination/Pagination';
 import AddUser from "../components/AddButton/AddUser";
 import { useUsers } from "../hooks/useUser";
 import toast from "react-hot-toast";
+import userService from "../services/userService";
 
 const Account = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [forceRenderKey, setForceRenderKey] = useState(0);
     
     const [confirmModal, setConfirmModal] = useState({
         isOpen: false,
@@ -31,6 +32,7 @@ const Account = () => {
     const filterRef = useRef(null)
     
     const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1); 
     
     const [filters, setFilters] = useState({
         position: null, 
@@ -43,8 +45,7 @@ const Account = () => {
         role: filters.role || 'all'
     });
     
-    const [filteredUsers, setFilteredUsers] = useState([]);
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [isInitialLoad, setIsInitialLoad] = useState(true); 
 
     const { 
         users, 
@@ -57,7 +58,8 @@ const Account = () => {
         updateUser, 
         totalStats,       
         statsLoading,
-        exportUsers
+        exportUsers,
+        updateUserInList  
     } = useUsers();
 
     const showConfirm = (config) => {
@@ -94,17 +96,17 @@ const Account = () => {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const positionOptions = [
-        { value: 'managing director', label: 'Managing Director', original: 'Managing Director' },
-        { value: 'director', label: 'Director', original: 'Director' },
-        { value: 'head manager', label: 'Head Manager', original: 'Head Manager' },
-        { value: 'finance', label: 'Finance', original: 'Finance' },
-        { value: 'legal', label: 'Legal', original: 'Legal' },
-        { value: 'talent manager', label: 'Talent Manager', original: 'Talent Manager' },
-        { value: 'ecosystem manager', label: 'Ecosystem Manager', original: 'Ecosystem Manager' },
-        { value: 'strategic partnership executive', label: 'Strategic Partnership Executive', original: 'Strategic Partnership Executive' },
-        { value: 'program manager', label: 'Program Manager', original: 'Program Manager' },
-        { value: 'space manager', label: 'Space Manager', original: 'Space Manager' },
-        { value: 'creative', label: 'Creative', original: 'Creative' }
+        { value: 'Managing Director', label: 'Managing Director', original: 'Managing Director' },
+        { value: 'Director', label: 'Director', original: 'Director' },
+        { value: 'Head Manager', label: 'Head Manager', original: 'Head Manager' },
+        { value: 'Finance', label: 'Finance', original: 'Finance' },
+        { value: 'Legal', label: 'Legal', original: 'Legal' },
+        { value: 'Talent Manager', label: 'Talent Manager', original: 'Talent Manager' },
+        { value: 'Ecosystem Manager', label: 'Ecosystem Manager', original: 'Ecosystem Manager' },
+        { value: 'Strategic Partnership Executive', label: 'Strategic Partnership Executive', original: 'Strategic Partnership Executive' },
+        { value: 'Program Manager', label: 'Program Manager', original: 'Program Manager' },
+        { value: 'Space Manager', label: 'Space Manager', original: 'Space Manager' },
+        { value: 'Creative', label: 'Creative', original: 'Creative' }
     ];
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -234,8 +236,7 @@ const Account = () => {
             ? ((activeUsers / totalUsers) * 100).toFixed(1) 
             : "0";
 
-        const filteredTotal = filteredUsers.length;
-        const filteredActive = filteredUsers.filter(user => 
+        const currentPageActive = users.filter(user => 
             user.status?.toLowerCase() === 'active'
         ).length;
 
@@ -249,10 +250,10 @@ const Account = () => {
 
         return [
             {
-                title: "Total Users ",
+                title: "Total Users",
                 value: totalUsers.toString(),
                 subtitle: getTotalActiveCriteria() > 0 
-                    ? `Showing ${filteredTotal} filtered` 
+                    ? `Showing ${users.length} filtered` 
                     : `Page ${pagination.page || 1} of ${pagination.totalPages || 1}`,
                 percentage: "100%",
                 trend: "neutral",
@@ -260,7 +261,7 @@ const Account = () => {
                 icon: Users,
                 color: "blue",
                 description: getTotalActiveCriteria() > 0 
-                    ? `${filteredTotal} users match current filters`
+                    ? `${users.length} users match current filters`
                     : `Total registered users in system`,
                 loading: statsLoading
             },
@@ -268,7 +269,7 @@ const Account = () => {
                 title: "Active Users",
                 value: activeUsers.toString(),
                 subtitle: getTotalActiveCriteria() > 0 
-                    ? `${filteredActive} active in current page` 
+                    ? `${currentPageActive} active in current page` 
                     : "",
                 percentage: `${activePercentage}%`,
                 trend: trend,
@@ -276,58 +277,22 @@ const Account = () => {
                 icon: UserCheck,
                 color: "green",
                 description: getTotalActiveCriteria() > 0
-                    ? `${filteredActive} of ${filteredTotal} filtered users are active`
+                    ? `${currentPageActive} of ${users.length} filtered users are active`
                     : `${activePercentage}% of total users are active`,
                 loading: statsLoading
             }
         ];
-    }, [totalStats, filteredUsers, loading, isInitialLoad, pagination.page, pagination.totalPages, getTotalActiveCriteria, statsLoading]);
-
-    const applyAllFilters = useCallback(() => {
-        if (!users || !Array.isArray(users)) {
-            setFilteredUsers([]);
-            return;
-        }
-        
-        let result = [...users];
-        
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase();
-            result = result.filter(user =>
-                user.full_name?.toLowerCase().includes(term) ||
-                user.email?.toLowerCase().includes(term) ||
-                user.employee_id?.toLowerCase().includes(term) ||
-                user.position?.toLowerCase().includes(term) ||
-                user.phone?.toLowerCase().includes(term)
-            );
-        }
-        
-        if (filters.position) {
-            result = result.filter(user => {
-                const userPosition = user.position?.toLowerCase();
-                if (!userPosition) return false;
-                
-                return userPosition === filters.position ||
-                       userPosition.includes(filters.position) ||
-                       filters.position.includes(userPosition);
-            });
-        }
-        
-        if (filters.role && filters.role !== 'all') {
-            result = result.filter(user => {
-                const userRole = user.role?.toLowerCase();
-                if (!userRole) return false;
-                
-                return userRole === filters.role;
-            });
-        }
-        
-        setFilteredUsers(result);
-        
-    }, [users, searchTerm, filters]);
+    }, [totalStats, users, loading, isInitialLoad, pagination.page, pagination.totalPages, getTotalActiveCriteria, statsLoading]);
 
     const handleSearch = (term) => {
         setSearchTerm(term);
+        setCurrentPage(1);
+
+        fetchUsers(1, {
+            search: term,
+            position: filters.position || '',
+            role: filters.role || ''
+        });
     };
 
     const handleTempPositionChange = (position) => {
@@ -346,7 +311,18 @@ const Account = () => {
             position: tempFilters.position || null,
             role: tempFilters.role || null
         });
+
         setIsFilterOpen(false);
+        setCurrentPage(1);
+        
+        const roleToSend = tempFilters.role === 'all' ? '' : tempFilters.role;
+        
+        fetchUsers(1, {
+            search: searchTerm,
+            position: tempFilters.position || '',
+            role: roleToSend,  
+            limit: 100
+        });
     };
 
     const handleCancelFilters = () => {
@@ -370,18 +346,39 @@ const Account = () => {
             position: null,
             role: null,
         });
-        setSelectedUser(null); 
+        setSelectedUser(null);
+        setCurrentPage(1);
+        
+        fetchUsers(1, {
+            search: '',
+            position: '',
+            role: ''
+        });
+        
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const clearFilter = (filterType) => {
+        let newFilters = { ...filters };
+        let newSearchTerm = searchTerm;
+        
         if (filterType === 'search') {
             setSearchTerm("");
+            newSearchTerm = "";
         } else if (filterType === 'position') {
-            setFilters(prev => ({ ...prev, position: null }));
+            newFilters.position = null;
         } else if (filterType === 'role') {
-            setFilters(prev => ({ ...prev, role: null }));
+            newFilters.role = null;
         }
+        
+        setFilters(newFilters);
+        setCurrentPage(1);
+        
+        fetchUsers(1, {
+            search: filterType === 'search' ? '' : newSearchTerm,
+            position: filterType === 'position' ? '' : (newFilters.position || ''),
+            role: filterType === 'role' ? '' : (newFilters.role || '')
+        });
     };
 
     useEffect(() => {
@@ -412,29 +409,16 @@ const Account = () => {
     useEffect(() => {
         if (users && users.length > 0) {
             setIsInitialLoad(false);
-            applyAllFilters();
         }
-    }, [users, searchTerm, filters, applyAllFilters]);
+    }, [users]);
 
     useEffect(() => {
-        if (selectedUser && users.length > 0) {
-            const updatedUser = users.find(u => u.id === selectedUser.id);
-            if (updatedUser) {
-                if (updatedUser.status !== selectedUser.status) {
-                    setSelectedUser(updatedUser);
-                }
-            }
-        }
-    }, [users, selectedUser?.id]);
-
-    useEffect(() => {
-        if (selectedUser && refreshTrigger > 0) {
-            const updatedUser = users.find(u => u.id === selectedUser.id);
-            if (updatedUser) {
-                setSelectedUser(updatedUser);
-            }
-        }
-    }, [users, refreshTrigger, selectedUser?.id]);
+        fetchUsers(1, {
+            search: '',
+            position: '',
+            role: ''
+        });
+    }, []); 
 
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
@@ -445,6 +429,12 @@ const Account = () => {
             await addUser(userData);
             setIsAddUserModalOpen(false);
             toast.success('User added successfully');
+            
+            fetchUsers(currentPage, {
+                search: searchTerm,
+                position: filters.position || '',
+                role: filters.role || ''
+            });
         } catch (error) {
             console.error('Error adding user:', error);
             toast.error(error.message || 'Failed to add user');
@@ -471,50 +461,72 @@ const Account = () => {
             setIsEditModalOpen(false);
             setEditingUser(null);
             toast.success('User updated successfully');
+            
+            fetchUsers(currentPage, {
+                search: searchTerm,
+                position: filters.position || '',
+                role: filters.role || ''
+            });
         } catch (error) {
             console.error('Error updating', error);
             toast.error(error.message || 'Failed to update user');
         }
     };
 
-    useEffect(() => {
-        if (selectedUser && users.length > 0) {
-            const currentSelected = users.find(member => member.id === selectedUser.id);
-            if (currentSelected) {
-                setSelectedUser(currentSelected);
-            } else {
-                setSelectedUser(null);
+    const handleUserUpdated = useCallback(async (updatedDataFromChild) => {       
+        if (updatedDataFromChild) {
+            const selectedId = updatedDataFromChild.id;
+            
+            setSelectedUser(updatedDataFromChild);
+            
+            if (updateUserInList) {
+                updateUserInList(selectedId, updatedDataFromChild);
             }
+            
+            setForceRenderKey(prev => prev + 1);
+            
+            toast.success('User status updated successfully', { id: 'user-update' });
+            return;
         }
-    }, [users, selectedUser?.id]);
-
-    const handleUserUpdated = useCallback(async () => {
+        
         const selectedId = selectedUser?.id;
         
-        await refreshUsers();
+        if (!selectedId) return;
         
-        if (selectedId) {
-            const updatedUser = users.find(u => u.id === selectedId);
-            if (updatedUser) {
-                setSelectedUser(updatedUser);
+        try {
+            toast.loading('Updating user status...', { id: 'user-update' });
+            
+            const response = await userService.getUserById(selectedId);
+            
+            if (response?.success && response.data) {
+                const updatedUserData = response.data;
+                
+                setSelectedUser(updatedUserData);
+                
+                if (updateUserInList) {
+                    updateUserInList(selectedId, updatedUserData);
+                }
+                
+                setForceRenderKey(prev => prev + 1);
+                
+                toast.success('User status updated successfully', { id: 'user-update' });
             }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            toast.error('Failed to update user status', { id: 'user-update' });
         }
-        
-        setRefreshTrigger(prev => prev + 1);
-    }, [refreshUsers, users, selectedUser?.id]);
-
-    const handleRefresh = useCallback(() => {
-        if (refreshUsers) {
-            refreshUsers();
-        }
-        handleClearAllFilters();
-    }, [refreshUsers]);
+    }, [selectedUser, updateUserInList]);
 
     const handlePageChange = (page) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        if (fetchUsers) {
-            fetchUsers(page); 
-        }
+        setCurrentPage(page);
+        
+        fetchUsers(page, {
+            search: searchTerm,
+            position: filters.position || '',
+            role: filters.role || ''
+        });
     };
 
     const tableConfig = {
@@ -525,14 +537,12 @@ const Account = () => {
     };
 
     const formattedUsers = useMemo(() => {
-        if (!filteredUsers || filteredUsers.length === 0) {
+        if (!users || users.length === 0) {
             return [];
         }
 
-        return filteredUsers.map((user, index) => {
-            const currentPage = pagination.page || 1;
-            const itemsPerPage = pagination.limit || 10;
-            const itemNumber = (currentPage - 1) * itemsPerPage + index + 1;
+        return users.map((user, index) => {
+            const itemNumber = (currentPage - 1) * (pagination.limit || 10) + index + 1;
 
             return {
                 id: user.id,
@@ -551,7 +561,7 @@ const Account = () => {
                 ...user
             };
         });
-    }, [filteredUsers, pagination.page, pagination.limit]);
+    }, [users, currentPage, pagination.limit]);
 
     const UserStatsCards = ({ statsData }) => {
         return (
@@ -603,7 +613,7 @@ const Account = () => {
     }
 
     return (
-        <div className='flex pt-20 min-h-screen bg-gray-100'>
+        <div key={forceRenderKey} className='flex pt-20 min-h-screen bg-gray-100'>
             <div className='flex-1 p-6'>
                 <Header />
                 
@@ -639,7 +649,6 @@ const Account = () => {
                                             <Button 
                                                 variant="outline" 
                                                 size="sm" 
-                                                onClick={handleRefresh}
                                                 className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
                                             >
                                                 <Loader2 className="h-3 w-3" />
@@ -964,31 +973,8 @@ const Account = () => {
                             </div>
                         )}
 
-                        {/* BAGIAN YANG DIHILANGKAN - Menghapus div dengan bg-gray-50 */}
-                        {/* <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm text-gray-600">
-                                    <span>
-                                        Showing <span className="font-semibold">{filteredUsers.length}</span> users
-                                        {filters.position && (
-                                            <span> in <span className="font-semibold">{getFilterLabel('position')}</span> position</span>
-                                        )}
-                                        {filters.role && filters.role !== 'all' && (
-                                            <span> with role <span className="font-semibold">{getFilterLabel('role')}</span></span>
-                                        )}
-                                        {filters.role === 'all' && (
-                                            <span> in all roles</span>
-                                        )}
-                                    </span>
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                    Total in system: <span className="font-semibold">{totalStats.totalUsers}</span> users
-                                    {statsLoading && <Loader2 className="h-3 w-3 animate-spin inline ml-1" />}
-                                </div>
-                            </div>
-                        </div> */}
-
-                        {!loading && filteredUsers.length === 0 && (
+                        {/* GANTI filteredUsers dengan users */}
+                        {!loading && users.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
                                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
                                     <Users className="w-10 h-10 text-gray-400" />
@@ -1027,7 +1013,8 @@ const Account = () => {
                             </div>
                         )}
 
-                        {filteredUsers.length > 0 && (
+                        {/* GANTI filteredUsers dengan users */}
+                        {users.length > 0 && (
                             <>
                                 <div className="relative">
                                     {loading && (
