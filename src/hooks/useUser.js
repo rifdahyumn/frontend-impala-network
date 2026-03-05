@@ -49,11 +49,11 @@ export const useUsers = () => {
 
             const serviceParams = {
                 page: page,
-                limit: 10,
+                ...options,
+                limit: options.limit || 10,
                 search: options.search || '',
                 position: options.position || '',
                 role: options.role || '',
-                ...options
             }
 
             const result = await userService.fetchUsers(serviceParams)

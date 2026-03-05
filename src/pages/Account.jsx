@@ -11,14 +11,12 @@ import AddUser from "../components/AddButton/AddUser";
 import { useUsers } from "../hooks/useUser";
 import toast from "react-hot-toast";
 import userService from "../services/userService";
-import { flushSync } from 'react-dom';
 
 const Account = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [forceRenderKey, setForceRenderKey] = useState(0);
     
     const [confirmModal, setConfirmModal] = useState({
@@ -98,17 +96,17 @@ const Account = () => {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const positionOptions = [
-        { value: 'managing director', label: 'Managing Director', original: 'Managing Director' },
-        { value: 'director', label: 'Director', original: 'Director' },
-        { value: 'head manager', label: 'Head Manager', original: 'Head Manager' },
-        { value: 'finance', label: 'Finance', original: 'Finance' },
-        { value: 'legal', label: 'Legal', original: 'Legal' },
-        { value: 'talent manager', label: 'Talent Manager', original: 'Talent Manager' },
-        { value: 'ecosystem manager', label: 'Ecosystem Manager', original: 'Ecosystem Manager' },
-        { value: 'strategic partnership executive', label: 'Strategic Partnership Executive', original: 'Strategic Partnership Executive' },
-        { value: 'program manager', label: 'Program Manager', original: 'Program Manager' },
-        { value: 'space manager', label: 'Space Manager', original: 'Space Manager' },
-        { value: 'creative', label: 'Creative', original: 'Creative' }
+        { value: 'Managing Director', label: 'Managing Director', original: 'Managing Director' },
+        { value: 'Director', label: 'Director', original: 'Director' },
+        { value: 'Head Manager', label: 'Head Manager', original: 'Head Manager' },
+        { value: 'Finance', label: 'Finance', original: 'Finance' },
+        { value: 'Legal', label: 'Legal', original: 'Legal' },
+        { value: 'Talent Manager', label: 'Talent Manager', original: 'Talent Manager' },
+        { value: 'Ecosystem Manager', label: 'Ecosystem Manager', original: 'Ecosystem Manager' },
+        { value: 'Strategic Partnership Executive', label: 'Strategic Partnership Executive', original: 'Strategic Partnership Executive' },
+        { value: 'Program Manager', label: 'Program Manager', original: 'Program Manager' },
+        { value: 'Space Manager', label: 'Space Manager', original: 'Space Manager' },
+        { value: 'Creative', label: 'Creative', original: 'Creative' }
     ];
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -313,13 +311,17 @@ const Account = () => {
             position: tempFilters.position || null,
             role: tempFilters.role || null
         });
+
         setIsFilterOpen(false);
         setCurrentPage(1);
+        
+        const roleToSend = tempFilters.role === 'all' ? '' : tempFilters.role;
         
         fetchUsers(1, {
             search: searchTerm,
             position: tempFilters.position || '',
-            role: tempFilters.role || ''
+            role: roleToSend,  
+            limit: 100
         });
     };
 
