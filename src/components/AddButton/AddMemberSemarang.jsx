@@ -598,20 +598,16 @@ const AddMemberSemarang = ({
                     options: [
                         { value: 'Maneka Personal', label: 'Maneka Personal' },
                         { value: 'Maneka Group', label: 'Maneka Group' },
-                        { value: 'Private Office 1', label: 'Private Office 1' },
-                        { value: 'Private Office 2-6', label: 'Private Office 2-6' },
-                        { value: 'Private Office 7', label: 'Private Office 7' },
                         { value: 'Rembug 1', label: 'Rembug 1' },
                         { value: 'Rembug 2', label: 'Rembug 2' },
                         { value: 'Rembug 3', label: 'Rembug 3' },
-                        { value: 'Space Gatra', label: 'Space Gatra' },
-                        { value: 'Space Gayeng', label: 'Space Gayeng' },
-                        { value: 'Makerspace', label: 'Makerspace' },
-                        { value: 'Foodlab', label: 'Foodlab' },
-                        { value: 'Abipraya Membership', label: 'Abipraya Membership' },
-                        { value: 'Abipraya Event', label: 'Abipraya Event' },
-                        { value: 'Virtual Office', label: 'Virtual Office' },
-                        { value: 'Outdoorspace', label: 'Outdoorspace' },
+                        { value: 'Private Office 1-3', label: 'Private Office 1-3' },
+                        { value: 'Private Office 4-5', label: 'Private Office 4-5' },
+                        { value: 'Private Office 6', label: 'Private Office 6' },
+                        { value: 'Event Space Gatra', label: 'Event Space Gatra' },
+                        { value: 'Event Space Outdoor', label: 'Event Space Outdoor' },
+                        { value: 'Activation Webinar', label: 'Activation Webinar' },
+
                     ]
                 },
                 {

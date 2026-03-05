@@ -187,11 +187,9 @@ class HeteroSemarangService {
                 else if (lowerSpace.includes('private office 1-3'));
                 else if (lowerSpace.includes('private office 4-5'));
                 else if (lowerSpace.includes('private office 6'));
-                else if (lowerSpace.includes('space gatra'));
-                else if (lowerSpace.includes('space maneka'));
-                else if (lowerSpace.includes('space outdoor'));
-                else if (lowerSpace.includes('virtual office'));
-                else if (lowerSpace.includes('course'));
+                else if (lowerSpace.includes('event space gatra'));
+                else if (lowerSpace.includes('event space outdoor'));
+                else if (lowerSpace.includes('activation webinar'));
 
                 return {
                     value: lowerSpace,

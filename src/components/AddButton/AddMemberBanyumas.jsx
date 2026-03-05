@@ -598,7 +598,7 @@ const AddMemberBanyumas = ({
                         { value: 'Private Office 5', label: 'Private Office 5' },
                         { value: 'Private Office 6', label: 'Private Office 6' },
                         { value: 'Virtual Office', label: 'Virtual Office' },
-                        { value: 'Gatra Event Space', label: 'Gatra Event Space' },
+                        { value: 'Gatra Event Space Indoor', label: 'Gatra Event Space Indoor' },
                         { value: 'Gatra Wedding Hall', label: 'Gatra Wedding Hall' },
                         { value: 'Outdoorspace', label: 'Outdoorspace' },
                         { value: 'Amphitheater', label: 'Amphitheater' },

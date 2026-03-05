@@ -24,7 +24,7 @@ class HeteroSoloService {
         try {
             const {
                 page = 1,
-                limit = 10,
+                limit = 20,
                 search = '',
                 gender = '',
                 space = '',
@@ -52,7 +52,7 @@ class HeteroSoloService {
 
             return result
         } catch (error) {
-            console.error('Error fetching member', error)
+            console.error('Service - Error:', error)
         }
     }
 
@@ -180,20 +180,16 @@ class HeteroSoloService {
 
                 if (lowerSpace.includes('maneka personal'));
                 else if (lowerSpace.includes('maneka group'));
-                else if (lowerSpace.includes('rembug 1'));
-                else if (lowerSpace.includes('rembug 2'));
-                else if (lowerSpace.includes('rembug 3'));
+                else if (lowerSpace.includes('rembug meeting room'));
                 else if (lowerSpace.includes('private office 1'));
                 else if (lowerSpace.includes('private office 2-6'));
-                else if (lowerSpace.includes('private office 7'));
-                else if (lowerSpace.includes('space gatra'));
-                else if (lowerSpace.includes('space gayeng'));
-                else if (lowerSpace.includes('makerspace'));
-                else if (lowerSpace.includes('foodlab'));
-                else if (lowerSpace.includes('abipraya membership'));
-                else if (lowerSpace.includes('abipraya event'));
+                else if (lowerSpace.includes('private office 7-8'));
+                else if (lowerSpace.includes('private office 9'));
+                else if (lowerSpace.includes('private office 10'));
+                else if (lowerSpace.includes('gatra event space'));
+                else if (lowerSpace.includes('saka foodlab'));
+                else if (lowerSpace.includes('abipraya game area'));
                 else if (lowerSpace.includes('virtual office'));
-                else if (lowerSpace.includes('outdoorspace'));
 
                 return {
                     value: lowerSpace,

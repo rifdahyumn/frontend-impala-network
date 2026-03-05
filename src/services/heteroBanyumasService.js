@@ -24,7 +24,7 @@ class HeteroBanyumasService {
         try {
             const {
                 page = 1,
-                limit = 10,
+                limit = 20,
                 search = '',
                 gender = '',
                 space = '',
@@ -52,7 +52,7 @@ class HeteroBanyumasService {
 
             return result
         } catch (error) {
-            console.error('Error fetching member', error)
+            console.error('Service - Error:', error)
         }
     }
 
@@ -105,7 +105,7 @@ class HeteroBanyumasService {
         }
     }
 
-    async updateMemberHeteroBayumas(memberId, memberData) {
+    async updateMemberHeteroBanyumas(memberId, memberData) {
         try {
             const response = await fetch(`${this.baseURL}/hetero/banyumas/${memberId}`, {
                 method: 'PUT',
@@ -188,7 +188,7 @@ class HeteroBanyumasService {
                 else if (lowerSpace.includes('private office 5'));
                 else if (lowerSpace.includes('private office 6'));
                 else if (lowerSpace.includes('virtual office'));
-                else if (lowerSpace.includes('gatra event space'));
+                else if (lowerSpace.includes('gatra event space indoor'));
                 else if (lowerSpace.includes('gatra wedding hall'));
                 else if (lowerSpace.includes('outdoorspace'));
                 else if (lowerSpace.includes('amphitheater'));

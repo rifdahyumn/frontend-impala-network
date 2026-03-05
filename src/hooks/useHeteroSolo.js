@@ -89,20 +89,16 @@ export const useHeteroSolo = (initialFilters = {}) => {
 
             if (lowerSpace.includes('maneka personal'));
             else if (lowerSpace.includes('maneka group'));
-            else if (lowerSpace.includes('rembug 1'));
-            else if (lowerSpace.includes('rembug 2'));
-            else if (lowerSpace.includes('rembug 3'));
+            else if (lowerSpace.includes('rembug meeting room'));
             else if (lowerSpace.includes('private office 1'));
             else if (lowerSpace.includes('private office 2-6'));
-            else if (lowerSpace.includes('private office 7'));
-            else if (lowerSpace.includes('space gatra'));
-            else if (lowerSpace.includes('space gayeng'));
-            else if (lowerSpace.includes('makerspace'));
-            else if (lowerSpace.includes('foodlab'));
-            else if (lowerSpace.includes('abipraya membership'));
-            else if (lowerSpace.includes('abipraya event'));
+            else if (lowerSpace.includes('private office 7-8'));
+            else if (lowerSpace.includes('private office 9'));
+            else if (lowerSpace.includes('private office 10'));
+            else if (lowerSpace.includes('gatra event space'));
+            else if (lowerSpace.includes('saka foodlab'));
+            else if (lowerSpace.includes('abipraya game area'));
             else if (lowerSpace.includes('virtual office'));
-            else if (lowerSpace.includes('outdoorspace'));
 
             return {
                 value: lowerSpace,
@@ -308,6 +304,7 @@ export const useHeteroSolo = (initialFilters = {}) => {
                 // 
             }
         }
+        
         initializeData()
     }, [])
 
@@ -397,10 +394,34 @@ export const useHeteroSolo = (initialFilters = {}) => {
     }, [fetchSpaceOptions])
 
     return {
-        ...confirmDialog, members, loading, error, pagination, filters, spaceOptions, loadingSpaceOptions,
-        genderOptions, allMembers, isFetchingAll, fetchAllMembers, setFilters: refetchWithFilters, updateFilters: refetchWithFilters,
-        fetchMembers, handlePageChange: changePage, addMemberHeteroSolo, updateMemberHeteroSolo, deleteMemberHeteroSolo,
-        fetchMemberStats, stats, statsLoading, refreshAll, searchAndFilter, fetchSpaceOptions: refetchSpaceOptions,
-        extractSpacesFromMembers, getSpaceLabel, getGenderLabel, spaceOptionsError
+        ...confirmDialog, 
+        members, 
+        loading, 
+        error, 
+        pagination, 
+        filters, 
+        spaceOptions, 
+        loadingSpaceOptions,
+        spaceOptionsError,
+        genderOptions, 
+        allMembers, 
+        isFetchingAll, 
+        fetchAllMembers, 
+        setFilters: refetchWithFilters, 
+        updateFilters: refetchWithFilters,
+        fetchMembers, 
+        handlePageChange: changePage, 
+        addMemberHeteroSolo, 
+        updateMemberHeteroSolo, 
+        deleteMemberHeteroSolo,
+        fetchMemberStats, 
+        stats, 
+        statsLoading, 
+        refreshAll, 
+        searchAndFilter, 
+        fetchSpaceOptions: refetchSpaceOptions,
+        extractSpacesFromMembers, 
+        getSpaceLabel, 
+        getGenderLabel, 
     }
 }
