@@ -1,7 +1,7 @@
 import AccountContent from "../components/Content/AccountContent";
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, UserCheck, AlertCircle, X, Filter, Briefcase, Check, Building2, Download } from "lucide-react";
+import { Plus, Loader2, Users, UserCheck, AlertCircle, X, Filter, Briefcase, Check, Download } from "lucide-react";
 import { Button } from "../components/ui/button";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'; 
 import SearchBar from '../components/SearchFilter/SearchBar';
@@ -124,26 +124,46 @@ const Account = () => {
             }
             
             setIsExporting(true);
-            toast.loading('Menyiapkan data export...', { id: 'export' });
-            
+            toast.loading('Menyiapkan data export...', { id: 'export-toast' });
+
             const exportFilters = {
                 search: searchTerm || undefined,
                 position: filters.position || undefined,
                 role: filters.role !== 'all' ? filters.role : undefined,
-                include_deleted: 'false'
+                all: true 
             };
 
-            await exportUsers(exportFilters, true);
+            const result = await exportUsers(exportFilters, true);
             
-            toast.success('Export berhasil!', { id: 'export' });
+            if (result?.success) {
+                if (result.isBlob) {
+                    const url = window.URL.createObjectURL(result.data);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    
+                    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+                    a.download = `user_accounts_export_${dateStr}.xlsx`;
+                    
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    toast.success(`Berhasil mengexport users ke Excel`, { id: 'export-toast' });
+                } else {
+                    console.log('Data users:', result.data);
+                }
+            } else {
+                throw new Error('Export failed');
+            }
             
         } catch (error) {
             console.error('Export failed:', error);
-            toast.error(error.message || 'Gagal export', { id: 'export' });
+            toast.error(`Gagal mengexport data: ${error.message}`, { id: 'export-toast' });
         } finally {
             setIsExporting(false);
         }
-    }, [exportUsers, searchTerm, filters, totalStats.totalUsers]);
+    }, [totalStats.totalUsers, searchTerm, filters, exportUsers]);
 
     const handleSelectUser = useCallback((user) => {
         setSelectedUser(user);
@@ -418,7 +438,7 @@ const Account = () => {
             position: '',
             role: ''
         });
-    }, []); 
+    }, [fetchUsers]); 
 
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
@@ -650,6 +670,11 @@ const Account = () => {
                                                 variant="outline" 
                                                 size="sm" 
                                                 className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
+                                                onClick={() => fetchUsers(currentPage, {
+                                                    search: searchTerm,
+                                                    position: filters.position || '',
+                                                    role: filters.role || ''
+                                                })}
                                             >
                                                 <Loader2 className="h-3 w-3" />
                                                 Retry Connection
@@ -973,7 +998,6 @@ const Account = () => {
                             </div>
                         )}
 
-                        {/* GANTI filteredUsers dengan users */}
                         {!loading && users.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
                                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1013,7 +1037,6 @@ const Account = () => {
                             </div>
                         )}
 
-                        {/* GANTI filteredUsers dengan users */}
                         {users.length > 0 && (
                             <>
                                 <div className="relative">
