@@ -1,7 +1,7 @@
 import AccountContent from "../components/Content/AccountContent";
 import Header from "../components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Plus, Loader2, Users, UserCheck, AlertCircle, X, Filter, Briefcase, Check, Building2, Download, FileSpreadsheet } from "lucide-react";
+import { Plus, Loader2, Users, UserCheck, AlertCircle, X, Filter, Briefcase, Check, Download } from "lucide-react";
 import { Button } from "../components/ui/button";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'; 
 import SearchBar from '../components/SearchFilter/SearchBar';
@@ -11,7 +11,6 @@ import AddUser from "../components/AddButton/AddUser";
 import { useUsers } from "../hooks/useUser";
 import toast from "react-hot-toast";
 import userService from "../services/userService";
-import * as XLSX from 'xlsx';
 
 const Account = () => {
     const [selectedUser, setSelectedUser] = useState(null);
@@ -117,123 +116,54 @@ const Account = () => {
         { value: 'komunitas', label: 'Komunitas', original: 'Komunitas' }
     ];
 
-const handleExport = useCallback(async () => {
-    try {
-        if (totalStats.totalUsers === 0) {
-            toast.error('No data to export');
-            return;
-        }
-        
-        setIsExporting(true);
-        toast.loading('Menyiapkan data export...', { id: 'export-toast' });
-
-        const exportFilters = {
-            search: searchTerm || undefined,
-            position: filters.position || undefined,
-            role: filters.role !== 'all' ? filters.role : undefined,
-            all: true 
-        };
-
-        const result = await exportUsers(exportFilters, true);
-        
-        if (result?.success) {
-            if (result.isBlob) {
-                const url = window.URL.createObjectURL(result.data);
-                const a = document.createElement('a');
-                a.href = url;
-                
-                const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
-                a.download = `user_accounts_export_${dateStr}.xlsx`;
-                
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                
-                toast.success(`Berhasil mengexport users ke Excel`, { id: 'export-toast' });
-            } else {
-                const allUsers = result.data || [];
-            }
-        } else {
-            throw new Error('Export failed');
-        }
-        
-    } catch (error) {
-        console.error('Export failed:', error);
-        toast.error(`Gagal mengexport data: ${error.message}`, { id: 'export-toast' });
-        
-        console.warn('Mencoba fallback manual...');
-        await manualExportFallback();
-        
-    } finally {
-        setIsExporting(false);
-    }
-}, [totalStats.totalUsers, searchTerm, filters, exportUsers]);
-
-const fetchAllUsers = useCallback(async (filters = {}) => {
-    try {
-        if (userService.clearListCache) {
-            userService.clearListCache();
-        }
-        
-        let allUsers = [];
-        let page = 1;
-        const limit = 100; 
-        let totalPages = 1;
-        
-        while (page <= totalPages) {
-            const response = await userService.getUsers({
-                ...filters,
-                page,
-                limit
-            });
-            
-            if (response?.success && response.data) {
-                const users = response.data;
-                allUsers = [...allUsers, ...users];
-                
-                if (response.pagination) {
-                    totalPages = response.pagination.totalPages || 1;
-                }
-                
-                if (users.length < limit) {
-                    break;
-                }
-            } else {
-                break;
+    const handleExport = useCallback(async () => {
+        try {
+            if (totalStats.totalUsers === 0) {
+                toast.error('No data to export');
+                return;
             }
             
-            page++;
-
             setIsExporting(true);
-            toast.loading('Menyiapkan data export...', { id: 'export' });
-            
+            toast.loading('Menyiapkan data export...', { id: 'export-toast' });
+
             const exportFilters = {
                 search: searchTerm || undefined,
                 position: filters.position || undefined,
                 role: filters.role !== 'all' ? filters.role : undefined,
-                include_deleted: 'false'
+                all: true 
             };
 
-            await exportUsers(exportFilters, true);
+            const result = await exportUsers(exportFilters, true);
             
-            toast.success('Export berhasil!', { id: 'export' });
+            if (result?.success) {
+                if (result.isBlob) {
+                    const url = window.URL.createObjectURL(result.data);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    
+                    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+                    a.download = `user_accounts_export_${dateStr}.xlsx`;
+                    
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    toast.success(`Berhasil mengexport users ke Excel`, { id: 'export-toast' });
+                } else {
+                    console.log('Data users:', result.data);
+                }
+            } else {
+                throw new Error('Export failed');
+            }
             
         } catch (error) {
             console.error('Export failed:', error);
-            toast.error(error.message || 'Gagal export', { id: 'export' });
+            toast.error(`Gagal mengexport data: ${error.message}`, { id: 'export-toast' });
         } finally {
             setIsExporting(false);
         }
-        
-        return allUsers;
-        
-    } catch (error) {
-        console.error('Error fetching all users:', error);
-        toast.error('Gagal mengambil data untuk export');
-        return [];
-    }
-}, []);
+    }, [totalStats.totalUsers, searchTerm, filters, exportUsers]);
 
     const handleSelectUser = useCallback((user) => {
         setSelectedUser(user);
@@ -508,7 +438,7 @@ const fetchAllUsers = useCallback(async (filters = {}) => {
             position: '',
             role: ''
         });
-    }, []); 
+    }, [fetchUsers]); 
 
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
@@ -740,6 +670,11 @@ const fetchAllUsers = useCallback(async (filters = {}) => {
                                                 variant="outline" 
                                                 size="sm" 
                                                 className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-100"
+                                                onClick={() => fetchUsers(currentPage, {
+                                                    search: searchTerm,
+                                                    position: filters.position || '',
+                                                    role: filters.role || ''
+                                                })}
                                             >
                                                 <Loader2 className="h-3 w-3" />
                                                 Retry Connection
@@ -1063,7 +998,6 @@ const fetchAllUsers = useCallback(async (filters = {}) => {
                             </div>
                         )}
 
-                        {/* GANTI filteredUsers dengan users */}
                         {!loading && users.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
                                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1103,7 +1037,6 @@ const fetchAllUsers = useCallback(async (filters = {}) => {
                             </div>
                         )}
 
-                        {/* GANTI filteredUsers dengan users */}
                         {users.length > 0 && (
                             <>
                                 <div className="relative">
