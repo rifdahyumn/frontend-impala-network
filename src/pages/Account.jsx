@@ -204,6 +204,26 @@ const fetchAllUsers = useCallback(async (filters = {}) => {
             }
             
             page++;
+
+            setIsExporting(true);
+            toast.loading('Menyiapkan data export...', { id: 'export' });
+            
+            const exportFilters = {
+                search: searchTerm || undefined,
+                position: filters.position || undefined,
+                role: filters.role !== 'all' ? filters.role : undefined,
+                include_deleted: 'false'
+            };
+
+            await exportUsers(exportFilters, true);
+            
+            toast.success('Export berhasil!', { id: 'export' });
+            
+        } catch (error) {
+            console.error('Export failed:', error);
+            toast.error(error.message || 'Gagal export', { id: 'export' });
+        } finally {
+            setIsExporting(false);
         }
         
         return allUsers;

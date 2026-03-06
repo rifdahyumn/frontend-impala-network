@@ -581,29 +581,16 @@ class UserService {
 
             const queryParams = new URLSearchParams();
             
-            if (exportAll) {
-                queryParams.append('all', 'true');
-            }
-            
-            if (search) {
-                queryParams.append('search', search);
-            }
-            
-            if (position) {
-                queryParams.append('position', position);
-            }
-            
-            if (role && role !== 'all' && role !== 'undefined') {
-                queryParams.append('role', role);
-            }
+            if (search) queryParams.append('search', search);
+            if (position) queryParams.append('position', position);
+            if (role && role !== 'all' && role !== 'undefined') queryParams.append('role', role);
+            if (exportAll) queryParams.append('all', 'true');
 
             const token = getValidToken();
-            if (!token) {
-                throw new Error('No access token available');
-            }
+            if (!token) throw new Error('No access token available');
 
             const url = `${API_BASE_URL}/user/export?${queryParams.toString()}`;
-            
+
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -614,14 +601,17 @@ class UserService {
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    console.warn('Export endpoint not found. Using frontend generation instead.');
+                    console.warn('Export endpoint not found. Check backend route.');
                     return this.exportUsersFallback(filters, exportAll);
                 }
-                if (response.status === 401) {
-                    throw new Error('Session expired. Please login again.');
-                }
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `HTTP error ${response.status}`);
+                throw new Error(`HTTP error ${response.status}`);
+            }
+
+            const contentType = response.headers.get('content-type');
+
+            if (contentType && contentType.includes('json')) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Export failed');
             }
 
             const blob = await response.blob();
@@ -634,9 +624,7 @@ class UserService {
             };
 
         } catch (error) {
-            console.error('UserService.exportUsers error:', error);
-            
-            console.warn('Falling back to frontend export generation');
+            console.error('❌ Export error:', error);
             return this.exportUsersFallback(filters, exportAll);
         }
     }
