@@ -420,7 +420,9 @@ export const forgotPasswordService = async (email) => {
         if (response?.success) {
             return {
                 success: true,
-                message: response.message || 'Reset password link sent successfully'
+                registered: true,  
+                message: response.message || 'Reset password link sent successfully',
+                data: response.data
             };
         }
         
@@ -429,15 +431,29 @@ export const forgotPasswordService = async (email) => {
         console.error('Forgot password error:', error);
         
         let errorMessage = 'Failed to send reset link';
+        let registered = null;
+        let statusCode = error.status;
         
         if (error.response?.data) {
-            errorMessage = error.response.data.message || error.response.data.error || errorMessage;
+            const data = error.response.data;
+            errorMessage = data.message || data.error || errorMessage;
+            registered = data.registered === true; 
+            statusCode = error.response.status;
         } else if (error.message) {
             errorMessage = error.message;
         }
         
+        if (statusCode === 404 || registered === false) {
+            const notFoundError = new Error(errorMessage);
+            notFoundError.status = 404;
+            notFoundError.registered = false;
+            notFoundError.code = 'EMAIL_NOT_REGISTERED';
+            throw notFoundError;
+        }
+        
         const enhancedError = new Error(errorMessage);
-        enhancedError.status = error.status;
+        enhancedError.status = statusCode;
+        enhancedError.registered = registered;
         enhancedError.originalError = error;
         throw enhancedError;
     }
