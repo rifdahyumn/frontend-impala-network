@@ -210,11 +210,6 @@ export default function LoginPage() {
                                     `}>
                                         {authError}
                                     </p>
-                                    {/* {errorType === 'inactive' && (
-                                        <p className="text-xs text-orange-600 mt-1">
-                                            Hubungi administrator untuk mengaktifkan kembali akun Anda.
-                                        </p>
-                                    )} */}
                                     {errorType === 'unverified' && (
                                         <p className="text-xs text-yellow-600 mt-1">
                                             Jika tidak menerima email verifikasi, cek folder spam atau hubungi administrator.
@@ -233,7 +228,7 @@ export default function LoginPage() {
                                 onClick={() => navigate('/forgot-password')}
                                 disabled={isLoading}
                             >
-                                Lupa Password?
+                                Forgot Password?
                             </button>
                         </div>
 

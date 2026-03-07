@@ -366,17 +366,7 @@ const AccountContent = ({
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>{detailTitle || 'User Details'}</CardTitle>
-                    <div className="flex items-center gap-2">
-                        {isUserActive(selectedUser.status) ? (
-                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                                Active
-                            </span>
-                        ) : (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
-                                Inactive
-                            </span>
-                        )}
-                    </div>
+                    
                 </CardHeader>
 
                 <CardContent>

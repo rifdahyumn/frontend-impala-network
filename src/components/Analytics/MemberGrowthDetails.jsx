@@ -88,7 +88,7 @@ const MemberGrowthDetails = () => {
     }, [selectedMetric, growthData]);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 mt-6">
             <Card>
                 <CardHeader className='pb-4'>
                     <CardTitle className='flex items-center justify-between'>

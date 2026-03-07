@@ -150,8 +150,6 @@ const Account = () => {
                     document.body.removeChild(a);
                     
                     toast.success(`Berhasil mengexport users ke Excel`, { id: 'export-toast' });
-                } else {
-                    console.log('Data users:', result.data);
                 }
             } else {
                 throw new Error('Export failed');
