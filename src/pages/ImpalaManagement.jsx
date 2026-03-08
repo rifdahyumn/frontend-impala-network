@@ -564,7 +564,7 @@ const ImpalaManagement = () => {
                     'NIK': 'Contoh: 3275031201990001',
                     'Email': 'Contoh: john@example.com',
                     'Nomor Telepon': 'Contoh: 081234567890',
-                    'Jenis Kelamin': 'Contoh: Laki-laki',
+                    'Jenis Kelamin': 'Male/Female',
                     'Tanggal Lahir': 'Contoh: 1990-01-01',
                     'Pendidikan': 'Contoh: Sarjana (S1)',
                     'Status Disabilitas': 'Contoh: Tidak memiliki disabilitas',
