@@ -84,7 +84,7 @@
                     name: 'gender',
                     label: 'Jenis Kelamin',
                     required: true,
-                    options: ['Malei', 'Female'],
+                    options: ['Male', 'Female'],
                     locked: true
                 },
                 {
