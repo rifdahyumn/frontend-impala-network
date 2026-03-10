@@ -8,6 +8,8 @@ import clientService from '../../services/clientService';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
 export const useProgramClient = () => {
     const [selectedMember, setSelectedMember] = useState(null);
     const [editingClient, setEditingClient] = useState(null);
@@ -518,7 +520,7 @@ export const useProgramClient = () => {
                         return;
                     }
 
-                    const response = await fetch('/api/client/bulk-import', {
+                    const response = await fetch(`${API_BASE_URL}/client/bulk-import`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'

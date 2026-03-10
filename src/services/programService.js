@@ -1486,7 +1486,6 @@ class ProgramService {
             }
 
             const cleanedProgramsData = programsData.map(program => {
-                // Buat object baru tanpa field otomatis
                 const { 
                     ...cleanProgram 
                 } = program;

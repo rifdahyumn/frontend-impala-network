@@ -297,7 +297,7 @@ const FormTemplateList = ({ templates, selectedTemplate, onTemplateSelect, onCop
                                                     <div className="flex items-center justify-between">
                                                         <p className='text-sm text-blue-700 font-medium bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100'>
                                                             <span className="text-gray-600">Link: </span>
-                                                            http:/localhost:5173/pendaftaran/{template.unique_slug}
+                                                            https://impalanetwork.link/pendaftaran/{template.unique_slug}
                                                         </p>
                                                     </div>
 

@@ -1,3 +1,4 @@
+import clientService from '../../services/clientService';
 import * as XLSX from 'xlsx';
 
 export const formatProgramForDisplay = (program) => {
@@ -249,16 +250,7 @@ export const exportToExcel = async (currentFilters = {}, format = 'excel', getBu
             }
         }
 
-        const url = `/api/client/export?${params.toString()}`
-
-        const response = await fetch(url)
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch data: ${response.status}`)
-        }
-
-        const result = await response.json()
-
+        const result = await clientService.fetchAllClients(params)
         const members = result.data || []
 
         if (!members || members.length === 0) {

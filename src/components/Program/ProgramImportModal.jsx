@@ -13,7 +13,6 @@ const ProgramImportModal = ({
     validationErrors,
     setValidationErrors,
     isImporting,
-    // importProgress,
     parseExcelFile,
     handleImportExcel,
     resetImport,
@@ -114,10 +113,6 @@ const ProgramImportModal = ({
             fileInputRef.current.value = '';
         }
     };
-
-    // const handleChangeFile = () => {
-    //     handleTriggerFileInput();
-    // };
 
     const resetImportState = () => {
         setImportFile(null);

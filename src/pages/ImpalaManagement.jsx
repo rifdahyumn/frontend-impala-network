@@ -14,8 +14,9 @@ import { Input } from "../components/ui/input";
 import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx'
 import ConfirmModal from "../components/Content/ConfirmModal";
-
 import impalaService from "../services/impalaService";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const ImpalaManagement = () => {
     const [selectedParticipant, setSelectedParticipant] = useState(null);
@@ -831,7 +832,7 @@ const ImpalaManagement = () => {
                     
                     toast.loading(`Mengirim ${importedParticipants.length} data ke server...`);
                     
-                    const response = await fetch('/api/impala/import', {
+                    const response = await fetch(`${API_BASE_URL}/api/impala/import`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
