@@ -832,7 +832,7 @@ const ImpalaManagement = () => {
                     
                     toast.loading(`Mengirim ${importedParticipants.length} data ke server...`);
                     
-                    const response = await fetch(`${API_BASE_URL}/api/impala/import`, {
+                    const response = await fetch(`${API_BASE_URL}/impala/import`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
