@@ -78,17 +78,29 @@ class ClientService {
 
     async fetchAllClients(filters = {}) {
         try {
+            let filterParams = {};
+            
+            if (filters instanceof URLSearchParams) {
+                filters.forEach((value, key) => {
+                    filterParams[key] = value;
+                });
+            } else if (typeof filters === 'object') {
+                filterParams = { ...filters };
+            }
+
             const params = {
-                ...filters,
                 page: 1,
                 limit: 0, 
-                showAllOnSearch: true
+                showAllOnSearch: true,
+                search: filterParams.search || '',
+                status: filterParams.status || '', 
+                businessType: filterParams.businessType || filterParams.business || '',
+                gender: filterParams.gender || ''
             };
 
             const result = await this.fetchClients(params);
 
             return result;
-
         } catch (error) {
             console.error('Error fetching all clients', error);
             throw error;

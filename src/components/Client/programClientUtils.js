@@ -212,49 +212,31 @@ export const parseExcelData = (data) => {
 
 export const exportToExcel = async (currentFilters = {}, format = 'excel', getBusinessDisplayName) => {
     try {
-        const params = new URLSearchParams()
-
-        if (currentFilters.search?.trim()) {
-            params.append('search', currentFilters.search.trim())
-        }
+        const filters = {};
 
         if (currentFilters.status?.trim() && currentFilters.status !== 'all') {
-            params.append('status', currentFilters.status.trim())
+            filters.status = currentFilters.status.trim();
+        }
+
+        if (currentFilters.search?.trim()) {
+            filters.search = currentFilters.search.trim();
         }
 
         const businessFilterValue = currentFilters.businessType || currentFilters.business;
-        
         if (businessFilterValue?.trim() && businessFilterValue !== 'all') {
-            params.append('business', businessFilterValue.trim());
-            params.append('business_type', businessFilterValue.trim());
+            filters.businessType = businessFilterValue.trim();
         }
 
         if (currentFilters.gender?.trim() && currentFilters.gender !== 'all') {
-            const genderValue = currentFilters.gender.trim();
-            
-            if (genderValue.toLowerCase() === 'male' || 
-                genderValue.toLowerCase() === 'female') {
-                params.append('gender', genderValue.toLowerCase());
-            } else {
-                if (genderValue.toLowerCase().includes('male') || 
-                    genderValue.toLowerCase().includes('laki') || 
-                    genderValue.toLowerCase().includes('pria')) {
-                    params.append('gender', 'male');
-                } else if (genderValue.toLowerCase().includes('female') || 
-                           genderValue.toLowerCase().includes('perempuan') || 
-                           genderValue.toLowerCase().includes('wanita')) {
-                    params.append('gender', 'female');
-                } else {
-                    params.append('gender', genderValue);
-                }
-            }
+            filters.gender = currentFilters.gender.trim();
         }
 
-        const result = await clientService.fetchAllClients(params)
-        const members = result.data || []
+        const result = await clientService.fetchAllClients(filters);
+        
+        const members = result.data || [];
 
         if (!members || members.length === 0) {
-            throw new Error('No data to export')
+            throw new Error('Tidak ada data untuk diexport');
         }
 
         const exportData = members.map((client, index) => ({

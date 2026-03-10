@@ -8,7 +8,7 @@ import MemberTable from '../components/MemberTable/MemberTable';
 import Pagination from "../components/Pagination/Pagination";
 import ImpalaContent from '../components/Content/ImpalaContent/ImpalaContent';
 import { useImpala } from "../hooks/useImpala";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem} from "../components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem} from "../components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { toast } from 'react-hot-toast';
