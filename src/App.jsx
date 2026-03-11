@@ -19,6 +19,7 @@ import UserAccountSettings from "./components/UserAccountSettings/UserAccountSet
 import ImpalaManagement from './pages/ImpalaManagement';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import { setupIdleLogout } from './services/authServices';
 
 const MainLayout = ({ children }) => {
     return (
@@ -159,6 +160,12 @@ const PublicFormRoute = ({ children }) => {
 };
 
 function AppContent() {
+    useEffect(() => {
+        const cleanup = setupIdleLogout()
+
+        return () => cleanup()
+    }, [])
+
     return (
         <Routes>
             <Route 

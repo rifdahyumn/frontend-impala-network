@@ -359,6 +359,13 @@ const UserAccountSettings = () => {
                 },
                 body: JSON.stringify(updateData)
             });
+
+            if (response.status === 401) {
+                toast.error("Session expired. Please login again.");
+                logout();
+                navigate("/login");
+                return;
+            }
             
             const data = await response.json();
             

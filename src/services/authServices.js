@@ -8,6 +8,43 @@ let refreshPromise = null;
 let lastRefreshTime = 0;
 const MIN_REFRESH_INTERVAL = 30000;
 
+const IDLE_TIMEOUT = 1 * 60 * 60 * 1000
+export const setupIdleLogout = () => {
+    let idleTimer;
+
+    const logoutUser = () => {
+        console.warn("Idle timeout reached. Logging out...");
+
+        clearTokens();
+
+        if (typeof window !== "undefined") {
+            if (window.location.pathname !== "/login") {
+                window.location.href = "/login?session=idle_timeout";
+            }
+        }
+    };
+
+    const resetTimer = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(logoutUser, IDLE_TIMEOUT);
+    };
+
+    const events = ["mousemove", "mousedown", "keypress", "scroll", "touchstart"];
+
+    events.forEach(event => {
+        window.addEventListener(event, resetTimer);
+    });
+
+    resetTimer();
+
+    return () => {
+        clearTimeout(idleTimer);
+        events.forEach(event => {
+            window.removeEventListener(event, resetTimer);
+        });
+    };
+};
+
 const encryptData = (data) => {
     try {
         return CryptoJS.AES.encrypt(JSON.stringify(data), APP_SECRET).toString();
